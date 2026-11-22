@@ -2709,8 +2709,10 @@
           "SLOT",
           "AMENITY",
           "DISCOUNT",
-          "REWARD"
-        ]
+          "REWARD",
+          "ADJUSTMENT"
+        ],
+        "description": "`ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign)."
       },
       "BookingRequest": {
         "type": "object",
@@ -6238,6 +6240,237 @@
           "endsAt",
           "customer"
         ]
+      },
+      "CreateStaffBooking": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first slot's start."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last slot's end."
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "default": [],
+            "description": "Priced amenities (option ids) added to the booking."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "venueCustomerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "venueCustomerId"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "example": "+20 100 123 4567"
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone"
+                ]
+              }
+            ],
+            "description": "Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them)."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The venue's own price, in minor units, VAT included. Left out: the slots' and amenities' prices. Kept as an `ADJUSTMENT` line for the difference."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "groundId",
+          "startsAt",
+          "endsAt",
+          "customer"
+        ]
+      },
+      "StaffBookingPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffBooking"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "VenueCustomerPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueCustomer"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "VenueCustomer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "app": {
+            "type": "boolean",
+            "description": "A Hagz account: its name and number follow the account and can't be edited by the venue."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastBookedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "bookingCount": {
+            "type": "integer",
+            "description": "Games played (completed)."
+          },
+          "noShowCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "app",
+          "note",
+          "lastBookedAt",
+          "bookingCount",
+          "noShowCount",
+          "createdAt"
+        ]
+      },
+      "CreateVenueCustomer": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "+20 100 123 4567"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Staff's own note about the customer; never shown to them. Empty clears it."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateVenueCustomer": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Walk-ins only."
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "+20 100 123 4567",
+            "description": "Walk-ins only; null removes it."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Staff's own note about the customer; never shown to them. Empty clears it."
+          }
+        }
       },
       "SystemStatus": {
         "type": "object",
@@ -18883,6 +19116,136 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Enter a walk-in or phone booking",
+        "description": "Confirmed at once and paid at the venue, with no commission. For one of the venue's customers, or someone new by name and number. Staff can book right up to kick-off. With `total`, the venue's own price, kept as an `ADJUSTMENT` line. Retrying with the same `Idempotency-Key` returns the same booking with `Idempotent-Replayed: true`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "One UUID per user action, reused on every retry of it.",
+              "example": "0192f0c4-8a7e-7b3e-9a51-2f6c1d0e4b7a"
+            },
+            "required": true,
+            "description": "One UUID per user action, reused on every retry of it.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The booking",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ],
+                  "description": "Set when this answers a retry with the booking already made."
+                },
+                "required": false,
+                "description": "Set when this answers a retry with the booking already made."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE, GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`), AMENITY_NOT_AVAILABLE, or IDEMPOTENCY_KEY_REUSED: the key was used for a different booking.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/staff/venues/{venueId}/bookings/pending": {
@@ -19333,7 +19696,7 @@
           "Venue bookings"
         ],
         "summary": "Mark a game played or a no-show",
-        "description": "A `CONFIRMED` booking once it has kicked off, or a correction of the mark. Marking it as it already is changes nothing.",
+        "description": "A `CONFIRMED` booking once it has kicked off, or a correction of the mark, until 24 hours after it ends (games are marked `COMPLETED` by themselves when they end). Marking it as it already is changes nothing.",
         "security": [
           {
             "staffBearer": []
@@ -19411,7 +19774,7 @@
             }
           },
           "409": {
-            "description": "BOOKING_STATUS_CONFLICT (with `bookingStatus`), or BOOKING_NOT_STARTED: it hasn't kicked off yet.",
+            "description": "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, or MARK_WINDOW_CLOSED: more than 24 hours since it ended.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -19988,6 +20351,487 @@
           },
           "409": {
             "description": "BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/customers/{customerId}/bookings": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "A customer's bookings here",
+        "description": "Latest game first, a page at a time. Needs `customers: view`. A booking the venue moved isn't listed; the one that replaced it is.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/customers": {
+      "get": {
+        "tags": [
+          "Venue customers"
+        ],
+        "summary": "The venue's customers",
+        "description": "App players who booked here and walk-ins staff entered, A to Z, a page at a time.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Part of the name or the phone number."
+            },
+            "required": false,
+            "description": "Part of the name or the phone number.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueCustomerPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CURSOR",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Venue customers"
+        ],
+        "summary": "Add a walk-in customer",
+        "description": "Linked to the player's Hagz account by their number if they sign up later.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVenueCustomer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueCustomer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/customers/{customerId}": {
+      "get": {
+        "tags": [
+          "Venue customers"
+        ],
+        "summary": "One customer",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueCustomer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Venue customers"
+        ],
+        "summary": "Edit a customer",
+        "description": "The note for anyone; the name and number for walk-ins only (an app player's follow their account).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVenueCustomer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueCustomer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
             "content": {
               "application/problem+json": {
                 "schema": {
