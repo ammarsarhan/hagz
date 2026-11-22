@@ -28,7 +28,7 @@ const namesOf = (translations: { language: string; name: string }[]) => ({
   ar: translations.find((t) => t.language === "AR")?.name ?? null,
 });
 
-const groundName = (translations: { language: string; name: string }[]) => {
+export const groundName = (translations: { language: string; name: string }[]) => {
   const { en, ar } = namesOf(translations);
   return en ?? ar;
 };

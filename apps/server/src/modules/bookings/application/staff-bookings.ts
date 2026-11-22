@@ -31,14 +31,17 @@ const customerNotFound = () =>
 // bookings waiting for approval, one booking in full, and its history. Only this venue's bookings;
 // anyone else's answer as if they didn't exist.
 
-const select = { ...summarySelect, expiresAt: true } as const;
+export const staffSelect = { ...summarySelect, expiresAt: true } as const;
+const select = staffSelect;
 
 // A staff hold: HELD slots kept by staff for someone deciding. App bookings wait for payment in
 // HELD too, but staff never take payment through Hagz, so theirs is always a hold.
 export const isHold = (booking: { status: string; creatorId: string | null }) =>
   booking.status === "HELD" && booking.creatorId !== null;
 
-const present = (row: Parameters<typeof presentSummary>[0] & { expiresAt: Date | null }) => ({
+export const presentStaff = (
+  row: Parameters<typeof presentSummary>[0] & { expiresAt: Date | null },
+) => ({
   ...presentSummary(row),
   expiresAt: row.expiresAt?.toISOString() ?? null,
   hold: isHold(row),
@@ -70,7 +73,7 @@ export const listVenueBookings = async (
     orderBy: [{ startsAt: "asc" }, { groundId: "asc" }, { id: "asc" }],
     select,
   });
-  return rows.map(present);
+  return rows.map(presentStaff);
 };
 
 // Waiting for the venue's approval and not yet expired, the ones that expire soonest first.
@@ -83,7 +86,7 @@ export const pendingBookings = async (
     orderBy: [{ expiresAt: "asc" }, { id: "asc" }],
     select,
   });
-  return rows.map(present);
+  return rows.map(presentStaff);
 };
 
 const ensureAtVenue = async (venueId: string, bookingId: string) => {
@@ -149,7 +152,7 @@ export const customerBookings = async (
   });
   const page = rows.slice(0, limit);
   return {
-    data: page.map(present),
+    data: page.map(presentStaff),
     nextCursor: rows.length > limit ? (page.at(-1)?.id ?? null) : null,
   };
 };

@@ -51,12 +51,12 @@ const amenityUnavailable = () =>
 type Customer = CreateHold["customer"];
 
 // The customer by id, or by number (normalized before anything is locked).
-const normalized = (customer: Customer): Customer =>
+export const normalized = (customer: Customer): Customer =>
   "phone" in customer
     ? { name: customer.name, phone: requireMobileNumber(customer.phone).e164 }
     : customer;
 
-const customerFor = async (tx: Tx, venueId: string, customer: Customer) => {
+export const customerFor = async (tx: Tx, venueId: string, customer: Customer) => {
   if ("venueCustomerId" in customer) {
     const known = await tx.venueCustomer.findFirst({
       where: { id: customer.venueCustomerId, venueId },
