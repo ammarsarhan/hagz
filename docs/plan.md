@@ -103,7 +103,7 @@ Done 2026-11-22: a guest finds a venue and sees its free times in the app, and o
 
 | PR | Scope |
 |---|---|
-| 4.1 Booking core | Claiming slots with one guarded update (no double bookings), min/max slots, minimum notice, the 90-day limit. Charges: slots by tier, amenities, VAT lines. The state machine (`PENDING`, `HELD`, `CONFIRMED`, `EXPIRED`, `COMPLETED`, `NO_SHOW`), `BookingEvent`s, idempotency keys |
+| 4.1 Booking core (API built 2026-11-22: `POST /v1/bookings/quote`, open to guests, and `POST /v1/bookings` with `Idempotency-Key`; slots locked before anything is written, the 100-request race leaves one booking and 99 quick 409s; `Booking_no_overlap` as the backstop; `PENDING` waits for the shorter of 12 hours or kick-off minus the notice, `HELD` for the venue's payment window or 15 minutes. Payment itself is the stub that comes next) | Claiming slots with one guarded update (no double bookings), min/max slots, minimum notice, the 90-day limit. Charges: slots by tier, amenities, VAT lines. The state machine (`PENDING`, `HELD`, `CONFIRMED`, `EXPIRED`, `COMPLETED`, `NO_SHOW`), `BookingEvent`s, idempotency keys |
 | 4.2 Approval and expiry | Staff approve or decline when `autoConfirm` is off. The expiry sweeper releases slots of unapproved or unpaid bookings. Completion and no-show marking |
 | 4.3 Venue customers | `VenueCustomer` for walk-ins and phone customers. Staff enter bookings on a customer's behalf (no commission), and they link by phone on sign-up |
 | 4.4 Booking views | Customer: upcoming and past bookings. Staff: the venue's bookings by day and ground. The shareable booking link (`/booking/[token]`, the API side) |
