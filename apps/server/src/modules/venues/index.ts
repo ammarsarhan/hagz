@@ -1,14 +1,23 @@
 // Venues, their settings, staff and permissions, and layout.
 export { ownsAVenue, restrictAfterPasswordReset } from "./application/staff-password-reset";
 export { recordStaffAccountChange, venuesOwnedBy } from "./application/staff-account-changes";
-export { linkWalkIns, venueCustomerForAccount } from "./application/venue-customers";
+export {
+  linkWalkIns,
+  venueCustomerForAccount,
+  walkInCustomer,
+} from "./application/venue-customers";
 // For bookings: claiming slots, and the terms a booking copies.
 export {
   assignSlots,
   bookHeldSlots,
   lockFreeSlots,
+  lockSlotsInRange,
+  reassignSlots,
   releaseSlots,
+  type RangeSlot,
 } from "./application/booking-slots";
+export type { VenueAccess } from "./application/access";
+export { requireVenueAccess } from "./http/require-venue-access";
 export { nameIn, placeOf } from "./domain/names";
 export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS } from "./domain/slots";

@@ -44,3 +44,27 @@ export const venueCustomerForAccount = async (
   if (!withoutPhone) throw new Error("Couldn't create the venue's customer record.");
   return withoutPhone.id;
 };
+
+// Someone staff are booking or holding for by name and number (a phone call, the front desk): the
+// venue's record under that number if it has one, otherwise a new walk-in. Inserts skip a conflict
+// with one made at the same moment and read it back.
+export const walkInCustomer = async (
+  tx: Tx,
+  venueId: string,
+  person: { name: string; phone: string },
+): Promise<string> => {
+  const find = () =>
+    tx.venueCustomer.findUnique({
+      where: { venueId_phone: { venueId, phone: person.phone } },
+      select: { id: true },
+    });
+  const known = await find();
+  if (known) return known.id;
+  await tx.venueCustomer.createMany({
+    data: [{ venueId, name: person.name, phone: person.phone }],
+    skipDuplicates: true,
+  });
+  const created = await find();
+  if (!created) throw new Error("Couldn't create the venue's customer record.");
+  return created.id;
+};

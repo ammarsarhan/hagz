@@ -49,3 +49,34 @@ export const releaseSlots = (tx: Tx, bookingIds: readonly string[], now: Date) =
     where: { bookingId: { in: [...bookingIds] } },
     data: { status: "AVAILABLE", bookingId: null, freedAt: now },
   });
+
+export interface RangeSlot extends FreeSlot {
+  status: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
+  bookingId: string | null;
+}
+
+// Locks every slot starting inside [from, to) on a ground, whatever its status, in startsAt order:
+// a move may land on slots that are free, held for it, or already the moving booking's own, and the
+// caller decides which of those it can take.
+export const lockSlotsInRange = (tx: Tx, groundId: string, from: Date, to: Date) =>
+  tx.$queryRaw<RangeSlot[]>`
+    SELECT id, "startsAt", "endsAt", tier, price, status, "bookingId" FROM "GroundSlot"
+    WHERE "groundId" = ${groundId}::uuid AND "startsAt" >= ${from} AND "startsAt" < ${to}
+    ORDER BY "startsAt"
+    FOR UPDATE`;
+
+// Hands locked slots to another booking, whatever they held before (free, a hold, or the booking it
+// replaces). The caller locked them and checked each one.
+export const reassignSlots = async (
+  tx: Tx,
+  slotIds: readonly string[],
+  bookingId: string,
+  status: "HELD" | "BOOKED",
+) => {
+  const { count } = await tx.groundSlot.updateMany({
+    where: { id: { in: [...slotIds] }, status: { not: "BLOCKED" } },
+    data: { status, bookingId },
+  });
+  if (count !== slotIds.length)
+    throw new Error("Locked slots changed before they were reassigned.");
+};
