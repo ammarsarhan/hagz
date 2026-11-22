@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "ListingStatus" AS ENUM ('OPEN', 'CLOSED', 'CANCELLED');
+CREATE TYPE "ListingStatus" AS ENUM ('WAITING', 'OPEN', 'CLOSED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "ListingPlayerStatus" AS ENUM ('JOINED', 'LEFT', 'REMOVED');
@@ -82,7 +82,7 @@ ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_listingId_venueId_fkey" FO
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_players_check" CHECK ("neededPlayers" >= 1 AND "playerCount" BETWEEN 0 AND "neededPlayers" AND "sharePrice" >= 0 AND "joinFee" >= 0);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status = 'OPEN') = ("closedAt" IS NULL));
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status IN ('WAITING', 'OPEN')) = ("closedAt" IS NULL));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- A community game can open to everyone at publicAt; a public game has no publicAt.

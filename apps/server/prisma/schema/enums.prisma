@@ -167,6 +167,7 @@ enum BookingChargeType {
 
 // Listings
 enum ListingStatus {
+  WAITING // Asked for at checkout; opens once the booking is confirmed.
   OPEN
   CLOSED // Turned off by the booker.
   CANCELLED // The booking was cancelled.

@@ -28,6 +28,7 @@ const FILE_OWNERS: Record<string, string> = {
   "layout.prisma": "venues",
   "booking.prisma": "bookings",
   "regular.prisma": "bookings",
+  "listing.prisma": "bookings",
   "payment.prisma": "payments",
 };
 

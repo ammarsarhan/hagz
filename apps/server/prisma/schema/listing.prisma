@@ -6,7 +6,7 @@
 // public feed at publicAt if set. Each joined player owes the booker sharePrice and the venue joinFee, both copied when the
 // listing opens; the venue records how many came (arrivedCount), and Hagz takes that × joinFee from
 // its balance (LedgerEntry JOIN_FEE). CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, sharePrice and joinFee
-// >= 0, closedAt set exactly when not OPEN; the arrived fields all or none, arrivedCount
+// >= 0, closedAt set exactly when not WAITING or OPEN; the arrived fields all or none, arrivedCount
 // 0–playerCount; publicAt only with communityId.
 model BookingListing {
   id            String        @id @default(uuid(7)) @db.Uuid
