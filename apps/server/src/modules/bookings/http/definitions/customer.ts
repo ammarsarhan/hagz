@@ -181,3 +181,35 @@ export const sharedBooking = createRoute({
     503: unavailable,
   },
 });
+
+const reservationResponses = {
+  200: { description: "The booking", ...json(Booking) },
+  ...moveResponses,
+  409: problemResponse(
+    "BOOKING_STATUS_CONFLICT: not a week waiting for an answer, or its deadline has passed.",
+  ),
+};
+
+export const confirmReservation = createRoute({
+  method: "post",
+  path: "/bookings/{bookingId}/reservation/confirm",
+  tags,
+  summary: "Confirm my regular week",
+  description: "Until its deadline. Paid at the venue.",
+  middleware: [requireCustomer] as const,
+  security,
+  request: { params: bookingParams },
+  responses: reservationResponses,
+});
+
+export const releaseReservation = createRoute({
+  method: "post",
+  path: "/bookings/{bookingId}/reservation/release",
+  tags,
+  summary: "Release my regular week",
+  description: "Until its deadline: I'm not playing that week. Nothing is owed.",
+  middleware: [requireCustomer] as const,
+  security,
+  request: { params: bookingParams },
+  responses: reservationResponses,
+});
