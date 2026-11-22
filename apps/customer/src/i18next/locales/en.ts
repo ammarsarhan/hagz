@@ -326,6 +326,8 @@ const en = {
       },
       search: {
         title: "Search",
+        // A map pin in a rating sort, for a venue with no rating yet.
+        pinNew: "New",
         nearMe: "Near me",
         filters: "Filters",
         filtersCount: "Filters · {{count}}",

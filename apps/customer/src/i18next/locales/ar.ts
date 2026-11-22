@@ -363,6 +363,8 @@ const ar: ArabicTranslations = {
       },
       search: {
         title: "البحث",
+        // A map pin in a rating sort, for a venue with no rating yet.
+        pinNew: "جديد",
         nearMe: "بالقرب مني",
         filters: "الفلاتر",
         filtersCount: "الفلاتر · {{count}}",

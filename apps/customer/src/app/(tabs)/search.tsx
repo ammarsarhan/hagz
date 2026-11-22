@@ -473,6 +473,7 @@ export default function SearchTab() {
       <StatusBar style="dark" />
       <SearchMap
         cards={search.cards}
+        sort={sort}
         currency={search.currency}
         timezone={search.timezone}
         params={venueParams}
