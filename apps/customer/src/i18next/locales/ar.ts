@@ -28,6 +28,7 @@ const ar: ArabicTranslations = {
       },
       comingSoon: "قريبًا.",
       venueLayout: {
+        entrance: "المدخل",
         closed: "مغلق",
       },
     },
@@ -300,7 +301,8 @@ const ar: ArabicTranslations = {
       },
       layout: {
         title: "المخطط",
-        subtitle: "دوس على أي ملعب عشان تشوف مواعيده الفاضية.",
+        subtitle: "دوس على أي ملعب، أو اسحب الكروت.",
+        viewTimes: "شوف المواعيد",
       },
       times: {
         booksExactly_zero: "يُحجز {{count}} ساعة",

@@ -8,33 +8,38 @@ import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { VenueLayout } from "@/components/venue-layout";
+import { firstPick, GroundCards } from "@/components/venue-sections";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import type { PublicVenue } from "@/lib/venue";
+import { formatPrice } from "@/lib/money";
+import { kindOf, type PublicVenue } from "@/lib/venue";
 
 type Loaded =
   | { state: "loading" }
   | { state: "failed"; message: string }
   | { state: "ready"; venue: PublicVenue };
 
-// A venue's layout on its own screen, from View layout on the Grounds heading (user, 2026-11-22):
-// the map from above, where tapping an open ground opens its See times. Opened from a search, it
-// carries the search's day, start and length on to See times, as the ground cards do, and fades the
-// grounds the search left out.
+// The page's side padding (Screen's px-5), which the cards run into.
+const GUTTER = 20;
+
+// A venue's layout on its own screen, from View layout on the Grounds heading (Figma C5 215:2,
+// round 2; user, 2026-11-22): the map from above, and the venue's ground cards under it. Tapping a
+// ground on the map picks it and brings its card into place; swiping the cards picks the one that
+// settles. The picked ground is darker on the map and its card has an ink border. The bar at the
+// bottom names it, and View times (lime: the user's call over the Figma's black) opens its free
+// times. Opened from a search, what was searched for is the subtitle, the grounds that don't fit are
+// faded, and the search's day, start and length carry on to See times, as the ground cards do.
 export default function VenueLayoutScreen() {
   const { t } = useTranslation();
-  const { slug, unavailable, ...search } = useLocalSearchParams<{
+  const { slug, unavailable, note, ...search } = useLocalSearchParams<{
     slug: string;
     unavailable?: string;
+    note?: string;
     date?: string;
     start?: string;
     hours?: string;
   }>();
-  const unavailableIds = useMemo(
-    () => (unavailable ? new Set(unavailable.split(",")) : undefined),
-    [unavailable],
-  );
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -53,56 +58,151 @@ export default function VenueLayoutScreen() {
     };
   }, [slug, attempt]);
 
-  const openTimes = (groundId: string) =>
-    router.push({
-      pathname: "/venue/[slug]/times",
-      params: {
-        slug,
-        ground: groundId,
-        ...(search.date ? { date: search.date } : {}),
-        ...(search.start ? { start: search.start, hours: search.hours ?? "1" } : {}),
-      },
-    });
+  if (loaded.state !== "ready") {
+    return (
+      <Screen
+        footer={
+          loaded.state === "failed" ? (
+            <Button
+              label={t("common.actions.tryAgain")}
+              onPress={() => {
+                setLoaded({ state: "loading" });
+                setAttempt((n) => n + 1);
+              }}
+            />
+          ) : undefined
+        }
+      >
+        <NavBar start={<BackButton onPress={() => router.back()} />} />
+        {loaded.state === "loading" ? (
+          <View className="flex-1 items-center justify-center pb-24">
+            <ActivityIndicator color={colors.ink} />
+          </View>
+        ) : (
+          <>
+            <Title>{t("screens.layout.title")}</Title>
+            <Text className="text-subtitle text-ink-2">{loaded.message}</Text>
+          </>
+        )}
+      </Screen>
+    );
+  }
+
+  return (
+    <Picking
+      venue={loaded.venue}
+      unavailable={unavailable}
+      note={note}
+      onTimes={(groundId) =>
+        router.push({
+          pathname: "/venue/[slug]/times",
+          params: {
+            slug,
+            ground: groundId,
+            ...(search.date ? { date: search.date } : {}),
+            ...(search.start ? { start: search.start, hours: search.hours ?? "1" } : {}),
+          },
+        })
+      }
+    />
+  );
+}
+
+function Picking({
+  venue,
+  unavailable,
+  note,
+  onTimes,
+}: {
+  venue: PublicVenue;
+  // The grounds the search left out, comma-separated; none without a search.
+  unavailable?: string;
+  // What was searched for ("Fri 22 Nov, 7–9 pm").
+  note?: string;
+  onTimes: (groundId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const unavailableIds = useMemo(
+    () => (unavailable ? new Set(unavailable.split(",")) : undefined),
+    [unavailable],
+  );
+  // The cards take the grounds that fit instead; null without a search.
+  const matches = useMemo(
+    () =>
+      unavailableIds
+        ? new Set(
+            venue.grounds
+              .filter((ground) => !unavailableIds.has(ground.id))
+              .map((ground) => ground.id),
+          )
+        : null,
+    [venue, unavailableIds],
+  );
+  const [pickedId, setPickedId] = useState(() => firstPick(venue.grounds, matches));
+  const picked = venue.grounds.find((ground) => ground.id === pickedId);
+  const currency = venue.marketplace.currency;
+  const open = picked?.status === "ACTIVE";
 
   return (
     <Screen
       footer={
-        loaded.state === "failed" ? (
-          <Button
-            label={t("common.actions.tryAgain")}
-            onPress={() => {
-              setLoaded({ state: "loading" });
-              setAttempt((n) => n + 1);
-            }}
-          />
+        picked ? (
+          // Across the screen, under a hairline: the picked ground, and View times.
+          <View className="-mx-5 -mt-3 flex-row items-center justify-between gap-6 border-t border-border px-6 pt-3.5">
+            <View className="shrink gap-0.5">
+              <Text className="text-button font-medium" numberOfLines={1}>
+                {picked.name ?? kindOf(picked)}
+              </Text>
+              <Text className="text-caption text-unit" numberOfLines={1}>
+                {!open
+                  ? t("screens.venue.grounds.closed")
+                  : picked.priceFrom === null
+                    ? kindOf(picked)
+                    : `${formatPrice(picked.priceFrom, currency)}${t("formats.perHour")} · ${kindOf(picked)}`}
+              </Text>
+            </View>
+            <View className="w-[150px]">
+              <Button
+                label={t("screens.layout.viewTimes")}
+                variant="moment"
+                size="small"
+                disabled={!open}
+                onPress={() => onTimes(picked.id)}
+              />
+            </View>
+          </View>
         ) : undefined
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      {loaded.state === "loading" ? (
-        <View className="flex-1 items-center justify-center pb-24">
-          <ActivityIndicator color={colors.ink} />
-        </View>
-      ) : loaded.state === "failed" ? (
-        <>
-          <Title>{t("screens.layout.title")}</Title>
-          <Text className="text-subtitle text-ink-2">{loaded.message}</Text>
-        </>
-      ) : (
-        // A tall venue scrolls, its scroll bar at the screen's edge rather than the gutter.
-        <ScrollView className="-mx-5" contentContainerClassName="px-5 pb-8">
-          <Title subtitle={t("screens.layout.subtitle")}>{t("screens.layout.title")}</Title>
-          {loaded.venue.layout ? (
+      {/* A tall venue scrolls, its scroll bar at the screen's edge rather than the gutter. */}
+      <ScrollView className="-mx-5" contentContainerClassName="px-5 pb-8">
+        <Title subtitle={note ?? t("screens.layout.subtitle")}>{t("screens.layout.title")}</Title>
+        {venue.layout ? (
+          // 20 to the cards, the entrance tags on its bottom edge hanging into it.
+          <View className="mb-5">
             <VenueLayout
-              layout={loaded.venue.layout}
-              grounds={loaded.venue.grounds}
-              amenities={loaded.venue.amenities}
+              layout={venue.layout}
+              grounds={venue.grounds}
+              amenities={venue.amenities}
               unavailableIds={unavailableIds}
-              onPressGround={openTimes}
+              pickedId={pickedId}
+              onPick={setPickedId}
             />
-          ) : null}
-        </ScrollView>
-      )}
+          </View>
+        ) : null}
+        <View className="gap-3">
+          <GroundCards
+            grounds={venue.grounds}
+            currency={currency}
+            pickedId={pickedId}
+            onPick={setPickedId}
+            matches={matches}
+            strongPick
+            gutter={GUTTER}
+          />
+        </View>
+      </ScrollView>
     </Screen>
   );
 }

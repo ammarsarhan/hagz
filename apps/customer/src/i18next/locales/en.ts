@@ -29,6 +29,7 @@ const en = {
       },
       comingSoon: "Coming soon.",
       venueLayout: {
+        entrance: "Entrance",
         closed: "Closed",
       },
     },
@@ -279,7 +280,8 @@ const en = {
       },
       layout: {
         title: "Layout",
-        subtitle: "Tap a ground to see its free times.",
+        subtitle: "Tap a ground, or swipe the cards.",
+        viewTimes: "View times",
       },
       times: {
         booksExactly_one: "Books {{count}} hour",

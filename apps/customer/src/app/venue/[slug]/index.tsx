@@ -541,8 +541,8 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
       params: { slug: venue.slug, ground: groundId, ...searchParams },
     });
   };
-  // The layout on its own screen, which opens See times the same way, and fades the grounds the
-  // search left out.
+  // The layout on its own screen, which opens See times the same way, fades the grounds the search
+  // left out, and has what was searched for as its subtitle.
   const openLayout = () => {
     const matches = searched?.matches;
     const unavailable = matches
@@ -553,6 +553,7 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
       params: {
         slug: venue.slug,
         ...searchParams,
+        ...(searched ? { note: searched.note } : {}),
         ...(unavailable.length > 0 ? { unavailable: unavailable.join(",") } : {}),
       },
     });
