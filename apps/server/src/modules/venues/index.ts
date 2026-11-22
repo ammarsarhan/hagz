@@ -23,6 +23,7 @@ export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS } from "./domain/slots";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";
 export { venuesAdminRoutes } from "./http/admin-routes";
+export { venuesCustomerRoutes } from "./http/customer-routes";
 export { venuesFavoriteRoutes } from "./http/favorite-routes";
 export { venuesPublicRoutes } from "./http/public-routes";
 export { venuesStaffRoutes } from "./http/staff-routes";
