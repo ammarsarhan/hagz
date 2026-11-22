@@ -33,7 +33,7 @@ const groundName = (translations: { language: string; name: string }[]) => {
   return en ?? ar;
 };
 
-const summarySelect = {
+export const summarySelect = {
   id: true,
   code: true,
   status: true,
@@ -54,9 +54,9 @@ const summarySelect = {
   customer: { select: { name: true, phone: true } },
 } as const satisfies Prisma.BookingSelect;
 
-type SummaryRow = Prisma.BookingGetPayload<{ select: typeof summarySelect }>;
+export type SummaryRow = Prisma.BookingGetPayload<{ select: typeof summarySelect }>;
 
-const presentSummary = (booking: SummaryRow): AdminBooking => ({
+export const presentSummary = (booking: SummaryRow): AdminBooking => ({
   id: booking.id,
   code: booking.code,
   status: booking.status,

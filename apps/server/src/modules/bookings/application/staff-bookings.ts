@@ -1,0 +1,107 @@
+import type {
+  BookingHistoryEvent,
+  BookingHistoryQuery,
+  StaffBooking,
+  StaffBookingsQuery,
+} from "@hagz/contracts";
+import { StaffBookingDetail } from "@hagz/contracts";
+import type { VenueAccess } from "@/modules/venues";
+import { systemClock, type Clock } from "@/platform/clock/clock";
+import { prisma } from "@/platform/db/prisma";
+import { LIVE_STATUSES } from "../domain/status";
+import {
+  adminBookingDetail,
+  bookingHistory,
+  presentSummary,
+  summarySelect,
+} from "./admin-bookings";
+import { venueBookingNotFound } from "./booking-rows";
+
+// A venue's bookings for its staff (PR 4.4): the calendar (a day or a week, by ground), the queue of
+// bookings waiting for approval, one booking in full, and its history. Only this venue's bookings;
+// anyone else's answer as if they didn't exist.
+
+const select = { ...summarySelect, expiresAt: true } as const;
+
+// A staff hold: HELD slots kept by staff for someone deciding. App bookings wait for payment in
+// HELD too, but staff never take payment through Hagz, so theirs is always a hold.
+export const isHold = (booking: { status: string; creatorId: string | null }) =>
+  booking.status === "HELD" && booking.creatorId !== null;
+
+const present = (row: Parameters<typeof presentSummary>[0] & { expiresAt: Date | null }) => ({
+  ...presentSummary(row),
+  expiresAt: row.expiresAt?.toISOString() ?? null,
+  hold: isHold(row),
+});
+
+// Bookings overlapping the venue-local days [date, date + span), by start time then ground.
+export const listVenueBookings = async (
+  actor: VenueAccess,
+  query: StaffBookingsQuery,
+): Promise<StaffBooking[]> => {
+  const venue = await prisma.venue.findUniqueOrThrow({
+    where: { id: actor.venueId },
+    select: { marketplace: { select: { timezone: true } } },
+  });
+  const { timezone } = venue.marketplace;
+  const [bounds] = await prisma.$queryRaw<{ from: Date; to: Date }[]>`
+    SELECT (${query.date}::date::timestamp AT TIME ZONE ${timezone}) AS "from",
+           ((${query.date}::date + ${query.span}::int)::timestamp AT TIME ZONE ${timezone}) AS "to"`;
+  if (!bounds) throw new Error("Postgres returned no day bounds.");
+
+  const rows = await prisma.booking.findMany({
+    where: {
+      venueId: actor.venueId,
+      ...(query.groundId && { groundId: query.groundId }),
+      status: query.status ?? { in: [...LIVE_STATUSES] },
+      startsAt: { lt: bounds.to },
+      endsAt: { gt: bounds.from },
+    },
+    orderBy: [{ startsAt: "asc" }, { groundId: "asc" }, { id: "asc" }],
+    select,
+  });
+  return rows.map(present);
+};
+
+// Waiting for the venue's approval and not yet expired, the ones that expire soonest first.
+export const pendingBookings = async (
+  actor: VenueAccess,
+  clock: Clock = systemClock,
+): Promise<StaffBooking[]> => {
+  const rows = await prisma.booking.findMany({
+    where: { venueId: actor.venueId, status: "PENDING", expiresAt: { gt: clock.now() } },
+    orderBy: [{ expiresAt: "asc" }, { id: "asc" }],
+    select,
+  });
+  return rows.map(present);
+};
+
+const ensureAtVenue = async (venueId: string, bookingId: string) => {
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, venueId },
+    select: { id: true },
+  });
+  if (!booking) throw venueBookingNotFound();
+};
+
+// The admin's view of the booking, without the commission (Hagz's business, not the venue's).
+export const staffBookingDetail = async (
+  venueId: string,
+  bookingId: string,
+): Promise<StaffBookingDetail> => {
+  await ensureAtVenue(venueId, bookingId);
+  const detail = await adminBookingDetail(bookingId);
+  return StaffBookingDetail.parse({
+    ...detail,
+    hold: isHold({ status: detail.status, creatorId: detail.creator?.id ?? null }),
+  });
+};
+
+export const venueBookingHistory = async (
+  actor: VenueAccess,
+  bookingId: string,
+  query: BookingHistoryQuery,
+): Promise<{ data: BookingHistoryEvent[]; nextCursor: string | null }> => {
+  await ensureAtVenue(actor.venueId, bookingId);
+  return bookingHistory(bookingId, query);
+};
