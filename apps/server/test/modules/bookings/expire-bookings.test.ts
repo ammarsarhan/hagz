@@ -93,11 +93,35 @@ describe("expiring bookings", () => {
   });
 
   it("works through more than one batch", async () => {
-    const { ground, hours, venue } = await aGround({ settings: { paymentMode: "PLATFORM" } });
-    // 250 more free hours on the ground, a week out, each booked and left unpaid.
-    const first = (hours[3]?.getTime() ?? 0) + 7 * 24 * HOUR;
+    const { ground, venue } = await aGround({ settings: { paymentMode: "PLATFORM" } });
+    const customer = await prisma.venueCustomer.create({
+      data: { venueId: venue.id, name: "Ahmed" },
+    });
+    // 250 unpaid bookings a week out, each holding its own hour. Written directly: this is about
+    // the sweep's batches, not about booking.
+    const first = Math.ceil(Date.now() / HOUR) * HOUR + 7 * 24 * HOUR;
+    const expiresAt = new Date(Date.now() + 15 * 60_000);
+    const ids = Array.from({ length: 250 }, () => randomUUID());
+    await prisma.booking.createMany({
+      data: ids.map((id, i) => ({
+        id,
+        venueId: venue.id,
+        groundId: ground.id,
+        customerId: customer.id,
+        code: `BATCH${String(i).padStart(3, "0")}`,
+        status: "HELD" as const,
+        startsAt: new Date(first + i * HOUR),
+        endsAt: new Date(first + (i + 1) * HOUR),
+        expiresAt,
+        total: 40_000,
+        paymentMode: "PLATFORM" as const,
+        commissionRate: 0,
+        cancellationPolicy: "MODERATE" as const,
+        cancellationTiers: [],
+      })),
+    });
     await prisma.groundSlot.createMany({
-      data: Array.from({ length: 250 }, (_, i) => ({
+      data: ids.map((bookingId, i) => ({
         groundId: ground.id,
         venueId: venue.id,
         startsAt: new Date(first + i * HOUR),
@@ -105,19 +129,13 @@ describe("expiring bookings", () => {
         tier: "BASE" as const,
         price: 40_000,
         scheduleVersion: 1,
+        status: "HELD" as const,
+        bookingId,
       })),
     });
-    const { token } = await signedIn();
-    for (let i = 0; i < 250; i++) {
-      const startsAt = new Date(first + i * HOUR);
-      await booked(token, {
-        groundId: ground.id,
-        startsAt: startsAt.toISOString(),
-        endsAt: new Date(startsAt.getTime() + HOUR).toISOString(),
-      });
-    }
 
     expect(await expireDueBookings(inHours(1))).toBe(250);
+    expect(await prisma.booking.count({ where: { status: "EXPIRED" } })).toBe(250);
     expect(await prisma.groundSlot.count({ where: { status: "HELD" } })).toBe(0);
   });
 });
