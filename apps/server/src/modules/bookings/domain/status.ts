@@ -32,7 +32,7 @@ export const invalidTransition = (from: BookingStatus, to: BookingStatus) =>
     code: "BOOKING_STATUS_CONFLICT",
     status: 409,
     detail: "This booking has already moved on.",
-    extensions: { status: from, attempted: to },
+    extensions: { bookingStatus: from, attempted: to },
   });
 
 // Statuses whose booking holds its slots (and counts in Booking_no_overlap).
