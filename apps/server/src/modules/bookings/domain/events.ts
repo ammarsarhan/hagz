@@ -25,6 +25,12 @@ export const BOOKING_EVENTS = {
   // The player kept a move staff made, or rejected it (cancelled as the venue's, refunded in full).
   MOVE_ACCEPTED: "MOVE_ACCEPTED",
   MOVE_REJECTED: "MOVE_REJECTED",
+  // A regular's UNCONFIRMED reservation let go (now RELEASED); data: { by } STAFF or CUSTOMER, or
+  // DEADLINE when nobody confirmed it in time.
+  RELEASED: "RELEASED",
+  // Released because the regular was changed, paused or ended (now RELEASED); data: { reason }
+  // CHANGED, PAUSED or ENDED. Never counts against the regular's reliability.
+  REGULAR_CHANGED: "REGULAR_CHANGED",
 } as const;
 
 export type BookingEventType = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];

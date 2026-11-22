@@ -20,7 +20,7 @@ export type { VenueAccess } from "./application/access";
 export { requireVenueAccess } from "./http/require-venue-access";
 export { nameIn, placeOf } from "./domain/names";
 export { resolvedTiers } from "./domain/settings";
-export { HORIZON_DAYS } from "./domain/slots";
+export { HORIZON_DAYS, instantOf } from "./domain/slots";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";
 export { venuesAdminRoutes } from "./http/admin-routes";
 export { venuesCustomerRoutes } from "./http/customer-routes";
