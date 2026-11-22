@@ -1,5 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  SlotCandidates,
+  SlotCandidatesQuery,
   CreateRegular,
   OrderRegulars,
   StaffBookingDetail,
@@ -181,4 +183,21 @@ export const releaseReservation = createRoute({
   security,
   request: { params: bookingParams },
   responses: reservationResponses,
+});
+
+export const slotCandidates = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/slots/{slotId}/candidates",
+  tags: ["Fill a slot"],
+  summary: "Who to contact about an empty slot",
+  description:
+    "Needs `customers: view`. Lapsed regulars first, then active regulars (with another free slot near their usual time to offer), then everyone else; each group ranked by how well the slot fits them, fewer no-shows, then who played last.",
+  middleware: [requireStaff, requireVenueAccess("customers", "view")] as const,
+  security,
+  request: { params: venueParams.extend({ slotId: z.uuid() }), query: SlotCandidatesQuery },
+  responses: {
+    200: { description: "The candidates", ...json(SlotCandidates) },
+    ...common,
+    404: problemResponse("VENUE_NOT_FOUND, or SLOT_NOT_FOUND: no such slot at this venue."),
+  },
 });

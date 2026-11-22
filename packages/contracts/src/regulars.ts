@@ -104,6 +104,59 @@ export const OrderRegulars = z
   })
   .meta({ id: "OrderRegulars" });
 
+// Fill a slot (PR 4.6, docs/regulars.md "Filling a slot from the venue's own customers"): who to call
+// about an empty slot, worked out from the venue's thresholds whenever it's asked for.
+
+export const CandidateGroup = z.enum(["LAPSED_REGULAR", "ACTIVE_REGULAR", "OTHER"]).meta({
+  id: "CandidateGroup",
+  description:
+    "In priority order. A regular has a standing weekly time here, or played `regularBookings` games in the last `regularPeriod` weeks; lapsed when they haven't played for `lapsedAfter` weeks.",
+});
+
+const SlotRef = z.object({
+  id: z.uuid(),
+  groundId: z.uuid(),
+  startsAt: Instant,
+  endsAt: Instant,
+});
+
+export const SlotCandidate = z
+  .object({
+    customer: VenueRegular.shape.customer,
+    group: CandidateGroup,
+    standing: z.boolean().meta({ description: "Has an active weekly time here." }),
+    gamesPlayed: z.int(),
+    noShows: z.int(),
+    lastPlayedAt: Instant.nullable(),
+    usual: z
+      .object({ dayOfWeek: Time.dayOfWeek, hour: Time.startHour })
+      .nullable()
+      .meta({ description: "The weekday and hour they've played most, in the venue's time." }),
+    suggestedSlot: SlotRef.nullable().meta({
+      description:
+        "Active regulars: another free slot in the next 7 days near their usual time, to offer as well.",
+    }),
+  })
+  .meta({ id: "SlotCandidate" });
+
+export const SlotCandidatesQuery = z
+  .object({ limit: z.coerce.number().int().min(1).max(100).default(30) })
+  .meta({ id: "SlotCandidatesQuery" });
+
+export const SlotCandidates = z
+  .object({
+    slot: SlotRef.extend({
+      status: z.enum(["AVAILABLE", "HELD", "BOOKED", "BLOCKED"]).meta({
+        description: "It may have been taken since the list was asked for.",
+      }),
+    }),
+    data: z.array(SlotCandidate).meta({
+      description:
+        "Best first: by group, then how well the slot fits them (weekday, hour, ground, sport), fewer no-shows, and who played last. Anyone already booked at that time is left out.",
+    }),
+  })
+  .meta({ id: "SlotCandidates" });
+
 export type RegularStatus = z.infer<typeof RegularStatus>;
 export type Reliability = z.infer<typeof Reliability>;
 export type VenueRegular = z.infer<typeof VenueRegular>;
@@ -112,3 +165,7 @@ export type VenueRegularDetail = z.infer<typeof VenueRegularDetail>;
 export type CreateRegular = z.infer<typeof CreateRegular>;
 export type UpdateRegular = z.infer<typeof UpdateRegular>;
 export type OrderRegulars = z.infer<typeof OrderRegulars>;
+export type CandidateGroup = z.infer<typeof CandidateGroup>;
+export type SlotCandidate = z.infer<typeof SlotCandidate>;
+export type SlotCandidatesQuery = z.infer<typeof SlotCandidatesQuery>;
+export type SlotCandidates = z.infer<typeof SlotCandidates>;

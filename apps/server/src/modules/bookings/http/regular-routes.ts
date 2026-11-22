@@ -9,6 +9,7 @@ import {
   resumeRegular,
   updateRegular,
 } from "../application/regulars";
+import { slotCandidates } from "../application/fill-slot";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { staffBookingDetail } from "../application/staff-bookings";
 import * as route from "./definitions/regulars";
@@ -49,4 +50,10 @@ export const bookingsRegularRoutes = createRouter()
     const { bookingId } = c.req.valid("param");
     await releaseReservation({ staff: c.var.venue }, bookingId);
     return c.json(await staffBookingDetail(c.var.venue.venueId, bookingId), 200);
-  });
+  })
+  .openapi(route.slotCandidates, async (c) =>
+    c.json(
+      await slotCandidates(c.var.venue, c.req.valid("param").slotId, c.req.valid("query")),
+      200,
+    ),
+  );
