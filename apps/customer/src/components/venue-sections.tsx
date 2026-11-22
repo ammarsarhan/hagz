@@ -276,15 +276,18 @@ const lengthLabel = (ground: PublicGround) =>
       });
 
 // A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
-// it is, how long a booking can be, and a See times button across the bottom. Picking only fades
-// things: a slightly darker grey border over the light one (which stays, so an unpicked card keeps its 1px
-// edge) and the button from grey to lime (user, 2026-11-20). Nothing changes size, so nothing moves.
+// it is, how long a booking can be, and a See times button across the bottom (the venue page; the
+// layout screen's cards have none, its bar has View times). Picking only fades things: a darker
+// border over the light one (which stays, so an unpicked card keeps its 1px edge), a slightly darker
+// grey on the venue page and ink on the layout screen (Figma 215:2), and the button from grey to lime
+// (user, 2026-11-20). Nothing changes size, so nothing moves.
 function GroundOption({
   ground,
   width,
   currency,
   picked,
   unavailable = false,
+  strongPick,
   onPick,
   onSeeTimes,
 }: {
@@ -294,8 +297,11 @@ function GroundOption({
   picked: boolean;
   // Not what the search asked for (lib/ground-filter.ts): greyed out, still there to look at.
   unavailable?: boolean;
+  // The picked card's border in ink rather than grey.
+  strongPick: boolean;
   onPick: () => void;
-  onSeeTimes: () => void;
+  // None: no See times button on the card.
+  onSeeTimes?: () => void;
 }) {
   const { t } = useTranslation();
   const shown = useSharedValue(picked ? 1 : 0);
@@ -314,8 +320,8 @@ function GroundOption({
     >
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px rounded-[17px] border-[1.5px] border-[#d5d8dd]"
-        style={fade}
+        className="absolute -inset-px rounded-[17px] border-[1.5px]"
+        style={[{ borderColor: strongPick ? colors.ink : "#d5d8dd" }, fade]}
       />
       <View className="flex-row items-center justify-between gap-6">
         <Text className="shrink text-subtitle font-medium" numberOfLines={1}>
@@ -331,7 +337,7 @@ function GroundOption({
       ) : bookable ? (
         <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text>
       ) : null}
-      {bookable ? (
+      {bookable && onSeeTimes ? (
         // On every card: grey, and lime once it's the picked one, the lime laid over the grey and
         // faded in. Pressed on a card that isn't picked, it picks it too.
         <View className="mt-auto pt-3">
@@ -396,10 +402,119 @@ function PageDots({ count, current }: { count: number; current: number }) {
   );
 }
 
+// The ground picked to begin with: the first open one that fits the search (if there was one), or
+// the first open one, or the first.
+export function firstPick(
+  grounds: PublicGround[],
+  matches: ReadonlySet<string> | null = null,
+): string | null {
+  const open = grounds.filter((ground) => ground.status === "ACTIVE");
+  return (
+    open.find((ground) => !matches || matches.has(ground.id))?.id ??
+    open[0]?.id ??
+    grounds[0]?.id ??
+    null
+  );
+}
+
 // The cards: 80% of the screen, 10 apart, so the next one peeks in.
 const CARD_SHARE = 0.8;
 const CARD_GAP = 10;
-const GUTTER = 24;
+
+// A venue's grounds as a row of cards under the page's map or heading, edge to edge, snapping each
+// card to the gutter (the last one to the other gutter), all as tall as the tallest, with dots under
+// them. The pick is the caller's: the card that settles in place picks itself, tapping a card picks
+// it, and a pick from outside (a tap on the layout) brings its card into place.
+export function GroundCards({
+  grounds,
+  currency,
+  pickedId,
+  onPick,
+  matches = null,
+  onSeeTimes,
+  strongPick = false,
+  gutter,
+}: {
+  grounds: PublicGround[];
+  currency: string;
+  pickedId: string | null;
+  onPick: (groundId: string) => void;
+  // Opened from a search: the grounds that fit it (the rest are greyed out). Null: no search.
+  matches?: ReadonlySet<string> | null;
+  // Each card's See times (the venue page); none on the layout screen.
+  onSeeTimes?: (groundId: string) => void;
+  strongPick?: boolean;
+  // The page's side padding, which the row runs into.
+  gutter: number;
+}) {
+  const { width: screen } = useWindowDimensions();
+  const card = Math.round(screen * CARD_SHARE);
+  const step = card + CARD_GAP;
+  // Where the row stops for each card: its left edge on the gutter, except at the end, where the
+  // last card's right edge meets the gutter on the other side.
+  const count = grounds.length;
+  const end = Math.max(0, 2 * gutter + count * card + (count - 1) * CARD_GAP - screen);
+  const stops = grounds.map((_, index) => Math.min(index * step, end));
+  const pickedIndex = Math.max(
+    0,
+    grounds.findIndex((ground) => ground.id === pickedId),
+  );
+  const row = useRef<ScrollViewInstance>(null);
+  // Where the row is (or is heading), so a pick only scrolls when its card isn't already in place.
+  // At the end several cards share a stop, and picking one of those leaves the row where it is.
+  const at = useRef(stops[pickedIndex] ?? 0);
+  useEffect(() => {
+    const stop = stops[pickedIndex] ?? 0;
+    if (stop === at.current) return;
+    at.current = stop;
+    row.current?.scrollTo({ x: stop, animated: true });
+    // Only when the pick moves; the stops follow the grounds and the screen.
+  }, [pickedIndex]);
+
+  // The card whose stop is nearest; at the end, where several may share it, the last of them.
+  const settle = (x: number) => {
+    let index = 0;
+    stops.forEach((stop, i) => {
+      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
+    });
+    const ground = grounds[index];
+    if (!ground) return;
+    at.current = stops[index] ?? 0;
+    onPick(ground.id);
+  };
+
+  return (
+    <>
+      <ScrollView
+        ref={row}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToOffsets={[...new Set(stops)]}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        contentOffset={{ x: stops[pickedIndex] ?? 0, y: 0 }}
+        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
+        style={{ marginHorizontal: -gutter }}
+        contentContainerStyle={{ gap: CARD_GAP, paddingHorizontal: gutter }}
+      >
+        {grounds.map((ground) => (
+          <GroundOption
+            key={ground.id}
+            ground={ground}
+            width={card}
+            currency={currency}
+            picked={ground.id === pickedId}
+            unavailable={matches !== null && !matches.has(ground.id)}
+            strongPick={strongPick}
+            onPick={() => onPick(ground.id)}
+            onSeeTimes={onSeeTimes ? () => onSeeTimes(ground.id) : undefined}
+          />
+        ))}
+      </ScrollView>
+      <PageDots count={count} current={pickedIndex} />
+    </>
+  );
+}
 
 export function GroundsSection({
   venue,
@@ -425,51 +540,19 @@ export function GroundsSection({
   note?: string;
 }) {
   const { t } = useTranslation();
-  const { width: screen } = useWindowDimensions();
-  const card = Math.round(screen * CARD_SHARE);
-  const step = card + CARD_GAP;
-  // Where the row stops for each card: its left edge on the page's gutter, except at the end,
-  // where the last card's right edge meets the gutter on the other side.
-  const count = venue.grounds.length;
-  const end = Math.max(0, 2 * GUTTER + count * card + (count - 1) * CARD_GAP - screen);
-  const stops = venue.grounds.map((_, index) => Math.min(index * step, end));
-  const firstOpen = (fits: (id: string) => boolean) =>
-    venue.grounds.findIndex((ground) => ground.status === "ACTIVE" && fits(ground.id));
-  const first = Math.max(
-    0,
-    firstOpen(() => true),
-  );
-  const [pickedId, setPickedId] = useState<string | null>(venue.grounds[first]?.id ?? null);
-  const row = useRef<ScrollViewInstance>(null);
-  const currency = venue.marketplace.currency;
-
-  // The card that settles in place is the picked one; tapping a card brings it into place.
-  // The card whose stop is nearest; at the end, where several may share it, the last of them.
-  const settle = (x: number) => {
-    let index = 0;
-    stops.forEach((stop, i) => {
-      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
-    });
-    const ground = venue.grounds[index];
-    if (ground) {
-      setPickedId(ground.id);
-      onPick?.(ground.id);
-    }
-  };
-  const bringIn = (index: number) => {
-    row.current?.scrollTo({ x: stops[index] ?? 0, animated: true });
-    const ground = venue.grounds[index];
-    if (ground) {
-      setPickedId(ground.id);
-      onPick?.(ground.id);
-    }
+  const [pickedId, setPickedId] = useState(() => firstPick(venue.grounds));
+  const pick = (groundId: string) => {
+    setPickedId(groundId);
+    onPick?.(groundId);
   };
   // Once the search's matches are known: the first ground that fits comes into place, unless the
   // picked one already does.
   useEffect(() => {
     if (!matches || (pickedId && matches.has(pickedId))) return;
-    const index = firstOpen((id) => matches.has(id));
-    if (index >= 0) bringIn(index);
+    const fitting = venue.grounds.find(
+      (ground) => ground.status === "ACTIVE" && matches.has(ground.id),
+    );
+    if (fitting) pick(fitting.id);
     // Only when the matches arrive, not on every pick.
   }, [matches]);
 
@@ -484,42 +567,14 @@ export function GroundsSection({
         ) : undefined
       }
     >
-      {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
-          All as tall as the tallest. */}
-      <ScrollView
-        ref={row}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToOffsets={[...new Set(stops)]}
-        decelerationRate="fast"
-        disableIntervalMomentum
-        contentOffset={{ x: stops[first] ?? 0, y: 0 }}
-        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
-        className="-mx-6"
-        contentContainerStyle={{
-          gap: CARD_GAP,
-          paddingHorizontal: GUTTER,
-        }}
-      >
-        {venue.grounds.map((ground, index) => (
-          <GroundOption
-            key={ground.id}
-            ground={ground}
-            width={card}
-            currency={currency}
-            picked={ground.id === pickedId}
-            unavailable={matches !== null && !matches.has(ground.id)}
-            onPick={() => bringIn(index)}
-            onSeeTimes={() => onSeeTimes(ground.id)}
-          />
-        ))}
-      </ScrollView>
-      <PageDots
-        count={venue.grounds.length}
-        current={Math.max(
-          0,
-          venue.grounds.findIndex((ground) => ground.id === pickedId),
-        )}
+      <GroundCards
+        grounds={venue.grounds}
+        currency={venue.marketplace.currency}
+        pickedId={pickedId}
+        onPick={pick}
+        matches={matches}
+        onSeeTimes={onSeeTimes}
+        gutter={24}
       />
     </Section>
   );
