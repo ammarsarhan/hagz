@@ -73,7 +73,8 @@ export function Section({
   return (
     <View className="gap-4 px-6 pt-8" onLayout={onLayout}>
       <View className="flex-row items-center gap-4">
-        <View className="flex-1 gap-1">
+        {/* The note right under the heading, no gap (user, 2026-11-22). */}
+        <View className="flex-1">
           <GroupHeading>{title}</GroupHeading>
           {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
         </View>
