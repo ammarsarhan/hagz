@@ -1,17 +1,16 @@
-import { randomInt } from "node:crypto";
 import type { BookingQuote, BookingRequest, CreateBooking } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
 import { assignSlots, lockFreeSlots, venueCustomerForAccount } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
-import { isExclusionViolation, violatedUniqueIndex } from "@/platform/db/errors";
 import { prisma } from "@/platform/db/prisma";
 import { transaction } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { createIdempotently, type IdempotentResult } from "@/platform/idempotency/idempotency";
 import { depositFor, priceBooking } from "../domain/charges";
-import { BOOKING_EVENTS, bookingCode } from "../domain/events";
+import { BOOKING_EVENTS } from "../domain/events";
 import { checkLength, coversExactly, slotUnavailable } from "../domain/rules";
 import { startOf } from "../domain/status";
+import { newCode, withFreshCode } from "./booking-rows";
 import { bookingTerms, type BookingTerms } from "./booking-terms";
 import { amenityNames, presentCharge } from "./booking-view";
 
@@ -21,7 +20,6 @@ import { amenityNames, presentCharge } from "./booking-view";
 // mode, commission, cancellation tiers) and never changes them.
 
 const IDEMPOTENCY_INDEX = "Booking_venueId_idempotencyKey_key";
-const CODE_INDEX = "Booking_code_key";
 
 const accountUnavailable = () =>
   new AppError({
@@ -144,7 +142,7 @@ export const createBooking = async (
           venueId: terms.venueId,
           groundId: terms.groundId,
           customerId: venueCustomerId,
-          code: bookingCode(randomInt),
+          code: newCode(),
           status: booking.start.status,
           startsAt: terms.startsAt,
           endsAt: terms.endsAt,
@@ -195,20 +193,9 @@ export const createBooking = async (
       return stored;
     });
 
-  // A share code that's already taken (about one in 10^12) gets a new one.
-  const create = async () => {
-    for (let attempt = 1; ; attempt++) {
-      try {
-        return await insert();
-      } catch (error) {
-        if (violatedUniqueIndex(error) === CODE_INDEX && attempt < 3) continue;
-        // The slot claim should make this impossible; if it ever happens, the database refused an
-        // overlapping booking, which to the player is a taken slot.
-        if (isExclusionViolation(error)) throw slotUnavailable();
-        throw error;
-      }
-    }
-  };
+  // The slot claim should make an overlapping booking impossible; if the database ever refuses one,
+  // to the player it's a taken slot.
+  const create = () => withFreshCode(insert);
 
   try {
     const { value, replayed } = await createIdempotently({
