@@ -189,6 +189,7 @@ export function VenueLayout({
   unavailableIds,
   pickedId,
   onPick,
+  maxHeight,
 }: {
   layout: Layout;
   grounds: PublicGround[];
@@ -198,10 +199,22 @@ export function VenueLayout({
   // The ground picked here or in the cards under the map.
   pickedId: string | null;
   onPick: (groundId: string) => void;
+  // As tall as this at most, card and all: the layout screen fits the map between its title and its
+  // cards, so it never scrolls. Narrower then, and centred.
+  maxHeight?: number;
 }) {
   const { t } = useTranslation();
-  const [width, setWidth] = useState(0);
-  const cell = width / layout.columns;
+  // The width there is, and the drawing's cell: as wide as fits, unless that's too tall.
+  const [room, setRoom] = useState(0);
+  const around = 2 * (PAD + EDGE);
+  const cell =
+    room > 0
+      ? Math.min(
+          (room - around) / layout.columns,
+          maxHeight === undefined ? Infinity : Math.max(0, maxHeight - around) / layout.rows,
+        )
+      : 0;
+  const width = cell * layout.columns;
   const height = cell * layout.rows;
   const groundById = new Map(grounds.map((ground) => [ground.id, ground]));
   const amenityById = new Map(amenities.map((amenity) => [amenity.id, amenity]));
@@ -213,45 +226,83 @@ export function VenueLayout({
   });
 
   return (
-    <View
-      className="rounded-[6px] bg-[#f6f7f8] p-3"
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width - 2 * PAD - 2 * EDGE)}
-    >
-      {width > 0 ? (
-        <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
-          <G transform={`translate(${EDGE}, ${EDGE})`}>
-            {layout.amenities.map((tile, i) => {
-              const box = boxOf(tile.x, tile.y, tile.width, tile.height);
-              const name = amenityById.get(tile.optionId)?.name ?? "";
-              return (
-                <G key={`a${i}`} opacity={0.5}>
-                  <Rect
-                    x={box.x}
-                    y={box.y}
-                    width={box.w}
-                    height={box.h}
-                    rx={4}
-                    fill="#ffffff"
-                    stroke={AMENITY_LINE}
-                    strokeWidth={1}
-                  />
-                  {name.length * 5.6 < box.w - 6 ? (
-                    <SvgText
-                      x={box.x + box.w / 2}
-                      y={box.y + box.h / 2 + 3.5}
-                      textAnchor="middle"
-                      fontSize={10}
-                      fontWeight="500"
-                      fill={UNIT}
-                    >
-                      {name}
-                    </SvgText>
-                  ) : null}
-                </G>
-              );
-            })}
+    <View onLayout={(event) => setRoom(event.nativeEvent.layout.width)}>
+      <View
+        className="self-center rounded-[6px] bg-[#f6f7f8] p-3"
+        style={room > 0 ? { width: width + around } : { alignSelf: "stretch" }}
+      >
+        {width > 0 ? (
+          <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
+            <G transform={`translate(${EDGE}, ${EDGE})`}>
+              {layout.amenities.map((tile, i) => {
+                const box = boxOf(tile.x, tile.y, tile.width, tile.height);
+                const name = amenityById.get(tile.optionId)?.name ?? "";
+                return (
+                  <G key={`a${i}`} opacity={0.5}>
+                    <Rect
+                      x={box.x}
+                      y={box.y}
+                      width={box.w}
+                      height={box.h}
+                      rx={4}
+                      fill="#ffffff"
+                      stroke={AMENITY_LINE}
+                      strokeWidth={1}
+                    />
+                    {name.length * 5.6 < box.w - 6 ? (
+                      <SvgText
+                        x={box.x + box.w / 2}
+                        y={box.y + box.h / 2 + 3.5}
+                        textAnchor="middle"
+                        fontSize={10}
+                        fontWeight="500"
+                        fill={UNIT}
+                      >
+                        {name}
+                      </SvgText>
+                    ) : null}
+                  </G>
+                );
+              })}
 
-            {layout.grounds.map((placed) => {
+              {layout.grounds.map((placed) => {
+                const ground = groundById.get(placed.groundId);
+                if (!ground) return null;
+                const [w, h] =
+                  placed.orientation === "VERTICAL"
+                    ? [placed.height, placed.width]
+                    : [placed.width, placed.height];
+                const box = boxOf(placed.x, placed.y, w, h);
+                const picked = ground.id === pickedId;
+                const unavailable = unavailableIds?.has(ground.id) === true;
+                return (
+                  <G key={placed.groundId} opacity={unavailable ? 0.45 : 1}>
+                    <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
+                    <Markings sport={ground.sport} box={box} color={MARK} />
+                    <PickedOverlay sport={ground.sport} box={box} picked={picked} />
+                    <Tag
+                      box={box}
+                      name={ground.name ?? ""}
+                      status={
+                        ground.status === "MAINTENANCE"
+                          ? t("components.venueLayout.closed")
+                          : unavailable
+                            ? t("screens.venue.filter.unavailable")
+                            : undefined
+                      }
+                    />
+                  </G>
+                );
+              })}
+            </G>
+          </Svg>
+        ) : (
+          <View style={{ aspectRatio: layout.columns / layout.rows }} />
+        )}
+        {/* The buttons, one over each ground's tile (an SVG shape can't be a button a screen reader
+          finds). */}
+        {width > 0
+          ? layout.grounds.map((placed) => {
               const ground = groundById.get(placed.groundId);
               if (!ground) return null;
               const [w, h] =
@@ -259,92 +310,56 @@ export function VenueLayout({
                   ? [placed.height, placed.width]
                   : [placed.width, placed.height];
               const box = boxOf(placed.x, placed.y, w, h);
-              const picked = ground.id === pickedId;
-              const unavailable = unavailableIds?.has(ground.id) === true;
               return (
-                <G key={placed.groundId} opacity={unavailable ? 0.45 : 1}>
-                  <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
-                  <Markings sport={ground.sport} box={box} color={MARK} />
-                  <PickedOverlay sport={ground.sport} box={box} picked={picked} />
-                  <Tag
-                    box={box}
-                    name={ground.name ?? ""}
-                    status={
-                      ground.status === "MAINTENANCE"
-                        ? t("components.venueLayout.closed")
-                        : unavailable
-                          ? t("screens.venue.filter.unavailable")
-                          : undefined
-                    }
-                  />
-                </G>
+                <Pressable
+                  key={placed.groundId}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: ground.id === pickedId }}
+                  accessibilityLabel={ground.name ?? ""}
+                  onPress={() => onPick(ground.id)}
+                  style={{
+                    position: "absolute",
+                    left: PAD + EDGE + box.x,
+                    top: PAD + EDGE + box.y,
+                    width: box.w,
+                    height: box.h,
+                  }}
+                />
               );
-            })}
-          </G>
-        </Svg>
-      ) : (
-        <View style={{ aspectRatio: layout.columns / layout.rows }} />
-      )}
-      {/* The buttons, one over each ground's tile (an SVG shape can't be a button a screen reader
-          finds). */}
-      {width > 0
-        ? layout.grounds.map((placed) => {
-            const ground = groundById.get(placed.groundId);
-            if (!ground) return null;
-            const [w, h] =
-              placed.orientation === "VERTICAL"
-                ? [placed.height, placed.width]
-                : [placed.width, placed.height];
-            const box = boxOf(placed.x, placed.y, w, h);
-            return (
-              <Pressable
-                key={placed.groundId}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: ground.id === pickedId }}
-                accessibilityLabel={ground.name ?? ""}
-                onPress={() => onPick(ground.id)}
-                style={{
-                  position: "absolute",
-                  left: PAD + EDGE + box.x,
-                  top: PAD + EDGE + box.y,
-                  width: box.w,
-                  height: box.h,
-                }}
-              />
-            );
-          })
-        : null}
-      {/* The entrances, across the card's own edge (half of each tag hangs outside it). */}
-      {width > 0
-        ? layout.entrances.map((entrance, i) => {
-            const along = PAD + EDGE + (entrance.offset + 0.5) * cell;
-            const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
-            const card = { width: width + 2 * (PAD + EDGE), height: height + 2 * (PAD + EDGE) };
-            const cx = horizontal ? along : entrance.side === "LEFT" ? 0 : card.width;
-            const cy = horizontal ? (entrance.side === "TOP" ? 0 : card.height) : along;
-            const [w, h] = horizontal ? [58, 16] : [16, 58];
-            return (
-              <View
-                key={`e${i}`}
-                pointerEvents="none"
-                className="items-center justify-center rounded-full bg-ink"
-                style={{
-                  position: "absolute",
-                  left: cx - w / 2,
-                  top: cy - h / 2,
-                  width: w,
-                  height: h,
-                }}
-              >
-                {horizontal ? (
-                  <Text className="text-[9.5px] leading-[12px] font-semibold text-white">
-                    {t("components.venueLayout.entrance")}
-                  </Text>
-                ) : null}
-              </View>
-            );
-          })
-        : null}
+            })
+          : null}
+        {/* The entrances, across the card's own edge (half of each tag hangs outside it). */}
+        {width > 0
+          ? layout.entrances.map((entrance, i) => {
+              const along = PAD + EDGE + (entrance.offset + 0.5) * cell;
+              const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
+              const card = { width: width + 2 * (PAD + EDGE), height: height + 2 * (PAD + EDGE) };
+              const cx = horizontal ? along : entrance.side === "LEFT" ? 0 : card.width;
+              const cy = horizontal ? (entrance.side === "TOP" ? 0 : card.height) : along;
+              const [w, h] = horizontal ? [58, 16] : [16, 58];
+              return (
+                <View
+                  key={`e${i}`}
+                  pointerEvents="none"
+                  className="items-center justify-center rounded-full bg-ink"
+                  style={{
+                    position: "absolute",
+                    left: cx - w / 2,
+                    top: cy - h / 2,
+                    width: w,
+                    height: h,
+                  }}
+                >
+                  {horizontal ? (
+                    <Text className="text-[9.5px] leading-[12px] font-semibold text-white">
+                      {t("components.venueLayout.entrance")}
+                    </Text>
+                  ) : null}
+                </View>
+              );
+            })
+          : null}
+      </View>
     </View>
   );
 }
