@@ -2,6 +2,7 @@
 // .meta()), so the Expo apps and the web app can use them without Hono.
 export * from "./auth";
 export * from "./avatars";
+export * from "./bookings";
 export * from "./grounds";
 export * from "./idempotency";
 export * from "./layout";
