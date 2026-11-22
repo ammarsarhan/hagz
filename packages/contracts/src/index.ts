@@ -23,6 +23,7 @@ export * from "./problem";
 export * from "./review";
 export * from "./setup-items";
 export * from "./slots";
+export * from "./regulars";
 export * from "./staff-bookings";
 export * from "./support";
 export * from "./system";
