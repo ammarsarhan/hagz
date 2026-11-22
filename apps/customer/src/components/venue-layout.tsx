@@ -8,8 +8,9 @@ import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { PublicGround, PublicVenue } from "@/lib/venue";
 
 // A venue's map (the layout screen, app/venue/[slug]/layout.tsx; Figma C5 215:2, round 2): the
-// owner's grid at a cell to every `width / columns` points, drawn without its lines or an outline
-// (user, 2026-11-22: the grid broken up by the tiles looked bad); the grey card is the venue, its
+// owner's grid at a cell to every `width / columns` points, its lines very faint and under
+// everything (user, 2026-11-22: drawn plainly, the grid broken up by the tiles looked bad; brought
+// back faint the same day), with no outline; the grey card is the venue, its
 // entrances black tags across its edge. Each ground is drawn top-down with its markings and name; the
 // amenities are white tiles, faded, as they can't be tapped. Grounds under maintenance say so, and so
 // do grounds that don't fit the search the page came from (faded, "Unavailable"). The picked ground is
@@ -19,6 +20,9 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 type Layout = NonNullable<PublicVenue["layout"]>;
 
 const INK = "#0b0b0c";
+// The grid: barely darker than the card (#f6f7f8), hairline thin.
+const GRID = "#e8eaed";
+const GRID_WIDTH = 0.5;
 const TILE = "#e4e6ea";
 const MARK = "#9ea3ab";
 // The picked ground: a grey darker than the rest, its lines darker too.
@@ -234,6 +238,29 @@ export function VenueLayout({
         {width > 0 ? (
           <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
             <G transform={`translate(${EDGE}, ${EDGE})`}>
+              {Array.from({ length: layout.columns - 1 }, (_, i) => (
+                <Line
+                  key={`c${i}`}
+                  x1={(i + 1) * cell}
+                  y1={0}
+                  x2={(i + 1) * cell}
+                  y2={height}
+                  stroke={GRID}
+                  strokeWidth={GRID_WIDTH}
+                />
+              ))}
+              {Array.from({ length: layout.rows - 1 }, (_, i) => (
+                <Line
+                  key={`r${i}`}
+                  x1={0}
+                  y1={(i + 1) * cell}
+                  x2={width}
+                  y2={(i + 1) * cell}
+                  stroke={GRID}
+                  strokeWidth={GRID_WIDTH}
+                />
+              ))}
+
               {layout.amenities.map((tile, i) => {
                 const box = boxOf(tile.x, tile.y, tile.width, tile.height);
                 const name = amenityById.get(tile.optionId)?.name ?? "";
