@@ -56,6 +56,7 @@ model Booking {
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
   @@index([status, expiresAt])
+  @@index([status, endsAt]) // The completion sweep.
 }
 
 // Why and how a CANCELLED booking was cancelled; who did it is its BookingEvent (DECLINED, MOVE_REJECTED). Players

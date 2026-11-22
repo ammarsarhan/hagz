@@ -113,6 +113,9 @@ CREATE INDEX "Booking_customerId_startsAt_idx" ON "Booking"("customerId", "start
 CREATE INDEX "Booking_status_expiresAt_idx" ON "Booking"("status", "expiresAt");
 
 -- CreateIndex
+CREATE INDEX "Booking_status_endsAt_idx" ON "Booking"("status", "endsAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Booking_id_venueId_key" ON "Booking"("id", "venueId");
 
 -- CreateIndex

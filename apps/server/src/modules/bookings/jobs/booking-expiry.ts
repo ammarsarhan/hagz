@@ -3,10 +3,12 @@ import { Worker } from "bullmq";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
 import { queueConnection } from "@/platform/redis/connections";
+import { completeEndedBookings } from "../application/complete-bookings";
 import { expireDueBookings } from "../application/expire-bookings";
 
-// Expires unapproved and unpaid bookings every minute (PR 4.2). The scheduler is an upsert, so every
-// worker can register it without making a second one; the sweep is idempotent.
+// Every minute (PR 4.2): expires unapproved and unpaid bookings, and completes confirmed games that
+// have ended. The scheduler is an upsert, so every worker can register it without making a second
+// one; both sweeps are idempotent.
 const QUEUE: QueueName = "booking-expiry";
 const EVERY_MINUTE_MS = 60 * 1000;
 
@@ -18,6 +20,8 @@ export const startBookingExpiry = async () => {
     async () => {
       const expired = await expireDueBookings();
       if (expired > 0) logger.info({ expired }, "expired unapproved or unpaid bookings");
+      const completed = await completeEndedBookings();
+      if (completed > 0) logger.info({ completed }, "completed ended games");
     },
     { connection: queueConnection },
   );
