@@ -173,7 +173,7 @@ export const sharedBooking = createRoute({
   tags,
   summary: "A booking's share link",
   description:
-    "What anyone with the link (/b/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.",
+    "What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.",
   request: { params: z.object({ code: z.string().min(1).max(16) }) },
   responses: {
     200: { description: "The booking", ...json(SharedBooking) },

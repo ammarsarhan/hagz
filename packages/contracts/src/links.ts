@@ -30,6 +30,10 @@ export const ROUTES = {
   adminVenueSlots: { app: "web", path: "/admin/venues/[venueId]/slots" },
   // A venue's public page, the link the customer app shares (PR 3.2). In Arabic under /ar.
   venue: { app: "web", path: "/venue/[slug]" },
+  // A booking's share link (decided 2026-11-23: under /booking, not /b, because the customer app's
+  // universal links already claim /booking/*). Opens the app when it's installed; otherwise the web
+  // page shows the booking, and its open game if there is one, and sends people to the app.
+  sharedBooking: { app: "customer", path: "/booking/[code]" },
 } as const satisfies Record<string, { app: AppName | "web"; path: string }>;
 
 export type RouteName = keyof typeof ROUTES;
@@ -62,5 +66,6 @@ export const links = (webUrl: string) => {
     // shared from the app opens in the app's language.
     venue: (slug: string, language: "en" | "ar" = "en") =>
       base + (language === "ar" ? "/ar" : "") + fill(ROUTES.venue.path, slug),
+    sharedBooking: (code: string) => base + fill(ROUTES.sharedBooking.path, code),
   } satisfies Record<RouteName, (value: string) => string>;
 };

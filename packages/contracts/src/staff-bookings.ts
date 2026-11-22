@@ -119,7 +119,7 @@ export const SwappedBookings = z
   })
   .meta({ id: "SwappedBookings" });
 
-// The share link (/b/{code}): what anyone with the link sees. No money and no customer.
+// The share link (/booking/{code}): what anyone with the link sees. No money and no customer.
 export const SharedBooking = z
   .object({
     code: z.string(),

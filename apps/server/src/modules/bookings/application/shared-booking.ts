@@ -6,7 +6,7 @@ import { AppError } from "@/platform/errors/app-error";
 import { CODE_LENGTH } from "../domain/events";
 import { sharedGameId } from "./listings";
 
-// The share link, /b/{code} (PR 4.4): the venue, ground and time, for anyone with the link. No money
+// The share link, /booking/{code} (PR 4.4): the venue, ground and time, for anyone with the link. No money
 // and nothing about the customer. A moved booking points to the one that replaced it.
 
 const linkNotFound = () =>

@@ -11,7 +11,7 @@ model Booking {
   customerId         String             @db.Uuid
   creatorId          String?            @db.Uuid // Staff who entered it.
   regularId          String?            @db.Uuid // A regular's weekly reservation.
-  code               String             @unique // Share link, /b/[code].
+  code               String             @unique // Share link, /booking/[code].
   status             BookingStatus
   startsAt           DateTime           @db.Timestamptz
   endsAt             DateTime           @db.Timestamptz

@@ -35,7 +35,7 @@ export const BOOKING_EVENTS = {
 
 export type BookingEventType = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];
 
-// The share code, /b/{code}: 8 characters without look-alikes (0/O, 1/I/L), about 10^12 codes, so a
+// The share code, /booking/{code}: 8 characters without look-alikes (0/O, 1/I/L), about 10^12 codes, so a
 // collision is a retry rather than a risk. `random(n)` returns an integer in [0, n).
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 export const CODE_LENGTH = 8;

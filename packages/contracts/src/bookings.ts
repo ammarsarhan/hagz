@@ -119,7 +119,7 @@ export const BookingMove = z
 export const Booking = z
   .object({
     id: z.uuid(),
-    code: z.string().meta({ description: "For the share link, /b/{code}." }),
+    code: z.string().meta({ description: "For the share link, /booking/{code}." }),
     status: BookingStatus,
     startsAt: Instant,
     endsAt: Instant,
