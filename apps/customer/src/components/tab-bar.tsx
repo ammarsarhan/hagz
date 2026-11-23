@@ -28,6 +28,9 @@ const TABS: Record<Tab, Icon> = {
   account: IconUserCircle,
 };
 const isTab = (name: string): name is Tab => name in TABS;
+// The ticket's long parallel edges read heavier than the other icons at the same stroke, so it's
+// drawn a little thinner (user, 2026-11-23).
+const STROKE_SCALE: Partial<Record<Tab, number>> = { bookings: 0.85 };
 
 export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();
@@ -63,7 +66,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             <Glyph
               size={24}
               color={focused ? colors.ink : colors.ink3}
-              strokeWidth={focused ? 2 : 1.6}
+              strokeWidth={(focused ? 2 : 1.6) * (STROKE_SCALE[route.name] ?? 1)}
             />
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-ink" : "font-medium text-ink-3"}`}
