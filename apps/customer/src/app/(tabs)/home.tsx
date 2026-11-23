@@ -214,99 +214,105 @@ export default function Home() {
           </View>
         ) : null}
 
-        {played.length > 0 ? (
-          <Rail
-            title={t("screens.home.playAgain")}
-            items={played}
-            keyOf={(entry) => entry.venue.id}
-            width={RAIL_WIDTH.again}
-            render={(entry) => <PlayAgainCard entry={entry} />}
-          />
-        ) : null}
+        {/* The rails. Right under the title (no ticket: a guest, or nothing coming up) the first
+            sits a little closer, as the ticket would. */}
+        <View className={next ? "" : "-mt-3"}>
+          {played.length > 0 ? (
+            <Rail
+              title={t("screens.home.playAgain")}
+              items={played}
+              keyOf={(entry) => entry.venue.id}
+              width={RAIL_WIDTH.again}
+              render={(entry) => <PlayAgainCard entry={entry} />}
+            />
+          ) : null}
 
-        {waiting(tonight) ? <RailSkeleton kind="wide" /> : null}
-        {tonight.items.length > 0 ? (
-          <Rail
-            title={tonightIsTomorrow ? t("screens.home.tomorrowNight") : t("screens.home.tonight")}
-            line={t("screens.home.fromHour", { place: inLine, time: hourLabel(fromHour) })}
-            onSeeAll={() => seeAll(tonight.date ? { date: tonight.date } : {})}
-            {...venueRail(tonight, { wide: true })}
-          />
-        ) : null}
+          {waiting(tonight) ? <RailSkeleton kind="wide" /> : null}
+          {tonight.items.length > 0 ? (
+            <Rail
+              title={
+                tonightIsTomorrow ? t("screens.home.tomorrowNight") : t("screens.home.tonight")
+              }
+              line={t("screens.home.fromHour", { place: inLine, time: hourLabel(fromHour) })}
+              onSeeAll={() => seeAll(tonight.date ? { date: tonight.date } : {})}
+              {...venueRail(tonight, { wide: true })}
+            />
+          ) : null}
 
-        {waiting(games) ? <RailSkeleton kind="game" /> : null}
-        {games.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.games")}
-            onSeeAll={() => router.navigate("/community")}
-            items={games.items}
-            keyOf={(game) => game.id}
-            width={RAIL_WIDTH.game}
-            render={(game) => <RailGameCard game={game} />}
-          />
-        ) : null}
+          {waiting(games) ? <RailSkeleton kind="game" /> : null}
+          {games.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.games")}
+              onSeeAll={() => router.navigate("/community")}
+              items={games.items}
+              keyOf={(game) => game.id}
+              width={RAIL_WIDTH.game}
+              render={(game) => <RailGameCard game={game} />}
+            />
+          ) : null}
 
-        {freed.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.justFreed")}
-            line={t("screens.home.justFreedLine")}
-            {...venueRail(freed, { wide: true })}
-          />
-        ) : null}
+          {freed.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.justFreed")}
+              line={t("screens.home.justFreedLine")}
+              {...venueRail(freed, { wide: true })}
+            />
+          ) : null}
 
-        {saved.length > 0 ? (
-          <Rail
-            title={t("screens.home.saved")}
-            onSeeAll={() => push("/favorites")}
-            items={saved}
-            keyOf={(venue) => venue.id}
-            width={RAIL_WIDTH.narrow}
-            render={(venue) => <SavedCard venue={venue} />}
-          />
-        ) : null}
+          {saved.length > 0 ? (
+            <Rail
+              title={t("screens.home.saved")}
+              onSeeAll={() => push("/favorites")}
+              items={saved}
+              keyOf={(venue) => venue.id}
+              width={RAIL_WIDTH.narrow}
+              render={(venue) => <SavedCard venue={venue} />}
+            />
+          ) : null}
 
-        {popular.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.popular")}
-            onSeeAll={() => seeAll({ sort: "POPULAR" })}
-            {...venueRail(popular, { badge: (_, index) => `#${index + 1}` })}
-          />
-        ) : null}
+          {popular.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.popular")}
+              onSeeAll={() => seeAll({ sort: "POPULAR" })}
+              {...venueRail(popular, { badge: (_, index) => `#${index + 1}` })}
+            />
+          ) : null}
 
-        {waiting(topRated) ? <RailSkeleton kind="narrow" /> : null}
-        {topRated.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.topRated")}
-            onSeeAll={() => seeAll({ sort: "RATING" })}
-            {...venueRail(topRated, {})}
-          />
-        ) : null}
+          {waiting(topRated) ? <RailSkeleton kind="narrow" /> : null}
+          {topRated.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.topRated")}
+              onSeeAll={() => seeAll({ sort: "RATING" })}
+              {...venueRail(topRated, {})}
+            />
+          ) : null}
 
-        {instant.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.instant")}
-            line={t("screens.home.instantLine")}
-            onSeeAll={() => seeAll({ instant: "true" })}
-            {...venueRail(instant, { badge: () => t("screens.home.instantBadge") })}
-          />
-        ) : null}
+          {instant.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.instant")}
+              line={t("screens.home.instantLine")}
+              onSeeAll={() => seeAll({ instant: "true" })}
+              {...venueRail(instant, { badge: () => t("screens.home.instantBadge") })}
+            />
+          ) : null}
 
-        {budget.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.budget")}
-            line={t("screens.home.budgetLine", { price: formatPrice(BUDGET, budget.currency) })}
-            onSeeAll={() => seeAll({ priceMax: String(BUDGET) })}
-            {...venueRail(budget, {})}
-          />
-        ) : null}
+          {budget.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.budget")}
+              line={t("screens.home.budgetLine", { price: formatPrice(BUDGET, budget.currency) })}
+              onSeeAll={() => seeAll({ priceMax: String(BUDGET) })}
+              {...venueRail(budget, {})}
+            />
+          ) : null}
 
-        {newest.items.length > 0 ? (
-          <Rail
-            title={t("screens.home.newest")}
-            onSeeAll={() => seeAll({ sort: "NEWEST" })}
-            {...venueRail(newest, { badge: () => t("screens.home.newBadge") })}
-          />
-        ) : null}
+          {newest.items.length > 0 ? (
+            <Rail
+              title={t("screens.home.newest")}
+              onSeeAll={() => seeAll({ sort: "NEWEST" })}
+              {...venueRail(newest, { badge: () => t("screens.home.newBadge") })}
+            />
+          ) : null}
+        </View>
       </Animated.ScrollView>
 
       {pull.spinner}

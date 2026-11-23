@@ -295,7 +295,7 @@ export const RailVenueCard = memo(function RailVenueCard({
       </Pressable>
       {wide && card.nextTimes.length > 0 ? (
         <View className="mt-2.5 flex-row gap-2">
-          {card.nextTimes.slice(0, 3).map((time) => (
+          {card.nextTimes.slice(0, 2).map((time) => (
             <Pressable
               key={time.startsAt}
               accessibilityRole="button"
