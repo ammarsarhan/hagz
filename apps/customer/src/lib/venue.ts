@@ -48,6 +48,13 @@ const timeParts = (iso: string, timezone: string) => {
 const withPeriod = ({ time, pm }: { time: string; pm: boolean }) =>
   i18n.t("formats.time", { time, period: i18n.t(pm ? "formats.pm" : "formats.am") });
 
+// A time's clock and its half of the day apart, for a time set big over its "pm" (Community's
+// agenda): { time: "9:30", period: "pm" }.
+export const clockParts = (iso: string, timezone: string) => {
+  const { time, pm } = timeParts(iso, timezone);
+  return { time, period: i18n.t(pm ? "formats.pm" : "formats.am") };
+};
+
 // "9 pm", "9:30 pm", "12 am".
 export const timeOfDay = (iso: string, timezone: string) => withPeriod(timeParts(iso, timezone));
 
