@@ -17,7 +17,6 @@ import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import {
   IconChevronRight,
-  IconClock,
   IconDirections,
   IconPhone,
   IconQrcode,
@@ -495,7 +494,7 @@ function Standing({
   return (
     <View className="mt-[22px] gap-3 rounded-[20px] bg-chip p-[18px]">
       {card.elsewhere ? (
-        // Declined: the same ground's times that day, a small inline button over the title.
+        // Declined: the same ground's times that day, an underlined link over the title.
         <Pressable
           accessibilityRole="button"
           onPress={() =>
@@ -508,10 +507,10 @@ function Standing({
               },
             })
           }
-          className="h-8 flex-row items-center gap-1.5 self-start rounded-full bg-white px-3 active:opacity-70"
+          hitSlop={8}
+          className="self-start active:opacity-60"
         >
-          <IconClock size={15} color={colors.ink} strokeWidth={2} />
-          <Text className="text-label leading-5 font-medium">
+          <Text className="text-label leading-5 font-medium underline">
             {t("screens.booking.declined.viewTimes")}
           </Text>
         </Pressable>
