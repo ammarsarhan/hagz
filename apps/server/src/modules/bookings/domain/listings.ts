@@ -8,8 +8,8 @@ const UNIT = 100;
 // The booker's phone stays visible to joined players this long after kick-off.
 export const PHONE_HOURS_AFTER_START = 24;
 
-// Each player's share of the booking: the total over the ground's players, rounded up to a unit.
-export const shareOf = (total: number, players: number) => Math.ceil(total / players / UNIT) * UNIT;
+// Each player's share of the booking: in contracts, so the app's review step shows the same.
+export { shareOf } from "@hagz/contracts";
 
 // The joining fee: the marketplace's rate (basis points) of the share, rounded to a unit.
 export const joinFeeOf = (share: number, rate: number) =>

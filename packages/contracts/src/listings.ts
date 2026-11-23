@@ -19,6 +19,11 @@ export const ListingStatus = z.enum(["WAITING", "OPEN", "CLOSED", "CANCELLED"]).
 
 const Note = z.string().trim().max(300);
 
+// Each player's share of a booking: the total over the ground's players (playersOn), rounded up to a
+// whole currency unit (100 minor units). The server prices listings with it; the app's review step
+// shows it before booking.
+export const shareOf = (total: number, players: number) => Math.ceil(total / players / 100) * 100;
+
 export const ListingRequest = z
   .object({
     neededPlayers: z.int().min(1).max(21).meta({
