@@ -3,8 +3,7 @@ import { systemClock, type Clock } from "@/platform/clock/clock";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { BOOKING_EVENTS } from "../domain/events";
 import { invalidTransition } from "../domain/status";
-import { bookingNotFound } from "./my-bookings";
-import { lockBooking, venueBookingNotFound } from "./booking-rows";
+import { bookingNotFound, lockBooking, venueBookingNotFound } from "./booking-rows";
 import { topUpVenue } from "./regulars";
 
 // A regular's weekly reservation (PR 4.5, docs/regulars.md "Before the deadline"): confirmed or

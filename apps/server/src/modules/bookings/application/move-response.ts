@@ -10,9 +10,8 @@ import { BOOKING_EVENTS } from "../domain/events";
 import { MOVABLE, respondBy } from "../domain/moves";
 import { coversExactly } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
-import { lockBooking, moveChain, netPaid, withFreshCode } from "./booking-rows";
+import { bookingNotFound, lockBooking, moveChain, netPaid, withFreshCode } from "./booking-rows";
 import { cancelListings } from "./listings";
-import { bookingNotFound } from "./my-bookings";
 import { claimTarget, movingSelect, retire, successor, type Moving } from "./rescheduling";
 
 // The player answering a move staff made (PR 4.8, docs/rescheduling.md "Rejecting a move"): accept

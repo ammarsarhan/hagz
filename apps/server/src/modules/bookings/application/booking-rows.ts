@@ -17,6 +17,14 @@ export const venueBookingNotFound = () =>
     detail: "There's no such booking at this venue.",
   });
 
+// The player's own booking, not found: anyone else's answers as if it didn't exist.
+export const bookingNotFound = () =>
+  new AppError({
+    code: "BOOKING_NOT_FOUND",
+    status: 404,
+    detail: "No booking of yours with that id.",
+  });
+
 export const newCode = () => bookingCode(randomInt);
 
 // Runs an insert again with a new share code when its code was taken (about one in 10^12). An

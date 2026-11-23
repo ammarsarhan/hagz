@@ -24,8 +24,7 @@ import {
   PHONE_HOURS_AFTER_START,
   shareOf,
 } from "../domain/listings";
-import { lockBooking } from "./booking-rows";
-import { bookingNotFound } from "./my-bookings";
+import { bookingNotFound, lockBooking } from "./booking-rows";
 
 // Open games (PR 4.7, docs/listings.md). A player lists their confirmed app booking as needing
 // players; others join from the feed or the share link. Joining, leaving and changing the number

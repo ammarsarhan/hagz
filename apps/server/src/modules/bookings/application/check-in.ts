@@ -13,8 +13,7 @@ import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { checkInWindow, CODE_SECONDS, inCheckInWindow, REFRESH_SECONDS } from "../domain/check-in";
 import { firstName } from "../domain/listings";
-import { lockBooking, venueBookingNotFound } from "./booking-rows";
-import { bookingNotFound } from "./my-bookings";
+import { bookingNotFound, lockBooking, venueBookingNotFound } from "./booking-rows";
 
 // Checking in at the venue (user, 2026-11-22). The booker of an app booking and each joined
 // open-game player show a QR code that changes every 30 seconds (a signed token naming the booking

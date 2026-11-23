@@ -10,7 +10,7 @@ import type {
 import { BookingStatus as BookingStatuses } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
-import { bookingNotFound } from "./my-bookings";
+import { bookingNotFound } from "./booking-rows";
 
 // Bookings in the admin (Phase 4's admin slice): any booking at any venue, newest made first (ids
 // are uuid v7, so id order is creation order), a page at a time; one booking in full; and its

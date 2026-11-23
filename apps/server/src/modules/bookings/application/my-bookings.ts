@@ -6,18 +6,12 @@ import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
 import { storage } from "@/platform/storage/storage";
+import { bookingNotFound } from "./booking-rows";
 
 // A player's bookings (PR 4.4): the Bookings tab's Upcoming and Past, and one booking's detail. A
 // player's bookings are spread over one VenueCustomer per venue, all linked to their account.
 
 const STILL_TO_PLAY = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"] as const;
-
-export const bookingNotFound = () =>
-  new AppError({
-    code: "BOOKING_NOT_FOUND",
-    status: 404,
-    detail: "No booking of yours with that id.",
-  });
 
 const invalidCursor = () =>
   new AppError({
