@@ -360,6 +360,8 @@ function Standing({
     reserve?: boolean;
     // The venue said no: while the game's ahead, Similar venues and Another time at the venue.
     elsewhere?: boolean;
+    // A reason worth reading: more room above it and below it.
+    spaced?: boolean;
   } | null => {
     if (booking.move && !ended)
       return {
@@ -466,6 +468,7 @@ function Standing({
               .filter(Boolean)
               .join(" "),
             elsewhere: !ended && Date.parse(booking.startsAt) > now,
+            spaced: true,
           };
         if (cancelled?.by === "CUSTOMER")
           return {
@@ -492,7 +495,9 @@ function Standing({
     <View className="mt-[22px] gap-3 rounded-[20px] bg-chip p-[18px]">
       <View className="gap-0.5">
         <Text className="text-subtitle leading-[22px] font-medium">{card.title}</Text>
-        <Text className="text-label leading-5 text-ink-2">{card.body}</Text>
+        <Text className={`text-label leading-5 text-ink-2 ${card.spaced ? "pt-1" : ""}`}>
+          {card.body}
+        </Text>
       </View>
       {card.showCode ? (
         <Button
@@ -503,7 +508,7 @@ function Standing({
         />
       ) : null}
       {card.elsewhere ? (
-        <View className="gap-2">
+        <View className="mt-1.5 gap-2">
           <Button
             label={t("screens.booking.declined.similar")}
             size="compact"
