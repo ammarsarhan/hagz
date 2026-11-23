@@ -321,6 +321,32 @@ const messages = {
     en: "The pin is more than {km} km from this area. Move it or pick another area.",
     ar: "الدبوس أبعد من {km} كم عن هذه المنطقة. حرّكه أو اختر منطقة أخرى.",
   },
+  // Open games and the at-once limits (`{limit}` is the problem's `limit`, see withLimit).
+  GAME_FULL: { en: "This game is full.", ar: "هذه المباراة مكتملة." },
+  GAME_STARTED: { en: "This game has already started.", ar: "بدأت هذه المباراة بالفعل." },
+  GAME_NOT_OPEN: { en: "This game isn't taking players.", ar: "هذه المباراة لا تقبل لاعبين." },
+  GAME_CLASH: {
+    en: "You already have a game or a booking at this time.",
+    ar: "لديك مباراة أو حجز في هذا الوقت بالفعل.",
+  },
+  ALREADY_JOINED: { en: "You've already joined this game.", ar: "انضممت إلى هذه المباراة بالفعل." },
+  OWN_GAME: { en: "This is your own game.", ar: "هذه مباراتك." },
+  REMOVED_FROM_GAME: {
+    en: "The booker removed you from this game.",
+    ar: "أزالك صاحب الحجز من هذه المباراة.",
+  },
+  PAY_AT_VENUE_LIMIT: {
+    en: "You can have {limit} bookings paid at the venue at a time. Play or cancel one first, or book a venue that takes payment online.",
+    ar: "يمكنك الاحتفاظ بـ {limit} حجوزات بالدفع في الملعب في نفس الوقت. العب أو ألغِ واحدًا أولًا، أو احجز في ملعب يقبل الدفع أونلاين.",
+  },
+  HOSTING_LIMIT: {
+    en: "You can host {limit} games at a time.",
+    ar: "يمكنك استضافة {limit} مباريات في نفس الوقت.",
+  },
+  JOINING_LIMIT: {
+    en: "You can be in {limit} games at a time. Play or leave one first.",
+    ar: "يمكنك المشاركة في {limit} مباريات في نفس الوقت. العب أو غادر واحدة أولًا.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -345,13 +371,16 @@ export const errorMessage = (error: unknown, language: Language): string => {
   return withLimit(messages[code][language], error, messages.INTERNAL_ERROR[language]);
 };
 
-// PIN_FAR_FROM_AREA's distance comes from the problem (`limit`, in metres), so the API stays the
-// one place that sets it. A problem without one can't fill the message in: `fallback` instead.
+// The problem's `limit`, so the API stays the one place that sets it: `{km}` for PIN_FAR_FROM_AREA's
+// distance (in metres), `{limit}` as it is (the at-once limits). A problem without one can't fill
+// the message in: `fallback` instead.
 const withLimit = (message: string, error: Problem, fallback: string): string => {
-  if (!message.includes("{km}")) return message;
+  if (!message.includes("{km}") && !message.includes("{limit}")) return message;
   const { limit } = error;
   return typeof limit === "number"
-    ? message.replaceAll("{km}", String(Math.round(limit / 1000)))
+    ? message
+        .replaceAll("{km}", String(Math.round(limit / 1000)))
+        .replaceAll("{limit}", String(limit))
     : fallback;
 };
 
@@ -381,6 +410,19 @@ const short = {
   // where it doesn't (a ground's last step sends all four), the HUD still says it was the details.
   VALIDATION_FAILED: { en: "Check the details", ar: "راجع البيانات" },
   INVALID_GROUND: { en: "Check the ground's details", ar: "راجع تفاصيل الملعب" },
+  GAME_FULL: { en: "This game is full", ar: "المباراة مكتملة" },
+  GAME_STARTED: { en: "This game has started", ar: "بدأت المباراة" },
+  GAME_NOT_OPEN: { en: "Not taking players", ar: "لا تقبل لاعبين" },
+  GAME_CLASH: { en: "You're busy at this time", ar: "لديك موعد في هذا الوقت" },
+  ALREADY_JOINED: { en: "You're already in", ar: "أنت مشارك بالفعل" },
+  OWN_GAME: { en: "This is your game", ar: "هذه مباراتك" },
+  REMOVED_FROM_GAME: { en: "The booker removed you", ar: "أزالك صاحب الحجز" },
+  PAY_AT_VENUE_LIMIT: {
+    en: "Only {limit} pay-at-venue bookings at once",
+    ar: "{limit} حجوزات فقط بالدفع في الملعب",
+  },
+  HOSTING_LIMIT: { en: "Only {limit} hosted games at once", ar: "{limit} مباريات فقط تستضيفها" },
+  JOINING_LIMIT: { en: "Only {limit} games at once", ar: "{limit} مباريات فقط في نفس الوقت" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 

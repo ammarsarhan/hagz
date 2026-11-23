@@ -59,6 +59,15 @@ describe("shortErrorMessage", () => {
     expect(shortErrorMessage(problem("PIN_FAR_FROM_AREA"), "en")).toBe("Something went wrong");
   });
 
+  it("gives an at-once limit the API's number", () => {
+    const limit = { ...problem("JOINING_LIMIT"), limit: 2 };
+    expect(shortErrorMessage(limit, "en")).toBe("Only 2 games at once");
+    expect(errorMessage(limit, "en")).toBe(
+      "You can be in 2 games at a time. Play or leave one first.",
+    );
+    expect(shortErrorMessage(problem("PAY_AT_VENUE_LIMIT"), "en")).toBe("Something went wrong");
+  });
+
   it("says something went wrong for anything else, and offline when there was no answer", () => {
     expect(shortErrorMessage(problem("SOMETHING_NEW"), "en")).toBe("Something went wrong");
     expect(shortErrorMessage(new TypeError("Network request failed"), "en")).toBe("You're offline");
