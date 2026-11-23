@@ -17795,11 +17795,23 @@ export interface components {
              * @description `PENDING` and `HELD`: when it expires unless approved or paid.
              */
             expiresAt: string | null;
+            /** @description Read with the booking, whatever the venue's status now: it can stop being public. */
             venue: {
                 /** Format: uuid */
                 id: string;
                 slug: string;
                 name: string | null;
+                /**
+                 * @description The venue's IANA timezone, for showing times on its clock.
+                 * @example Africa/Cairo
+                 */
+                timezone: string;
+                /** @example Maadi, Cairo */
+                area: string | null;
+                address: string | null;
+                coordinates: components["schemas"]["Coordinates"];
+                /** @description E.164; the venue's number, for the player with a booking there. */
+                phone: string | null;
             };
             ground: {
                 /** Format: uuid */

@@ -1,6 +1,6 @@
 import type { Booking, BookingCharge, CancellationTier } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
-import { nameIn } from "@/modules/venues";
+import { nameIn, pinOf, placeOf, translationIn } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import type { ChargeLine } from "../domain/charges";
 import { bookingCheckIn } from "./check-in";
@@ -60,7 +60,14 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       note: true,
       createdAt: true,
       venue: {
-        select: { id: true, slug: true, ...names, marketplace: { select: { currency: true } } },
+        select: {
+          id: true,
+          slug: true,
+          phone: true,
+          translations: { select: { language: true, name: true, address: true } },
+          marketplace: { select: { currency: true, timezone: true } },
+          location: { select: { ...names, parent: { select: names } } },
+        },
       },
       ground: { select: { id: true, sport: true, size: true, ...names } },
       payments: {
@@ -103,6 +110,11 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       id: booking.venue.id,
       slug: booking.venue.slug,
       name: nameIn(booking.venue.translations, language),
+      timezone: booking.venue.marketplace.timezone,
+      area: placeOf(booking.venue.location, language),
+      address: translationIn(booking.venue.translations, language)?.address ?? null,
+      coordinates: await pinOf(prisma, booking.venue.id),
+      phone: booking.venue.phone,
     },
     ground: {
       id: booking.ground.id,

@@ -3,6 +3,7 @@ import { CheckInWindow } from "./check-in";
 import { BookerListing, ListingRequest } from "./listings";
 import { GroundSize, GroundSport, PriceTier } from "./grounds";
 import { page } from "./lists";
+import { Coordinates } from "./venue-setup";
 import { AmenityPricing, CancellationPolicy, CancellationTier, PaymentMode } from "./venue-edit";
 
 // Bookings (Phase 4): a run of back-to-back slots on one ground, booked by a player in the app or
@@ -126,7 +127,25 @@ export const Booking = z
     expiresAt: Instant.nullable().meta({
       description: "`PENDING` and `HELD`: when it expires unless approved or paid.",
     }),
-    venue: z.object({ id: z.uuid(), slug: z.string(), name: z.string().nullable() }),
+    venue: z
+      .object({
+        id: z.uuid(),
+        slug: z.string(),
+        name: z.string().nullable(),
+        timezone: z.string().meta({
+          description: "The venue's IANA timezone, for showing times on its clock.",
+          example: "Africa/Cairo",
+        }),
+        area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
+        address: z.string().nullable(),
+        coordinates: Coordinates.nullable(),
+        phone: z.string().nullable().meta({
+          description: "E.164; the venue's number, for the player with a booking there.",
+        }),
+      })
+      .meta({
+        description: "Read with the booking, whatever the venue's status now: it can stop being public.",
+      }),
     ground: z.object({
       id: z.uuid(),
       name: z.string().nullable(),

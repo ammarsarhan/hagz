@@ -177,7 +177,12 @@ describe("my bookings", () => {
 
     const res = await get(`/bookings/${id}`, token);
     expect(res.status).toBe(200);
-    expect(Booking.parse(await res.json())).toMatchObject({ id, status: "CONFIRMED", paid: 0 });
+    const detail = Booking.parse(await res.json());
+    expect(detail).toMatchObject({ id, status: "CONFIRMED", paid: 0 });
+    // The venue as the booking page needs it, read with the booking.
+    expect(detail.venue).toMatchObject({ name: "Maadi Arena", timezone: "Africa/Cairo" });
+    expect(detail.venue).toHaveProperty("coordinates");
+    expect(detail.venue).toHaveProperty("phone");
 
     const other = await signedIn("+201009876543");
     const refused = await get(`/bookings/${id}`, other.token);

@@ -19,7 +19,8 @@ export {
 } from "./application/booking-slots";
 export type { VenueAccess } from "./application/access";
 export { requireVenueAccess } from "./http/require-venue-access";
-export { nameIn, placeOf } from "./domain/names";
+export { nameIn, placeOf, translationIn } from "./domain/names";
+export { pinOf } from "./application/venue-edit";
 export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS, instantOf } from "./domain/slots";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";

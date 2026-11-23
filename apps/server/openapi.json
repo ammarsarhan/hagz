@@ -2794,13 +2794,47 @@
                   "string",
                   "null"
                 ]
+              },
+              "timezone": {
+                "type": "string",
+                "description": "The venue's IANA timezone, for showing times on its clock.",
+                "example": "Africa/Cairo"
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Maadi, Cairo"
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "coordinates": {
+                "$ref": "#/components/schemas/Coordinates"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "E.164; the venue's number, for the player with a booking there."
               }
             },
             "required": [
               "id",
               "slug",
-              "name"
-            ]
+              "name",
+              "timezone",
+              "area",
+              "address",
+              "coordinates",
+              "phone"
+            ],
+            "description": "Read with the booking, whatever the venue's status now: it can stop being public."
           },
           "ground": {
             "type": "object",
