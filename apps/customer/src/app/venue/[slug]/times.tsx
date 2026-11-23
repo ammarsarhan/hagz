@@ -492,11 +492,10 @@ function Picker({
             size="small"
             disabled={!ready}
             onPress={() => {
-              // Extras next, skipped for Review when the venue prices none (docs/flows.md).
+              // Anything else? next: extras and Need players?, at every venue.
               if (!first || !last || !day) return;
-              const extras = venue.amenities.some((amenity) => amenity.price !== null);
               router.push({
-                pathname: extras ? "/venue/[slug]/extras" : "/venue/[slug]/review",
+                pathname: "/venue/[slug]/extras",
                 params: {
                   slug: venue.slug,
                   ground: ground.id,

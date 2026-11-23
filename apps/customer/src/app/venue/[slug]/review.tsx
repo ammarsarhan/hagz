@@ -5,26 +5,20 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, TextInput, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
-  FadeIn,
-  FadeOut,
   interpolate,
-  LinearTransition,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { FieldBox, inputClass } from "@/components/field";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconMinus, IconPlus } from "@/components/icons";
 import { BackButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { Text } from "@/components/text";
-import { Toggle } from "@/components/toggle";
 import { GroupHeading, Hairline } from "@/components/venue-sections";
 import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -43,11 +37,12 @@ import {
   type PublicVenue,
 } from "@/lib/venue";
 
-// Review and book (Figma C8 round 2, 251:2, and 252:2 with players on): the booking's last step.
-// What's being booked, its price as the API quotes it (POST /v1/bookings/quote: a line an hour, one
-// per extra and Hagz's service fee, so it's exactly what booking will charge), Need players? (an open game asked for
-// at checkout, which opens once the booking is confirmed), and the cancellation tiers as real
-// deadlines counted back from kick-off. Book is lime: one of the few big moments.
+// Review and book (Figma C8 round 2, 251:2): the booking's last step, a summary to check before
+// booking, with nothing left to choose (Need players? moved to Anything else?, user 2026-11-23).
+// What's being booked; its price as the API quotes it (POST /v1/bookings/quote: a line an hour, one
+// per extra and Hagz's service fee, so it's exactly what booking will charge); the open game asked
+// for, if any; and the cancellation tiers as real deadlines counted back from kick-off. Book is
+// lime: one of the few big moments.
 
 type Quote = components["schemas"]["BookingQuote"];
 
@@ -55,8 +50,6 @@ type Quote = components["schemas"]["BookingQuote"];
 const ROW = 40;
 const TITLE_GAP = 22;
 const BAR_BELOW = 8;
-// Players asked for to begin with (Figma 252:2), never more than the ground takes.
-const FIRST_ASK = 3;
 const HOUR = 3_600_000;
 
 type Loaded =
@@ -73,6 +66,9 @@ export default function Review() {
     startsAt: string;
     endsAt: string;
     amenities?: string;
+    // The open game asked for: how many players, and the note.
+    players?: string;
+    note?: string;
   }>();
   const amenities = params.amenities ? params.amenities.split(",") : [];
   const amenityKey = params.amenities ?? "";
@@ -120,6 +116,11 @@ export default function Review() {
       startsAt={params.startsAt}
       endsAt={params.endsAt}
       amenities={amenities}
+      game={
+        params.players
+          ? { players: Number(params.players), note: params.note ? params.note : null }
+          : null
+      }
       from={{ pathname: "/venue/[slug]/review", params }}
     />
   );
@@ -171,6 +172,7 @@ function Content({
   startsAt,
   endsAt,
   amenities,
+  game,
   from,
 }: {
   venue: PublicVenue;
@@ -180,6 +182,8 @@ function Content({
   startsAt: string;
   endsAt: string;
   amenities: string[];
+  // The open game asked for on Anything else?, if any.
+  game: { players: number; note: string | null } | null;
   // This screen, for signing in to come back to.
   from: Parameters<typeof useSignInSheet>[0];
 }) {
@@ -193,13 +197,7 @@ function Content({
   const { currency, timezone } = venue.marketplace;
   const venueName = venue.name ?? "";
   const groundName = ground.name ?? kindOf(ground);
-  const most = playersOn(ground.sport, ground.size) - 1;
   const share = shareOf(quote.total, playersOn(ground.sport, ground.size));
-
-  const [players, setPlayers] = useState(false);
-  const [needed, setNeeded] = useState(Math.min(FIRST_ASK, most));
-  const [note, setNote] = useState("");
-  const [focused, setFocused] = useState(false);
   const [booking, setBooking] = useState(false);
 
   const cancellation = venue.booking.cancellation;
@@ -215,8 +213,8 @@ function Content({
       startsAt,
       endsAt,
       amenities,
-      ...(players
-        ? { listing: { neededPlayers: needed, ...(note.trim() ? { note: note.trim() } : {}) } }
+      ...(game
+        ? { listing: { neededPlayers: game.players, ...(game.note ? { note: game.note } : {}) } }
         : {}),
     };
     const asJson = JSON.stringify(body);
@@ -360,82 +358,46 @@ function Content({
           </Text>
         </View>
 
-        <View className="mt-[22px] mb-5">
-          <Hairline />
-        </View>
-
-        {/* Need players?: on, how many (each pays the booker their share) and a note. */}
-        <View>
-          <View className="flex-row items-center gap-3">
-            <View className="flex-1 gap-0.5">
-              <Text className="text-subtitle font-medium">{t("screens.review.players.title")}</Text>
-              <Text className="text-label text-ink-2">{t("screens.review.players.body")}</Text>
+        {/* The open game asked for on Anything else?, if any: how many, each one's share, the note. */}
+        {game ? (
+          <>
+            <View className="mt-[22px] mb-5">
+              <Hairline />
             </View>
-            <Toggle
-              value={players}
-              onChange={setPlayers}
-              label={t("screens.review.players.title")}
-            />
-          </View>
-          {players ? (
-            <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)}>
-              <View className="flex-row items-center justify-between pt-6">
-                <View className="gap-0.5">
-                  <Text className="text-subtitle font-medium">
-                    {t("screens.review.players.count", { count: needed })}
-                  </Text>
-                  <Text className="text-label text-ink-2">
-                    {t("screens.review.players.each", {
-                      share: formatPrice(share, currency),
-                      max: most,
-                    })}
-                  </Text>
-                </View>
-                <View className="flex-row items-center gap-3.5">
-                  <StepButton
-                    icon="minus"
-                    label={t("screens.review.players.less")}
-                    disabled={needed <= 1}
-                    onPress={() => setNeeded((n) => Math.max(1, n - 1))}
-                  />
-                  <StepButton
-                    icon="plus"
-                    label={t("screens.review.players.more")}
-                    disabled={needed >= most}
-                    onPress={() => setNeeded((n) => Math.min(most, n + 1))}
-                  />
-                </View>
+            <View className="gap-2">
+              <View className="pb-1.5">
+                <GroupHeading>{t("screens.review.game.title")}</GroupHeading>
               </View>
-              <View className="pt-5">
-                <FieldBox focused={focused} error={false}>
-                  <TextInput
-                    className={inputClass}
-                    value={note}
-                    onChangeText={setNote}
-                    maxLength={300}
-                    placeholder={t("screens.review.players.note")}
-                    placeholderTextColor={colors.ink3}
-                    selectionColor={colors.ink}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                    returnKeyType="done"
-                  />
-                </FieldBox>
+              <View className="flex-row justify-between gap-4">
+                <Text className="shrink text-body leading-[22px] text-ink-2">
+                  {t("screens.review.game.wanted")}
+                </Text>
+                <Text className="text-body leading-[22px]">
+                  {t("screens.extras.players.count", { count: game.players })}
+                </Text>
               </View>
-              <Text className="pt-2.5 text-caption text-unit">
+              <View className="flex-row justify-between gap-4">
+                <Text className="shrink text-body leading-[22px] text-ink-2">
+                  {t("screens.review.game.each")}
+                </Text>
+                <Text className="text-body leading-[22px]">{formatPrice(share, currency)}</Text>
+              </View>
+              {game.note ? (
+                <Text className="text-body leading-[22px] text-ink-2">{`“${game.note}”`}</Text>
+              ) : null}
+              <Text className="text-caption text-unit">
                 {quote.startsAs === "PENDING"
-                  ? t("screens.review.players.whenPending", { venue: venueName })
+                  ? t("screens.extras.players.whenPending", { venue: venueName })
                   : quote.startsAs === "HELD"
-                    ? t("screens.review.players.whenHeld")
-                    : t("screens.review.players.whenConfirmed")}
+                    ? t("screens.extras.players.whenHeld")
+                    : t("screens.extras.players.whenConfirmed")}
               </Text>
-            </Animated.View>
-          ) : null}
-        </View>
+            </View>
+          </>
+        ) : null}
 
         {rows.length > 0 ? (
-          // Slides down as the players' part opens above it, and back up as it closes.
-          <Animated.View layout={LinearTransition.duration(220)}>
+          <>
             <View className="mt-[22px] mb-5">
               <Hairline />
             </View>
@@ -457,7 +419,7 @@ function Content({
                 </View>
               ))}
             </View>
-          </Animated.View>
+          </>
         ) : null}
       </Animated.ScrollView>
 
@@ -499,33 +461,5 @@ function Content({
       </View>
       {sheet}
     </View>
-  );
-}
-
-// The players stepper's grey round − and + (36, an 18 icon); faded at the end of its range.
-function StepButton({
-  icon,
-  label,
-  disabled,
-  onPress,
-}: {
-  icon: "minus" | "plus";
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const Glyph = icon === "minus" ? IconMinus : IconPlus;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      hitSlop={6}
-      className="size-9 items-center justify-center rounded-full bg-chip active:opacity-70"
-    >
-      <Glyph size={18} color={disabled ? colors.ink3 : colors.ink} strokeWidth={2} />
-    </Pressable>
   );
 }
