@@ -492,7 +492,27 @@ function Picker({
             variant={ready ? "moment" : "secondary"}
             size="small"
             disabled={!ready}
-            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+            onPress={() => {
+              // Extras next, skipped when the venue prices none (docs/flows.md); review isn't
+              // built yet, so without extras it still says booking opens soon.
+              if (!first || !last || !day) return;
+              if (!venue.amenities.some((amenity) => amenity.price !== null)) {
+                hud.show(t("screens.venue.bookingSoon"));
+                return;
+              }
+              router.push({
+                pathname: "/venue/[slug]/extras",
+                params: {
+                  slug: venue.slug,
+                  ground: ground.id,
+                  date: day.date,
+                  startsAt: first.startsAt,
+                  endsAt: last.endsAt,
+                  slots: String(picked.length),
+                  price: String(total),
+                },
+              });
+            }}
           />
         </View>
       </View>

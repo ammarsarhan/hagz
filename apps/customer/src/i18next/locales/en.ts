@@ -309,6 +309,16 @@ const en = {
         noneHint: "Try another day.",
         continue: "Continue",
       },
+      extras: {
+        title: "Anything else?",
+        subtitle: "{{venue}} has these ready for your game. Pay for them with the booking.",
+        subtitleNoName: "The venue has these ready for your game. Pay for them with the booking.",
+        perBooking: "{{price}} per booking",
+        perHour: "{{price}} per hour",
+        included_one: "{{list}} is included.",
+        included_other: "{{list}} are included.",
+        continue: "Continue",
+      },
       favorites: {
         title: "Favorites",
         subtitle: "Your favorite venues in one place.",
