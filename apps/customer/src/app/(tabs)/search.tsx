@@ -1,5 +1,4 @@
 import type { Icon } from "@tabler/icons-react-native";
-import * as Haptics from "expo-haptics";
 import { StatusBar } from "expo-status-bar";
 import {
   memo,
@@ -7,19 +6,11 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
   type DerivedValue,
   FadeIn,
@@ -34,6 +25,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
+import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { LightsOutArt } from "@/components/lights-out-art";
 import {
   IconAdjustmentsHorizontal,
@@ -88,9 +80,6 @@ import {
 // under it, and the search bar docks in the header (user, 2026-11-20). Changes animate, kept light:
 // a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
 // until the new ones arrive and new ones fade in, and the list and the map cross-fade.
-
-// The least time a pull to refresh holds the list down, however quickly the search answers.
-const HOLD_MS = 800;
 
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
@@ -310,10 +299,6 @@ export default function SearchTab() {
     transform: [{ translateY: Math.max(dockAt, pillStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
-  const pulling = useSharedValue(0);
-  const pullStyle = useAnimatedStyle(() => ({
-    opacity: Math.max(pulling.value, interpolate(-scrollY.value, [10, 60], [0, 1], "clamp")),
-  }));
 
   // Best match unless the player picks another order; nearest needs a point.
   const sort: SearchSort =
@@ -345,22 +330,8 @@ export default function SearchTab() {
     phone !== undefined && where !== null,
   );
 
-  // A pull to refresh: the list locks down with the spinner showing, Instagram's way, until the
-  // search it started comes back, and for at least HOLD_MS (a quick answer would otherwise snap it
-  // straight back up, user 2026-11-20).
-  const [pulled, setPulled] = useState(false);
-  const pulledAt = useRef(0);
-  useEffect(() => {
-    if (!pulled || search.loading) return;
-    const timer = setTimeout(
-      () => setPulled(false),
-      Math.max(0, HOLD_MS - (Date.now() - pulledAt.current)),
-    );
-    return () => clearTimeout(timer);
-  }, [pulled, search.loading]);
-  useEffect(() => {
-    pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
-  }, [pulled, pulling]);
+  // Pulled down from the top: the search again, the spinner held until it's back.
+  const pull = usePullToRefresh({ scrollY, busy: search.loading, onRefresh: search.refresh });
 
   const total = search.total;
   const summary =
@@ -624,38 +595,10 @@ export default function SearchTab() {
         }}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
-        // Pulled down from the top: the search again, the spinner held until it's back.
-        refreshControl={
-          <RefreshControl
-            refreshing={pulled}
-            onRefresh={() => {
-              // A tap in the hand the moment the pull catches, as Instagram's does.
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              pulledAt.current = Date.now();
-              setPulled(true);
-              search.refresh();
-            }}
-            // The system's spinner can't be made smaller, so it's hidden and ours (below) shows.
-            tintColor="transparent"
-            colors={["transparent"]}
-            progressBackgroundColor="transparent"
-            progressViewOffset={insets.top}
-          />
-        }
+        refreshControl={pull.control}
       />
 
-      {/* The pull's spinner: small, fading in as the list is pulled down, held while it reloads. */}
-      <Animated.View
-        pointerEvents="none"
-        className="absolute right-0 left-0 items-center"
-        style={[{ top: insets.top + 14 }, pullStyle]}
-      >
-        <ActivityIndicator
-          size="small"
-          color={colors.ink}
-          style={{ transform: [{ scale: 0.95 }] }}
-        />
-      </Animated.View>
+      {pull.spinner}
 
       {/* The header the bar docks in: white, fading in as the bar arrives. */}
       <Animated.View
