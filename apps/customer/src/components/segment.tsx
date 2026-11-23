@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
   Easing,
@@ -10,7 +10,9 @@ import { isRTL } from "@/lib/language";
 import { Text } from "./text";
 
 // Two (or more) equal tabs in a grey track, the white thumb sliding under the picked one: Near me |
-// Pick an area in Search's Where, Upcoming | Past on Bookings.
+// Pick an area in Search's Where, Upcoming | Past on Bookings. A tap moves the thumb and lights the
+// label at once (the slide runs on the UI thread); what the switch shows comes after, as a
+// transition, so a heavy page under it (the areas list) never holds the thumb back.
 export function Segment<K extends string>({
   options,
   value,
@@ -29,7 +31,10 @@ export function Segment<K extends string>({
     options.findIndex((option) => option.key === value),
   );
   const at = useSharedValue(index);
+  // The one lit: follows a tap straight away, and the value when it changes from outside.
+  const [picked, setPicked] = useState(index);
   useEffect(() => {
+    setPicked(index);
     at.value = withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) });
   }, [index, at]);
   const half = (width - 8) / options.length;
@@ -57,14 +62,19 @@ export function Segment<K extends string>({
           ]}
         />
       ) : null}
-      {options.map((option) => {
-        const on = option.key === value;
+      {options.map((option, place) => {
+        const on = place === picked;
         return (
           <Pressable
             key={option.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            onPress={() => onChange(option.key)}
+            onPress={() => {
+              if (on) return;
+              at.value = withTiming(place, { duration: 240, easing: Easing.out(Easing.cubic) });
+              setPicked(place);
+              startTransition(() => onChange(option.key));
+            }}
             className="flex-1 items-center justify-center"
           >
             <Text className={`text-body ${on ? "font-medium text-ink" : "text-ink-2"}`}>
