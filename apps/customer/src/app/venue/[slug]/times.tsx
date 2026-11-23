@@ -4,16 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, useWindowDimensions, View, type ViewStyle } from "react-native";
 import Animated, {
-  Easing,
   FadeIn,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHudAnchor } from "@/components/hud";
 import { IconInfoCircle } from "@/components/icons";
@@ -599,20 +598,6 @@ function DayTile({
       </Animated.View>
     </Pressable>
   );
-}
-
-// A grey stand-in, gently pulsing, in a real piece's exact size, so nothing moves when it arrives.
-function Bone({ className }: { className: string }) {
-  const pulse = useSharedValue(1);
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(0.45, { duration: 700, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-  }, [pulse]);
-  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  return <Animated.View className={`bg-chip ${className}`} style={style} />;
 }
 
 // The day tiles before the first day comes back.

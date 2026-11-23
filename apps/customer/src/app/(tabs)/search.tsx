@@ -39,6 +39,7 @@ import {
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
 import { SearchWhen } from "@/components/search-when";
+import { Bone } from "@/components/bone";
 import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { SPORT_ICONS } from "@/components/sport-icons";
@@ -184,9 +185,12 @@ function SearchPill({
   onWhen,
   badge,
   docked,
+  loading,
 }: {
   where: string;
   when: string;
+  // Still working out where the player is: bones in place of the two lines.
+  loading: boolean;
   // The bar opens where (then when); its round button opens Filters, with how many are on.
   onPress: () => void;
   onFilter: () => void;
@@ -217,17 +221,31 @@ function SearchPill({
       >
         <IconSearch size={20} color={colors.ink} strokeWidth={2} />
         <View className="flex-1 justify-center self-stretch overflow-hidden">
-          <Animated.View style={full}>
-            <Text className="text-subtitle font-semibold">{where}</Text>
-            <Pressable accessibilityRole="button" hitSlop={6} onPress={onWhen}>
-              <Text className="text-label text-ink-2">{when}</Text>
-            </Pressable>
-          </Animated.View>
-          <Animated.View className="absolute inset-0 justify-center" style={compact}>
-            <Text className="text-body font-semibold" numberOfLines={1}>
-              {where} <Text className="text-body text-ink-2">· {when}</Text>
-            </Text>
-          </Animated.View>
+          {loading ? (
+            <>
+              <Animated.View className="gap-1.5" style={full}>
+                <Bone className="h-4 w-28 rounded-md" />
+                <Bone className="h-3 w-40 rounded-md" />
+              </Animated.View>
+              <Animated.View className="absolute inset-0 justify-center" style={compact}>
+                <Bone className="h-3.5 w-44 rounded-md" />
+              </Animated.View>
+            </>
+          ) : (
+            <>
+              <Animated.View style={full}>
+                <Text className="text-subtitle font-semibold">{where}</Text>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={onWhen}>
+                  <Text className="text-label text-ink-2">{when}</Text>
+                </Pressable>
+              </Animated.View>
+              <Animated.View className="absolute inset-0 justify-center" style={compact}>
+                <Text className="text-body font-semibold" numberOfLines={1}>
+                  {where} <Text className="text-body text-ink-2">· {when}</Text>
+                </Text>
+              </Animated.View>
+            </>
+          )}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -391,6 +409,8 @@ export default function SearchTab() {
           ? where.name
           : " ";
   const whenLabel = whenText(when, search.timezone);
+  // Where isn't known yet: the phone's still finding itself, or the fallback area hasn't come.
+  const locating = phone === undefined || where === null;
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
   const openFilters = () => setEditing("filters");
@@ -518,6 +538,7 @@ export default function SearchTab() {
           onWhen={openWhen}
           badge={applied.length}
           docked={null}
+          loading={locating}
         />
       </View>
     </View>
@@ -664,6 +685,7 @@ export default function SearchTab() {
           onWhen={openWhen}
           badge={applied.length}
           docked={docked}
+          loading={locating}
         />
       </Animated.View>
 
