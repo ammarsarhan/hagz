@@ -1,9 +1,17 @@
-import { VenueCoverage, VenueFreeHours, VenueSearchResults, VenueSpread } from "@hagz/contracts";
+import {
+  VenueCoverage,
+  VenueFreeHours,
+  VenueFreeHoursQuery,
+  VenueSearchQuery,
+  VenueSearchResults,
+  VenueSpread,
+} from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { router } from "@/http/router";
 import { signJwt } from "@/platform/crypto/jwt";
 import { reconcileGround } from "@/modules/venues/application/slot-generation";
+import { freeHours, searchVenues } from "@/modules/venues/application/venue-search";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
 import { createCustomer, createMarketplace } from "../../support/factories";
@@ -285,6 +293,47 @@ describe("when", () => {
     const { nile } = await setup();
     await prisma.ground.update({ where: { id: nile.groundId }, data: { status: "MAINTENANCE" } });
     expect((await found({ q: "nile" })).data).toEqual([]);
+  });
+});
+
+describe("the day, when none is asked for", () => {
+  // A local time in Cairo, `days` from today, as an instant.
+  const cairoAt = async (days: number, time: string) => {
+    const [row] = await prisma.$queryRaw<{ at: Date }[]>`
+      SELECT (((now() AT TIME ZONE 'Africa/Cairo')::date + ${days}::int + ${time}::time)::timestamp
+        AT TIME ZONE 'Africa/Cairo') AS at`;
+    if (!row) throw new Error("No instant.");
+    return row.at;
+  };
+  const dayOf = (at: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(at);
+
+  it("is today while something can still be booked, then tomorrow; a day asked for is kept", async () => {
+    await setup();
+    // Tomorrow's evening, in the middle of the day: times are left that day.
+    const evening = await cairoAt(1, "18:00");
+    const query = VenueSearchQuery.parse({ marketplace: "EG", ...MAADI, radius: 50 });
+    expect((await searchVenues(query, "EN", null, { now: () => evening })).date).toBe(
+      dayOf(evening),
+    );
+
+    // 11:30 pm: the last hour has started and the next is the next day's, so the search moves on,
+    // the free hours with it.
+    const late = await cairoAt(1, "23:30");
+    const next = dayOf(new Date(late.getTime() + 3 * 3_600_000));
+    const results = await searchVenues(query, "EN", null, { now: () => late });
+    expect(results.date).toBe(next);
+    expect(results.data.map((card) => card.name)).toContain("Nile Kickoff");
+    const hours = await freeHours(
+      VenueFreeHoursQuery.parse({ marketplace: "EG", ...MAADI, radius: 50 }),
+      { now: () => late },
+    );
+    expect(hours.date).toBe(next);
+
+    // Asked for that day by name, it stays, empty as it is.
+    const asked = VenueSearchQuery.parse({ ...query, date: dayOf(late) });
+    const today = await searchVenues(asked, "EN", null, { now: () => late });
+    expect(today).toMatchObject({ date: dayOf(late), total: 0 });
   });
 });
 

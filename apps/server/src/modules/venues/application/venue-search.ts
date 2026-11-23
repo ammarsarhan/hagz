@@ -209,6 +209,34 @@ const activeMarketplace = async (code: string) => {
   return marketplace;
 };
 
+// The day a search is on when none was asked for: today, until nothing in the marketplace can still
+// be booked today (late in the evening, the last hour within its venue's notice), then tomorrow, so
+// Search opens on times a player can take rather than an empty today (user, 2026-11-23). A day
+// asked for is kept, today included.
+const searchDay = async (
+  date: string | undefined,
+  marketplaceId: string,
+  timezone: string,
+  now: Date,
+): Promise<string> => {
+  if (date) return date;
+  const [row] = await prisma.$queryRaw<{ day: string }[]>`
+    WITH today AS (SELECT (${now}::timestamptz AT TIME ZONE ${timezone})::date AS d)
+    SELECT (CASE WHEN EXISTS (
+             SELECT 1 FROM "GroundSlot" s
+             JOIN "Venue" v ON v.id = s."venueId"
+               AND v.status = 'LIVE' AND v."marketplaceId" = ${marketplaceId}::uuid
+             JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE'
+             LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
+             WHERE s.status = 'AVAILABLE'
+               AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
+               AND s."startsAt" < ((today.d + 1)::timestamp AT TIME ZONE ${timezone})
+           ) THEN today.d ELSE today.d + 1 END)::text AS day
+    FROM today`;
+  if (!row) throw new Error("Postgres returned no search day.");
+  return row.day;
+};
+
 // How many venues have a ground free to start each hour of a day (the When sheet's timeline): a
 // free slot on an active ground of the sport and size asked for, after the venue's notice. One
 // slot is enough to count: the hour's bar says something can start then, not for how long.
@@ -217,16 +245,16 @@ const activeMarketplace = async (code: string) => {
 // for the starts in it. `priced: false` leaves the price range out (for the price chart).
 const bookable = async (
   query: Pick<VenueSearchQuery, "date" | "start" | "hours" | "priceMin" | "priceMax"> & Filters,
-  timezone: string,
+  marketplace: { id: string; timezone: string },
   now: Date,
   { priced = true }: { priced?: boolean } = {},
 ) => {
+  const { timezone } = marketplace;
+  const date = await searchDay(query.date, marketplace.id, timezone, now);
   // The day and the window, in the marketplace's time: from the start asked for (or the day's
   // first minute) to the end of the day.
   const [window] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
-    WITH d AS (
-      SELECT coalesce(${query.date ?? null}::date, (${now}::timestamptz AT TIME ZONE ${timezone})::date) AS day
-    )
+    WITH d AS (SELECT ${date}::date AS day)
     SELECT day::text AS date,
            ((day + coalesce(${query.start ?? null}::time, '00:00'::time))::timestamp AT TIME ZONE ${timezone}) AS "from",
            ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
@@ -278,10 +306,9 @@ export const freeHours = async (
 ): Promise<VenueFreeHours> => {
   const { id: marketplaceId, timezone } = await activeMarketplace(query.marketplace);
   const now = clock.now();
+  const date = await searchDay(query.date, marketplaceId, timezone, now);
   const [day] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
-    WITH d AS (
-      SELECT coalesce(${query.date ?? null}::date, (${now}::timestamptz AT TIME ZONE ${timezone})::date) AS day
-    )
+    WITH d AS (SELECT ${date}::date AS day)
     SELECT day::text AS date,
            (day::timestamp AT TIME ZONE ${timezone}) AS "from",
            ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
@@ -337,7 +364,7 @@ export const searchVenues = async (
   const { timezone, currency } = marketplace;
   const now = clock.now();
 
-  const { window, startsOf, atStart } = await bookable(query, timezone, now);
+  const { window, startsOf, atStart } = await bookable(query, marketplace, now);
   const { point, area, near, name, venue } = filtersFor(query);
   const sort = query.sort ?? "BEST_MATCH";
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
@@ -612,7 +639,9 @@ export const venueSpread = async (
 ): Promise<VenueSpread> => {
   const { id: marketplaceId, timezone, currency } = await activeMarketplace(query.marketplace);
   const now = clock.now();
-  const { startsOf, atStart } = await bookable(query, timezone, now, { priced: false });
+  const { startsOf, atStart } = await bookable(query, { id: marketplaceId, timezone }, now, {
+    priced: false,
+  });
   const { point, area, near, name, venue } = filtersFor({
     ...query,
     radius: SEARCH_RADIUS_KM.max,
