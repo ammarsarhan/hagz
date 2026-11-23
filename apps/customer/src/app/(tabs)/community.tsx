@@ -16,6 +16,7 @@ import { useHudAnchor } from "@/components/hud";
 import { IconAdjustmentsHorizontal, IconCheck, IconMapPin } from "@/components/icons";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { NoNameArt } from "@/components/no-name-art";
+import { EmptyBenchArt } from "@/components/empty-bench-art";
 import { FailedMessage } from "@/components/page-state";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { Segment } from "@/components/segment";
@@ -592,12 +593,12 @@ function Pill({ on, label, onPress }: { on: boolean; label: string; onPress: () 
   );
 }
 
-// Nothing to show: the floodlight with its lamps off.
+// Nothing to show: Discover, the floodlight with its lamps off; Mine, the empty bench.
 function Empty({ discover }: { discover: boolean }) {
   const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-8 pb-10">
-      <LightsOutArt />
+      {discover ? <LightsOutArt /> : <EmptyBenchArt />}
       <Text accessibilityRole="header" className="mt-3 text-heading font-semibold">
         {discover ? t("screens.community.emptyTitle") : t("screens.community.mineEmptyTitle")}
       </Text>
