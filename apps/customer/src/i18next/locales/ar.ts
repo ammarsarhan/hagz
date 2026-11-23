@@ -6,6 +6,7 @@ import type { ArabicTranslations } from "./en";
 const ar: ArabicTranslations = {
   translation: {
     components: {
+      venueLink: "عرض {{venue}}",
       pageState: {
         offlineTitle: "أنت غير متصل",
         offlineBody: "تحقق من الواي فاي أو بيانات الهاتف، ثم حاول مرة أخرى.",
@@ -534,6 +535,7 @@ const ar: ArabicTranslations = {
         guest: "سجّل الدخول لترى المباريات التي انضممت إليها.",
       },
       game: {
+        where: "المكان",
         you: "أنت",
         whoHeading: "من يلعب",
         bookerTitle: "{{name}}، صاحب الحجز",

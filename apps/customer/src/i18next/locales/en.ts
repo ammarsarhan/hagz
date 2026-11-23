@@ -7,6 +7,7 @@
 const en = {
   translation: {
     components: {
+      venueLink: "View {{venue}}",
       pageState: {
         offlineTitle: "You’re offline",
         offlineBody: "Check your Wi-Fi or mobile data, then try again.",
@@ -491,6 +492,7 @@ const en = {
         guest: "Sign in to see the games you’ve joined.",
       },
       game: {
+        where: "Where",
         you: "you",
         whoHeading: "Who’s playing",
         bookerTitle: "{{name}}, the booker",

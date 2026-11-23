@@ -26,6 +26,7 @@ import {
 import { BackButton, RoundButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { Text } from "@/components/text";
+import { VenueLink } from "@/components/venue-link";
 import { GroupHeading, openDirections, VenueMap } from "@/components/venue-sections";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -240,10 +241,7 @@ function Content({
             <VenueMap coordinates={venue.coordinates} height={160} radius={14} />
           ) : null}
           <View className="flex-row items-center justify-between gap-4 pt-[18px]">
-            <View className="shrink gap-0.5">
-              <Text className="text-subtitle leading-[22px] font-medium">{venueName}</Text>
-              {place ? <Text className="text-label leading-5 text-ink-2">{place}</Text> : null}
-            </View>
+            <VenueLink slug={booking.venue.slug} name={venueName} place={place} />
             <View className="flex-row gap-2.5">
               {venue.phone ? (
                 <RoundButton

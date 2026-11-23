@@ -16,6 +16,7 @@ import { Sheet } from "@/components/sheet";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { SpotsRow } from "@/components/spots-row";
 import { Text } from "@/components/text";
+import { VenueLink } from "@/components/venue-link";
 import { GroupHeading } from "@/components/venue-sections";
 import i18n from "@/i18next/i18next";
 import { api } from "@/lib/api";
@@ -181,6 +182,24 @@ function Title({ game }: { game: Game }) {
   );
 }
 
+// Where: the venue, opening its page.
+function Where({ game }: { game: Game }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <SectionBreak />
+      <View className="pb-3">
+        <GroupHeading>{t("screens.game.where")}</GroupHeading>
+      </View>
+      <VenueLink
+        slug={game.venue.slug}
+        name={game.venue.name ?? t("screens.venue.fallbackName")}
+        place={game.venue.area}
+      />
+    </>
+  );
+}
+
 // What a player pays, all of it in person: the share to the booker, the fee to the venue.
 function WhatYouPay({ game }: { game: Game }) {
   const { t } = useTranslation();
@@ -341,6 +360,7 @@ function Open({ game, onChange }: { game: Game; onChange: (game: Game) => void }
         </View>
       ) : null}
 
+      <Where game={game} />
       <SectionBreak />
       <WhatYouPay game={game} />
       <SectionBreak />
@@ -453,6 +473,7 @@ function Joined({ game, onChange }: { game: Game; onChange: (game: Game) => void
         ) : null}
       </View>
 
+      <Where game={game} />
       <SectionBreak />
       <WhatYouPay game={game} />
 
