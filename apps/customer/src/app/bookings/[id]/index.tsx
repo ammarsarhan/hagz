@@ -309,7 +309,8 @@ function Standing({
   const checkIn = booking.checkIn;
   const now = Date.now();
 
-  const card = ((): { title: string; body?: string; showCode?: boolean } | null => {
+  const day = dayLabel(localDateOf(booking.startsAt, timezone));
+  const card = ((): { title: string; body: string; showCode?: boolean } | null => {
     if (booking.move && !ended)
       return {
         title: t("screens.booking.moved.title"),
@@ -319,34 +320,43 @@ function Standing({
       };
     switch (booking.status) {
       case "PENDING":
-        return ended
-          ? { title: t("screens.booking.ended.EXPIRED") }
-          : {
-              title: t("screens.booking.pending.title", { venue: venueName }),
-              body: booking.expiresAt
-                ? t("screens.booking.pending.body", {
-                    deadline: deadlineLabel(booking.expiresAt, timezone),
-                  })
-                : undefined,
-            };
+        if (ended)
+          return {
+            title: t("screens.booking.ended.EXPIRED"),
+            body: t("screens.booking.why.unanswered"),
+          };
+        return {
+          title: t("screens.booking.pending.title", { venue: venueName }),
+          body: booking.expiresAt
+            ? t("screens.booking.pending.body", {
+                deadline: deadlineLabel(booking.expiresAt, timezone),
+              })
+            : t("screens.booking.pending.soon"),
+        };
       case "HELD":
-        return ended || !booking.expiresAt
-          ? { title: t("screens.booking.ended.EXPIRED") }
-          : {
-              title: t("screens.booking.held.title"),
-              body: t("screens.booking.held.body", {
-                deadline: deadlineLabel(booking.expiresAt, timezone),
-              }),
-            };
+        if (ended || !booking.expiresAt)
+          return {
+            title: t("screens.booking.ended.EXPIRED"),
+            body: t("screens.booking.why.unpaid"),
+          };
+        return {
+          title: t("screens.booking.held.title"),
+          body: t("screens.booking.held.body", {
+            deadline: deadlineLabel(booking.expiresAt, timezone),
+          }),
+        };
       case "UNCONFIRMED":
-        return ended || !booking.expiresAt
-          ? { title: t("screens.booking.ended.RELEASED") }
-          : {
-              title: t("screens.booking.weekly.title"),
-              body: t("screens.booking.weekly.body", {
-                deadline: deadlineLabel(booking.expiresAt, timezone),
-              }),
-            };
+        if (ended || !booking.expiresAt)
+          return {
+            title: t("screens.booking.ended.RELEASED"),
+            body: t("screens.booking.why.released"),
+          };
+        return {
+          title: t("screens.booking.weekly.title"),
+          body: t("screens.booking.weekly.body", {
+            deadline: deadlineLabel(booking.expiresAt, timezone),
+          }),
+        };
       case "CONFIRMED":
       case "COMPLETED": {
         if (checkIn?.checkedInAt)
@@ -356,7 +366,11 @@ function Standing({
               time: timeOfDay(checkIn.checkedInAt, timezone),
             }),
           };
-        if (ended) return { title: t("screens.booking.ended.COMPLETED") };
+        if (ended)
+          return {
+            title: t("screens.booking.ended.COMPLETED"),
+            body: t("screens.booking.why.played", { day }),
+          };
         if (checkIn && now < Date.parse(checkIn.closesAt))
           return {
             title: t("screens.booking.checkIn.title"),
@@ -369,10 +383,46 @@ function Standing({
         return null;
       }
       case "NO_SHOW":
-      case "CANCELLED":
-      case "EXPIRED":
+        return { title: t("screens.booking.ended.NO_SHOW"), body: t("screens.booking.why.noShow") };
       case "RELEASED":
-        return { title: t(`screens.booking.ended.${booking.status}`) };
+        return {
+          title: t("screens.booking.ended.RELEASED"),
+          body: t("screens.booking.why.released"),
+        };
+      case "EXPIRED":
+        return {
+          title: t("screens.booking.ended.EXPIRED"),
+          body:
+            booking.expiredFrom === "PENDING"
+              ? t("screens.booking.why.unanswered")
+              : booking.expiredFrom === "HELD"
+                ? t("screens.booking.why.unpaid")
+                : t("screens.booking.why.expired"),
+        };
+      case "CANCELLED": {
+        const cancelled = booking.cancelled;
+        // The venue's or support's own words when they gave a reason.
+        const reason = cancelled?.reason ? `“${cancelled.reason}”` : null;
+        if (cancelled?.declined)
+          return {
+            title: t("screens.booking.ended.declined"),
+            body: reason ?? t("screens.booking.why.declined"),
+          };
+        if (cancelled?.by === "CUSTOMER")
+          return {
+            title: t("screens.booking.ended.CANCELLED"),
+            body: t("screens.booking.why.youCancelled"),
+          };
+        if (cancelled?.by === "ADMIN")
+          return {
+            title: t("screens.booking.ended.CANCELLED"),
+            body: reason ?? t("screens.booking.why.supportCancelled"),
+          };
+        return {
+          title: t("screens.booking.ended.CANCELLED"),
+          body: reason ?? t("screens.booking.why.venueCancelled"),
+        };
+      }
       default:
         return null;
     }
@@ -383,7 +433,7 @@ function Standing({
     <View className="mt-[22px] gap-3 rounded-[20px] bg-chip p-[18px]">
       <View className="gap-0.5">
         <Text className="text-subtitle leading-[22px] font-medium">{card.title}</Text>
-        {card.body ? <Text className="text-label leading-5 text-ink-2">{card.body}</Text> : null}
+        <Text className="text-label leading-5 text-ink-2">{card.body}</Text>
       </View>
       {card.showCode ? (
         <Button

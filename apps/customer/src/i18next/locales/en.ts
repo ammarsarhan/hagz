@@ -438,6 +438,7 @@ const en = {
         pending: {
           title: "Waiting for {{venue}}",
           body: "They’ll answer by {{deadline}}. The hours are held for you until then.",
+          soon: "They’ll answer soon.",
         },
         held: { title: "Waiting for payment", body: "Pay by {{deadline}} to keep it." },
         weekly: { title: "Your weekly game", body: "Confirm by {{deadline}} to keep it." },
@@ -445,7 +446,20 @@ const en = {
           title: "The venue moved this",
           body: "Answer by {{deadline}}. If you don’t, it stays moved.",
         },
+        why: {
+          unanswered: "The venue didn’t answer in time, so the hours were let go.",
+          unpaid: "It wasn’t paid in time, so the hours were let go.",
+          expired: "It ran out before it was confirmed.",
+          released: "Your weekly game wasn’t confirmed in time, so this week’s hours were let go.",
+          played: "Played on {{day}}.",
+          noShow: "The venue marked you as not showing up.",
+          declined: "The venue couldn’t take this booking.",
+          venueCancelled: "The venue cancelled this booking.",
+          youCancelled: "You cancelled this booking.",
+          supportCancelled: "Hagz support cancelled this booking.",
+        },
         ended: {
+          declined: "Declined",
           COMPLETED: "Played",
           NO_SHOW: "Marked as a no-show",
           CANCELLED: "Cancelled",

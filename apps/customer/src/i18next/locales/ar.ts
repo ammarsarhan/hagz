@@ -482,6 +482,7 @@ const ar: ArabicTranslations = {
         pending: {
           title: "بانتظار {{venue}}",
           body: "سيردون قبل {{deadline}}. الساعات محجوزة لك حتى ذلك الحين.",
+          soon: "سيردون قريبًا.",
         },
         held: { title: "بانتظار الدفع", body: "ادفع قبل {{deadline}} لتحتفظ به." },
         weekly: { title: "مباراتك الأسبوعية", body: "أكّد قبل {{deadline}} لتحتفظ بها." },
@@ -489,7 +490,20 @@ const ar: ArabicTranslations = {
           title: "غيّر الملعب موعد هذا الحجز",
           body: "رد قبل {{deadline}}. إن لم ترد، يبقى الموعد الجديد.",
         },
+        why: {
+          unanswered: "لم يرد الملعب في الوقت، فأُفرجت الساعات.",
+          unpaid: "لم يُدفع في الوقت، فأُفرجت الساعات.",
+          expired: "انتهت صلاحيته قبل تأكيده.",
+          released: "لم تُؤكَّد مباراتك الأسبوعية في الوقت، فأُفرجت ساعات هذا الأسبوع.",
+          played: "لُعبت يوم {{day}}.",
+          noShow: "سجّلك الملعب كغائب.",
+          declined: "لم يستطع الملعب قبول هذا الحجز.",
+          venueCancelled: "ألغى الملعب هذا الحجز.",
+          youCancelled: "ألغيت هذا الحجز.",
+          supportCancelled: "ألغى دعم Hagz هذا الحجز.",
+        },
         ended: {
+          declined: "مرفوض",
           COMPLETED: "لُعبت",
           NO_SHOW: "سُجّلت كغياب",
           CANCELLED: "أُلغي",
