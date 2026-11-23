@@ -1,6 +1,7 @@
 import {
   JUST_FREED,
   MIN_REVIEWS,
+  POPULAR_DAYS,
   NEXT_TIMES,
   PRICE_STEP,
   SEARCH_RADIUS_KM,
@@ -21,6 +22,7 @@ import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
 import { storage } from "@/platform/storage/storage";
 import { foldName, foldNameSql, likeLiteral } from "@/platform/text/fold";
+import { VENUE_LIVE } from "../domain/events";
 import { nameIn, placeOf } from "../domain/names";
 
 // Search, first slice (PR 3.3): live venues by where (an area and everything under it, near a
@@ -244,7 +246,8 @@ const searchDay = async (
 // marketplace's time, from the start asked for (or the day's first minute) to its end, and the SQL
 // for the starts in it. `priced: false` leaves the price range out (for the price chart).
 const bookable = async (
-  query: Pick<VenueSearchQuery, "date" | "start" | "after" | "hours" | "priceMin" | "priceMax"> & Filters,
+  query: Pick<VenueSearchQuery, "date" | "start" | "after" | "hours" | "priceMin" | "priceMax"> &
+    Filters,
   marketplace: { id: string; timezone: string },
   now: Date,
   { priced = true }: { priced?: boolean } = {},
@@ -364,7 +367,14 @@ export const searchVenues = async (
   const { timezone, currency } = marketplace;
   const now = clock.now();
 
-  const { window, startsOf, atStart } = await bookable(query, marketplace, now);
+  const { window, startsOf, atStart: start } = await bookable(query, marketplace, now);
+  // Just freed: only the starts that came free again lately and start soon, the badge's own rule.
+  const atStart =
+    query.justFreed === "true"
+      ? Prisma.sql`${start}
+          AND s."freedAt" >= ${now}::timestamptz - make_interval(hours => ${JUST_FREED.freedWithinHours})
+          AND s."startsAt" < ${now}::timestamptz + make_interval(hours => ${JUST_FREED.startsWithinHours})`
+      : start;
   const { point, area, near, name, venue } = filtersFor(query);
   const sort = query.sort ?? "BEST_MATCH";
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
@@ -398,6 +408,13 @@ export const searchVenues = async (
                  WHERE vc."customerId" = ${customerId}::uuid
                  GROUP BY vc."venueId"`
     : Prisma.sql`SELECT NULL::uuid AS "venueId", 0 AS played, false AS earned, false AS open WHERE false`;
+  // Bookings made there lately, for the most booked: the ones that stood (not expired or released).
+  const booked = Prisma.sql`(
+    SELECT count(*) FROM "Booking" b
+    WHERE b."venueId" = v.id
+      AND b."createdAt" >= ${now}::timestamptz - make_interval(days => ${POPULAR_DAYS})
+      AND b.status::text IN ('CONFIRMED', 'COMPLETED', 'NO_SHOW'))`;
+  const popular = sort === "POPULAR" ? Prisma.sql`AND ${booked} > 0` : Prisma.empty;
   const key =
     sort === "DISTANCE"
       ? Prisma.sql`ST_Distance(v.coordinates, ${point ?? Prisma.sql`NULL`})::float8`
@@ -408,7 +425,15 @@ export const searchVenues = async (
             WHEN v."reviewCount" >= ${MIN_REVIEWS} THEN -v."averageRating"::float8
             ELSE 1 - coalesce(v."averageRating"::float8, 0) / 10
           END`
-        : Prisma.sql`NULL::float8`;
+        : sort === "POPULAR"
+          ? Prisma.sql`-(${booked})::float8`
+          : sort === "NEWEST"
+            ? // When it first went live (its creation, for a venue from before the events).
+              Prisma.sql`-extract(epoch FROM coalesce(
+                (SELECT min(e."createdAt") FROM "VenueEvent" e
+                 WHERE e."venueId" = v.id AND e.type = ${VENUE_LIVE}),
+                v."createdAt"))::float8`
+            : Prisma.sql`NULL::float8`;
   // The earliest start is the first by time, so its read stops there; the cheapest needs them all.
   const startKey =
     sort === "PRICE"
@@ -434,7 +459,7 @@ export const searchVenues = async (
              ST_Y(v.coordinates::geometry) AS latitude, ST_X(v.coordinates::geometry) AS longitude
       FROM "Venue" v CROSS JOIN mean
       WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
-        ${area} ${near} ${name} ${venue}
+        ${area} ${near} ${name} ${venue} ${popular}
     ),
     ranked AS (
       ${

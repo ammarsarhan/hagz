@@ -14,7 +14,7 @@ import { reconcileGround } from "@/modules/venues/application/slot-generation";
 import { freeHours, searchVenues } from "@/modules/venues/application/venue-search";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { createCustomer, createMarketplace } from "../../support/factories";
+import { createAdmin, createCustomer, createMarketplace } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 // Search (PR 3.3): where, when, the filters, ordering and pages.
@@ -207,6 +207,55 @@ const setup = async () => {
 beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
+});
+
+describe("most booked and newest", () => {
+  it("ranks by the bookings made this week, leaving out venues with none", async () => {
+    const { nile } = await setup();
+    const customer = await prisma.venueCustomer.create({
+      data: { venueId: nile.id, name: "Omar", phone: "+201001234567" },
+    });
+    await prisma.booking.create({
+      data: {
+        venueId: nile.id,
+        groundId: nile.groundId,
+        customerId: customer.id,
+        code: "POPULAR1",
+        status: "CONFIRMED",
+        startsAt: new Date(`${tomorrow()}T20:00:00+02:00`),
+        endsAt: new Date(`${tomorrow()}T21:00:00+02:00`),
+        total: 60000,
+        paymentMode: "MANUAL",
+        commissionRate: 0,
+        cancellationPolicy: "FLEXIBLE",
+        cancellationTiers: [],
+      },
+    });
+    expect((await found({ sort: "POPULAR" })).data.map((card) => card.id)).toEqual([nile.id]);
+    // A week-old booking no longer counts.
+    await prisma.booking.updateMany({ data: { createdAt: new Date(Date.now() - 8 * 86_400_000) } });
+    expect((await found({ sort: "POPULAR" })).data).toHaveLength(0);
+  });
+
+  it("puts the venue that went live last first", async () => {
+    const { nile, padel } = await setup();
+    const { id: adminId } = await createAdmin();
+    await prisma.venueEvent.createMany({
+      data: [
+        {
+          venueId: nile.id,
+          adminId,
+          type: "VENUE_LIVE",
+          createdAt: new Date(Date.now() - 86_400_000),
+        },
+        { venueId: padel.id, adminId, type: "VENUE_LIVE", createdAt: new Date() },
+      ],
+    });
+    expect((await found({ sort: "NEWEST" })).data.map((card) => card.id)).toEqual([
+      padel.id,
+      nile.id,
+    ]);
+  });
 });
 
 describe("where", () => {
@@ -640,6 +689,17 @@ describe("best match and just freed", () => {
     await setup();
     const res = await search(near, "en", "not-a-token");
     expect(res.status).toBe(401);
+  });
+
+  it("finds only the venues with a time that came free again, when asked", async () => {
+    const { nile, padel } = await setup();
+    await prisma.groundSlot.update({
+      where: { id: await slotAt(nile.groundId, "22:00") },
+      data: { freedAt: new Date(Date.now() - 3_600_000) },
+    });
+    const ids = (await found({ justFreed: "true" })).data.map((card) => card.id);
+    expect(ids).toEqual([nile.id]);
+    expect((await found({})).data.map((card) => card.id)).toContain(padel.id);
   });
 
   it("marks free times that came free again near kick-off", async () => {

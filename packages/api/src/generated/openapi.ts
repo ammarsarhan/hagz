@@ -3837,8 +3837,10 @@ export interface paths {
                     flexible?: "true" | "false";
                     /** @description The venue rewards regulars with free bookings. `true` to ask for it. */
                     loyalty?: "true" | "false";
-                    /** @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. */
+                    /** @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. `POPULAR`: the most bookings made in the last 7 days first, leaving out venues with none. `NEWEST`: the venues that went live most recently first. */
                     sort?: components["schemas"]["VenueSearchSort"];
+                    /** @description Only venues with a free time that came free again recently and starts soon (see `JUST_FREED`), among the times searched. `true` to ask for it. */
+                    justFreed?: "true" | "false";
                     /** @description `nextCursor` from the last page. */
                     cursor?: string;
                     limit?: number;
@@ -17429,10 +17431,10 @@ export interface components {
          */
         PaymentFilter: "CASH" | "ONLINE";
         /**
-         * @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first.
+         * @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. `POPULAR`: the most bookings made in the last 7 days first, leaving out venues with none. `NEWEST`: the venues that went live most recently first.
          * @enum {string}
          */
-        VenueSearchSort: "BEST_MATCH" | "DISTANCE" | "RATING" | "PRICE" | "SOONEST";
+        VenueSearchSort: "BEST_MATCH" | "DISTANCE" | "RATING" | "PRICE" | "SOONEST" | "POPULAR" | "NEWEST";
         VenueFreeHours: {
             /**
              * Format: date
