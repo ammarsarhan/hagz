@@ -86,6 +86,8 @@ interface FilterQuery {
   amenities?: string;
   rating?: number;
   instant?: "true";
+  // Only venues with a time that came free again (Home's Just freed).
+  justFreed?: "true";
   flexible?: "true";
   loyalty?: "true";
   payment?: Payment;

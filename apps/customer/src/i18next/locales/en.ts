@@ -200,6 +200,16 @@ const en = {
         instantBadge: "Instant",
         budget: "Within budget",
         budgetLine: "Under {{price}} an hour",
+        newBadge: "New",
+        playAgain: "Play again",
+        usual: "{{day}}s, {{time}}",
+        lastPlayed: "Last played {{date}}",
+        book: "Book",
+        justFreed: "Just freed",
+        justFreedLine: "Someone cancelled, the time is yours",
+        saved: "Saved venues",
+        popular: "Most booked this week",
+        newest: "New on Hagz",
       },
       // The Arabic lines need their own wordplay, not a translation (ar.ts).
       onboarding: {
@@ -806,6 +816,8 @@ const en = {
             PRICE: "Price",
             RATING: "Rating",
             SOONEST: "Soonest",
+            POPULAR: "Most booked",
+            NEWEST: "Newest",
           },
           // The order the list is in, beside the count.
           sortNames: {
@@ -814,6 +826,8 @@ const en = {
             PRICE: "Cheapest",
             RATING: "Best rated",
             SOONEST: "Soonest",
+            POPULAR: "Most booked",
+            NEWEST: "Newest",
           },
           price: "Price per hour",
           anyPrice: "Any price",

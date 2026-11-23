@@ -10,12 +10,16 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Bone } from "@/components/bone";
 import {
   NextGameTicket,
+  PlayAgainCard,
   RAIL_WIDTH,
   Rail,
   RailGameCard,
+  RailSkeleton,
   RailVenueCard,
+  SavedCard,
   whenDay,
 } from "@/components/home-rails";
 import { useHudAnchor } from "@/components/hud";
@@ -46,8 +50,9 @@ import { timeOfDay, timeRange } from "@/lib/venue";
 // Home (Figma C12: 311:2 signed in, 312:2 guest, 313:2 the whole scroll): where the rails look
 // (the area the phone is in, or one picked) with search beside it; "Evening, Omar" and the next game
 // as the black ticket for a signed-in player, "Find a game tonight" for a guest; then the rails.
-// Built so far: Free tonight, Games needing players, Top rated, Instant confirmation, Within budget.
-// Play again, Just freed, Saved venues, Most booked this week and New on Hagz need the API first.
+// The rails, in the Figma's order: Play again, Free tonight, Games needing players, Just freed, Saved
+// venues, Most booked this week, Top rated, Instant confirmation, Within budget, New on Hagz. A rail
+// with nothing in it isn't shown; the first three public ones stand as skeletons while they load.
 
 // The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
 const TAB_ROW = 49;
@@ -80,7 +85,7 @@ export default function Home() {
   const ready = phone !== undefined && where !== null;
   const base = whereQuery(where, phone ?? null);
 
-  const { next, name, read } = useNextGame();
+  const { next, name, played, saved, read } = useNextGame();
   useFocusEffect(
     useCallback(() => {
       void read();
@@ -94,12 +99,20 @@ export default function Home() {
   const topRated = useVenueRail({ ...base, sort: "RATING" }, ready, generation);
   const instant = useVenueRail({ ...base, instant: "true" }, ready, generation);
   const budget = useVenueRail({ ...base, priceMax: BUDGET }, ready, generation);
+  const freed = useVenueRail({ ...base, justFreed: "true" }, ready, generation);
+  const popular = useVenueRail({ ...base, sort: "POPULAR" }, ready, generation);
+  const newest = useVenueRail({ ...base, sort: "NEWEST" }, ready, generation);
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
-  const busy = [tonight, games, topRated, instant, budget].some((rail) => rail.loading);
+  const busy = [tonight, games, topRated, instant, budget, freed, popular, newest].some(
+    (rail) => rail.loading,
+  );
+  // Skeletons until a rail's first answer; a refresh keeps the rails already there.
+  const waiting = (rail: { loading: boolean; items: unknown[] }) =>
+    rail.loading && rail.items.length === 0;
   const pull = usePullToRefresh({
     scrollY,
     busy: busy && generation > 0,
@@ -131,7 +144,7 @@ export default function Home() {
 
   const venueRail = (
     rail: ReturnType<typeof useVenueRail>,
-    options: { wide?: boolean; badge?: (card: VenueCard) => string | null },
+    options: { wide?: boolean; badge?: (card: VenueCard, index: number) => string | null },
   ) => ({
     items: rail.items,
     keyOf: (card: VenueCard) => card.id,
@@ -142,7 +155,7 @@ export default function Home() {
         currency={rail.currency}
         timezone={rail.timezone}
         wide={options.wide}
-        badge={options.badge?.(card) ?? null}
+        badge={options.badge?.(card, rail.items.indexOf(card)) ?? null}
       />
     ),
   });
@@ -167,9 +180,13 @@ export default function Home() {
             className="shrink flex-row items-center gap-1.5 active:opacity-60"
           >
             <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
-            <Text className="shrink text-body font-medium" numberOfLines={1}>
-              {area ? [area.name, area.within].filter(Boolean).join(", ") : " "}
-            </Text>
+            {area ? (
+              <Text className="shrink text-body font-medium" numberOfLines={1}>
+                {[area.name, area.within].filter(Boolean).join(", ")}
+              </Text>
+            ) : (
+              <Bone className="h-4 w-32 rounded-md" />
+            )}
             <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
           </Pressable>
           <RoundButton
@@ -179,16 +196,21 @@ export default function Home() {
           />
         </View>
 
-        <Text
-          accessibilityRole="header"
-          className="px-6 pt-5 text-title font-semibold tracking-[-0.4px]"
-        >
-          {name
-            ? t(`screens.home.greeting.${partOfDay()}`, { name })
-            : next === undefined
-              ? " "
+        {name || next !== undefined ? (
+          <Text
+            accessibilityRole="header"
+            className="px-6 pt-5 text-title font-semibold tracking-[-0.4px]"
+          >
+            {name
+              ? t(`screens.home.greeting.${partOfDay()}`, { name })
               : t("screens.home.guestTitle")}
-        </Text>
+          </Text>
+        ) : (
+          // The title's line, until it's known whether there's a player to greet.
+          <View className="px-6 pt-5" style={{ height: 34 + 20 }}>
+            <Bone className="mt-1 h-7 w-52 rounded-lg" />
+          </View>
+        )}
 
         {next ? (
           <View className="px-6 pt-5">
@@ -196,6 +218,17 @@ export default function Home() {
           </View>
         ) : null}
 
+        {played.length > 0 ? (
+          <Rail
+            title={t("screens.home.playAgain")}
+            items={played}
+            keyOf={(entry) => entry.venue.id}
+            width={RAIL_WIDTH.again}
+            render={(entry) => <PlayAgainCard entry={entry} />}
+          />
+        ) : null}
+
+        {waiting(tonight) ? <RailSkeleton kind="wide" /> : null}
         {tonight.items.length > 0 ? (
           <Rail
             title={tonightIsTomorrow ? t("screens.home.tomorrowNight") : t("screens.home.tonight")}
@@ -205,6 +238,7 @@ export default function Home() {
           />
         ) : null}
 
+        {waiting(games) ? <RailSkeleton kind="game" /> : null}
         {games.items.length > 0 ? (
           <Rail
             title={t("screens.home.games")}
@@ -216,6 +250,34 @@ export default function Home() {
           />
         ) : null}
 
+        {freed.items.length > 0 ? (
+          <Rail
+            title={t("screens.home.justFreed")}
+            line={t("screens.home.justFreedLine")}
+            {...venueRail(freed, { wide: true })}
+          />
+        ) : null}
+
+        {saved.length > 0 ? (
+          <Rail
+            title={t("screens.home.saved")}
+            onSeeAll={() => push("/favorites")}
+            items={saved}
+            keyOf={(venue) => venue.id}
+            width={RAIL_WIDTH.narrow}
+            render={(venue) => <SavedCard venue={venue} />}
+          />
+        ) : null}
+
+        {popular.items.length > 0 ? (
+          <Rail
+            title={t("screens.home.popular")}
+            onSeeAll={() => seeAll({ sort: "POPULAR" })}
+            {...venueRail(popular, { badge: (_, index) => `#${index + 1}` })}
+          />
+        ) : null}
+
+        {waiting(topRated) ? <RailSkeleton kind="narrow" /> : null}
         {topRated.items.length > 0 ? (
           <Rail
             title={t("screens.home.topRated")}
@@ -239,6 +301,14 @@ export default function Home() {
             line={t("screens.home.budgetLine", { price: formatPrice(BUDGET, budget.currency) })}
             onSeeAll={() => seeAll({ priceMax: String(BUDGET) })}
             {...venueRail(budget, {})}
+          />
+        ) : null}
+
+        {newest.items.length > 0 ? (
+          <Rail
+            title={t("screens.home.newest")}
+            onSeeAll={() => seeAll({ sort: "NEWEST" })}
+            {...venueRail(newest, { badge: () => t("screens.home.newBadge") })}
           />
         ) : null}
       </Animated.ScrollView>

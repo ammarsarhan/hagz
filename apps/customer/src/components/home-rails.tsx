@@ -1,4 +1,5 @@
 import type { components } from "@hagz/api";
+import { Image } from "expo-image";
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, View } from "react-native";
@@ -9,7 +10,11 @@ import { push } from "@/lib/navigation";
 import { groundsText, type VenueCard } from "@/lib/search";
 import { localTimeOf } from "@/lib/ground-filter";
 import { dayLabel, hourAt, kindOf, localDateOf, timeOfDay } from "@/lib/venue";
-import { IconQrcode } from "./icons";
+import { reachable } from "@/lib/api";
+import { nextDateFor, type PlayedVenue, type SavedVenue } from "@/lib/home";
+import { intlLocale } from "@/lib/language";
+import { Bone } from "./bone";
+import { IconQrcode, IconStarFilled } from "./icons";
 import { Cover, CoverBadge, openVenue, placeText, Rating } from "./search-cards";
 import { SpotsRow } from "./spots-row";
 import { Text } from "./text";
@@ -25,6 +30,7 @@ const GUTTER = 24;
 const WIDE = 250;
 const NARROW = 168;
 const GAME = 232;
+const AGAIN = 280;
 const EVENING = 17;
 
 // "Tonight", "Today", "Tomorrow", or "Thu 26 Nov", in the venue's time.
@@ -98,7 +104,136 @@ export function Rail<T>({
   );
 }
 
-export const RAIL_WIDTH = { wide: WIDE, narrow: NARROW, game: GAME };
+export const RAIL_WIDTH = { wide: WIDE, narrow: NARROW, game: GAME, again: AGAIN };
+
+// A rail on its way: its heading and cards as grey stand-ins, in the real sizes.
+export function RailSkeleton({ kind }: { kind: "wide" | "narrow" | "game" }) {
+  const width = RAIL_WIDTH[kind];
+  return (
+    <View
+      className="pt-8"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View className="gap-1.5 px-6">
+        <Bone className="h-5 w-40 rounded-md" />
+        {kind === "wide" ? <Bone className="h-3.5 w-48 rounded-md" /> : null}
+      </View>
+      <View className="flex-row gap-3 overflow-hidden px-6 pt-3.5">
+        {[0, 1, 2].map((i) =>
+          kind === "game" ? (
+            <Bone key={i} className="h-[116px] rounded-2xl" style={{ width }} />
+          ) : (
+            <View key={i} style={{ width }} className="gap-2">
+              <Bone className={`${kind === "wide" ? "h-[150px]" : "h-[112px]"} rounded-2xl`} />
+              <Bone className="mt-1 h-4 w-3/4 rounded-md" />
+              <Bone className="h-3 w-1/2 rounded-md" />
+            </View>
+          ),
+        )}
+      </View>
+    </View>
+  );
+}
+
+// "Thursdays, 9 pm": a usual weekday and time, both on the venue's clock.
+const usualText = (usual: { weekday: number; start: string }) => {
+  // 2026-11-01 was a Sunday: weekday 0.
+  const day = new Intl.DateTimeFormat(intlLocale, { weekday: "long", timeZone: "UTC" }).format(
+    new Date(Date.UTC(2026, 10, 1 + usual.weekday, 12)),
+  );
+  return i18n.t("screens.home.usual", {
+    day,
+    time: timeOfDay(`2026-11-01T${usual.start}:00Z`, "UTC"),
+  });
+};
+
+// A venue played at: its cover, name, the usual time (or when last played), and Book, which opens
+// the venue on the next such day and time.
+export function PlayAgainCard({ entry }: { entry: PlayedVenue }) {
+  const { t } = useTranslation();
+  const { venue, usual } = entry;
+  const name = venue.name ?? t("screens.venue.fallbackName");
+  const date = usual ? nextDateFor(usual, venue.timezone) : null;
+  const open = () =>
+    push({
+      pathname: "/venue/[slug]",
+      params: {
+        slug: venue.slug,
+        ...(usual && date ? { date, start: usual.start, hours: String(usual.hours) } : {}),
+      },
+    });
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={open}
+      className="flex-row items-center gap-3 rounded-[18px] border border-border p-3 active:opacity-70"
+    >
+      <Thumb url={venue.cover?.url ?? null} size={56} />
+      <View className="flex-1">
+        <Text className="text-body leading-5 font-medium" numberOfLines={1}>
+          {name}
+        </Text>
+        <Text className="text-caption leading-[18px] text-ink-2" numberOfLines={1}>
+          {usual
+            ? usualText(usual)
+            : t("screens.home.lastPlayed", {
+                date: dayLabel(localDateOf(entry.lastPlayed, venue.timezone)),
+              })}
+        </Text>
+      </View>
+      <View className="h-[34px] justify-center rounded-full bg-chip px-3">
+        <Text className="text-caption leading-[18px] font-semibold">{t("screens.home.book")}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// A saved venue: a narrow card without a price (the saved list has none).
+export function SavedCard({ venue }: { venue: SavedVenue }) {
+  const { t } = useTranslation();
+  const name = venue.name ?? t("screens.venue.fallbackName");
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("screens.search.card.open", { name })}
+      onPress={() => push({ pathname: "/venue/[slug]", params: { slug: venue.slug } })}
+    >
+      <Thumb url={venue.cover?.url ?? null} size={NARROW} height={112} />
+      <View className="mt-3 flex-row items-center justify-between gap-2">
+        <Text className="shrink text-body leading-[22px] font-medium" numberOfLines={1}>
+          {name}
+        </Text>
+        {venue.rating.average === null ? null : (
+          <View className="flex-row items-center gap-0.5">
+            <IconStarFilled size={12} color={colors.ink} />
+            <Text className="text-label leading-5 font-medium">
+              {venue.rating.average.toFixed(1)}
+            </Text>
+          </View>
+        )}
+      </View>
+      <Text className="text-caption leading-[18px] text-ink-2" numberOfLines={1}>
+        {venue.area ?? ""}
+      </Text>
+    </Pressable>
+  );
+}
+
+// A cover by its url (expo-image sizes by style, not class names).
+function Thumb({ url, size, height }: { url: string | null; size: number; height?: number }) {
+  const style = {
+    width: size,
+    height: height ?? size,
+    borderRadius: height ? 16 : 12,
+    backgroundColor: "#c4c8cf",
+  };
+  return url ? (
+    <Image source={{ uri: reachable(url) }} style={style} contentFit="cover" transition={150} />
+  ) : (
+    <View style={style} />
+  );
+}
 
 // A venue in a rail: wide with its free times (Free tonight), or narrow with a badge on the cover.
 export const RailVenueCard = memo(function RailVenueCard({

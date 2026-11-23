@@ -10,6 +10,8 @@ import { MARKETPLACE, type SearchParams, type VenueCard, type Where } from "./se
 
 type Booking = components["schemas"]["BookingSummary"];
 type Game = components["schemas"]["Game"];
+export type PlayedVenue = components["schemas"]["PlayAgainVenue"];
+export type SavedVenue = components["schemas"]["FavoriteVenue"];
 
 export const DEFAULT_RADIUS_KM = 10;
 // Free tonight starts here, or later once it's later.
@@ -156,11 +158,15 @@ export const useGameRail = (params: SearchParams, ready: boolean, generation: nu
 
 export type NextGame = { kind: "booking"; booking: Booking } | { kind: "game"; game: Game };
 
-// The player's next game: their soonest confirmed booking or joined game still to come. Undefined
-// while reading; null for a guest or nothing coming up.
+// The player's own part of Home, read each time Home is shown: their first name, their next game
+// (the soonest confirmed booking or joined game still to come), the venues they've played at, and
+// the venues they saved (those still taking bookings). `next` is undefined while reading; null
+// for a guest or nothing coming up.
 export const useNextGame = () => {
   const [next, setNext] = useState<NextGame | null | undefined>(undefined);
   const [name, setName] = useState<string | null>(null);
+  const [played, setPlayed] = useState<PlayedVenue[]>([]);
+  const [saved, setSaved] = useState<SavedVenue[]>([]);
   const request = useRef(0);
   const read = useCallback(async () => {
     const mine = ++request.current;
@@ -168,16 +174,22 @@ export const useNextGame = () => {
       if (mine === request.current) {
         setNext(null);
         setName(null);
+        setPlayed([]);
+        setSaved([]);
       }
       return;
     }
-    const [bookings, games, me] = await Promise.all([
+    const [bookings, games, me, again, favorites] = await Promise.all([
       send(api.GET("/v1/bookings", { params: { query: { when: "upcoming", limit: 5 } } })),
       send(api.GET("/v1/games/mine", { params: { query: { when: "upcoming", limit: 5 } } })),
       send(api.GET("/v1/customers/me")),
+      send(api.GET("/v1/bookings/again")),
+      send(api.GET("/v1/customers/me/favorites")),
     ]);
     if (mine !== request.current) return;
     if (me.ok) setName(me.data.name.trim().split(/\s+/)[0] ?? null);
+    if (again.ok) setPlayed(again.data.data);
+    if (favorites.ok) setSaved(favorites.data.data.filter((venue) => venue.status === "LIVE"));
     const now = Date.now();
     const candidates: NextGame[] = [
       ...(bookings.ok
@@ -196,5 +208,24 @@ export const useNextGame = () => {
     candidates.sort((a, b) => startOf(a) - startOf(b));
     setNext(candidates[0] ?? null);
   }, []);
-  return { next, name, read };
+  return { next, name, played, saved, read };
+};
+
+// The next date (YYYY-MM-DD, on the venue's clock) for a usual day and time: today if that time is
+// still to come, else the next such weekday. Home's Book on a Play again card opens it.
+export const nextDateFor = (usual: { weekday: number; start: string }, timezone: string) => {
+  const nowTime = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date());
+  for (let days = 0; days <= 7; days++) {
+    const date = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(
+      new Date(Date.now() + days * 86_400_000),
+    );
+    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+    if (weekday === usual.weekday && (days > 0 || usual.start > nowTime)) return date;
+  }
+  return null;
 };
