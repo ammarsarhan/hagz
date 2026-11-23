@@ -5,9 +5,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Switch, TextInput, View } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
 import Animated, {
+  FadeIn,
+  FadeOut,
   interpolate,
+  LinearTransition,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -21,8 +24,9 @@ import { BackButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { Text } from "@/components/text";
+import { Toggle } from "@/components/toggle";
 import { GroupHeading, Hairline } from "@/components/venue-sections";
-import { api } from "@/lib/api";
+import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { newIdempotencyKey } from "@/lib/idempotency";
@@ -287,7 +291,12 @@ function Content({
         {/* What's being booked: the venue's cover, the ground and venue, when, and what kind. */}
         <View className="mt-5 flex-row items-center gap-3.5">
           {cover ? (
-            <Image source={{ uri: cover }} style={{ width: 64, height: 64, borderRadius: 12 }} />
+            <Image
+              source={{ uri: reachable(cover) }}
+              style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: "#c4c8cf" }}
+              contentFit="cover"
+              transition={150}
+            />
           ) : (
             <View className="size-16 rounded-[12px] bg-chip" />
           )}
@@ -360,17 +369,15 @@ function Content({
               <Text className="text-subtitle font-medium">{t("screens.review.players.title")}</Text>
               <Text className="text-label text-ink-2">{t("screens.review.players.body")}</Text>
             </View>
-            <Switch
+            <Toggle
               value={players}
-              onValueChange={setPlayers}
-              trackColor={{ false: "#e9e9eb", true: colors.ink }}
-              ios_backgroundColor="#e9e9eb"
-              accessibilityLabel={t("screens.review.players.title")}
+              onChange={setPlayers}
+              label={t("screens.review.players.title")}
             />
           </View>
           {players ? (
-            <>
-              <View className="flex-row items-center justify-between pt-4">
+            <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)}>
+              <View className="flex-row items-center justify-between pt-6">
                 <View className="gap-0.5">
                   <Text className="text-subtitle font-medium">
                     {t("screens.review.players.count", { count: needed })}
@@ -397,7 +404,7 @@ function Content({
                   />
                 </View>
               </View>
-              <View className="pt-3">
+              <View className="pt-5">
                 <FieldBox focused={focused} error={false}>
                   <TextInput
                     className={inputClass}
@@ -420,12 +427,13 @@ function Content({
                     ? t("screens.review.players.whenHeld")
                     : t("screens.review.players.whenConfirmed")}
               </Text>
-            </>
+            </Animated.View>
           ) : null}
         </View>
 
         {rows.length > 0 ? (
-          <>
+          // Slides down as the players' part opens above it, and back up as it closes.
+          <Animated.View layout={LinearTransition.duration(220)}>
             <View className="mt-[22px] mb-5">
               <Hairline />
             </View>
@@ -437,7 +445,7 @@ function Content({
               {rows.map((row, index) => (
                 <View
                   key={row.key}
-                  className={`flex-row items-start justify-between gap-4 py-2.5 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
+                  className={`flex-row items-start justify-between gap-4 py-3.5 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
                 >
                   <View className="shrink gap-0.5">
                     <Text className="text-body font-medium">{row.when}</Text>
@@ -447,7 +455,7 @@ function Content({
                 </View>
               ))}
             </View>
-          </>
+          </Animated.View>
         ) : null}
       </Animated.ScrollView>
 
