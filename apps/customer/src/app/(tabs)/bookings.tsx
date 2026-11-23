@@ -370,7 +370,13 @@ function Next({ booking, onPress }: { booking: Summary; onPress: () => void }) {
   const { t } = useTranslation();
   const { timezone } = booking.venue;
   const days = Math.max(0, daysUntil(booking.startsAt, timezone));
-  const relative = new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" }).format(days, "day");
+  // Words rather than Intl.RelativeTimeFormat, which Hermes doesn't have.
+  const relative =
+    days === 0
+      ? t("screens.bookings.in.today")
+      : days === 1
+        ? t("screens.bookings.in.tomorrow")
+        : t("screens.bookings.in.days", { count: days });
   const confirmed = booking.status === "CONFIRMED" && !booking.move;
   const status = booking.move
     ? t("screens.bookings.ticket.moved")

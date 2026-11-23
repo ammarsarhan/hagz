@@ -391,6 +391,12 @@ const en = {
         upcoming: "Upcoming",
         past: "Past",
         next: "Next game · {{when}}",
+        in: {
+          today: "today",
+          tomorrow: "tomorrow",
+          days_one: "in {{count}} day",
+          days_other: "in {{count}} days",
+        },
         later: "Later",
         confirmed: "Confirmed",
         waiting: "Waiting for the venue",
