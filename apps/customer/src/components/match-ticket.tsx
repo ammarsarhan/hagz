@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Text } from "./text";
 
@@ -31,6 +32,10 @@ export function MatchTicket({
   priceLabel: string;
   price: string;
 }) {
+  const { t } = useTranslation();
+  // The day runs into the hours under it: "Thu 26 Nov," then "9 – 11 pm" (user, 2026-11-23). The
+  // language's own comma, "،" in Arabic.
+  const comma = t("formats.listComma").trimEnd();
   return (
     <View className="rounded-[20px] border border-border bg-white">
       <View className="gap-1 px-5 pt-5 pb-[18px]">
@@ -40,7 +45,7 @@ export function MatchTicket({
           />
           <Text className="text-caption leading-[18px] font-medium">{status.label}</Text>
         </View>
-        <Text className="pt-2.5 text-heading font-semibold">{day}</Text>
+        <Text className="pt-2.5 text-heading font-semibold">{`${day}${comma}`}</Text>
         <Text className="text-heading font-semibold">{range}</Text>
         <Text className="pt-2 text-label leading-5 text-ink-2">{ground}</Text>
         <Text className="text-label leading-5 text-ink-2">{venue}</Text>
