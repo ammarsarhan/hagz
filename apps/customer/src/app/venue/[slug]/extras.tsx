@@ -12,7 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { useHud, useHudAnchor } from "@/components/hud";
+import { useHudAnchor } from "@/components/hud";
 import { IconCheck } from "@/components/icons";
 import { BackButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
@@ -76,6 +76,13 @@ export default function Extras() {
   return (
     <Picker
       venue={venue.data}
+      booking={{
+        slug: params.slug,
+        ground: params.ground,
+        date: params.date,
+        startsAt: params.startsAt,
+        endsAt: params.endsAt,
+      }}
       date={params.date}
       startsAt={params.startsAt}
       endsAt={params.endsAt}
@@ -106,6 +113,7 @@ const includedLine = (free: PublicAmenity[], t: ReturnType<typeof useTranslation
 
 function Picker({
   venue,
+  booking,
   date,
   startsAt,
   endsAt,
@@ -113,6 +121,8 @@ function Picker({
   price,
 }: {
   venue: PublicVenue;
+  // What See times handed over, passed on to Review.
+  booking: { slug: string; ground: string; date: string; startsAt: string; endsAt: string };
   date: string;
   startsAt: string;
   endsAt: string;
@@ -121,7 +131,6 @@ function Picker({
   price: number;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const insets = useSafeAreaInsets();
   const [ticked, setTicked] = useState<Set<string>>(new Set());
   const [footer, setFooter] = useState(0);
@@ -231,8 +240,18 @@ function Picker({
           <Button
             label={t("screens.extras.continue")}
             size="small"
-            // Review and book (C8 251:2) comes next; until it's built, booking opens soon.
-            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+            onPress={() =>
+              router.push({
+                pathname: "/venue/[slug]/review",
+                params: {
+                  ...booking,
+                  amenities: priced
+                    .filter((amenity) => ticked.has(amenity.id))
+                    .map((amenity) => amenity.id)
+                    .join(","),
+                },
+              })
+            }
           />
         </View>
       </View>

@@ -10,6 +10,8 @@ export { default as IconCircleCheck } from "@tabler/icons-react-native/IconCircl
 export { default as IconClock } from "@tabler/icons-react-native/IconClock";
 export { default as IconEye } from "@tabler/icons-react-native/IconEye";
 export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
+export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
+export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 
 // The venue page: its rating, phone and map, and amenities as the API names them (amenity-icon.tsx).

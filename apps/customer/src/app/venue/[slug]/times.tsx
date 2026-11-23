@@ -15,7 +15,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { useHud, useHudAnchor } from "@/components/hud";
+import { useHudAnchor } from "@/components/hud";
 import { IconInfoCircle } from "@/components/icons";
 import { BackButton } from "@/components/nav";
 import { Text } from "@/components/text";
@@ -228,7 +228,6 @@ function Picker({
   onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [picked, setPicked] = useState<FreeSlot[]>([]);
@@ -493,15 +492,11 @@ function Picker({
             size="small"
             disabled={!ready}
             onPress={() => {
-              // Extras next, skipped when the venue prices none (docs/flows.md); review isn't
-              // built yet, so without extras it still says booking opens soon.
+              // Extras next, skipped for Review when the venue prices none (docs/flows.md).
               if (!first || !last || !day) return;
-              if (!venue.amenities.some((amenity) => amenity.price !== null)) {
-                hud.show(t("screens.venue.bookingSoon"));
-                return;
-              }
+              const extras = venue.amenities.some((amenity) => amenity.price !== null);
               router.push({
-                pathname: "/venue/[slug]/extras",
+                pathname: extras ? "/venue/[slug]/extras" : "/venue/[slug]/review",
                 params: {
                   slug: venue.slug,
                   ground: ground.id,

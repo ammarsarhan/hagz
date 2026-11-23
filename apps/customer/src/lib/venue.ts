@@ -77,6 +77,17 @@ export const dayLabel = (date: string) =>
     .format(new Date(`${date}T12:00:00Z`))
     .replace(",", "");
 
+// The venue's local date (YYYY-MM-DD) of a moment.
+export const localDateOf = (iso: string, timezone: string) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(iso));
+
+// "Wed 25 Nov, 9 pm": a moment at the venue's clock (a cancellation deadline).
+export const momentLabel = (iso: string, timezone: string) =>
+  i18n.t("formats.moment", {
+    day: dayLabel(localDateOf(iso, timezone)),
+    time: timeOfDay(iso, timezone),
+  });
+
 // The day after a date (YYYY-MM-DD), as a date.
 export const nextDate = (date: string) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
