@@ -743,7 +743,6 @@ const ar: ArabicTranslations = {
           areasHeading: "المناطق",
           venuesHeading: "الملاعب",
           noMatch: "لا توجد مناطق أو ملاعب تطابق “{{query}}”.",
-          recent: "عمليات البحث الأخيرة",
           clearRecent: "مسح",
           placeholder: "منطقة أو ملعب",
           clear: "مسح",

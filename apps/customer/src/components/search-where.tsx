@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Keyboard, Pressable, TextInput, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
@@ -285,37 +285,6 @@ export function SearchWhere({
             barStart.value = event.nativeEvent.layout.y;
           }}
         />
-        {!typed && recents.length > 0 ? (
-          <View className="mb-1">
-            <View className="mt-5 mb-1 flex-row items-baseline justify-between">
-              <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
-                {t("screens.search.where.recent")}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={10}
-                onPress={() => {
-                  clearRecentSearches();
-                  setRecents([]);
-                }}
-                className="active:opacity-60"
-              >
-                <Text className="text-label font-medium underline">
-                  {t("screens.search.where.clearRecent")}
-                </Text>
-              </Pressable>
-            </View>
-            {recents.map((recent) => (
-              <Row
-                key={recent.kind === "area" ? recent.id : recent.slug}
-                icon={<IconClock size={20} color={colors.ink} strokeWidth={1.75} />}
-                title={recent.name}
-                line={recent.kind === "area" ? recent.within : recent.line}
-                onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
-              />
-            ))}
-          </View>
-        ) : null}
         {typed ? null : (
           <Segment
             className="mt-4"
@@ -327,6 +296,46 @@ export function SearchWhere({
             onChange={setTab}
           />
         )}
+        {/* Recent picks: one row of chips under the switcher, so it never moves. */}
+        {!typed && recents.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            className="-mx-6 mt-3"
+            contentContainerClassName="items-center gap-2 px-6"
+          >
+            {recents.map((recent) => (
+              <Pressable
+                key={recent.kind === "area" ? recent.id : recent.slug}
+                accessibilityRole="button"
+                accessibilityHint={
+                  recent.kind === "area" ? (recent.within ?? undefined) : (recent.line ?? undefined)
+                }
+                onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
+                className="h-9 flex-row items-center gap-1.5 rounded-full border border-border px-3.5 active:opacity-60"
+              >
+                <IconClock size={15} color={colors.ink2} strokeWidth={1.75} />
+                <Text className="text-label font-medium" numberOfLines={1}>
+                  {recent.name}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => {
+                clearRecentSearches();
+                setRecents([]);
+              }}
+              className="px-1.5 active:opacity-60"
+            >
+              <Text className="text-label font-medium text-ink-2 underline">
+                {t("screens.search.where.clearRecent")}
+              </Text>
+            </Pressable>
+          </ScrollView>
+        ) : null}
         <View className="pt-3">
           {typed ? null : tab === "near" ? (
             <Animated.View key="near" entering={FadeIn.duration(220)}>
