@@ -35,8 +35,9 @@ export function DeclinedBooking({ booking }: { booking: Booking }) {
 
   // Search, set to this booking: around the venue, the same sport and size, the same day, hour and
   // length. `at` makes each tap a new preset, so Search applies it even when it was already open.
+  // Search is a tab: the stack is unwound to the tabs, so there's nothing to swipe back to.
   const similar = () =>
-    router.navigate({
+    router.dismissTo({
       pathname: "/search",
       params: {
         at: String(Date.now()),
