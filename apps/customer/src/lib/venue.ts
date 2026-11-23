@@ -1,5 +1,6 @@
 import type { components } from "@hagz/api";
 import i18n from "@/i18next/i18next";
+import { intlLocale } from "./language";
 
 // The venue page's reading of the API (GET /v1/venues/{slug} and its /availability): when a ground
 // can start, and the venue's terms in a player's words.
@@ -8,6 +9,7 @@ export type PublicVenue = components["schemas"]["PublicVenue"];
 export type PublicGround = components["schemas"]["PublicGround"];
 export type VenueAvailability = components["schemas"]["VenueAvailability"];
 export type FreeSlot = components["schemas"]["FreeSlot"];
+export type PublicAmenity = components["schemas"]["PublicAmenity"];
 
 // The times a ground can start a booking: each free slot that begins a run of back-to-back free
 // slots (each starting where the last ends) at least the ground's shortest booking long. Slots are
@@ -64,6 +66,17 @@ export const hourAt = (iso: string, timezone: string) =>
       .find((part) => part.type === "hour")?.value ?? 0,
   );
 
+// "Fri 20 Nov" for a date (YYYY-MM-DD), in the app's language, Western digits.
+export const dayLabel = (date: string) =>
+  new Intl.DateTimeFormat(intlLocale, {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+    .format(new Date(`${date}T12:00:00Z`))
+    .replace(",", "");
+
 // The day after a date (YYYY-MM-DD), as a date.
 export const nextDate = (date: string) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
@@ -109,7 +122,7 @@ export const cheapestHour = (venue: PublicVenue) => {
 const sportName = (sport: PublicGround["sport"]) => i18n.t(`formats.sports.${sport}`);
 
 // "A, B and C" ("أ، ب وج" in Arabic).
-const listText = (items: string[]) =>
+export const listText = (items: string[]) =>
   items.length > 1
     ? `${items.slice(0, -1).join(i18n.t("formats.listComma"))}${i18n.t("formats.listAnd")}${items.at(-1)}`
     : (items[0] ?? "");
