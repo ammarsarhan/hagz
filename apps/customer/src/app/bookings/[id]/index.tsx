@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelSection, PriceSection, SectionBreak } from "@/components/booking-sections";
+import { MovedBooking } from "@/components/booking-move";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import {
@@ -26,9 +27,9 @@ import { PageState } from "@/components/page-state";
 import { Text } from "@/components/text";
 import { GroupHeading, openDirections, VenueMap } from "@/components/venue-sections";
 import { api } from "@/lib/api";
-import { send } from "@/lib/api-errors";
+import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { isRTL } from "@/lib/language";
+import { intlLocale, isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { push } from "@/lib/navigation";
 import { formatPrice } from "@/lib/money";
@@ -97,10 +98,28 @@ export default function BookingPage() {
       />
     );
   }
-  return <Content booking={loaded.booking} />;
+  // An answer comes back as the booking, or as the one that replaced it (moved back).
+  const update = (booking: Booking) => {
+    setLoaded({ state: "ready", booking });
+    if (booking.id !== id) router.setParams({ id: booking.id });
+  };
+  const { booking } = loaded;
+  if (
+    booking.move &&
+    STILL_TO_PLAY.includes(booking.status) &&
+    Date.parse(booking.endsAt) > Date.now()
+  )
+    return <MovedBooking booking={{ ...booking, move: booking.move }} onAnswered={update} />;
+  return <Content booking={booking} onChange={update} />;
 }
 
-function Content({ booking }: { booking: Booking }) {
+function Content({
+  booking,
+  onChange,
+}: {
+  booking: Booking;
+  onChange: (booking: Booking) => void;
+}) {
   const { t } = useTranslation();
   const hud = useHud();
   const insets = useSafeAreaInsets();
@@ -171,7 +190,11 @@ function Content({ booking }: { booking: Booking }) {
           {[groundName, kindOf(booking.ground), venueName].join(" · ")}
         </Text>
 
-        <Standing booking={booking} venueName={venueName} ended={ended} />
+        <Standing booking={booking} venueName={venueName} ended={ended} onChange={onChange} />
+
+        {booking.regular ? (
+          <WeeklyGame booking={booking} regular={booking.regular} venueName={venueName} />
+        ) : null}
 
         {/* Its open game: how many have joined, and who. */}
         {listing && live ? (
@@ -299,18 +322,41 @@ function Standing({
   booking,
   venueName,
   ended,
+  onChange,
 }: {
   booking: Booking;
   venueName: string;
   ended: boolean;
+  onChange: (booking: Booking) => void;
 }) {
   const { t } = useTranslation();
+  const hud = useHud();
+  const [sending, setSending] = useState<"confirm" | "release" | null>(null);
+
+  // A weekly game's week: playing (confirm) or not (release, the hours go back on sale).
+  const reserve = async (kind: "confirm" | "release") => {
+    setSending(kind);
+    const params = { params: { path: { bookingId: booking.id } } };
+    const result = await send(
+      kind === "confirm"
+        ? api.POST("/v1/bookings/{bookingId}/reservation/confirm", params)
+        : api.POST("/v1/bookings/{bookingId}/reservation/release", params),
+    );
+    setSending(null);
+    if (result.ok) onChange(result.data);
+    else hud.show(hudMessage(result.error));
+  };
   const { timezone } = booking.venue;
   const checkIn = booking.checkIn;
   const now = Date.now();
 
   const day = dayLabel(localDateOf(booking.startsAt, timezone));
-  const card = ((): { title: string; body: string; showCode?: boolean } | null => {
+  const card = ((): {
+    title: string;
+    body: string;
+    showCode?: boolean;
+    reserve?: boolean;
+  } | null => {
     if (booking.move && !ended)
       return {
         title: t("screens.booking.moved.title"),
@@ -356,6 +402,7 @@ function Standing({
           body: t("screens.booking.weekly.body", {
             deadline: deadlineLabel(booking.expiresAt, timezone),
           }),
+          reserve: true,
         };
       case "CONFIRMED":
       case "COMPLETED": {
@@ -443,6 +490,82 @@ function Standing({
           onPress={() => push({ pathname: "/bookings/[id]/check-in", params: { id: booking.id } })}
         />
       ) : null}
+      {card.reserve ? (
+        <View className="flex-row gap-2.5">
+          <View className="flex-1">
+            <Button
+              label={t("screens.booking.weekly.confirm")}
+              size="small"
+              loading={sending === "confirm"}
+              disabled={sending === "release"}
+              onPress={() => void reserve("confirm")}
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              label={t("screens.booking.weekly.skip")}
+              size="small"
+              variant="white"
+              loading={sending === "release"}
+              disabled={sending === "confirm"}
+              onPress={() => void reserve("release")}
+            />
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+// The weekly game a reservation is part of: which day and hours, since when, how many of the last
+// weeks were played, and who to ask to change it (the venue set it up).
+function WeeklyGame({
+  booking,
+  regular,
+  venueName,
+}: {
+  booking: Booking;
+  regular: NonNullable<Booking["regular"]>;
+  venueName: string;
+}) {
+  const { t } = useTranslation();
+  const { timezone } = booking.venue;
+  const weekday = new Intl.DateTimeFormat(intlLocale, {
+    timeZone: timezone,
+    weekday: "long",
+  }).format(new Date(booking.startsAt));
+  const since = new Intl.DateTimeFormat(intlLocale, {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${regular.since}T12:00:00Z`));
+  const rows: [string, string][] = [
+    [
+      t("screens.booking.weeklyGame.every"),
+      t("formats.moment", {
+        day: weekday,
+        time: timeRange(booking.startsAt, booking.endsAt, timezone),
+      }),
+    ],
+    [t("screens.booking.weeklyGame.since"), since],
+  ];
+  if (regular.weeks > 0)
+    rows.push([
+      t("screens.booking.weeklyGame.played"),
+      t("screens.booking.weeklyGame.playedOf", { count: regular.weeks, played: regular.played }),
+    ]);
+  return (
+    <View className="mt-[22px] gap-3">
+      <GroupHeading>{t("screens.booking.weeklyGame.title")}</GroupHeading>
+      {rows.map(([label, value]) => (
+        <View key={label} className="flex-row items-center justify-between gap-4">
+          <Text className="text-label leading-5 text-ink-2">{label}</Text>
+          <Text className="shrink text-body leading-[22px] font-medium">{value}</Text>
+        </View>
+      ))}
+      <Text className="text-caption leading-[18px] text-unit">
+        {t("screens.booking.weeklyGame.setUp", { venue: venueName })}
+      </Text>
     </View>
   );
 }
