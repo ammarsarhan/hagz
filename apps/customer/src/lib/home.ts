@@ -188,17 +188,14 @@ export const nextDateFor = (usual: { weekday: number; start: string }, timezone:
   return null;
 };
 
-// Home's feed is one governorate (user, 2026-11-23): narrowing it further is Search's job. By default
-// the one the phone is in (the nearest area's governorate); without a position, or where Hagz has no
-// venues yet, the one with the most venues (coverage comes most venues first). Picking one sticks
-// for the session; "Use my location" goes back to the default.
-let picked: string | null = null;
-
+// Home's feed is one governorate (user, 2026-11-23): narrowing it further is Search's job. The one
+// the phone is in (the nearest area's governorate); without a position, or where Hagz has no venues
+// yet, the one with the most venues (coverage comes most venues first). Picking another is for
+// later (user, 2026-11-24): the picker sheet was taken out until then.
 export const useHomeGovernorate = (
   here: { latitude: number; longitude: number } | null | undefined,
   coverage: Governorate[] | null,
 ) => {
-  const [choice, setChoice] = useState<string | null>(picked);
   const [nearestArea, setNearestArea] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (here === undefined) return;
@@ -231,14 +228,6 @@ export const useHomeGovernorate = (
             governorate.areas.some((area) => area.id === nearestArea),
         ) ?? null)
       : null;
-  const fallback = coverage?.[0] ?? null;
   const settled = here !== undefined && (here === null || nearestArea !== undefined);
-  const governorate =
-    (choice ? coverage?.find((each) => each.id === choice) : null) ??
-    (settled ? (mine ?? fallback) : null);
-  const pick = (id: string | null) => {
-    picked = id;
-    setChoice(id);
-  };
-  return { governorate, mine, usingLocation: choice === null && mine !== null, pick };
+  return settled ? (mine ?? coverage?.[0] ?? null) : null;
 };

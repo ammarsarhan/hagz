@@ -23,10 +23,9 @@ import {
   whenDay,
 } from "@/components/home-rails";
 import { useHudAnchor } from "@/components/hud";
-import { IconBell, IconChevronDown, IconMapPin, IconSearch } from "@/components/icons";
+import { IconBell, IconMapPin, IconSearch } from "@/components/icons";
 import { RoundButton } from "@/components/nav";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
-import { HomeGovernorateSheet } from "@/components/home-governorate";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
@@ -70,8 +69,7 @@ export default function Home() {
   // Where: a governorate (lib/home.ts, useHomeGovernorate); Search narrows further.
   const phone = useHere();
   const coverage = useCoverage();
-  const { governorate, mine, usingLocation, pick } = useHomeGovernorate(phone, coverage);
-  const [picking, setPicking] = useState(false);
+  const governorate = useHomeGovernorate(phone, coverage);
   const ready = governorate !== null;
   const base = governorate ? { area: governorate.id } : {};
 
@@ -167,15 +165,10 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top, paddingBottom: 32 }}
       >
-        {/* Where the rails look (a governorate), to change it; search. */}
+        {/* Where the rails look (a governorate; picking one comes later), then search and
+            notifications. */}
         <View className="flex-row items-center justify-between px-6">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.home.changeWhere")}
-            hitSlop={8}
-            onPress={() => setPicking(true)}
-            className="shrink flex-row items-center gap-1.5 active:opacity-60"
-          >
+          <View className="shrink flex-row items-center gap-1.5">
             <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
             {governorate ? (
               <Text className="shrink text-body font-medium" numberOfLines={1}>
@@ -184,8 +177,7 @@ export default function Home() {
             ) : (
               <Bone className="h-4 w-28 rounded-md" />
             )}
-            <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
-          </Pressable>
+          </View>
           <View className="flex-row gap-2">
             <RoundButton
               icon={IconSearch}
@@ -325,21 +317,6 @@ export default function Home() {
         className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
         style={[{ height: insets.top }, stripStyle]}
       />
-
-      {coverage ? (
-        <HomeGovernorateSheet
-          visible={picking}
-          coverage={coverage}
-          current={governorate?.id ?? null}
-          usingLocation={usingLocation}
-          located={mine !== null}
-          onPick={(id) => {
-            pick(id);
-            setPicking(false);
-          }}
-          onClose={() => setPicking(false)}
-        />
-      ) : null}
     </View>
   );
 }
