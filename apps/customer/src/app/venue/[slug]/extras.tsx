@@ -279,8 +279,8 @@ function Picker({
         {/* Need players?: on, how many (each pays the booker their share) and a note. */}
         <View className="flex-row items-center gap-3">
           <View className="flex-1 gap-0.5">
-            <Text className="text-subtitle font-medium">{t("screens.extras.players.title")}</Text>
-            <Text className="text-label text-ink-2">{t("screens.extras.players.body")}</Text>
+            <Text className="text-body font-medium">{t("screens.extras.players.title")}</Text>
+            <Text className="text-body text-ink-2">{t("screens.extras.players.body")}</Text>
           </View>
           <Toggle value={players} onChange={setPlayers} label={t("screens.extras.players.title")} />
         </View>
@@ -292,10 +292,10 @@ function Picker({
           >
             <View className="flex-row items-center justify-between pt-6">
               <View className="gap-0.5">
-                <Text className="text-subtitle font-medium">
+                <Text className="text-body font-medium">
                   {t("screens.extras.players.count", { count: needed })}
                 </Text>
-                <Text className="text-label text-ink-2">
+                <Text className="text-body text-ink-2">
                   {t("screens.extras.players.each", {
                     share: formatPrice(share, currency),
                     max: most,
@@ -333,7 +333,7 @@ function Picker({
                 />
               </FieldBox>
             </View>
-            <Text className="pt-2.5 text-caption text-unit">
+            <Text className="pt-2.5 text-label text-ink-2">
               {quote.startsAs === "PENDING"
                 ? t("screens.extras.players.whenPending", { venue: venueName })
                 : quote.startsAs === "HELD"
