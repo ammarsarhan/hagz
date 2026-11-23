@@ -1,5 +1,11 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { View } from "react-native";
+import Animated, {
+  LayoutAnimationConfig,
+  LinearTransition,
+  ZoomIn,
+  ZoomOut,
+} from "react-native-reanimated";
 import Svg, { Circle, ClipPath, Defs, G, Line } from "react-native-svg";
 import { colors } from "@/lib/colors";
 import { Text } from "./text";
@@ -11,6 +17,21 @@ import { Text } from "./text";
 const OPEN = "#b5b9bf";
 // The hatching, faint: someone's there, but quieter than a named player.
 const HATCH = 0.35;
+
+// A change after it's shown (a player joins or is removed, the spots needed go up or down): the disc
+// that comes scales in, the one that goes scales out, and the rest slide to their places, across a
+// wrap too. Nothing animates as the row first appears or goes with its page.
+const ENTER = ZoomIn.duration(220);
+const EXIT = ZoomOut.duration(160);
+const MOVE = LinearTransition.duration(220);
+
+function Disc({ children }: { children: ReactNode }) {
+  return (
+    <Animated.View entering={ENTER} exiting={EXIT} layout={MOVE}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export function SpotsRow({
   booker,
@@ -29,33 +50,46 @@ export function SpotsRow({
   const disc = { width: size, height: size, borderRadius: size / 2 };
   const letter = `${size >= 30 ? "text-[13px]" : "text-[10px]"} font-semibold`;
   const initial = (name: string) => name.trim().charAt(0).toUpperCase();
+  // Named discs keyed by the name (and which of that name), so a removed player's disc is the one
+  // that goes, not the last; hatched ones by their place.
+  const seen = new Map<string, number>();
+  const keyOf = (i: number) => {
+    const name = names?.[i];
+    if (!name) return `j${i}`;
+    const nth = (seen.get(name) ?? 0) + 1;
+    seen.set(name, nth);
+    return `n${name}${nth}`;
+  };
   return (
     // Wraps onto more lines for a big game (an 11-a-side has 22 discs).
-    <View
-      className="flex-row flex-wrap"
-      style={{ gap: size >= 30 ? 6 : 4 }}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      <View className="items-center justify-center border border-ink bg-white" style={disc}>
-        <Text className={letter}>{initial(booker)}</Text>
+    <LayoutAnimationConfig skipEntering skipExiting>
+      <View
+        className="flex-row flex-wrap"
+        style={{ gap: size >= 30 ? 6 : 4 }}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View className="items-center justify-center border border-ink bg-white" style={disc}>
+          <Text className={letter}>{initial(booker)}</Text>
+        </View>
+        {Array.from({ length: joined }, (_, i) => (
+          <Disc key={keyOf(i)}>
+            {names?.[i] ? (
+              <View className="items-center justify-center bg-ink" style={disc}>
+                <Text className={`${letter} text-white`}>{initial(names[i])}</Text>
+              </View>
+            ) : (
+              <Hatched size={size} />
+            )}
+          </Disc>
+        ))}
+        {Array.from({ length: open }, (_, i) => (
+          <Disc key={`o${i}`}>
+            <View style={[disc, { borderWidth: 1, borderStyle: "dashed", borderColor: OPEN }]} />
+          </Disc>
+        ))}
       </View>
-      {Array.from({ length: joined }, (_, i) =>
-        names?.[i] ? (
-          <View key={`j${i}`} className="items-center justify-center bg-ink" style={disc}>
-            <Text className={`${letter} text-white`}>{initial(names[i])}</Text>
-          </View>
-        ) : (
-          <Hatched key={`j${i}`} size={size} />
-        ),
-      )}
-      {Array.from({ length: open }, (_, i) => (
-        <View
-          key={`o${i}`}
-          style={[disc, { borderWidth: 1, borderStyle: "dashed", borderColor: OPEN }]}
-        />
-      ))}
-    </View>
+    </LayoutAnimationConfig>
   );
 }
 
