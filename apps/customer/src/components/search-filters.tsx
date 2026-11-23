@@ -59,7 +59,7 @@ const RATINGS = [undefined, 4, 4.5];
 const PAYMENTS: (Payment | undefined)[] = [undefined, "CASH", "ONLINE"];
 
 // A pill: picked, its black (with white words) fades in over the white one, as the sport chips do.
-const Pill = memo(function Pill({
+export const Pill = memo(function Pill({
   label,
   on,
   icon,
@@ -100,7 +100,7 @@ const Pill = memo(function Pill({
   );
 });
 
-function Group({
+export function Group({
   title,
   last = false,
   children,
@@ -119,11 +119,11 @@ function Group({
   );
 }
 
-function Label({ children, first = false }: { children: string; first?: boolean }) {
+export function Label({ children, first = false }: { children: string; first?: boolean }) {
   return <Text className={`${first ? "" : "mt-4"} mb-2 text-label text-ink-2`}>{children}</Text>;
 }
 
-function Pills({ children }: { children: ReactNode }) {
+export function Pills({ children }: { children: ReactNode }) {
   return <View className="flex-row flex-wrap gap-2">{children}</View>;
 }
 
@@ -154,7 +154,7 @@ function Toggle({
   );
 }
 
-const toggled = <T,>(list: T[], item: T) =>
+export const toggled = <T,>(list: T[], item: T) =>
   list.includes(item) ? list.filter((each) => each !== item) : [...list, item];
 
 const SortSection = memo(function SortSection({
