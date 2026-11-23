@@ -2,6 +2,7 @@ import { refundBands, type CancellationTier } from "@hagz/contracts";
 import type { components } from "@hagz/api";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import i18n from "@/i18next/i18next";
 import { formatPrice } from "@/lib/money";
 import { hoursLabel, momentLabel, timeRange } from "@/lib/venue";
 import { Text } from "./text";
@@ -81,12 +82,10 @@ export function PriceSection({
 
 // The cancellation tiers as rows: until when each refund lasts, counted back from kick-off at the
 // venue's clock, and how much comes back. Windows that have already closed are left out.
-export const cancelRows = (
-  tiers: CancellationTier[],
-  startsAt: string,
-  timezone: string,
-  t: ReturnType<typeof useTranslation>["t"],
-) => {
+export const cancelRows = (tiers: CancellationTier[], startsAt: string, timezone: string) => {
+  // i18n.t, not a hook's t passed in: that parameter's type grew too deep for TypeScript once the
+  // translations were large enough.
+  const t = i18n.t;
   const start = Date.parse(startsAt);
   const before = (hours: number) => new Date(start - hours * HOUR).toISOString();
   const back = (percent: number) =>
@@ -97,24 +96,30 @@ export const cancelRows = (
         : percent === 0
           ? t("screens.review.cancel.nothing")
           : t("screens.review.cancel.percent", { percent });
-  return refundBands(tiers)
-    .filter((band) => band.from === 0 || start - band.from * HOUR > Date.now())
-    .map((band) => ({
-      key: band.from,
-      when:
-        band.from > 0
-          ? t("screens.review.cancel.until", { moment: momentLabel(before(band.from), timezone) })
-          : band.to === null
-            ? t("screens.review.cancel.always")
-            : t("screens.review.cancel.after", { moment: momentLabel(before(band.to), timezone) }),
-      line:
-        band.from > 0
-          ? t("screens.review.cancel.orMore", { hours: hoursLabel(band.from) })
-          : band.to === null
-            ? null
-            : t("screens.review.cancel.lessThan", { hours: hoursLabel(band.to) }),
-      back: back(band.refundPercent),
-    }));
+  return (
+    refundBands(tiers)
+      .filter((band) => band.from === 0 || start - band.from * HOUR > Date.now())
+      // The row's type spelled out: inferred from the nested t() calls, it grows past what
+      // TypeScript will expand once the translations are large enough.
+      .map((band): { key: number; when: string; line: string | null; back: string } => ({
+        key: band.from,
+        when:
+          band.from > 0
+            ? t("screens.review.cancel.until", { moment: momentLabel(before(band.from), timezone) })
+            : band.to === null
+              ? t("screens.review.cancel.always")
+              : t("screens.review.cancel.after", {
+                  moment: momentLabel(before(band.to), timezone),
+                }),
+        line:
+          band.from > 0
+            ? t("screens.review.cancel.orMore", { hours: hoursLabel(band.from) })
+            : band.to === null
+              ? null
+              : t("screens.review.cancel.lessThan", { hours: hoursLabel(band.to) }),
+        back: back(band.refundPercent),
+      }))
+  );
 };
 
 // If you cancel: each refund's deadline, counted back from kick-off. Nothing when no window is left.
@@ -131,7 +136,7 @@ export function CancelSection({
   divided?: boolean;
 }) {
   const { t } = useTranslation();
-  const rows = cancelRows(tiers, startsAt, timezone, t);
+  const rows = cancelRows(tiers, startsAt, timezone);
   if (rows.length === 0) return null;
   return (
     <>

@@ -25,6 +25,7 @@ import { PageState } from "@/components/page-state";
 import { Text } from "@/components/text";
 import { Toggle } from "@/components/toggle";
 import { Hairline } from "@/components/venue-sections";
+import i18n from "@/i18next/i18next";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
@@ -145,11 +146,11 @@ const midSentence = (name: string) => {
 };
 
 // "Floodlights, changing rooms and parking are included."
-const includedLine = (free: PublicAmenity[], t: ReturnType<typeof useTranslation>["t"]) => {
+const includedLine = (free: PublicAmenity[]) => {
   const names = free.map((amenity) => amenity.name).filter((name): name is string => !!name);
   if (names.length === 0) return null;
   const list = listText(names.map((name, index) => (index === 0 ? name : midSentence(name))));
-  return t("screens.extras.included", { list, count: names.length });
+  return i18n.t("screens.extras.included", { list, count: names.length });
 };
 
 function Picker({
@@ -190,7 +191,7 @@ function Picker({
   const { currency, timezone } = venue.marketplace;
   const priced = venue.amenities.filter((amenity) => amenity.price !== null);
   const free = venue.amenities.filter((amenity) => amenity.price === null);
-  const included = includedLine(free, t);
+  const included = includedLine(free);
 
   const cost = (amenity: PublicAmenity) =>
     (amenity.price ?? 0) * (amenity.pricing === "PER_HOUR" ? slots : 1);
