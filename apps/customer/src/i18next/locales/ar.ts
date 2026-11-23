@@ -527,6 +527,9 @@ const ar: ArabicTranslations = {
           playedOf_few: "{{played}} من آخر {{count}} أسابيع",
           playedOf_many: "{{played}} من آخر {{count}} أسبوعًا",
           playedOf_other: "{{played}} من آخر {{count}} أسبوع",
+          after: "بعد هذا الأسبوع",
+          confirmed: "مؤكَّد",
+          notYet: "يُؤكَّد لاحقًا",
           setUp: "{{venue}} أعدّ هذا لك. اطلب منهم تغييره أو إيقافه.",
         },
         declined: {

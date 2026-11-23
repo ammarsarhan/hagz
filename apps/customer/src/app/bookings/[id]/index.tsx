@@ -498,7 +498,7 @@ function Standing({
           <View className="flex-1">
             <Button
               label={t("screens.booking.weekly.confirm")}
-              size="small"
+              size="compact"
               loading={sending === "confirm"}
               disabled={sending === "release"}
               onPress={() => void reserve("confirm")}
@@ -507,7 +507,7 @@ function Standing({
           <View className="flex-1">
             <Button
               label={t("screens.booking.weekly.skip")}
-              size="small"
+              size="compact"
               variant="white"
               loading={sending === "release"}
               disabled={sending === "confirm"}
@@ -569,6 +569,32 @@ function WeeklyGame({
       <Text className="text-caption leading-[18px] text-unit">
         {t("screens.booking.weeklyGame.setUp", { venue: venueName })}
       </Text>
+      {/* The weeks reserved after this one: shown, not answered here. Each is confirmed on its
+          own once it's the next one. */}
+      {regular.later.length > 0 ? (
+        <View className="gap-3 pt-2">
+          <Text className="text-label leading-5 font-medium">
+            {t("screens.booking.weeklyGame.after")}
+          </Text>
+          {regular.later.map((week) => (
+            <View key={week.startsAt} className="flex-row items-center justify-between gap-4">
+              <Text className="text-body leading-[22px]">
+                {t("formats.moment", {
+                  day: dayLabel(localDateOf(week.startsAt, timezone)),
+                  time: timeRange(week.startsAt, week.endsAt, timezone),
+                })}
+              </Text>
+              <Text
+                className={`text-label leading-5 ${week.status === "CONFIRMED" ? "font-medium" : "text-ink-3"}`}
+              >
+                {week.status === "CONFIRMED"
+                  ? t("screens.booking.weeklyGame.confirmed")
+                  : t("screens.booking.weeklyGame.notYet")}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -479,6 +479,9 @@ const en = {
           played: "Played",
           playedOf_one: "{{played}} of the last week",
           playedOf_other: "{{played}} of the last {{count}} weeks",
+          after: "After this week",
+          confirmed: "Confirmed",
+          notYet: "Confirm later",
           setUp: "{{venue}} set this up for you. Ask them to change or stop it.",
         },
         declined: {
