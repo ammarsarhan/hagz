@@ -188,6 +188,12 @@ const en = {
         tonight: "Free tonight",
         tomorrowNight: "Free tomorrow night",
         near: "Near {{place}}",
+        inPlace: "In {{place}}",
+        where: {
+          title: "Where to play",
+          line: "Home shows a governorate. To look somewhere more exact, use Search.",
+          useLocation: "Use my location",
+        },
         nearYou: "Near you",
         fromHour: "{{place}}, from {{time}}",
         games: "Games needing players",

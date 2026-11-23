@@ -206,6 +206,12 @@ const ar: ArabicTranslations = {
         tonight: "متاح الليلة",
         tomorrowNight: "متاح ليلة الغد",
         near: "بالقرب من {{place}}",
+        inPlace: "في {{place}}",
+        where: {
+          title: "أين تلعب",
+          line: "تعرض الرئيسية محافظة واحدة. لتحديد مكان أدق، استخدم البحث.",
+          useLocation: "استخدم موقعي",
+        },
         nearYou: "بالقرب منك",
         fromHour: "{{place}}، من {{time}}",
         games: "مباريات تحتاج لاعبين",

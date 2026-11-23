@@ -41,6 +41,7 @@ export { default as IconHanger } from "@tabler/icons-react-native/IconHanger";
 export { default as IconIceCream } from "@tabler/icons-react-native/IconIceCream";
 export { default as IconLock } from "@tabler/icons-react-native/IconLock";
 export { default as IconMapPin } from "@tabler/icons-react-native/IconMapPin";
+export { default as IconNavigation } from "@tabler/icons-react-native/IconNavigation";
 export { default as IconMoodKid } from "@tabler/icons-react-native/IconMoodKid";
 export { default as IconParking } from "@tabler/icons-react-native/IconParking";
 export { default as IconPhone } from "@tabler/icons-react-native/IconPhone";

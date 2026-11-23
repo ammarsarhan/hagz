@@ -43,7 +43,6 @@ import { RadiusSlider } from "./radius-slider";
 import { Text } from "./text";
 import { Segment } from "./segment";
 import { push } from "@/lib/navigation";
-import { RoundButton } from "./nav";
 import {
   clearRecentSearches,
   recentSearches,
@@ -175,27 +174,16 @@ function AreaPills({
   onPick,
   small = false,
   className = "",
-  near,
 }: {
   governorate: Governorate;
   where: Where;
   onPick: (where: Where) => void;
   small?: boolean;
   className?: string;
-  // Home's picker: Near me first, the way back from an area to around the player.
-  near?: (() => void) | null;
 }) {
   const { t } = useTranslation();
   return (
     <View className={`flex-row flex-wrap gap-2 ${className}`}>
-      {near ? (
-        <Pill
-          small={small}
-          label={t("screens.search.where.nearMe")}
-          on={where.kind === "near"}
-          onPress={near}
-        />
-      ) : null}
       <Pill
         small={small}
         label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
@@ -235,13 +223,9 @@ export function SearchWhere({
   params,
   onPick,
   onClose,
-  areasOnly = false,
 }: {
   here: { latitude: number; longitude: number } | null;
   where: Where;
-  // Home's where (user, 2026-11-23): only the areas to pick from, under "Pick an area" and a close
-  // button; no search field, no Near me | Pick an area, no recents.
-  areasOnly?: boolean;
   // The search without its where (when, sport, filters), for the radius bars.
   params: SearchParams;
   onPick: (where: Where) => void;
@@ -255,9 +239,7 @@ export function SearchWhere({
   // What the results on screen are for, so "no match" waits until the lookup for what's typed has
   // come back (not while it's still on its way).
   const [answered, setAnswered] = useState("");
-  const [tab, setTab] = useState<"near" | "area">(
-    !areasOnly && here && where.kind === "near" ? "near" : "area",
-  );
+  const [tab, setTab] = useState<"near" | "area">(here && where.kind === "near" ? "near" : "area");
   const [radius, setRadius] = useState(where.kind === "near" ? where.radius : DEFAULT_RADIUS);
   const coverage = useCoverage();
   // The governorate open: none until one's tapped, so the list never shifts as it arrives.
@@ -305,9 +287,6 @@ export function SearchWhere({
   }, [q, here]);
 
   const [recents, setRecents] = useState<RecentSearch[]>(recentSearches);
-  // Home's picker has no Near me tab, so Near me is a pill (when the phone's position is known).
-  const nearPill =
-    areasOnly && here ? () => onPick({ kind: "near", radius: DEFAULT_RADIUS }) : null;
 
   const pick = (where: Where) => {
     Keyboard.dismiss();
@@ -355,32 +334,18 @@ export function SearchWhere({
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: top, paddingBottom: 40 }}
       >
-        {areasOnly ? (
-          <View className="flex-row items-center justify-between gap-4">
-            <Text
-              accessibilityRole="header"
-              className="shrink text-title font-semibold tracking-[-0.4px]"
-            >
-              {t("screens.search.where.pickArea")}
-            </Text>
-            <RoundButton icon={IconX} label={t("components.nav.close")} onPress={onClose} />
-          </View>
-        ) : (
-          <>
-            <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-              {t("screens.search.title")}
-            </Text>
-            {/* The bar's slot: the bar floats over it, so it can dock. */}
-            <View
-              className="mt-4 h-[52px]"
-              onLayout={(event) => {
-                // Measured in the content, which already has the top padding.
-                barStart.value = event.nativeEvent.layout.y;
-              }}
-            />
-          </>
-        )}
-        {typed || areasOnly ? null : (
+        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+          {t("screens.search.title")}
+        </Text>
+        {/* The bar's slot: the bar floats over it, so it can dock. */}
+        <View
+          className="mt-4 h-[52px]"
+          onLayout={(event) => {
+            // Measured in the content, which already has the top padding.
+            barStart.value = event.nativeEvent.layout.y;
+          }}
+        />
+        {typed ? null : (
           <Segment
             className="mt-4"
             options={[
@@ -392,7 +357,7 @@ export function SearchWhere({
           />
         )}
         {/* Recent picks: one row of chips under the switcher, so it never moves. */}
-        {!typed && !areasOnly && recents.length > 0 ? (
+        {!typed && recents.length > 0 ? (
           <Animated.View exiting={FadeOut.duration(200)}>
             <ScrollView
               horizontal
@@ -477,16 +442,7 @@ export function SearchWhere({
                   onPick={pick}
                   small
                   className="pt-5"
-                  near={nearPill}
                 />
-              ) : nearPill ? (
-                <View className="flex-row pt-5">
-                  <Pill
-                    label={t("screens.search.where.nearMe")}
-                    on={where.kind === "near"}
-                    onPress={nearPill}
-                  />
-                </View>
               ) : null}
               {(coverage?.length === 1 ? [] : (coverage ?? [])).map((governorate) => {
                 const expanded = governorate.id === open;
@@ -569,41 +525,37 @@ export function SearchWhere({
       </Animated.ScrollView>
 
       {/* The header the bar docks in, and the bar itself. */}
-      {areasOnly ? null : (
-        <>
-          <Animated.View
-            pointerEvents="none"
-            className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
-            style={[{ height: dockAt + 52 + 10 }, headerStyle]}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + 52 + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-6 left-6" style={barStyle}>
+        <View className="h-[52px] flex-row items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pr-3 pl-5">
+          <IconSearch size={20} color={colors.ink} strokeWidth={2} />
+          <TextInput
+            autoFocus
+            value={q}
+            onChangeText={setQ}
+            placeholder={t("screens.search.where.placeholder")}
+            placeholderTextColor={colors.unit}
+            selectionColor={colors.ink}
+            returnKeyType="search"
+            autoCorrect={false}
+            className="flex-1 text-[18px] text-ink"
           />
-          <Animated.View className="absolute top-0 right-6 left-6" style={barStyle}>
-            <View className="h-[52px] flex-row items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pr-3 pl-5">
-              <IconSearch size={20} color={colors.ink} strokeWidth={2} />
-              <TextInput
-                autoFocus
-                value={q}
-                onChangeText={setQ}
-                placeholder={t("screens.search.where.placeholder")}
-                placeholderTextColor={colors.unit}
-                selectionColor={colors.ink}
-                returnKeyType="search"
-                autoCorrect={false}
-                className="flex-1 text-[18px] text-ink"
-              />
-              {/* Clears what's typed; with nothing typed, closes. */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={q ? t("screens.search.where.clear") : t("components.nav.close")}
-                hitSlop={10}
-                onPress={() => (q ? setQ("") : onClose())}
-                className="size-8 items-center justify-center active:opacity-60"
-              >
-                <IconX size={18} color={colors.ink2} strokeWidth={2} />
-              </Pressable>
-            </View>
-          </Animated.View>
-        </>
-      )}
+          {/* Clears what's typed; with nothing typed, closes. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={q ? t("screens.search.where.clear") : t("components.nav.close")}
+            hitSlop={10}
+            onPress={() => (q ? setQ("") : onClose())}
+            className="size-8 items-center justify-center active:opacity-60"
+          >
+            <IconX size={18} color={colors.ink2} strokeWidth={2} />
+          </Pressable>
+        </View>
+      </Animated.View>
     </View>
   );
 }

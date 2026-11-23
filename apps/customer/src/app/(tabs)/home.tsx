@@ -2,10 +2,8 @@ import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, View } from "react-native";
 import Animated, {
-  FadeIn,
-  FadeOut,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -28,25 +26,23 @@ import { useHudAnchor } from "@/components/hud";
 import { IconChevronDown, IconMapPin, IconSearch } from "@/components/icons";
 import { RoundButton } from "@/components/nav";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
-import { SearchWhere } from "@/components/search-where";
+import { HomeGovernorateSheet } from "@/components/home-governorate";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import {
   BUDGET,
-  DEFAULT_RADIUS_KM,
   TONIGHT_FROM,
-  useAreaName,
   useGameRail,
   useNextGame,
   useVenueRail,
-  whereQuery,
+  useHomeGovernorate,
   type NextGame,
 } from "@/lib/home";
 import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
 import { push } from "@/lib/navigation";
-import { hourLabel, localDate, useCoverage, type VenueCard, type Where } from "@/lib/search";
+import { hourLabel, localDate, useCoverage, type VenueCard } from "@/lib/search";
 import { timeOfDay, timeRange } from "@/lib/venue";
 
 // Home (Figma C12: 311:2 signed in, 312:2 guest, 313:2 the whole scroll): where the rails look
@@ -74,21 +70,13 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   useHudAnchor(TAB_ROW + insets.bottom);
 
-  // Where: near the player, or the governorate with the most venues without a position.
+  // Where: a governorate (lib/home.ts, useHomeGovernorate); Search narrows further.
   const phone = useHere();
   const coverage = useCoverage();
-  const [choice, setChoice] = useState<Where>({ kind: "near", radius: DEFAULT_RADIUS_KM });
-  const fallback = coverage?.[0];
-  const where: Where | null =
-    choice.kind === "near" && phone === null
-      ? fallback
-        ? { kind: "area", id: fallback.id, name: fallback.name ?? "", within: null }
-        : null
-      : choice;
+  const { governorate, mine, usingLocation, pick } = useHomeGovernorate(phone, coverage);
   const [picking, setPicking] = useState(false);
-  const area = useAreaName(where, phone);
-  const ready = phone !== undefined && where !== null;
-  const base = whereQuery(where, phone ?? null);
+  const ready = governorate !== null;
+  const base = governorate ? { area: governorate.id } : {};
 
   const { next, name, played, saved, read } = useNextGame();
   useFocusEffect(
@@ -144,13 +132,13 @@ export default function Home() {
       pathname: "/search",
       params: {
         at: String(Date.now()),
-        ...(where?.kind === "area" ? { area: where.id, areaName: where.name } : {}),
+        ...(governorate ? { area: governorate.id, areaName: governorate.name ?? "" } : {}),
         ...preset,
       },
     });
 
-  const nearLine = area?.name
-    ? t("screens.home.near", { place: area.name })
+  const inLine = governorate?.name
+    ? t("screens.home.inPlace", { place: governorate.name })
     : t("screens.home.nearYou");
   const todayInCairo = localDate(tonight.timezone);
   const tonightIsTomorrow = tonight.date !== null && tonight.date !== todayInCairo;
@@ -225,7 +213,7 @@ export default function Home() {
         {tonight.items.length > 0 ? (
           <Rail
             title={tonightIsTomorrow ? t("screens.home.tomorrowNight") : t("screens.home.tonight")}
-            line={t("screens.home.fromHour", { place: nearLine, time: hourLabel(fromHour) })}
+            line={t("screens.home.fromHour", { place: inLine, time: hourLabel(fromHour) })}
             onSeeAll={() => seeAll(tonight.date ? { date: tonight.date } : {})}
             {...venueRail(tonight, { wide: true })}
           />
@@ -326,9 +314,9 @@ export default function Home() {
           className="shrink flex-row items-center gap-1.5 active:opacity-60"
         >
           <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
-          {area ? (
+          {governorate ? (
             <Text className="shrink text-body font-medium" numberOfLines={1}>
-              {[area.name, area.within].filter(Boolean).join(", ")}
+              {governorate.name}
             </Text>
           ) : (
             <Bone className="h-4 w-32 rounded-md" />
@@ -342,24 +330,19 @@ export default function Home() {
         />
       </Animated.View>
 
-      {picking && where ? (
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(150)}
-          style={StyleSheet.absoluteFill}
-        >
-          <SearchWhere
-            here={phone ?? null}
-            where={where}
-            params={{}}
-            onPick={(next) => {
-              setChoice(next);
-              setPicking(false);
-            }}
-            onClose={() => setPicking(false)}
-            areasOnly
-          />
-        </Animated.View>
+      {coverage ? (
+        <HomeGovernorateSheet
+          visible={picking}
+          coverage={coverage}
+          current={governorate?.id ?? null}
+          usingLocation={usingLocation}
+          located={mine !== null}
+          onPick={(id) => {
+            pick(id);
+            setPicking(false);
+          }}
+          onClose={() => setPicking(false)}
+        />
       ) : null}
     </View>
   );

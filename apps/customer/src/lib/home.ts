@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, auth } from "./api";
 import { send } from "./api-errors";
-import { MARKETPLACE, type SearchParams, type VenueCard, type Where } from "./search";
+import { MARKETPLACE, type Governorate, type SearchParams, type VenueCard } from "./search";
 
 // Home's data (Figma C12, 311:2 signed in, 312:2 guest): where the rails look, the player's next
 // game, and each rail's venues or games. Rails are read once when Home opens and on pull to
@@ -19,48 +19,6 @@ export const TONIGHT_FROM = "19:00";
 // Within budget: under this an hour, in minor units.
 export const BUDGET = 25_000;
 const RAIL = 10;
-
-// Where Home's rails look, as the search's own query: around the player, or in an area.
-export const whereQuery = (
-  where: Where | null,
-  here: { latitude: number; longitude: number } | null,
-): SearchParams =>
-  where?.kind === "area"
-    ? { area: where.id }
-    : where?.kind === "around"
-      ? { latitude: where.latitude, longitude: where.longitude, radius: where.radius }
-      : here && where
-        ? { latitude: here.latitude, longitude: here.longitude, radius: where.radius }
-        : {};
-
-// The name for where (the header, and "Near Maadi"): the area the phone is in, or the one picked.
-export const useAreaName = (
-  where: Where | null,
-  here: { latitude: number; longitude: number } | null | undefined,
-) => {
-  const [near, setNear] = useState<{ name: string; within: string | null } | null>(null);
-  useEffect(() => {
-    if (where?.kind !== "near" || !here) return;
-    let active = true;
-    void send(
-      api.GET("/v1/marketplaces/{code}/areas/nearest", {
-        params: {
-          path: { code: MARKETPLACE },
-          query: { latitude: here.latitude, longitude: here.longitude },
-        },
-      }),
-    ).then((result) => {
-      if (active && result.ok && result.data.area)
-        setNear({ name: result.data.area.name, within: result.data.area.within });
-    });
-    return () => {
-      active = false;
-    };
-  }, [where?.kind, here]);
-  if (where?.kind === "area") return { name: where.name, within: where.within };
-  if (where?.kind === "around") return { name: where.name, within: null };
-  return near;
-};
 
 export interface Rail<T> {
   items: T[];
@@ -228,4 +186,59 @@ export const nextDateFor = (usual: { weekday: number; start: string }, timezone:
     if (weekday === usual.weekday && (days > 0 || usual.start > nowTime)) return date;
   }
   return null;
+};
+
+// Home's feed is one governorate (user, 2026-11-23): narrowing it further is Search's job. By default
+// the one the phone is in (the nearest area's governorate); without a position, or where Hagz has no
+// venues yet, the one with the most venues (coverage comes most venues first). Picking one sticks
+// for the session; "Use my location" goes back to the default.
+let picked: string | null = null;
+
+export const useHomeGovernorate = (
+  here: { latitude: number; longitude: number } | null | undefined,
+  coverage: Governorate[] | null,
+) => {
+  const [choice, setChoice] = useState<string | null>(picked);
+  const [nearestArea, setNearestArea] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (here === undefined) return;
+    if (here === null) {
+      setNearestArea(null);
+      return;
+    }
+    let active = true;
+    void send(
+      api.GET("/v1/marketplaces/{code}/areas/nearest", {
+        params: {
+          path: { code: MARKETPLACE },
+          query: { latitude: here.latitude, longitude: here.longitude },
+        },
+      }),
+    ).then((result) => {
+      if (active) setNearestArea(result.ok ? (result.data.area?.id ?? null) : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [here]);
+
+  // The phone's governorate among those with venues: the nearest area is one of its areas, or it.
+  const mine =
+    nearestArea && coverage
+      ? (coverage.find(
+          (governorate) =>
+            governorate.id === nearestArea ||
+            governorate.areas.some((area) => area.id === nearestArea),
+        ) ?? null)
+      : null;
+  const fallback = coverage?.[0] ?? null;
+  const settled = here !== undefined && (here === null || nearestArea !== undefined);
+  const governorate =
+    (choice ? coverage?.find((each) => each.id === choice) : null) ??
+    (settled ? (mine ?? fallback) : null);
+  const pick = (id: string | null) => {
+    picked = id;
+    setChoice(id);
+  };
+  return { governorate, mine, usingLocation: choice === null && mine !== null, pick };
 };
