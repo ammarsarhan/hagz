@@ -33,7 +33,6 @@ export function PageState({
   const insets = useSafeAreaInsets();
   const [footer, setFooter] = useState(0);
   useHudAnchor(footer);
-  const offline = error !== undefined && !isProblem(error);
 
   return (
     <View
@@ -55,22 +54,7 @@ export function PageState({
             className="flex-1 items-center justify-center px-6"
             style={{ paddingBottom: footer }}
           >
-            <OfflineArt />
-            <Text
-              accessibilityRole="header"
-              className="mt-3 mb-2 text-center text-title font-semibold tracking-[-0.4px]"
-            >
-              {offline
-                ? t("components.pageState.offlineTitle")
-                : t("components.pageState.failedTitle")}
-            </Text>
-            <Text className="text-center text-subtitle text-ink-2">
-              {offline
-                ? t("components.pageState.offlineBody")
-                : error !== undefined
-                  ? hudMessage(error)
-                  : t("components.pageState.failedBody")}
-            </Text>
+            <FailedMessage error={error} />
           </View>
           {onRetry ? (
             <View
@@ -84,5 +68,31 @@ export function PageState({
         </>
       )}
     </View>
+  );
+}
+
+// The Unplugged scene, a title and what happened: "You're offline" when nothing answered (the
+// error isn't a problem from the API), else "Something went wrong" over the API's few words. Also
+// shown inside a tab whose list didn't load (Bookings), with its own Try again.
+export function FailedMessage({ error }: { error?: unknown }) {
+  const { t } = useTranslation();
+  const offline = error !== undefined && !isProblem(error);
+  return (
+    <>
+      <OfflineArt />
+      <Text
+        accessibilityRole="header"
+        className="mt-3 mb-2 text-center text-title font-semibold tracking-[-0.4px]"
+      >
+        {offline ? t("components.pageState.offlineTitle") : t("components.pageState.failedTitle")}
+      </Text>
+      <Text className="text-center text-subtitle text-ink-2">
+        {offline
+          ? t("components.pageState.offlineBody")
+          : error !== undefined
+            ? hudMessage(error)
+            : t("components.pageState.failedBody")}
+      </Text>
+    </>
   );
 }
