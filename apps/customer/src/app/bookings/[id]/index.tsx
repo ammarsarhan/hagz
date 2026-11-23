@@ -1,7 +1,7 @@
 import type { components } from "@hagz/api";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, Share, View } from "react-native";
 import Animated, {
@@ -30,6 +30,7 @@ import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
+import { push } from "@/lib/navigation";
 import { formatPrice } from "@/lib/money";
 import {
   dayLabel,
@@ -61,22 +62,28 @@ export default function BookingPage() {
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
 
-  useEffect(() => {
-    let active = true;
-    void send(api.GET("/v1/bookings/{bookingId}", { params: { path: { bookingId: id } } })).then(
-      (result) => {
-        if (!active) return;
-        setLoaded(
-          result.ok
-            ? { state: "ready", booking: result.data }
-            : { state: "failed", error: result.error },
-        );
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [id, attempt]);
+  // Read each time it's shown (back from checking in, a move answered elsewhere). What's on screen
+  // stays while it reloads, and stays if that fails.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void send(api.GET("/v1/bookings/{bookingId}", { params: { path: { bookingId: id } } })).then(
+        (result) => {
+          if (!active) return;
+          setLoaded((now) =>
+            result.ok
+              ? { state: "ready", booking: result.data }
+              : now.state === "ready"
+                ? now
+                : { state: "failed", error: result.error },
+          );
+        },
+      );
+      return () => {
+        active = false;
+      };
+    }, [id, attempt]),
+  );
 
   if (loaded.state === "loading") return <PageState loading />;
   if (loaded.state === "failed") {
@@ -298,7 +305,6 @@ function Standing({
   ended: boolean;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const { timezone } = booking.venue;
   const checkIn = booking.checkIn;
   const now = Date.now();
@@ -384,8 +390,7 @@ function Standing({
           label={t("screens.booking.showCode")}
           size="small"
           icon={<IconQrcode size={20} color={colors.white} strokeWidth={2} />}
-          // The code screen (Figma 257:2) is the next to build.
-          onPress={() => hud.show(t("screens.booking.codeSoon"))}
+          onPress={() => push({ pathname: "/bookings/[id]/check-in", params: { id: booking.id } })}
         />
       ) : null}
     </View>
