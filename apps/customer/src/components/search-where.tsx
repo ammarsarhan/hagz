@@ -21,6 +21,8 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeOut,
+  LinearTransition,
   interpolate,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -174,16 +176,8 @@ export function SearchWhere({
   const [tab, setTab] = useState<"near" | "area">(here && where.kind === "near" ? "near" : "area");
   const [radius, setRadius] = useState(where.kind === "near" ? where.radius : DEFAULT_RADIUS);
   const coverage = useCoverage();
-  // The governorate open: the one holding the area picked, else the first.
+  // The governorate open: none until one's tapped, so the list never shifts as it arrives.
   const [open, setOpen] = useState<string | null>(null);
-  const shownOpen =
-    open ??
-    (where.kind === "area"
-      ? (coverage?.find(
-          (governorate) =>
-            governorate.id === where.id || governorate.areas.some((area) => area.id === where.id),
-        )?.id ?? null)
-      : (coverage?.[0]?.id ?? null));
   // The bars leave the radius out, so moving the slider doesn't ask for them again.
   const spread = useSpread(
     here && tab === "near"
@@ -298,45 +292,49 @@ export function SearchWhere({
         )}
         {/* Recent picks: one row of chips under the switcher, so it never moves. */}
         {!typed && recents.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            className="-mx-6 mt-3"
-            contentContainerClassName="items-center gap-2 px-6"
-          >
-            {recents.map((recent) => (
+          <Animated.View exiting={FadeOut.duration(200)}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              className="-mx-6 mt-3"
+              contentContainerClassName="items-center gap-2 px-6"
+            >
+              {recents.map((recent) => (
+                <Pressable
+                  key={recent.kind === "area" ? recent.id : recent.slug}
+                  accessibilityRole="button"
+                  accessibilityHint={
+                    recent.kind === "area"
+                      ? (recent.within ?? undefined)
+                      : (recent.line ?? undefined)
+                  }
+                  onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
+                  className="h-9 flex-row items-center gap-1.5 rounded-full border border-border px-3.5 active:opacity-60"
+                >
+                  <IconClock size={15} color={colors.ink2} strokeWidth={1.75} />
+                  <Text className="text-label font-medium" numberOfLines={1}>
+                    {recent.name}
+                  </Text>
+                </Pressable>
+              ))}
               <Pressable
-                key={recent.kind === "area" ? recent.id : recent.slug}
                 accessibilityRole="button"
-                accessibilityHint={
-                  recent.kind === "area" ? (recent.within ?? undefined) : (recent.line ?? undefined)
-                }
-                onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
-                className="h-9 flex-row items-center gap-1.5 rounded-full border border-border px-3.5 active:opacity-60"
+                hitSlop={8}
+                onPress={() => {
+                  clearRecentSearches();
+                  setRecents([]);
+                }}
+                className="px-1.5 active:opacity-60"
               >
-                <IconClock size={15} color={colors.ink2} strokeWidth={1.75} />
-                <Text className="text-label font-medium" numberOfLines={1}>
-                  {recent.name}
+                <Text className="text-label font-medium text-ink-2 underline">
+                  {t("screens.search.where.clearRecent")}
                 </Text>
               </Pressable>
-            ))}
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => {
-                clearRecentSearches();
-                setRecents([]);
-              }}
-              className="px-1.5 active:opacity-60"
-            >
-              <Text className="text-label font-medium text-ink-2 underline">
-                {t("screens.search.where.clearRecent")}
-              </Text>
-            </Pressable>
-          </ScrollView>
+            </ScrollView>
+          </Animated.View>
         ) : null}
-        <View className="pt-3">
+        <Animated.View className="pt-3" layout={LinearTransition.duration(200)}>
           {typed ? null : tab === "near" ? (
             <Animated.View key="near" entering={FadeIn.duration(220)}>
               {here ? (
@@ -370,13 +368,13 @@ export function SearchWhere({
           ) : (
             <Animated.View key="area" entering={FadeIn.duration(220)}>
               {(coverage ?? []).map((governorate) => {
-                const expanded = governorate.id === shownOpen;
+                const expanded = governorate.id === open;
                 return (
                   <View key={governorate.id} className="border-b border-border py-4">
                     <Pressable
                       accessibilityRole="button"
                       accessibilityState={{ expanded }}
-                      onPress={() => setOpen(expanded ? "" : governorate.id)}
+                      onPress={() => setOpen(expanded ? null : governorate.id)}
                       className="flex-row items-center justify-between active:opacity-60"
                     >
                       <View className="gap-0.5">
@@ -469,7 +467,7 @@ export function SearchWhere({
               {t("screens.search.where.noMatch", { query: q.trim() })}
             </Text>
           ) : null}
-        </View>
+        </Animated.View>
       </Animated.ScrollView>
 
       {/* The header the bar docks in, and the bar itself. */}
