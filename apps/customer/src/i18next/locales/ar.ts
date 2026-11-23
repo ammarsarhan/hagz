@@ -205,7 +205,6 @@ const ar: ArabicTranslations = {
         seeAllOf: "عرض الكل: {{title}}",
         tonight: "متاح الليلة",
         tomorrowNight: "متاح ليلة الغد",
-        near: "بالقرب من {{place}}",
         inPlace: "في {{place}}",
         where: {
           title: "أين تلعب",

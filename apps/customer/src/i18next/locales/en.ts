@@ -187,7 +187,6 @@ const en = {
         seeAllOf: "See all: {{title}}",
         tonight: "Free tonight",
         tomorrowNight: "Free tomorrow night",
-        near: "Near {{place}}",
         inPlace: "In {{place}}",
         where: {
           title: "Where to play",
