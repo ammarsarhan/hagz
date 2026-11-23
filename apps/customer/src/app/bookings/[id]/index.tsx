@@ -530,11 +530,12 @@ function Standing({
         />
       ) : null}
       {card.elsewhere ? (
-        // One way on, the hero: similar venues around it, at the same time.
+        // One way on: similar venues around it, at the same time (Show my code's size).
         <View className="mt-1.5">
           <Button
             label={t("screens.booking.declined.similar")}
-            icon={<IconSearch size={19} color={colors.white} strokeWidth={2.25} />}
+            size="compact"
+            icon={<IconSearch size={18} color={colors.white} strokeWidth={2} />}
             onPress={() => openSimilarVenues(booking, venueName)}
           />
         </View>
