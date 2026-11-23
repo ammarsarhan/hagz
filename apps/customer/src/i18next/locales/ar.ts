@@ -528,6 +528,27 @@ const ar: ArabicTranslations = {
         guest: "سجّل الدخول لترى المباريات التي انضممت إليها.",
       },
       game: {
+        you: "أنت",
+        whoHeading: "من يلعب",
+        bookerTitle: "{{name}}، صاحب الحجز",
+        call: "اتصل بـ {{name}}",
+        whatsapp: "راسل {{name}} على واتساب",
+        leaveLine: "يمكنك المغادرة حتى بداية المباراة.",
+        leaveSheet: {
+          title: "مغادرة مباراة {{name}}؟",
+          body: "سيصبح مكانك متاحًا لشخص آخر. يمكنك الانضمام مجددًا ما دام هناك مكان.",
+        },
+        calledOff: {
+          title: "أُلغيت مباراة {{name}}",
+          body: "أُلغي الحجز، فلا يوجد ما تدفعه.",
+        },
+        unavailable: {
+          full: "كل الأماكن في مباراة {{name}} محجوزة.",
+          started: "بدأت مباراة {{name}} بالفعل.",
+          closed: "مباراة {{name}} لم تعد تقبل لاعبين.",
+          removed: "أزالك صاحب الحجز من هذه المباراة.",
+        },
+        findAnother: "ابحث عن مباراة أخرى",
         spots_zero: "{{left}}/{{count}} أماكن متبقية",
         spots_one: "{{left}}/{{count}} مكان متبقٍ",
         spots_two: "{{left}}/{{count}} أماكن متبقية",
@@ -535,7 +556,6 @@ const ar: ArabicTranslations = {
         spots_many: "{{left}}/{{count}} أماكن متبقية",
         spots_other: "{{left}}/{{count}} أماكن متبقية",
         whose: "مباراة {{name}}. سترى من يلعب بعد انضمامك.",
-        playing: "{{names}}.",
         payHeading: "ما تدفعه في الملعب",
         share: "حصتك، لـ {{name}}",
         fee: "رسوم الانضمام، لـ {{venue}}",
@@ -543,10 +563,8 @@ const ar: ArabicTranslations = {
         disclaimer:
           "لا يضمن Hagz حضور اللاعبين المنضمين أو إقامة المباراة. تدفع حصتك لصاحب الحجز ورسوم الانضمام للملعب، شخصيًا.",
         atVenue: "في الملعب",
-        youreIn: "أنت مشارك",
         join: "انضم للمباراة",
         leave: "مغادرة المباراة",
-        closed: "مغلقة",
         sheet: {
           title: "الانضمام إلى مباراة {{name}}؟",
           body: "{{when}} في {{venue}}. ادفع {{share}} لـ {{name}} و{{fee}} للملعب عند وصولك.",
@@ -661,6 +679,7 @@ const ar: ArabicTranslations = {
       checkIn: {
         you: "رمزك",
         booker: "صاحب الحجز",
+        player: "في مباراة {{name}}",
         newCode_zero: "رمز جديد بعد {{count}} ث",
         newCode_one: "رمز جديد بعد {{count}} ث",
         newCode_two: "رمز جديد بعد {{count}} ث",

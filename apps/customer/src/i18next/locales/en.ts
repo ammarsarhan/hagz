@@ -485,10 +485,30 @@ const en = {
         guest: "Sign in to see the games you’ve joined.",
       },
       game: {
+        you: "you",
+        whoHeading: "Who’s playing",
+        bookerTitle: "{{name}}, the booker",
+        call: "Call {{name}}",
+        whatsapp: "Message {{name}} on WhatsApp",
+        leaveLine: "You can leave until kick-off.",
+        leaveSheet: {
+          title: "Leave {{name}}’s game?",
+          body: "Your spot opens up for someone else. You can join again while there’s room.",
+        },
+        calledOff: {
+          title: "{{name}}’s game was called off",
+          body: "The booking was cancelled, so there’s nothing to pay.",
+        },
+        unavailable: {
+          full: "Every spot in {{name}}’s game is taken.",
+          started: "{{name}}’s game has already started.",
+          closed: "{{name}}’s game isn’t taking players any more.",
+          removed: "The booker removed you from this game.",
+        },
+        findAnother: "Find another game",
         spots_one: "{{left}}/{{count}} spot left",
         spots_other: "{{left}}/{{count}} spots left",
         whose: "{{name}}’s game. You’ll see who’s playing once you join.",
-        playing: "{{names}}.",
         payHeading: "What you pay, at the venue",
         share: "Your share, to {{name}}",
         fee: "Joining fee, to {{venue}}",
@@ -496,10 +516,8 @@ const en = {
         disclaimer:
           "Hagz doesn’t guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person.",
         atVenue: "At the venue",
-        youreIn: "You’re in",
         join: "Join game",
         leave: "Leave game",
-        closed: "Closed",
         sheet: {
           title: "Join {{name}}’s game?",
           body: "{{when}} at {{venue}}. Pay {{share}} to {{name}} and {{fee}} to the venue when you get there.",
@@ -606,6 +624,7 @@ const en = {
       checkIn: {
         you: "Your code",
         booker: "Booker",
+        player: "In {{name}}’s game",
         newCode_one: "New code in {{count}} s",
         newCode_other: "New code in {{count}} s",
         noScreenshots: "Screenshots stop working",

@@ -458,7 +458,7 @@ function Row({ game, last }: { game: Game; last: boolean }) {
             <SpotsRow
               booker={game.booker.firstName}
               joined={game.playerCount}
-              names={game.players}
+              names={game.players?.map((player) => player.firstName) ?? null}
               open={game.spotsLeft}
             />
             <Text className="text-caption leading-[18px] font-medium">
