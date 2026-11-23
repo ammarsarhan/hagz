@@ -55,7 +55,7 @@ export function PriceSection({
         <GroupHeading>{t("screens.review.price")}</GroupHeading>
       </View>
       {charges.map((charge, index) => (
-        <View key={index} className="flex-row justify-between gap-4">
+        <View key={index} className="flex-row justify-between gap-10">
           <Text className="shrink text-body leading-[22px] text-ink-2">
             {charge.type === "SLOT" && charge.startsAt
               ? hourOf(charge.startsAt)
@@ -69,7 +69,7 @@ export function PriceSection({
       <View className="py-1.5">
         <Hairline />
       </View>
-      <View className="flex-row justify-between gap-4">
+      <View className="flex-row justify-between gap-10">
         <Text className="text-body leading-[22px] font-semibold">{t("screens.review.total")}</Text>
         <Text className="text-body leading-[22px] font-semibold">
           {formatPrice(total, currency)}

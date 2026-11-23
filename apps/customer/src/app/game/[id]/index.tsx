@@ -592,7 +592,7 @@ function Unavailable({ game }: { game: Game }) {
 
 function Line({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <View className="flex-row items-start justify-between gap-4">
+    <View className="flex-row items-start justify-between gap-10">
       <Text
         className={`shrink text-body leading-[22px] ${strong ? "font-semibold" : "text-ink-2"}`}
       >
