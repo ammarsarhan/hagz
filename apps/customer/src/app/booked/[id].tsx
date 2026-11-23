@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 import { BackHandler, Pressable, ScrollView, Share, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Icon } from "@tabler/icons-react-native";
+import * as Haptics from "expo-haptics";
 import { Button } from "@/components/button";
+import { Confetti } from "@/components/confetti";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconCalendarPlus, IconShare } from "@/components/icons";
 import { MatchTicket } from "@/components/match-ticket";
@@ -38,6 +40,9 @@ import {
 const ROW = 40;
 const TITLE_GAP = 22;
 
+// The bookings already celebrated, so coming back to the screen doesn't throw it again.
+const celebrated = new Set<string>();
+
 type Loaded =
   | { state: "loading" }
   | { state: "failed"; error: unknown }
@@ -50,6 +55,13 @@ export default function Booked() {
     return handed ? { state: "ready", ...handed } : { state: "loading" };
   });
   const [attempt, setAttempt] = useState(0);
+  // Just made, handed over from Review (not a booking opened again later), and never twice.
+  const [celebrate] = useState(() => {
+    const handed = justBooked(id);
+    if (!handed?.booking.first || celebrated.has(id)) return false;
+    celebrated.add(id);
+    return true;
+  });
 
   // Opened any other way than from Review: the booking, then its venue (the timezone and area).
   useEffect(() => {
@@ -84,15 +96,26 @@ export default function Booked() {
   if (loaded.state === "failed") {
     return <PageState error={loaded.error} onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  return <Content booking={loaded.booking} venue={loaded.venue} />;
+  return <Content booking={loaded.booking} venue={loaded.venue} celebrate={celebrate} />;
 }
 
-function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
+function Content({
+  booking,
+  venue,
+  celebrate,
+}: {
+  booking: Booking;
+  venue: PublicVenue;
+  celebrate: boolean;
+}) {
   const { t } = useTranslation();
   const hud = useHud();
   const insets = useSafeAreaInsets();
   const [footer, setFooter] = useState(0);
   useHudAnchor(footer);
+  useEffect(() => {
+    if (celebrate) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [celebrate]);
 
   const { timezone } = venue.marketplace;
   const sent = booking.status === "PENDING";
@@ -232,6 +255,8 @@ function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
           <Button label={t("screens.booked.done")} variant="secondary" onPress={close} />
         ) : null}
       </View>
+      {/* The first booking a player ever makes: confetti, once (user, 2026-11-24). */}
+      {celebrate ? <Confetti /> : null}
     </View>
   );
 }
