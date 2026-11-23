@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
+import { KindTag } from "@/components/kind-tag";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { MatchTicket } from "@/components/match-ticket";
 import { NoNameArt } from "@/components/no-name-art";
@@ -49,16 +50,53 @@ import { push } from "@/lib/navigation";
 // refresh holds a small spinner at the top (components/pull-to-refresh.tsx).
 
 type Summary = components["schemas"]["BookingSummary"];
+type Game = components["schemas"]["Game"];
 type When = "upcoming" | "past";
 type List =
   | { state: "loading" }
   | { state: "failed"; error: unknown }
-  | { state: "ready"; items: Summary[]; cursor: string | null; loadingMore: boolean };
+  | {
+      state: "ready";
+      items: Summary[];
+      // The games joined (Community), merged in by time.
+      games: Game[];
+      cursor: string | null;
+      loadingMore: boolean;
+    };
+
+// One entry in the list: a booking of the player's own, or a game they joined.
+type Entry = { kind: "booking"; booking: Summary } | { kind: "game"; game: Game };
 
 type Item =
-  | { kind: "next"; booking: Summary }
+  | { kind: "next"; entry: Entry }
   | { kind: "heading"; key: string; label: string; first?: boolean }
-  | { kind: "row"; booking: Summary; last: boolean };
+  | { kind: "row"; entry: Entry; last: boolean };
+
+const startOf = (entry: Entry) =>
+  entry.kind === "booking" ? entry.booking.startsAt : entry.game.startsAt;
+const timezoneOf = (entry: Entry) =>
+  entry.kind === "booking" ? entry.booking.venue.timezone : entry.game.timezone;
+const keyOf = (entry: Entry) =>
+  entry.kind === "booking" ? entry.booking.id : `game:${entry.game.id}`;
+
+// The bookings loaded so far and the games joined, by time. Bookings come a page at a time, so a
+// game only joins once the bookings around it have loaded (else it could sit out of order ahead of
+// the next page); with every page in, all of them.
+const entriesOf = (when: When, list: Extract<List, { state: "ready" }>): Entry[] => {
+  const last = list.items.at(-1);
+  const edge = list.cursor && last ? Date.parse(last.startsAt) : null;
+  const games = list.games.filter((game) => {
+    if (edge === null) return true;
+    const at = Date.parse(game.startsAt);
+    return when === "upcoming" ? at <= edge : at >= edge;
+  });
+  const entries: Entry[] = [
+    ...list.items.map((booking) => ({ kind: "booking" as const, booking })),
+    ...games.map((game) => ({ kind: "game" as const, game })),
+  ];
+  const sign = when === "upcoming" ? 1 : -1;
+  return entries.sort((a, b) => sign * (Date.parse(startOf(a)) - Date.parse(startOf(b))));
+};
 
 const PAGE = 20;
 // The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
@@ -111,15 +149,19 @@ function Bookings() {
   // The first page. What's already shown stays while it loads, and stays if it fails.
   const load = useCallback(async (which: When) => {
     const request = ++requests.current[which];
-    const result = await send(
-      api.GET("/v1/bookings", { params: { query: { when: which, limit: PAGE } } }),
-    );
+    const [result, games] = await Promise.all([
+      send(api.GET("/v1/bookings", { params: { query: { when: which, limit: PAGE } } })),
+      send(api.GET("/v1/games/mine", { params: { query: { when: which, limit: 50 } } })),
+    ]);
     if (request !== requests.current[which]) return;
     setLists((all) => {
       if (result.ok) {
+        const before = all[which];
         const list: List = {
           state: "ready",
           items: result.data.data,
+          // The games failing doesn't hold the bookings back: the ones already shown stay.
+          games: games.ok ? games.data.data : before.state === "ready" ? before.games : [],
           cursor: result.data.nextCursor,
           loadingMore: false,
         };
@@ -147,6 +189,7 @@ function Bookings() {
       which,
       result.ok
         ? {
+            ...list,
             state: "ready",
             items: [...list.items, ...result.data.data],
             cursor: result.data.nextCursor,
@@ -199,12 +242,14 @@ function Bookings() {
     void load(when);
   };
 
-  const openBooking = (booking: Summary) =>
-    push({ pathname: "/bookings/[id]", params: { id: booking.id } });
+  const open = (entry: Entry) =>
+    entry.kind === "booking"
+      ? push({ pathname: "/bookings/[id]", params: { id: entry.booking.id } })
+      : push({ pathname: "/game/[id]", params: { id: entry.game.id } });
 
   const list = lists[when];
   const items =
-    list.state === "ready" ? itemsOf(when, list.items, t("screens.bookings.later")) : [];
+    list.state === "ready" ? itemsOf(when, entriesOf(when, list), t("screens.bookings.later")) : [];
 
   return (
     <View className="flex-1">
@@ -212,7 +257,7 @@ function Bookings() {
         data={items}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        keyExtractor={(item) => (item.kind === "heading" ? item.key : item.booking.id)}
+        keyExtractor={(item) => (item.kind === "heading" ? item.key : keyOf(item.entry))}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
@@ -239,7 +284,7 @@ function Bookings() {
         }
         renderItem={({ item }) =>
           item.kind === "next" ? (
-            <Next booking={item.booking} onPress={() => openBooking(item.booking)} />
+            <Next entry={item.entry} onPress={() => open(item.entry)} />
           ) : item.kind === "heading" ? (
             <Text
               className={`${item.first ? "pt-[22px]" : "pt-[26px]"} text-caption leading-[18px] text-unit`}
@@ -247,11 +292,7 @@ function Bookings() {
               {item.label}
             </Text>
           ) : (
-            <Row
-              booking={item.booking}
-              last={item.last}
-              onPress={() => openBooking(item.booking)}
-            />
+            <Row entry={item.entry} last={item.last} onPress={() => open(item.entry)} />
           )
         }
         ListEmptyComponent={
@@ -305,16 +346,16 @@ function Bookings() {
 
 // Upcoming: the next game, then "Later" over the rest. Past: the latest first under each month
 // ("November", with the year once it isn't this one's), at the venue's clock.
-function itemsOf(when: When, bookings: Summary[], later: string): Item[] {
+function itemsOf(when: When, entries: Entry[], later: string): Item[] {
   if (when === "upcoming") {
-    const [next, ...rest] = bookings;
+    const [next, ...rest] = entries;
     if (!next) return [];
     return [
-      { kind: "next", booking: next },
+      { kind: "next", entry: next },
       ...(rest.length > 0 ? [{ kind: "heading" as const, key: "later", label: later }] : []),
-      ...rest.map((booking, index) => ({
+      ...rest.map((entry, index) => ({
         kind: "row" as const,
-        booking,
+        entry,
         last: index === rest.length - 1,
       })),
     ];
@@ -322,9 +363,8 @@ function itemsOf(when: When, bookings: Summary[], later: string): Item[] {
   const thisYear = new Date().getFullYear();
   const items: Item[] = [];
   let month = "";
-  bookings.forEach((booking, index) => {
-    const { timezone } = booking.venue;
-    const date = localDateOf(booking.startsAt, timezone);
+  entries.forEach((entry, index) => {
+    const date = localDateOf(startOf(entry), timezoneOf(entry));
     if (date.slice(0, 7) !== month) {
       month = date.slice(0, 7);
       const label = new Intl.DateTimeFormat(intlLocale, {
@@ -334,20 +374,34 @@ function itemsOf(when: When, bookings: Summary[], later: string): Item[] {
       }).format(new Date(`${date}T12:00:00Z`));
       items.push({ kind: "heading", key: month, label, first: items.length === 0 });
     }
-    const following = bookings[index + 1];
+    const following = entries[index + 1];
     const last =
-      !following || localDateOf(following.startsAt, following.venue.timezone).slice(0, 7) !== month;
-    items.push({ kind: "row", booking, last });
+      !following || localDateOf(startOf(following), timezoneOf(following)).slice(0, 7) !== month;
+    items.push({ kind: "row", entry, last });
   });
   return items;
 }
 
-const groundName = (booking: Summary) => booking.ground.name ?? kindOf(booking.ground);
-const venueLine = (booking: Summary) => {
-  const name = booking.venue.name ?? "";
-  const area = booking.venue.area?.split(",")[0]?.trim();
+const groundName = (place: Summary | Game) => place.ground.name ?? kindOf(place.ground);
+const venueLine = (place: Summary | Game) => {
+  const name = place.venue.name ?? "";
+  const area = place.venue.area?.split(",")[0]?.trim();
   return area ? `${name}, ${area}` : name;
 };
+
+// Where a joined game stands: whose game it is still to come, played, or called off.
+function useGameStanding() {
+  const { t } = useTranslation();
+  return (game: Game) => {
+    if (game.status === "CANCELLED") return t("screens.bookings.game.calledOff");
+    if (Date.parse(game.endsAt) > Date.now())
+      return t("screens.bookings.game.joined", { name: game.booker.firstName });
+    const checkedIn = game.me?.checkIn?.checkedInAt;
+    return checkedIn
+      ? t("screens.bookings.playedCheckedIn", { time: timeOfDay(checkedIn, game.timezone) })
+      : t("screens.bookings.played");
+  };
+}
 
 // "Confirm by Tuesday": tonight or tomorrow with the time, this week by its day, else the date.
 const byDay = (iso: string, timezone: string) => {
@@ -431,10 +485,10 @@ function useStanding() {
 }
 
 // The next game: "Next game · in 4 days" over its match ticket.
-function Next({ booking, onPress }: { booking: Summary; onPress: () => void }) {
+function Next({ entry, onPress }: { entry: Entry; onPress: () => void }) {
   const { t } = useTranslation();
-  const { timezone } = booking.venue;
-  const days = Math.max(0, daysUntil(booking.startsAt, timezone));
+  const timezone = timezoneOf(entry);
+  const days = Math.max(0, daysUntil(startOf(entry), timezone));
   // Words rather than Intl.RelativeTimeFormat, which Hermes doesn't have.
   const relative =
     days === 0
@@ -442,6 +496,51 @@ function Next({ booking, onPress }: { booking: Summary; onPress: () => void }) {
       : days === 1
         ? t("screens.bookings.in.tomorrow")
         : t("screens.bookings.in.days", { count: days });
+  return (
+    <View>
+      <Text className="pt-[22px] pb-2.5 text-caption leading-[18px] text-unit">
+        {t("screens.bookings.next", { when: relative })}
+      </Text>
+      <Pressable accessibilityRole="button" onPress={onPress} className="active:opacity-80">
+        {entry.kind === "booking" ? (
+          <BookingTicket booking={entry.booking} />
+        ) : (
+          <GameTicket game={entry.game} />
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+// A joined game as the ticket: whose game it is under the tear, and what's paid at the venue.
+function GameTicket({ game }: { game: Game }) {
+  const { t } = useTranslation();
+  const { timezone } = game;
+  const off = game.status === "CANCELLED";
+  return (
+    <MatchTicket
+      kind="GAME"
+      status={{
+        label: off ? t("screens.bookings.game.calledOff") : t("screens.bookings.game.youreIn"),
+        dot: off ? "grey" : "black",
+      }}
+      day={dayLabel(localDateOf(game.startsAt, timezone))}
+      range={timeRange(game.startsAt, game.endsAt, timezone)}
+      ground={`${groundName(game)} · ${kindOf(game.ground)}`}
+      venue={venueLine(game)}
+      code={game.booker.firstName}
+      codeLabel={t("screens.bookings.game.bookedBy")}
+      plainCode
+      priceLabel={t("screens.bookings.game.atVenue")}
+      price={formatPrice(game.sharePrice + game.joinFee, game.currency)}
+    />
+  );
+}
+
+// A booking of the player's own as the ticket: its code under the tear, and what it costs.
+function BookingTicket({ booking }: { booking: Summary }) {
+  const { t } = useTranslation();
+  const { timezone } = booking.venue;
   const confirmed = booking.status === "CONFIRMED" && !booking.move;
   const status = booking.move
     ? t("screens.bookings.ticket.moved")
@@ -455,40 +554,41 @@ function Next({ booking, onPress }: { booking: Summary; onPress: () => void }) {
   const checkIn = booking.checkIn;
 
   return (
-    <View>
-      <Text className="pt-[22px] pb-2.5 text-caption leading-[18px] text-unit">
-        {t("screens.bookings.next", { when: relative })}
-      </Text>
-      <Pressable accessibilityRole="button" onPress={onPress} className="active:opacity-80">
-        <MatchTicket
-          status={{ label: status, dot: confirmed ? "black" : "grey" }}
-          day={dayLabel(localDateOf(booking.startsAt, timezone))}
-          range={timeRange(booking.startsAt, booking.endsAt, timezone)}
-          ground={`${groundName(booking)} · ${kindOf(booking.ground)}`}
-          venue={venueLine(booking)}
-          code={booking.code}
-          codeLabel={
-            checkIn
-              ? checkIn.checkedInAt
-                ? t("screens.bookings.checkedIn", {
-                    time: timeOfDay(checkIn.checkedInAt, timezone),
-                  })
-                : t("screens.bookings.checkInOpens", { time: timeOfDay(checkIn.opensAt, timezone) })
-              : t("screens.booked.code")
-          }
-          priceLabel={t(`screens.booked.paid.${booking.paymentMode}`)}
-          price={formatPrice(booking.total, booking.currency)}
-        />
-      </Pressable>
-    </View>
+    <MatchTicket
+      kind="BOOKING"
+      status={{ label: status, dot: confirmed ? "black" : "grey" }}
+      day={dayLabel(localDateOf(booking.startsAt, timezone))}
+      range={timeRange(booking.startsAt, booking.endsAt, timezone)}
+      ground={`${groundName(booking)} · ${kindOf(booking.ground)}`}
+      venue={venueLine(booking)}
+      code={booking.code}
+      codeLabel={
+        checkIn
+          ? checkIn.checkedInAt
+            ? t("screens.bookings.checkedIn", {
+                time: timeOfDay(checkIn.checkedInAt, timezone),
+              })
+            : t("screens.bookings.checkInOpens", { time: timeOfDay(checkIn.opensAt, timezone) })
+          : t("screens.booked.code")
+      }
+      priceLabel={t(`screens.booked.paid.${booking.paymentMode}`)}
+      price={formatPrice(booking.total, booking.currency)}
+    />
   );
 }
 
-// A row: the day (weekday over the date), the hours and ground, the venue, where it stands.
-function Row({ booking, last, onPress }: { booking: Summary; last: boolean; onPress: () => void }) {
-  const standing = useStanding()(booking);
-  const { timezone } = booking.venue;
-  const start = new Date(booking.startsAt);
+// A row: the day (weekday over the date), the hours and ground, the venue, where it stands, and
+// what it is (Booking or Game) tagged before the chevron.
+function Row({ entry, last, onPress }: { entry: Entry; last: boolean; onPress: () => void }) {
+  const bookingStanding = useStanding();
+  const gameStanding = useGameStanding();
+  const place = entry.kind === "booking" ? entry.booking : entry.game;
+  const standing =
+    entry.kind === "booking"
+      ? bookingStanding(entry.booking)
+      : { text: gameStanding(entry.game), act: false };
+  const timezone = timezoneOf(entry);
+  const start = new Date(startOf(entry));
   const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: timezone, weekday: "short" })
     .format(start)
     .replace(/[.,]/g, "");
@@ -508,10 +608,10 @@ function Row({ booking, last, onPress }: { booking: Summary; last: boolean; onPr
       </View>
       <View className="flex-1">
         <Text className="text-body leading-5 font-medium" numberOfLines={1}>
-          {`${timeRange(booking.startsAt, booking.endsAt, timezone)} · ${groundName(booking)}`}
+          {`${timeRange(place.startsAt, place.endsAt, timezone)} · ${groundName(place)}`}
         </Text>
         <Text className="pt-0.5 text-caption leading-[18px] text-ink-2" numberOfLines={1}>
-          {venueLine(booking)}
+          {venueLine(place)}
         </Text>
         {standing.text ? (
           <Text className={`pt-1 text-caption leading-[18px] ${standing.act ? "font-medium" : ""}`}>
@@ -519,6 +619,7 @@ function Row({ booking, last, onPress }: { booking: Summary; last: boolean; onPr
           </Text>
         ) : null}
       </View>
+      <KindTag kind={entry.kind === "booking" ? "BOOKING" : "GAME"} />
       <View style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}>
         <IconChevronRight size={18} color={colors.ink3} strokeWidth={1.75} />
       </View>

@@ -428,6 +428,14 @@ const ar: ArabicTranslations = {
         payOnlineSoon: "الدفع أونلاين قريبًا",
       },
       bookings: {
+        kinds: { BOOKING: "حجز", GAME: "مباراة", TOURNAMENT: "بطولة" },
+        game: {
+          joined: "في مباراة {{name}}",
+          youreIn: "أنت مشارك",
+          calledOff: "أُلغيت",
+          bookedBy: "صاحب الحجز",
+          atVenue: "في الملعب",
+        },
         title: "الحجوزات",
         upcoming: "القادمة",
         past: "السابقة",

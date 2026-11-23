@@ -387,6 +387,14 @@ const en = {
         payOnlineSoon: "Paying online opens soon",
       },
       bookings: {
+        kinds: { BOOKING: "Booking", GAME: "Game", TOURNAMENT: "Tournament" },
+        game: {
+          joined: "In {{name}}’s game",
+          youreIn: "You’re in",
+          calledOff: "Called off",
+          bookedBy: "Booked by",
+          atVenue: "At the venue",
+        },
         title: "Bookings",
         upcoming: "Upcoming",
         past: "Past",
