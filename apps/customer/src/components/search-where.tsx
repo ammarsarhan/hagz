@@ -29,11 +29,24 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Button } from "./button";
-import { IconBallFootball, IconChevronDown, IconMapPin, IconSearch, IconX } from "./icons";
+import {
+  IconBallFootball,
+  IconChevronDown,
+  IconClock,
+  IconMapPin,
+  IconSearch,
+  IconX,
+} from "./icons";
 import { RadiusSlider } from "./radius-slider";
 import { Text } from "./text";
 import { Segment } from "./segment";
 import { push } from "@/lib/navigation";
+import {
+  clearRecentSearches,
+  recentSearches,
+  rememberSearch,
+  type RecentSearch,
+} from "@/lib/recent-searches";
 
 type Area = components["schemas"]["Area"];
 
@@ -213,9 +226,19 @@ export function SearchWhere({
     };
   }, [q, here]);
 
+  const [recents, setRecents] = useState<RecentSearch[]>(recentSearches);
+
   const pick = (where: Where) => {
     Keyboard.dismiss();
+    if (where.kind === "area") rememberSearch(where);
     onPick(where);
+  };
+
+  const openVenue = (venue: { slug: string; name: string; line: string | null }) => {
+    Keyboard.dismiss();
+    rememberSearch({ kind: "venue", ...venue });
+    setRecents(recentSearches());
+    push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
   };
 
   // The page scrolls under the bar, which rides up with it and docks under the status bar, a white
@@ -262,6 +285,37 @@ export function SearchWhere({
             barStart.value = event.nativeEvent.layout.y;
           }}
         />
+        {!typed && recents.length > 0 ? (
+          <View className="mb-1">
+            <View className="mt-5 mb-1 flex-row items-baseline justify-between">
+              <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
+                {t("screens.search.where.recent")}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={() => {
+                  clearRecentSearches();
+                  setRecents([]);
+                }}
+                className="active:opacity-60"
+              >
+                <Text className="text-label font-medium underline">
+                  {t("screens.search.where.clearRecent")}
+                </Text>
+              </Pressable>
+            </View>
+            {recents.map((recent) => (
+              <Row
+                key={recent.kind === "area" ? recent.id : recent.slug}
+                icon={<IconClock size={20} color={colors.ink} strokeWidth={1.75} />}
+                title={recent.name}
+                line={recent.kind === "area" ? recent.within : recent.line}
+                onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
+              />
+            ))}
+          </View>
+        ) : null}
         {typed ? null : (
           <Segment
             className="mt-4"
@@ -390,10 +444,13 @@ export function SearchWhere({
                   ]
                     .filter(Boolean)
                     .join(" · ")}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
-                  }}
+                  onPress={() =>
+                    openVenue({
+                      slug: venue.slug,
+                      name: venue.name ?? t("screens.venue.fallbackName"),
+                      line: venue.area,
+                    })
+                  }
                 />
               ))}
             </>

@@ -574,6 +574,8 @@ const en = {
           areasHeading: "Areas",
           venuesHeading: "Venues",
           noMatch: "No areas or venues match “{{query}}”.",
+          recent: "Recent",
+          clearRecent: "Clear",
           placeholder: "An area or a venue",
           clear: "Clear",
         },
