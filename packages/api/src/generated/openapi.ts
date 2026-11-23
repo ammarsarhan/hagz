@@ -19435,8 +19435,12 @@ export interface components {
                     checkedInAt: string | null;
                 } | null;
             } | null;
-            /** @description Joined players' first names, once you've joined (or for the booker). */
-            players: string[] | null;
+            /** @description Joined players, first to join first, once you've joined (or for the booker). */
+            players: {
+                firstName: string;
+                /** @description This player is the one asking. */
+                you: boolean;
+            }[] | null;
             /** @description Once you've joined, until 24 hours after kick-off. */
             bookerPhone: string | null;
         };

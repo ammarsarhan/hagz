@@ -415,7 +415,7 @@ const gameSelect = {
   players: {
     where: { status: "JOINED" },
     orderBy: { joinedAt: "asc" },
-    select: { customer: { select: { name: true } } },
+    select: { customerId: true, customer: { select: { name: true } } },
   },
 } as const satisfies Prisma.BookingListingSelect;
 
@@ -484,7 +484,12 @@ const presentGame = (
         }
       : null,
     players:
-      joined || isBooker ? row.players.map((player) => firstName(player.customer.name)) : null,
+      joined || isBooker
+        ? row.players.map((player) => ({
+            firstName: firstName(player.customer.name),
+            you: player.customerId === viewer?.customerId,
+          }))
+        : null,
     bookerPhone: joined && now.getTime() < phoneUntil ? (account?.phone ?? null) : null,
   };
 };

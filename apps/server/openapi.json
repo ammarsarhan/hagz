@@ -7753,9 +7753,22 @@
               "null"
             ],
             "items": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                },
+                "you": {
+                  "type": "boolean",
+                  "description": "This player is the one asking."
+                }
+              },
+              "required": [
+                "firstName",
+                "you"
+              ]
             },
-            "description": "Joined players' first names, once you've joined (or for the booker)."
+            "description": "Joined players, first to join first, once you've joined (or for the booker)."
           },
           "bookerPhone": {
             "type": [

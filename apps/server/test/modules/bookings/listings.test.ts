@@ -97,9 +97,12 @@ describe("joining", () => {
       spotsLeft: 0,
       joinable: false,
       me: { booker: false, status: "JOINED" },
-      players: ["Ahmed"],
+      players: [{ firstName: "Ahmed", you: true }],
       bookerPhone: "+201001234567",
     });
+    // The booker sees the same players, none of them themselves.
+    const asBooker = Game.parse(await (await call(booker.token, "GET", `/games/${gameId}`)).json());
+    expect(asBooker.players).toEqual([{ firstName: "Ahmed", you: false }]);
 
     const guest = Game.parse(await (await call(null, "GET", `/games/${gameId}`)).json());
     expect(guest).toMatchObject({

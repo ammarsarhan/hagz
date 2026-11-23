@@ -116,9 +116,17 @@ export const Game = z
       })
       .nullable()
       .meta({ description: "Null for guests." }),
-    players: z.array(z.string()).nullable().meta({
-      description: "Joined players' first names, once you've joined (or for the booker).",
-    }),
+    players: z
+      .array(
+        z.object({
+          firstName: z.string(),
+          you: z.boolean().meta({ description: "This player is the one asking." }),
+        }),
+      )
+      .nullable()
+      .meta({
+        description: "Joined players, first to join first, once you've joined (or for the booker).",
+      }),
     bookerPhone: z.string().nullable().meta({
       description: "Once you've joined, until 24 hours after kick-off.",
     }),
