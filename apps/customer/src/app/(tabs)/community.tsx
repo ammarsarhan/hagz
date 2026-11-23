@@ -22,7 +22,7 @@ import {
   NO_GAME_FILTERS,
 } from "@/components/game-filters";
 import { useHudAnchor } from "@/components/hud";
-import { IconAdjustmentsHorizontal } from "@/components/icons";
+import { IconAdjustmentsHorizontal, IconChevronRight } from "@/components/icons";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { NoNameArt } from "@/components/no-name-art";
 import { FailedMessage } from "@/components/page-state";
@@ -39,7 +39,16 @@ import { useHere } from "@/lib/distance";
 import { isRTL } from "@/lib/language";
 import { push } from "@/lib/navigation";
 import { sizeName, sportName } from "@/lib/search";
-import { clockParts, dayLabel, daysUntil, hourAt, kindOf, localDateOf } from "@/lib/venue";
+import { formatPrice } from "@/lib/money";
+import {
+  clockParts,
+  dayLabel,
+  daysUntil,
+  hourAt,
+  kindOf,
+  localDateOf,
+  timeOfDay,
+} from "@/lib/venue";
 
 // Community (Figma C11b, option A "Agenda", 290:2; user, 2026-11-23): Discover | Mine. Discover is
 // the open games near the player, by day (Tonight, Tomorrow, Sat 28 Nov), each a row with its time
@@ -60,7 +69,13 @@ const SIZES: Size[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
 const EVENING = 17;
 
 type Item =
-  { kind: "day"; key: string; label: string } | { kind: "game"; game: Game; last: boolean };
+  | { kind: "day"; key: string; label: string }
+  | { kind: "game"; game: Game; last: boolean }
+  // Joined (Figma 288:2): "Coming up" and "Played" over a card for each game to come and a row for
+  // each played.
+  | { kind: "caption"; key: string; label: string }
+  | { kind: "card"; game: Game }
+  | { kind: "played"; game: Game; last: boolean };
 
 export default function CommunityTab() {
   const insets = useSafeAreaInsets();
@@ -103,6 +118,8 @@ function Games({
   const here = useHere();
   const [filters, setFilters] = useState<GameFilters>(NO_GAME_FILTERS);
   const [games, setGames] = useState<Game[] | null>(null);
+  // Joined: the games played, under the ones to come.
+  const [played, setPlayed] = useState<Game[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
@@ -125,6 +142,7 @@ function Games({
     setLoading(false);
     setMore(false);
     setGames(null);
+    setPlayed([]);
     setCursor(null);
     setFailure(null);
   }
@@ -134,6 +152,11 @@ function Games({
       const ask = ++asked.current;
       if (after) setMore(true);
       else setLoading(true);
+      // Joined reads the games played alongside the ones to come.
+      const past =
+        discover || after
+          ? null
+          : send(api.GET("/v1/games/mine", { params: { query: { when: "past" } } }));
       const result = discover
         ? await send(
             api.GET("/v1/games", {
@@ -153,7 +176,9 @@ function Games({
             }),
           )
         : await send(api.GET("/v1/games/mine", { params: { query: { when: "upcoming" } } }));
+      const pastResult = past ? await past : null;
       if (ask !== asked.current) return;
+      if (pastResult?.ok) setPlayed(pastResult.data.data);
       setLoading(false);
       setMore(false);
       if (!result.ok) {
@@ -187,7 +212,11 @@ function Games({
   });
   const pull = usePullToRefresh({ scrollY, busy: loading, onRefresh: () => void load(null) });
 
-  const items = games ? itemsOf(games) : [];
+  const items = games
+    ? discover
+      ? itemsOf(games)
+      : joinedItems(games, played, t("screens.community.comingUp"), t("screens.community.played"))
+    : [];
   // The chips row, Search's: Filters with how many are on, the sport (the others hidden once one is
   // picked; tap it again for all), its sizes, then what's applied, each with an ×.
   const applied = appliedGameFilters(filters, Boolean(here));
@@ -299,7 +328,9 @@ function Games({
     <View className="flex-1">
       <Animated.FlatList
         data={items}
-        keyExtractor={(item) => (item.kind === "day" ? item.key : item.game.id)}
+        keyExtractor={(item) =>
+          item.kind === "day" || item.kind === "caption" ? item.key : `${item.kind}:${item.game.id}`
+        }
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={pull.control}
@@ -314,6 +345,14 @@ function Games({
             >
               {item.label}
             </Text>
+          ) : item.kind === "caption" ? (
+            <Text className="px-6 pt-[22px] pb-2.5 text-caption leading-[18px] text-unit">
+              {item.label}
+            </Text>
+          ) : item.kind === "card" ? (
+            <JoinedCard game={item.game} />
+          ) : item.kind === "played" ? (
+            <PlayedRow game={item.game} last={item.last} />
           ) : (
             <Row game={item.game} last={item.last} />
           )
@@ -416,6 +455,136 @@ function itemsOf(games: Game[]): Item[] {
     items.push({ kind: "game", game, last });
   });
   return items;
+}
+
+// Joined: "Coming up" over a card for each game to come, then "Played" over the rest.
+function joinedItems(coming: Game[], played: Game[], comingUp: string, playedLabel: string) {
+  const items: Item[] = [];
+  if (coming.length > 0) {
+    items.push({ kind: "caption", key: "coming", label: comingUp });
+    coming.forEach((game) => items.push({ kind: "card", game }));
+  }
+  if (played.length > 0) {
+    items.push({ kind: "caption", key: "played", label: playedLabel });
+    played.forEach((game, index) =>
+      items.push({ kind: "played", game, last: index === played.length - 1 }),
+    );
+  }
+  return items;
+}
+
+// "Pitch 2 · 5-a-side · Nile Kickoff, Maadi": the size alone for football, else the sport.
+const placeOf = (game: Game) => {
+  const venue = [game.venue.name, game.venue.area?.split(",")[0]?.trim()]
+    .filter(Boolean)
+    .join(", ");
+  const kind =
+    game.ground.sport === "FOOTBALL" ? sizeName(game.ground.size) : sportName(game.ground.sport);
+  return [game.ground.name, kind, venue].filter(Boolean).join(" · ");
+};
+
+// A game to come (Figma 288:2): when, where, who's in, and what's paid at the venue.
+function JoinedCard({ game }: { game: Game }) {
+  const { t } = useTranslation();
+  const { timezone } = game;
+  const checkedIn = game.me?.checkIn?.checkedInAt;
+  const standing =
+    game.status === "CANCELLED"
+      ? t("screens.bookings.game.calledOff")
+      : checkedIn
+        ? t("screens.booking.checkedIn.title")
+        : t("screens.community.youreIn");
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => push({ pathname: "/game/[id]", params: { id: game.id } })}
+      className="mx-6 mb-3 rounded-[20px] border border-border bg-white p-[19px] active:opacity-80"
+    >
+      <View className="flex-row items-start justify-between gap-4">
+        <View className="flex-1 gap-0.5">
+          <Text className="text-[20px] leading-[26px] font-semibold">
+            {t("formats.moment", {
+              day: dayHeading(game.startsAt, timezone),
+              time: timeOfDay(game.startsAt, timezone),
+            })}
+          </Text>
+          <Text className="text-label leading-5 text-ink-2" numberOfLines={1}>
+            {placeOf(game)}
+          </Text>
+        </View>
+        {game.distanceKm === null ? null : (
+          <Text className="text-caption leading-[18px] text-unit">
+            {t("screens.community.km", {
+              km: game.distanceKm < 10 ? game.distanceKm.toFixed(1) : Math.round(game.distanceKm),
+            })}
+          </Text>
+        )}
+      </View>
+      <View className="mt-3.5">
+        <SpotsRow
+          booker={game.booker.firstName}
+          joined={game.playerCount}
+          names={game.players?.map((player) => player.firstName) ?? null}
+          open={game.spotsLeft}
+          size={30}
+        />
+      </View>
+      <View className="mt-3.5 flex-row items-center justify-between gap-3">
+        <Text className="text-subtitle leading-[22px] font-medium">{standing}</Text>
+        {game.status === "CANCELLED" ? null : (
+          <Text className="shrink text-right text-label leading-5 text-unit">
+            <Text className="text-label leading-5 font-medium">
+              {formatPrice(game.sharePrice, game.currency)}
+            </Text>
+            {` ${t("screens.community.plusFee", { fee: formatPrice(game.joinFee, game.currency) })}`}
+          </Text>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+// A game played: the venue, when, and whose game it was (and whether they checked in).
+function PlayedRow({ game, last }: { game: Game; last: boolean }) {
+  const { t } = useTranslation();
+  const { timezone } = game;
+  const how =
+    game.status === "CANCELLED"
+      ? t("screens.community.calledOff")
+      : game.me?.checkIn?.checkedInAt
+        ? t("screens.community.checkedIn")
+        : null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => push({ pathname: "/game/[id]", params: { id: game.id } })}
+      className="mx-6 active:opacity-70"
+    >
+      <View
+        className={`flex-row items-center gap-4 py-3.5 ${last ? "" : "border-b border-border"}`}
+      >
+        <View className="flex-1">
+          <Text className="text-subtitle leading-5 font-medium" numberOfLines={1}>
+            {game.venue.name ?? t("screens.venue.fallbackName")}
+          </Text>
+          <Text className="text-subtitle leading-5 font-medium">
+            {t("formats.moment", {
+              day: dayLabel(localDateOf(game.startsAt, timezone)),
+              time: timeOfDay(game.startsAt, timezone),
+            })}
+          </Text>
+          <Text className="pt-0.5 text-caption leading-[18px] text-ink-2">
+            {[t("screens.community.gameOf", { name: game.booker.firstName }), how]
+              .filter(Boolean)
+              .join(" · ")}
+          </Text>
+        </View>
+        <View style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}>
+          <IconChevronRight size={18} color={colors.ink3} strokeWidth={1.75} />
+        </View>
+      </View>
+    </Pressable>
+  );
 }
 
 // A game in the agenda: its time big on the left, then what, where (and how far), and the spots.
