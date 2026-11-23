@@ -3808,6 +3808,8 @@ export interface paths {
                     date?: string;
                     /** @description A start time on that date (HH:mm). Left out: any time that day. */
                     start?: string;
+                    /** @description Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`. */
+                    after?: string;
                     /** @description How long the game is: a ground must be free all of it. */
                     hours?: number;
                     sport?: components["schemas"]["GroundSport"];
@@ -4030,6 +4032,8 @@ export interface paths {
                     date?: string;
                     /** @description A start time on that date (HH:mm). Left out: any time that day. */
                     start?: string;
+                    /** @description Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`. */
+                    after?: string;
                     /** @description How long the game is: a ground must be free all of it. */
                     hours?: number;
                     sport?: components["schemas"]["GroundSport"];

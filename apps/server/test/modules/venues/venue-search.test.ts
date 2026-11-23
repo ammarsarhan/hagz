@@ -289,6 +289,20 @@ describe("when", () => {
     expect(card.priceFrom).toBe(60000);
   });
 
+  it("starts the times from a time of day, without a ground needed at exactly then", async () => {
+    const { nile } = await setup();
+    // The 7 pm hour taken: a search starting at 7 pm wouldn't find it, one from 7 pm still does.
+    await prisma.groundSlot.update({
+      where: { id: await slotAt(nile.groundId, "19:00") },
+      data: { status: "BLOCKED" },
+    });
+    expect((await found({ q: "nile", start: "19:00" })).data).toHaveLength(0);
+    const card = page0(await found({ q: "nile", after: "19:00" }));
+    expect(card.nextTimes[0]?.startsAt).toBe(
+      new Date(`${tomorrow()}T20:00:00+02:00`).toISOString(),
+    );
+  });
+
   it("leaves out grounds under maintenance", async () => {
     const { nile } = await setup();
     await prisma.ground.update({ where: { id: nile.groundId }, data: { status: "MAINTENANCE" } });

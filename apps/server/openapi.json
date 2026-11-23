@@ -14692,6 +14692,18 @@
           },
           {
             "schema": {
+              "type": "string",
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+              "description": "Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`.",
+              "example": "19:00"
+            },
+            "required": false,
+            "description": "Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`.",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 6,
@@ -15329,6 +15341,18 @@
             "required": false,
             "description": "A start time on that date (HH:mm). Left out: any time that day.",
             "name": "start",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+              "description": "Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`.",
+              "example": "19:00"
+            },
+            "required": false,
+            "description": "Free times from this time that day on (HH:mm), with no ground needed at exactly then (Home's Free tonight). Ignored with `start`.",
+            "name": "after",
             "in": "query"
           },
           {

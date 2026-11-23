@@ -141,6 +141,16 @@ const searchQueryFields = {
       description: "A start time on that date (HH:mm). Left out: any time that day.",
       example: "21:00",
     }),
+  after: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional()
+    .meta({
+      description:
+        "Free times from this time that day on (HH:mm), with no ground needed at exactly then " +
+        "(Home's Free tonight). Ignored with `start`.",
+      example: "19:00",
+    }),
   hours: z.coerce
     .number()
     .int()

@@ -244,7 +244,7 @@ const searchDay = async (
 // marketplace's time, from the start asked for (or the day's first minute) to its end, and the SQL
 // for the starts in it. `priced: false` leaves the price range out (for the price chart).
 const bookable = async (
-  query: Pick<VenueSearchQuery, "date" | "start" | "hours" | "priceMin" | "priceMax"> & Filters,
+  query: Pick<VenueSearchQuery, "date" | "start" | "after" | "hours" | "priceMin" | "priceMax"> & Filters,
   marketplace: { id: string; timezone: string },
   now: Date,
   { priced = true }: { priced?: boolean } = {},
@@ -256,7 +256,7 @@ const bookable = async (
   const [window] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
     WITH d AS (SELECT ${date}::date AS day)
     SELECT day::text AS date,
-           ((day + coalesce(${query.start ?? null}::time, '00:00'::time))::timestamp AT TIME ZONE ${timezone}) AS "from",
+           ((day + coalesce(${query.start ?? query.after ?? null}::time, '00:00'::time))::timestamp AT TIME ZONE ${timezone}) AS "from",
            ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
     FROM d`;
   if (!window) throw new Error("Postgres returned no search window.");
