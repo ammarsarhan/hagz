@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelSection, PriceSection, SectionBreak } from "@/components/booking-sections";
 import { MovedBooking } from "@/components/booking-move";
 import { Button } from "@/components/button";
-import { useHud } from "@/components/hud";
+import { useHud, useHudAnchor } from "@/components/hud";
 import {
   IconChevronRight,
   IconDirections,
@@ -125,6 +125,8 @@ function Content({
   const { t } = useTranslation();
   const hud = useHud();
   const insets = useSafeAreaInsets();
+  // Nothing pinned at the bottom: the HUD sits just above the home indicator.
+  useHudAnchor(insets.bottom);
   const { venue, currency } = booking;
   const { timezone } = venue;
 

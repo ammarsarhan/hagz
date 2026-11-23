@@ -8,7 +8,7 @@ import { Linking, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SectionBreak } from "@/components/booking-sections";
 import { Button } from "@/components/button";
-import { useHud } from "@/components/hud";
+import { useHud, useHudAnchor } from "@/components/hud";
 import { IconBrandWhatsapp, IconPhone, IconQrcode } from "@/components/icons";
 import { BackButton, RoundButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
@@ -223,6 +223,8 @@ function Open({ game, onChange }: { game: Game; onChange: (game: Game) => void }
   });
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
+  // The HUD sits above the Join bar.
+  const [bar, setBar] = useState(0);
 
   const booker = game.booker.firstName;
   const venueName = game.venue.name ?? t("screens.venue.fallbackName");
@@ -234,6 +236,7 @@ function Open({ game, onChange }: { game: Game; onChange: (game: Game) => void }
   const fee = formatPrice(game.joinFee, game.currency);
   const total = formatPrice(game.sharePrice + game.joinFee, game.currency);
   const mine = game.me?.booker ?? false;
+  useHudAnchor(mine ? insets.bottom : bar);
 
   const join = async () => {
     setSending(true);
@@ -263,6 +266,7 @@ function Open({ game, onChange }: { game: Game; onChange: (game: Game) => void }
             <View
               className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between border-t border-border bg-white px-6 pt-3.5"
               style={{ paddingBottom: insets.bottom + 12 }}
+              onLayout={(event) => setBar(event.nativeEvent.layout.height)}
             >
               <View className="gap-0.5">
                 <Text className="text-[17px] leading-[22px] font-medium">{total}</Text>
@@ -353,6 +357,7 @@ function Joined({ game, onChange }: { game: Game; onChange: (game: Game) => void
   const insets = useSafeAreaInsets();
   const [leaving, setLeaving] = useState(false);
   const [sending, setSending] = useState(false);
+  useHudAnchor(insets.bottom);
   const booker = game.booker.firstName;
   const started = Date.parse(game.startsAt) <= Date.now();
   const players = game.players ?? [];
@@ -526,6 +531,9 @@ function Unavailable({ game }: { game: Game }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const name = game.booker.firstName;
+  // The HUD sits above Find another game.
+  const [button, setButton] = useState(0);
+  useHudAnchor(button > 0 ? button + insets.bottom + 12 : insets.bottom);
   const why =
     game.me?.status === "REMOVED"
       ? t("screens.game.unavailable.removed")
@@ -539,7 +547,11 @@ function Unavailable({ game }: { game: Game }) {
       game={game}
       bottom={insets.bottom + 96}
       footer={
-        <View className="absolute right-6 left-6" style={{ bottom: insets.bottom + 12 }}>
+        <View
+          className="absolute right-6 left-6"
+          style={{ bottom: insets.bottom + 12 }}
+          onLayout={(event) => setButton(event.nativeEvent.layout.height)}
+        >
           <Button
             label={t("screens.game.findAnother")}
             onPress={() => router.dismissTo("/community")}

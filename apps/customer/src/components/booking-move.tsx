@@ -12,7 +12,7 @@ import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
 import { dayLabel, deadlineLabel, kindOf, localDateOf, timeOfDay, timeRange } from "@/lib/venue";
 import { Button } from "./button";
-import { useHud } from "./hud";
+import { useHud, useHudAnchor } from "./hud";
 import { IconClock } from "./icons";
 import { BackButton } from "./nav";
 import { Sheet } from "./sheet";
@@ -42,6 +42,9 @@ export function MovedBooking({
   const { move, venue, currency } = booking;
   const { timezone } = venue;
   const [sending, setSending] = useState<Answer | null>(null);
+  // The HUD sits above the answers pinned at the bottom.
+  const [pinned, setPinned] = useState(0);
+  useHudAnchor(pinned > 0 ? pinned + insets.bottom + 12 : null);
   const [asking, setAsking] = useState(false);
 
   const venueName = venue.name ?? t("screens.venue.fallbackName");
@@ -158,6 +161,7 @@ export function MovedBooking({
       <View
         className="absolute right-6 left-6 gap-2.5 bg-white pt-3"
         style={{ bottom: insets.bottom + 12 }}
+        onLayout={(event) => setPinned(event.nativeEvent.layout.height)}
       >
         <Button
           label={t("screens.booking.move.keep")}
