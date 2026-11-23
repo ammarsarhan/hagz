@@ -12,7 +12,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelSection, PriceSection, SectionBreak } from "@/components/booking-sections";
-import { DeclinedBooking } from "@/components/booking-declined";
 import { MovedBooking } from "@/components/booking-move";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
@@ -21,6 +20,7 @@ import {
   IconDirections,
   IconPhone,
   IconQrcode,
+  IconSearch,
   IconShare,
 } from "@/components/icons";
 import { BackButton, RoundButton } from "@/components/nav";
@@ -33,6 +33,7 @@ import { colors } from "@/lib/colors";
 import { intlLocale, isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { push } from "@/lib/navigation";
+import { openSimilarVenues } from "@/lib/similar-venues";
 import { formatPrice } from "@/lib/money";
 import {
   dayLabel,
@@ -111,8 +112,6 @@ export default function BookingPage() {
     Date.parse(booking.endsAt) > Date.now()
   )
     return <MovedBooking booking={{ ...booking, move: booking.move }} onAnswered={update} />;
-  if (booking.status === "CANCELLED" && booking.cancelled?.declined)
-    return <DeclinedBooking booking={booking} />;
   return <Content booking={booking} onChange={update} />;
 }
 
@@ -359,6 +358,8 @@ function Standing({
     body: string;
     showCode?: boolean;
     reserve?: boolean;
+    // The venue said no: while the game's ahead, Similar venues and Another time at the venue.
+    elsewhere?: boolean;
   } | null => {
     if (booking.move && !ended)
       return {
@@ -455,8 +456,16 @@ function Standing({
         const reason = cancelled?.reason ? `“${cancelled.reason}”` : null;
         if (cancelled?.declined)
           return {
-            title: t("screens.booking.ended.declined"),
-            body: reason ?? t("screens.booking.why.declined"),
+            title: t("screens.booking.declined.title", { venue: venueName }),
+            body: [
+              reason,
+              booking.paid > 0
+                ? t("screens.booking.declined.paidBack")
+                : t("screens.booking.declined.nothingCharged"),
+            ]
+              .filter(Boolean)
+              .join(" "),
+            elsewhere: !ended && Date.parse(booking.startsAt) > now,
           };
         if (cancelled?.by === "CUSTOMER")
           return {
@@ -492,6 +501,24 @@ function Standing({
           icon={<IconQrcode size={20} color={colors.white} strokeWidth={2} />}
           onPress={() => push({ pathname: "/bookings/[id]/check-in", params: { id: booking.id } })}
         />
+      ) : null}
+      {card.elsewhere ? (
+        <View className="gap-2">
+          <Button
+            label={t("screens.booking.declined.similar")}
+            size="compact"
+            icon={<IconSearch size={17} color={colors.white} strokeWidth={2.25} />}
+            onPress={() => openSimilarVenues(booking, venueName)}
+          />
+          <Button
+            label={t("screens.booking.declined.anotherTime", { venue: venueName })}
+            size="compact"
+            variant="white"
+            onPress={() =>
+              push({ pathname: "/venue/[slug]", params: { slug: booking.venue.slug } })
+            }
+          />
+        </View>
       ) : null}
       {card.reserve ? (
         <View className="flex-row gap-2.5">
