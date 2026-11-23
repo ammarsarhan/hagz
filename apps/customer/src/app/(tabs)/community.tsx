@@ -4,7 +4,12 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import Animated, { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHudAnchor } from "@/components/hud";
@@ -38,6 +43,8 @@ type Size = components["schemas"]["GroundSize"];
 type Tab = "discover" | "mine";
 
 const TAB_ROW = 49;
+const SEGMENT = 44;
+const TITLE_TO_SEGMENT = 16;
 const RADIUS = 25;
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
 const SIZES: Size[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
@@ -78,26 +85,6 @@ export default function CommunityTab() {
       <StatusBar style="dark" />
       {/* One list for both tabs, so the switcher stays put and slides as it's tapped. */}
       <Games tab={tab} onTab={setTab} signedIn={signedIn} />
-    </View>
-  );
-}
-
-function Header({ tab, onTab }: { tab: Tab; onTab: (tab: Tab) => void }) {
-  const { t } = useTranslation();
-  return (
-    <View className="px-6">
-      <Text accessibilityRole="header" className="pt-3 text-title font-semibold tracking-[-0.4px]">
-        {t("screens.community.title")}
-      </Text>
-      <Segment
-        className="mt-4"
-        options={[
-          { key: "discover", label: t("screens.community.discover") },
-          { key: "mine", label: t("screens.community.mine") },
-        ]}
-        value={tab}
-        onChange={onTab}
-      />
     </View>
   );
 }
@@ -202,9 +189,36 @@ function Games({
   const dayChip = filters.date ? dayName(filters.date) : t("screens.community.anyDay");
   const filtered = Boolean(filters.sport || filters.size);
 
+  // The Search and Bookings header: the title scrolls away; the switcher floats over its slot,
+  // following the page up until it docks just under the status bar, a white header fading in
+  // behind it.
+  const top = insets.top + 16;
+  const segmentStart = useSharedValue(top + 34 + TITLE_TO_SEGMENT);
+  const dockAt = insets.top + 6;
+  const segmentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockAt, segmentStart.value - scrollY.value) }],
+  }));
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      segmentStart.value - scrollY.value,
+      [dockAt + 24, dockAt],
+      [0, 1],
+      "clamp",
+    ),
+  }));
+
   const header = (
     <View>
-      <Header tab={tab} onTab={onTab} />
+      <Text accessibilityRole="header" className="px-6 text-title font-semibold tracking-[-0.4px]">
+        {t("screens.community.title")}
+      </Text>
+      {/* The switcher's slot: it floats over it (below), so it can dock. */}
+      <View
+        style={{ height: SEGMENT, marginTop: TITLE_TO_SEGMENT }}
+        onLayout={(event) => {
+          segmentStart.value = top + event.nativeEvent.layout.y;
+        }}
+      />
       {discover ? (
         <ScrollView
           horizontal
@@ -245,7 +259,7 @@ function Games({
         scrollEventThrottle={16}
         refreshControl={pull.control}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32, flexGrow: 1 }}
+        contentContainerStyle={{ paddingTop: top, paddingBottom: 32, flexGrow: 1 }}
         ListHeaderComponent={header}
         renderItem={({ item }) =>
           item.kind === "day" ? (
@@ -296,6 +310,23 @@ function Games({
         }
       />
       {pull.spinner}
+
+      {/* The header the switcher docks in: white, fading in as it arrives. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + SEGMENT + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-6 left-6" style={segmentStyle}>
+        <Segment
+          options={[
+            { key: "discover", label: t("screens.community.discover") },
+            { key: "mine", label: t("screens.community.mine") },
+          ]}
+          value={tab}
+          onChange={onTab}
+        />
+      </Animated.View>
 
       <DaySheet
         visible={sheet === "day"}
