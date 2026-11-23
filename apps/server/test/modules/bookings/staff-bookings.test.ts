@@ -3,7 +3,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { ALL_PERMISSIONS } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
-import { aGround, asStaff, at, book, signedIn, staffAt, liftLimits } from "../../support/bookings";
+import {
+  aGround,
+  asCustomer,
+  asStaff,
+  at,
+  book,
+  signedIn,
+  staffAt,
+  liftLimits,
+} from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { resetRedis } from "../../support/redis";
 
@@ -153,9 +162,23 @@ describe("the share link", () => {
       venue: { name: "Maadi Arena" },
       ground: { name: "Pitch 1" },
       movedTo: null,
+      yours: null,
     });
 
     const missing = await router.request("/v1/shared-bookings/ZZZZZZZZ");
     expect(missing.status).toBe(404);
+  });
+
+  it("tells the booker it's theirs, and nobody else", async () => {
+    const { ground, hours } = await aGround();
+    const { token } = await signedIn();
+    const confirmed = await booked(token, { groundId: ground.id, ...at(hours, 0, 1) });
+    const as = async (bearer: string) =>
+      SharedBooking.parse(
+        await (await asCustomer(bearer, "GET", `/shared-bookings/${confirmed.code}`)).json(),
+      );
+    expect((await as(token)).yours).toBe(confirmed.id);
+    const { token: friend } = await signedIn("+201009876543");
+    expect((await as(friend)).yours).toBeNull();
   });
 });

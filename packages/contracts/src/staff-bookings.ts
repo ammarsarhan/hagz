@@ -146,6 +146,10 @@ export const SharedBooking = z
       description:
         "`RESCHEDULED`: the code of the booking that replaced it, to follow the link there.",
     }),
+    yours: z.uuid().nullable().meta({
+      description:
+        "The booking's id when the signed-in player booked it (the app opens their own page); else null.",
+    }),
   })
   .meta({ id: "SharedBooking" });
 

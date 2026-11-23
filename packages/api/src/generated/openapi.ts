@@ -5085,7 +5085,7 @@ export interface paths {
         };
         /**
          * A booking's share link
-         * @description What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.
+         * @description What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Signed in as the booker, `yours` is the booking's id. Names follow `Accept-Language`.
          */
         get: {
             parameters: {
@@ -18218,6 +18218,11 @@ export interface components {
             gameId: string | null;
             /** @description `RESCHEDULED`: the code of the booking that replaced it, to follow the link there. */
             movedTo: string | null;
+            /**
+             * Format: uuid
+             * @description The booking's id when the signed-in player booked it (the app opens their own page); else null.
+             */
+            yours: string | null;
         };
         Checkout: {
             payment: {

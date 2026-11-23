@@ -18,7 +18,11 @@ const linkNotFound = () =>
 
 const names = { translations: { select: { language: true, name: true } } } as const;
 
-export const sharedBooking = async (code: string, language: Language): Promise<SharedBooking> => {
+export const sharedBooking = async (
+  code: string,
+  language: Language,
+  customerId: string | null = null,
+): Promise<SharedBooking> => {
   // Codes are upper case; a link typed or pasted in lower case still works.
   const normalized = code.toUpperCase();
   if (normalized.length !== CODE_LENGTH) throw linkNotFound();
@@ -28,6 +32,7 @@ export const sharedBooking = async (code: string, language: Language): Promise<S
       id: true,
       code: true,
       status: true,
+      customer: { select: { customerId: true } },
       startsAt: true,
       endsAt: true,
       venue: {
@@ -68,5 +73,6 @@ export const sharedBooking = async (code: string, language: Language): Promise<S
     },
     gameId: await sharedGameId(booking.id),
     movedTo: booking.rescheduledTo[0]?.to.code ?? null,
+    yours: customerId && booking.customer.customerId === customerId ? booking.id : null,
   };
 };

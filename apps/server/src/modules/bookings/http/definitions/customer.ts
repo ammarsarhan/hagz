@@ -10,13 +10,15 @@ import {
   IdempotencyHeaders,
   SharedBooking,
 } from "@hagz/contracts";
-import { CUSTOMER_BEARER, requireCustomer } from "@/platform/http/authenticate";
+import { CUSTOMER_BEARER, optionalCustomer, requireCustomer } from "@/platform/http/authenticate";
 import { body, json, problemResponse } from "@/platform/http/definitions";
 
 // A player's bookings (Phase 4).
 
 const tags = ["Bookings"];
 const security = [{ [CUSTOMER_BEARER]: [] }];
+// Anyone, or a signed-in player.
+const guestOrCustomer: Record<string, string[]>[] = [{ [CUSTOMER_BEARER]: [] }, {}];
 const unavailable = problemResponse("The database is unavailable; retry.");
 const notBookable = {
   404: problemResponse("GROUND_NOT_FOUND: no ground with that id at a live venue."),
@@ -190,7 +192,9 @@ export const sharedBooking = createRoute({
   tags,
   summary: "A booking's share link",
   description:
-    "What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.",
+    "What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Signed in as the booker, `yours` is the booking's id. Names follow `Accept-Language`.",
+  middleware: [optionalCustomer] as const,
+  security: guestOrCustomer,
   request: { params: z.object({ code: z.string().min(1).max(16) }) },
   responses: {
     200: { description: "The booking", ...json(SharedBooking) },

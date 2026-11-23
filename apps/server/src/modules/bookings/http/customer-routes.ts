@@ -55,7 +55,15 @@ export const bookingsCustomerRoutes = createRouter()
     return c.json(await bookingView(id, requestLanguage(c)), 200);
   })
   .openapi(route.sharedBooking, async (c) => {
-    return c.json(await sharedBooking(c.req.valid("param").code, requestLanguage(c)), 200);
+    const customer = c.get("customer");
+    return c.json(
+      await sharedBooking(
+        c.req.valid("param").code,
+        requestLanguage(c),
+        customer?.customerId ?? null,
+      ),
+      200,
+    );
   })
   .openapi(route.confirmReservation, async (c) => {
     const { bookingId } = c.req.valid("param");
