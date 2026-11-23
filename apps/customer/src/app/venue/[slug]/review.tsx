@@ -1,4 +1,4 @@
-import { playersOn, refundBands, shareOf, type CancellationTier } from "@hagz/contracts";
+import { playersOn, shareOf } from "@hagz/contracts";
 import type { components } from "@hagz/api";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -13,13 +13,14 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CancelSection, PriceSection, SectionBreak } from "@/components/booking-sections";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { BackButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { Text } from "@/components/text";
-import { GroupHeading, Hairline } from "@/components/venue-sections";
+import { GroupHeading } from "@/components/venue-sections";
 import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
@@ -27,16 +28,7 @@ import { newIdempotencyKey } from "@/lib/idempotency";
 import { rememberBooking } from "@/lib/just-booked";
 import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
-import {
-  dayLabel,
-  hoursLabel,
-  kindOf,
-  momentLabel,
-  timeOfDay,
-  timeRange,
-  type PublicGround,
-  type PublicVenue,
-} from "@/lib/venue";
+import { dayLabel, kindOf, timeRange, type PublicGround, type PublicVenue } from "@/lib/venue";
 
 // Review and book (Figma C8 round 2, 251:2): the booking's last step, a summary to check before
 // booking, with nothing left to choose (Need players? moved to Anything else?, user 2026-11-23).
@@ -51,7 +43,6 @@ type Quote = components["schemas"]["BookingQuote"];
 const ROW = 40;
 const TITLE_GAP = 22;
 const BAR_BELOW = 8;
-const HOUR = 3_600_000;
 
 type Loaded =
   | { state: "loading" }
@@ -127,44 +118,6 @@ export default function Review() {
   );
 }
 
-// The cancellation tiers as rows: until when each refund lasts, counted back from kick-off at the
-// venue's clock, and how much comes back. Windows that have already closed are left out.
-const cancelRows = (
-  tiers: CancellationTier[],
-  startsAt: string,
-  timezone: string,
-  t: ReturnType<typeof useTranslation>["t"],
-) => {
-  const start = Date.parse(startsAt);
-  const before = (hours: number) => new Date(start - hours * HOUR).toISOString();
-  const back = (percent: number) =>
-    percent === 100
-      ? t("screens.review.cancel.everything")
-      : percent === 50
-        ? t("screens.review.cancel.half")
-        : percent === 0
-          ? t("screens.review.cancel.nothing")
-          : t("screens.review.cancel.percent", { percent });
-  return refundBands(tiers)
-    .filter((band) => band.from === 0 || start - band.from * HOUR > Date.now())
-    .map((band) => ({
-      key: band.from,
-      when:
-        band.from > 0
-          ? t("screens.review.cancel.until", { moment: momentLabel(before(band.from), timezone) })
-          : band.to === null
-            ? t("screens.review.cancel.always")
-            : t("screens.review.cancel.after", { moment: momentLabel(before(band.to), timezone) }),
-      line:
-        band.from > 0
-          ? t("screens.review.cancel.orMore", { hours: hoursLabel(band.from) })
-          : band.to === null
-            ? null
-            : t("screens.review.cancel.lessThan", { hours: hoursLabel(band.to) }),
-      back: back(band.refundPercent),
-    }));
-};
-
 function Content({
   venue,
   ground,
@@ -202,7 +155,6 @@ function Content({
   const [booking, setBooking] = useState(false);
 
   const cancellation = venue.booking.cancellation;
-  const rows = cancellation ? cancelRows(cancellation.tiers, startsAt, timezone, t) : [];
   const mode = quote.paymentMode;
   const deposit = formatPrice(quote.deposit ?? 0, currency);
 
@@ -310,56 +262,26 @@ function Content({
           </View>
         </View>
 
-        <View className="mt-[22px] mb-5">
-          <Hairline />
-        </View>
+        <SectionBreak />
 
         {/* The quote: a line an hour, one per extra, the total, and how it's paid. */}
-        <View className="gap-2">
-          <View className="pb-1.5">
-            <GroupHeading>{t("screens.review.price")}</GroupHeading>
-          </View>
-          {quote.charges.map((charge, index) => (
-            <View key={index} className="flex-row justify-between gap-4">
-              <Text className="shrink text-body leading-[22px] text-ink-2">
-                {charge.type === "SLOT" && charge.startsAt
-                  ? timeOfDay(charge.startsAt, timezone)
-                  : charge.type === "SERVICE_FEE"
-                    ? t("screens.review.serviceFee")
-                    : (charge.amenity?.name ?? "")}
-              </Text>
-              <Text className="text-body leading-[22px]">
-                {formatPrice(charge.amount, currency)}
-              </Text>
-            </View>
-          ))}
-          <View className="py-1.5">
-            <Hairline />
-          </View>
-          <View className="flex-row justify-between gap-4">
-            <Text className="text-body leading-[22px] font-semibold">
-              {t("screens.review.total")}
-            </Text>
-            <Text className="text-body leading-[22px] font-semibold">
-              {formatPrice(quote.total, currency)}
-            </Text>
-          </View>
-          <Text className="text-caption text-unit">
-            {[
-              quote.tax > 0 ? t("screens.review.vatIncluded") : "",
-              t(`screens.review.pay.${mode}`, { deposit }),
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          </Text>
-        </View>
+        <PriceSection
+          charges={quote.charges}
+          total={quote.total}
+          currency={currency}
+          timezone={timezone}
+          note={[
+            quote.tax > 0 ? t("screens.review.vatIncluded") : "",
+            t(`screens.review.pay.${mode}`, { deposit }),
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        />
 
         {/* The open game asked for on Anything else?, if any: how many, each one's share, the note. */}
         {game ? (
           <>
-            <View className="mt-[22px] mb-5">
-              <Hairline />
-            </View>
+            <SectionBreak />
             <View className="gap-2">
               <View className="pb-1.5">
                 <GroupHeading>{t("screens.review.game.title")}</GroupHeading>
@@ -392,30 +314,8 @@ function Content({
           </>
         ) : null}
 
-        {rows.length > 0 ? (
-          <>
-            <View className="mt-[22px] mb-5">
-              <Hairline />
-            </View>
-            {/* If you cancel: each refund's deadline, counted back from kick-off. */}
-            <View>
-              <View className="pb-1.5">
-                <GroupHeading>{t("screens.review.cancel.title")}</GroupHeading>
-              </View>
-              {rows.map((row, index) => (
-                <View
-                  key={row.key}
-                  className={`flex-row items-start justify-between gap-4 py-3.5 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
-                >
-                  <View className="shrink gap-0.5">
-                    <Text className="text-body font-medium">{row.when}</Text>
-                    {row.line ? <Text className="text-caption text-unit">{row.line}</Text> : null}
-                  </View>
-                  <Text className="text-body">{row.back}</Text>
-                </View>
-              ))}
-            </View>
-          </>
+        {cancellation ? (
+          <CancelSection tiers={cancellation.tiers} startsAt={startsAt} timezone={timezone} />
         ) : null}
       </Animated.ScrollView>
 
