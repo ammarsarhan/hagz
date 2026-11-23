@@ -491,6 +491,45 @@ const en = {
         mineEmptyBody: "Games you join show up here.",
         guest: "Sign in to see the games you’ve joined.",
       },
+      hosting: {
+        title: "Your open game",
+        spotsLeft_one: "{{count}} spot left.",
+        spotsLeft_other: "{{count}} spots left.",
+        full: "Full.",
+        pays: "Each player pays you {{share}} and {{venue}} {{fee}} at the venue.",
+        waiting: "Players can join once {{venue}} confirms your booking.",
+        whoHeading: "Who’s coming",
+        nobody: "Nobody has joined yet. Your game is on Community for players nearby.",
+        newPlayer: "New to open games",
+        showedUp_one: "Showed up {{showedUp}} of {{count}} game",
+        showedUp_other: "Showed up {{showedUp}} of {{count}} games",
+        checkedIn: "Checked in at {{time}}",
+        needed: "Players needed",
+        downTo_one: "You can go down to {{count}}, the number joined",
+        downTo_other: "You can go down to {{count}}, the number joined",
+        upTo_one: "Up to {{count}} on this ground",
+        upTo_other: "Up to {{count}} on this ground",
+        removeName: "Remove {{name}}",
+        keepName: "Keep {{name}}",
+        removeSheet: {
+          title: "Remove {{name}}?",
+          body: "{{name}} is told and can’t rejoin this game. The spot opens for someone else, and nothing is owed.",
+        },
+        removeListing: "Remove the listing",
+        keepListed: "Keep it listed",
+        closeSheet: {
+          title: "Remove the listing?",
+          body: "The game comes off Community and its link stops working. Your booking stays as it is, and you can list it again later.",
+        },
+        playersFirst: {
+          title: "Remove the players first",
+          body_one:
+            "{{names}} has joined. Remove them from Who’s coming, then you can remove the listing. They’re told when you do.",
+          body_other:
+            "{{names}} have joined. Remove them from Who’s coming, then you can remove the listing. They’re told when you do.",
+        },
+        gotIt: "Got it",
+      },
       game: {
         where: "Where",
         you: "you",
@@ -620,7 +659,6 @@ const en = {
         coming_one: "{{names}} is coming",
         coming_other: "{{names}} are coming",
         noOneYet: "No one’s joined yet",
-        gameSoon: "Managing your open game comes soon",
         gettingThere: "Getting there",
         call: "Call the venue",
         pay: {

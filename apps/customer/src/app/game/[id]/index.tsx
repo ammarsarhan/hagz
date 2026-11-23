@@ -116,9 +116,19 @@ export default function GamePage() {
 function Content({ game, onChange }: { game: Game; onChange: (game: Game) => void }) {
   const joined = game.me?.status === "JOINED";
   const mine = game.me?.booker ?? false;
+  // Your own game: managed from your booking.
+  const bookingId = game.me?.bookingId;
+  if (mine && bookingId) return <ToYourGame bookingId={bookingId} />;
   if (joined) return <Joined game={game} onChange={onChange} />;
   if (!mine && !game.joinable) return <Unavailable game={game} />;
   return <Open game={game} onChange={onChange} />;
+}
+
+function ToYourGame({ bookingId }: { bookingId: string }) {
+  useEffect(() => {
+    router.replace({ pathname: "/bookings/[id]/game", params: { id: bookingId } });
+  }, [bookingId]);
+  return <PageState loading />;
 }
 
 // What every view starts with: back, then when, and the ground and venue under it.

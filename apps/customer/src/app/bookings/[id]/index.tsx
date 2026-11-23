@@ -124,7 +124,6 @@ function Content({
   onChange: (booking: Booking) => void;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const insets = useSafeAreaInsets();
   // Nothing pinned at the bottom: the HUD sits just above the home indicator.
   useHudAnchor(insets.bottom);
@@ -202,10 +201,10 @@ function Content({
         ) : null}
 
         {/* Its open game: how many have joined, and who. */}
-        {listing && live ? (
+        {listing && live && (listing.status === "OPEN" || listing.status === "WAITING") ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => hud.show(t("screens.booking.gameSoon"))}
+            onPress={() => push({ pathname: "/bookings/[id]/game", params: { id: booking.id } })}
             className="mt-[22px] flex-row items-center gap-3 active:opacity-70"
           >
             <View className="flex-1 gap-0.5">

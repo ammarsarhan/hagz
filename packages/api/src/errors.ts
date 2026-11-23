@@ -325,6 +325,19 @@ const messages = {
   GAME_FULL: { en: "This game is full.", ar: "هذه المباراة مكتملة." },
   GAME_STARTED: { en: "This game has already started.", ar: "بدأت هذه المباراة بالفعل." },
   GAME_NOT_OPEN: { en: "This game isn't taking players.", ar: "هذه المباراة لا تقبل لاعبين." },
+  GAME_HAS_PLAYERS: {
+    en: "Players have joined. Remove them first, then remove the listing.",
+    ar: "انضم لاعبون. أزلهم أولًا، ثم أزل الإعلان.",
+  },
+  BELOW_JOINED: {
+    en: "You can't need fewer players than have already joined.",
+    ar: "لا يمكن أن تحتاج لاعبين أقل ممن انضموا بالفعل.",
+  },
+  TOO_MANY_PLAYERS: {
+    en: "That's more players than this ground takes.",
+    ar: "هذا عدد لاعبين أكبر مما يتسع له الملعب.",
+  },
+  NOT_JOINED: { en: "They're no longer in this game.", ar: "لم يعد هذا اللاعب في المباراة." },
   GAME_CLASH: {
     en: "You already have a game or a booking at this time.",
     ar: "لديك مباراة أو حجز في هذا الوقت بالفعل.",
@@ -417,6 +430,10 @@ const short = {
   GAME_FULL: { en: "This game is full", ar: "المباراة مكتملة" },
   GAME_STARTED: { en: "This game has started", ar: "بدأت المباراة" },
   GAME_NOT_OPEN: { en: "Not taking players", ar: "لا تقبل لاعبين" },
+  GAME_HAS_PLAYERS: { en: "Remove the players first", ar: "أزل اللاعبين أولًا" },
+  BELOW_JOINED: { en: "More have joined than that", ar: "انضم عدد أكبر من ذلك" },
+  TOO_MANY_PLAYERS: { en: "Too many for this ground", ar: "عدد كبير على هذا الملعب" },
+  NOT_JOINED: { en: "They've already left", ar: "غادر اللاعب بالفعل" },
   GAME_CLASH: { en: "You're busy at this time", ar: "لديك موعد في هذا الوقت" },
   ALREADY_JOINED: { en: "You're already in", ar: "أنت مشارك بالفعل" },
   OWN_GAME: { en: "This is your game", ar: "هذه مباراتك" },

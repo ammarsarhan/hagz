@@ -19,9 +19,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { FieldBox, inputClass } from "@/components/field";
 import { useHudAnchor } from "@/components/hud";
-import { IconCheck, IconMinus, IconPlus } from "@/components/icons";
+import { IconCheck } from "@/components/icons";
 import { BackButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
+import { StepButton } from "@/components/step-button";
 import { Text } from "@/components/text";
 import { Toggle } from "@/components/toggle";
 import { Hairline } from "@/components/venue-sections";
@@ -404,34 +405,6 @@ function Picker({
         </View>
       </View>
     </View>
-  );
-}
-
-// The players stepper's grey round − and + (36, an 18 icon); faded at the end of its range.
-function StepButton({
-  icon,
-  label,
-  disabled,
-  onPress,
-}: {
-  icon: "minus" | "plus";
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const Glyph = icon === "minus" ? IconMinus : IconPlus;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      hitSlop={6}
-      className="size-9 items-center justify-center rounded-full bg-chip active:opacity-70"
-    >
-      <Glyph size={18} color={disabled ? colors.ink3 : colors.ink} strokeWidth={2} />
-    </Pressable>
   );
 }
 
