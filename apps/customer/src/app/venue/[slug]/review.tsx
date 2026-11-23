@@ -24,6 +24,7 @@ import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { rememberBooking } from "@/lib/just-booked";
 import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
 import {
@@ -231,14 +232,9 @@ function Content({
       hud.show(hudMessage(result.error));
       return;
     }
-    // The Sent and Booked screens (C8 260:2, 261:2) come next; until they're built, back to the
-    // venue with a word on how it went.
-    router.dismissTo({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
-    hud.show(
-      result.data.status === "PENDING"
-        ? t("screens.review.sent", { venue: venueName })
-        : t("screens.review.booked"),
-    );
+    // Sent or Booked next, in this screen's place: the booking's made, so there's no coming back.
+    rememberBooking(result.data, venue);
+    router.replace({ pathname: "/booked/[id]", params: { id: result.data.id } });
   };
 
   const onBook = () => {

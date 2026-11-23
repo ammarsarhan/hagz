@@ -139,7 +139,7 @@ export const listText = (items: string[]) =>
     : (items[0] ?? "");
 
 // "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
-export const kindOf = (ground: PublicGround) =>
+export const kindOf = (ground: Pick<PublicGround, "sport" | "size">) =>
   ground.size === "STANDARD"
     ? sportName(ground.sport)
     : i18n.t(`formats.footballSizes.${ground.size}`);
