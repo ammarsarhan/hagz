@@ -503,7 +503,7 @@ const ar: ArabicTranslations = {
         tonight: "الليلة",
         today: "اليوم",
         tomorrow: "غدًا",
-        openGame: "مباراة مفتوحة",
+        openGame: "مباراة",
         youreIn: "أنت مشارك",
         km: "{{km}} كم",
         spotsLeft_zero: "لا أماكن متبقية",

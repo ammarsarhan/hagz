@@ -464,7 +464,7 @@ const en = {
         tonight: "Tonight",
         today: "Today",
         tomorrow: "Tomorrow",
-        openGame: "Open game",
+        openGame: "Game",
         youreIn: "You’re in",
         km: "{{km}} km",
         spotsLeft_one: "{{count}} spot left",
