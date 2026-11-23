@@ -467,8 +467,9 @@ function Picker({
 
       {/* What's picked and what it comes to, and Continue (lime once there's enough). */}
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
-        style={{ paddingBottom: insets.bottom + 8 }}
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white pt-3.5"
+        // The button closer to the edge than the price, as on the venue page's Book bar.
+        style={{ paddingStart: 24, paddingEnd: 16, paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
         <View className="shrink gap-0.5">
