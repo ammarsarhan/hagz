@@ -39,7 +39,7 @@ type Loaded =
 
 const ROW = 40;
 // How long the stepper rests before the count is saved: taps in a row send once.
-const SAVE_AFTER_MS = 600;
+const SAVE_AFTER_MS = 500;
 
 const initial = (name: string) => name.trim().charAt(0).toUpperCase();
 const phoneText = (phone: string) =>
@@ -136,14 +136,18 @@ function Content({
   const joined = listing.playerCount;
   const most = playersOn(booking.ground.sport, booking.ground.size) - 1;
   const least = Math.max(1, joined);
-  const left = Math.max(0, listing.neededPlayers - joined);
 
-  // Players needed: shown at once, saved once the taps rest; a refusal puts it back.
+  // Players needed: the count, the spots row and the line under it follow each tap at once; the
+  // count is saved once the taps rest, and a refusal puts it back.
   const [needed, setNeeded] = useState(listing.neededPlayers);
+  const left = Math.max(0, needed - joined);
   const saved = useRef(listing.neededPlayers);
   useEffect(() => {
+    const before = saved.current;
     saved.current = listing.neededPlayers;
-    setNeeded(listing.neededPlayers);
+    // The saved count takes over only if nothing's been tapped since: a reply to an earlier save
+    // doesn't undo the taps after it (those are saved next).
+    setNeeded((now) => (now === before ? listing.neededPlayers : now));
   }, [listing.neededPlayers]);
   useEffect(() => {
     if (needed === saved.current) return;
