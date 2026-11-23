@@ -734,7 +734,7 @@ export function ReviewsSection({
 }
 
 // Opens the phone's maps app with directions to the venue.
-const openDirections = (latitude: number, longitude: number, name: string) => {
+export const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
   void Linking.openURL(
     Platform.OS === "ios"
@@ -742,6 +742,43 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
       : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
   );
 };
+
+// A still map of the venue with its pin: no panning or zooming, a picture of where it is.
+export function VenueMap({
+  coordinates,
+  height,
+  radius,
+}: {
+  coordinates: { latitude: number; longitude: number };
+  height: number;
+  radius: number;
+}) {
+  return (
+    <View
+      className="overflow-hidden bg-[#eef0f2]"
+      style={{ height, borderRadius: radius }}
+      pointerEvents="none"
+    >
+      <MapView
+        // Google Maps on both platforms, as in the staff app (the key is built in for both).
+        provider={PROVIDER_GOOGLE}
+        style={{ flex: 1 }}
+        initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
+        scrollEnabled={false}
+        zoomEnabled={false}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        toolbarEnabled={false}
+      >
+        {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map doesn't
+            keep re-rendering it. */}
+        <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
+          <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
+        </Marker>
+      </MapView>
+    </View>
+  );
+}
 
 // The map and address. No phone: players get the venue's number with a booking there.
 export function WhereSection({
@@ -757,27 +794,7 @@ export function WhereSection({
   const { coordinates, address, area } = venue.location;
   return (
     <Section title={t("screens.venue.where")} onLayout={onLayout}>
-      {coordinates ? (
-        <View className="h-[180px] overflow-hidden rounded-2xl" pointerEvents="none">
-          <MapView
-            // Google Maps on both platforms, as in the staff app (the key is built in for both).
-            provider={PROVIDER_GOOGLE}
-            style={{ flex: 1 }}
-            initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            toolbarEnabled={false}
-          >
-            {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map
-                doesn't keep re-rendering it. */}
-            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
-              <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
-            </Marker>
-          </MapView>
-        </View>
-      ) : null}
+      {coordinates ? <VenueMap coordinates={coordinates} height={180} radius={16} /> : null}
       <View className="flex-row items-center justify-between gap-4">
         <View className="shrink gap-0.5">
           <Text className="text-subtitle font-medium">

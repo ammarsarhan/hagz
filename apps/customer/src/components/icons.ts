@@ -90,3 +90,5 @@ export { default as IconExternalLink } from "@tabler/icons-react-native/IconExte
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
 export { default as IconInfoCircle } from "@tabler/icons-react-native/IconInfoCircle";
+export { default as IconQrcode } from "@tabler/icons-react-native/IconQrcode";
+export { default as IconDirections } from "@tabler/icons-react-native/IconDirections";
