@@ -17,6 +17,7 @@ import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import {
   IconChevronRight,
+  IconClock,
   IconDirections,
   IconPhone,
   IconQrcode,
@@ -493,6 +494,28 @@ function Standing({
   if (!card) return null;
   return (
     <View className="mt-[22px] gap-3 rounded-[20px] bg-chip p-[18px]">
+      {card.elsewhere ? (
+        // Declined: the same ground's times that day, a small inline button over the title.
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            push({
+              pathname: "/venue/[slug]/times",
+              params: {
+                slug: booking.venue.slug,
+                ground: booking.ground.id,
+                date: localDateOf(booking.startsAt, booking.venue.timezone),
+              },
+            })
+          }
+          className="h-8 flex-row items-center gap-1.5 self-start rounded-full bg-white px-3 active:opacity-70"
+        >
+          <IconClock size={15} color={colors.ink} strokeWidth={2} />
+          <Text className="text-label leading-5 font-medium">
+            {t("screens.booking.declined.viewTimes")}
+          </Text>
+        </Pressable>
+      ) : null}
       <View className="gap-0.5">
         <Text className="text-subtitle leading-[22px] font-medium">{card.title}</Text>
         <Text className={`text-label leading-5 text-ink-2 ${card.spaced ? "pt-1" : ""}`}>
@@ -508,20 +531,12 @@ function Standing({
         />
       ) : null}
       {card.elsewhere ? (
-        <View className="mt-1.5 gap-2">
+        // One way on, the hero: similar venues around it, at the same time.
+        <View className="mt-1.5">
           <Button
             label={t("screens.booking.declined.similar")}
-            size="compact"
-            icon={<IconSearch size={17} color={colors.white} strokeWidth={2.25} />}
+            icon={<IconSearch size={19} color={colors.white} strokeWidth={2.25} />}
             onPress={() => openSimilarVenues(booking, venueName)}
-          />
-          <Button
-            label={t("screens.booking.declined.anotherTime", { venue: venueName })}
-            size="compact"
-            variant="white"
-            onPress={() =>
-              push({ pathname: "/venue/[slug]", params: { slug: booking.venue.slug } })
-            }
           />
         </View>
       ) : null}
