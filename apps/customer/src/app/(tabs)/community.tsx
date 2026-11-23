@@ -415,7 +415,7 @@ function Row({ game, last }: { game: Game; last: boolean }) {
           <Text className="text-caption leading-[18px] text-unit">{period}</Text>
         </View>
         <View className="flex-1 gap-[3px]">
-          <Text className="text-[11px] leading-[14px] font-semibold tracking-[0.6px] text-unit uppercase">
+          <Text className="text-caption leading-[18px] font-medium text-unit">
             {game.me?.status === "JOINED"
               ? t("screens.community.youreIn")
               : t("screens.community.openGame")}
