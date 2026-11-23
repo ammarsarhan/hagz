@@ -72,7 +72,7 @@ export function MatchTicket({
       <View className="flex-row items-end justify-between px-5 pt-4 pb-[18px]">
         <View className="gap-0.5">
           <Text className="text-caption leading-[18px] text-unit">{codeLabel}</Text>
-          <Text className="text-[22px] leading-[26px] font-semibold tracking-[1.5px]">{code}</Text>
+          <Text className="text-[20px] leading-6 font-semibold tracking-[1.4px]">{code}</Text>
         </View>
         <View className="items-end">
           <Text className="text-caption leading-[18px] text-unit">{priceLabel}</Text>
