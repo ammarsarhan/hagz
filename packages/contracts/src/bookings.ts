@@ -268,3 +268,40 @@ export type Booking = z.infer<typeof Booking>;
 export type BookingsQuery = z.infer<typeof BookingsQuery>;
 export type BookingSummary = z.infer<typeof BookingSummary>;
 export type BookingPage = z.infer<typeof BookingPage>;
+
+// Home's Play again: the venues the player has played at, latest first, with their usual time
+// there when they keep coming back at the same one.
+export const PLAY_AGAIN_LIMIT = 10;
+
+export const PlayAgainVenue = z
+  .object({
+    venue: z.object({
+      id: z.uuid(),
+      slug: z.string(),
+      name: z.string().nullable(),
+      area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
+      timezone: z.string(),
+      cover: z.object({ url: z.string() }).nullable(),
+    }),
+    played: z.int().min(1).meta({ description: "Bookings played there." }),
+    lastPlayed: z.iso.datetime().meta({ description: "When the latest one started." }),
+    usual: z
+      .object({
+        weekday: z.int().min(0).max(6).meta({ description: "On the venue's clock, 0 for Sunday." }),
+        start: z.string().meta({ description: "HH:mm on the venue's clock.", example: "21:00" }),
+        hours: z.int().min(1),
+      })
+      .nullable()
+      .meta({
+        description:
+          "The day, time and length played most there, when it was played at least twice; else null.",
+      }),
+  })
+  .meta({ id: "PlayAgainVenue" });
+
+export const PlayAgain = z
+  .object({ data: z.array(PlayAgainVenue).max(PLAY_AGAIN_LIMIT) })
+  .meta({ id: "PlayAgain" });
+
+export type PlayAgainVenue = z.infer<typeof PlayAgainVenue>;
+export type PlayAgain = z.infer<typeof PlayAgain>;

@@ -5,6 +5,7 @@ import { bookingView } from "../application/booking-view";
 import { createBooking, quoteBooking } from "../application/create-booking";
 import { acceptMove, moveBack, rejectMove } from "../application/move-response";
 import { ensureMyBooking, listMyBookings } from "../application/my-bookings";
+import { playAgain } from "../application/play-again";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { sharedBooking } from "../application/shared-booking";
 import * as route from "./definitions/customer";
@@ -28,6 +29,10 @@ export const bookingsCustomerRoutes = createRouter()
       requestLanguage(c),
     );
     return c.json(page, 200);
+  })
+  // Before /bookings/{bookingId}, which would take "again" for an id.
+  .openapi(route.playAgain, async (c) => {
+    return c.json(await playAgain(c.get("customer").customerId, requestLanguage(c)), 200);
   })
   .openapi(route.getBooking, async (c) => {
     const { bookingId } = c.req.valid("param");

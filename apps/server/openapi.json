@@ -3595,6 +3595,121 @@
           "expiredFrom"
         ]
       },
+      "PlayAgain": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayAgainVenue"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PlayAgainVenue": {
+        "type": "object",
+        "properties": {
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Maadi, Cairo"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "cover": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name",
+              "area",
+              "timezone",
+              "cover"
+            ]
+          },
+          "played": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Bookings played there."
+          },
+          "lastPlayed": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the latest one started."
+          },
+          "usual": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "weekday": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6,
+                "description": "On the venue's clock, 0 for Sunday."
+              },
+              "start": {
+                "type": "string",
+                "description": "HH:mm on the venue's clock.",
+                "example": "21:00"
+              },
+              "hours": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "weekday",
+              "start",
+              "hours"
+            ],
+            "description": "The day, time and length played most there, when it was played at least twice; else null."
+          }
+        },
+        "required": [
+          "venue",
+          "played",
+          "lastPlayed",
+          "usual"
+        ]
+      },
       "SharedBooking": {
         "type": "object",
         "properties": {
@@ -16208,6 +16323,52 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/again": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Venues I've played at",
+        "description": "For Home's Play again: the live venues with a completed booking of mine, the latest first, each with the day, time and length played most there (once played twice). Names follow `Accept-Language`.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayAgain"
                 }
               }
             }

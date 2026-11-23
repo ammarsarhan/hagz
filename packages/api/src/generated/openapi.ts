@@ -4720,6 +4720,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Venues I've played at
+         * @description For Home's Play again: the live venues with a completed booking of mine, the latest first, each with the day, time and length played most there (once played twice). Names follow `Accept-Language`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PlayAgain"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/{bookingId}": {
         parameters: {
             query?: never;
@@ -18094,6 +18151,41 @@ export interface components {
              * @enum {string|null}
              */
             expiredFrom: "PENDING" | "HELD" | null;
+        };
+        PlayAgain: {
+            data: components["schemas"]["PlayAgainVenue"][];
+        };
+        PlayAgainVenue: {
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: string | null;
+                /** @example Maadi, Cairo */
+                area: string | null;
+                timezone: string;
+                cover: {
+                    url: string;
+                } | null;
+            };
+            /** @description Bookings played there. */
+            played: number;
+            /**
+             * Format: date-time
+             * @description When the latest one started.
+             */
+            lastPlayed: string;
+            /** @description The day, time and length played most there, when it was played at least twice; else null. */
+            usual: {
+                /** @description On the venue's clock, 0 for Sunday. */
+                weekday: number;
+                /**
+                 * @description HH:mm on the venue's clock.
+                 * @example 21:00
+                 */
+                start: string;
+                hours: number;
+            } | null;
         };
         SharedBooking: {
             code: string;

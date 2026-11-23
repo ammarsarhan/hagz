@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import {
   Booking,
   BookingPage,
+  PlayAgain,
   BookingQuote,
   BookingsQuery,
   BookingRequest,
@@ -85,6 +86,22 @@ export const listBookings = createRoute({
   responses: {
     200: { description: "A page of bookings", ...json(BookingPage) },
     400: problemResponse("INVALID_CURSOR"),
+    401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED"),
+    503: unavailable,
+  },
+});
+
+export const playAgain = createRoute({
+  method: "get",
+  path: "/bookings/again",
+  tags,
+  summary: "Venues I've played at",
+  description:
+    "For Home's Play again: the live venues with a completed booking of mine, the latest first, each with the day, time and length played most there (once played twice). Names follow `Accept-Language`.",
+  middleware: [requireCustomer] as const,
+  security,
+  responses: {
+    200: { description: "The venues", ...json(PlayAgain) },
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED"),
     503: unavailable,
   },
