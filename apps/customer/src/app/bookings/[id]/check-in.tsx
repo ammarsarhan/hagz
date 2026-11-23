@@ -9,6 +9,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   FadeIn,
+  FadeOut,
   useAnimatedProps,
   useSharedValue,
   withTiming,
@@ -38,6 +39,8 @@ type Code = components["schemas"]["CheckInCode"];
 
 const ROW = 40;
 const QR = 232;
+// How long a new code takes to fade in over the old one.
+const QR_FADE = 450;
 const RING = 36;
 const RING_STROKE = 3;
 // How often the booking is read again, to notice the desk's scan.
@@ -171,13 +174,19 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
         >
           {name || t("screens.checkIn.you")}
         </Text>
-        <Text className="pt-1 text-center text-body leading-[23px] text-ink-2">
+        {/* Who, which ground, when: spaced apart, a dot between each. */}
+        <View className="flex-row flex-wrap items-center justify-center gap-x-2 pt-1">
           {[
             t("screens.checkIn.booker"),
             groundName,
             timeRange(booking.startsAt, booking.endsAt, timezone),
-          ].join(" · ")}
-        </Text>
+          ].map((part, index) => (
+            <View key={index} className="flex-row items-center gap-x-2">
+              {index > 0 ? <Text className="text-body leading-[23px] text-ink-3">·</Text> : null}
+              <Text className="text-body leading-[23px] text-ink-2">{part}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       {working || !failure ? (
@@ -187,7 +196,13 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
             <View className="rounded-[28px] border border-border bg-white p-[22px]">
               <View style={{ width: QR, height: QR }} className="items-center justify-center">
                 {working ? (
-                  <Animated.View key={working.code} entering={FadeIn.duration(180)}>
+                  // Each new code fades in over the last as it fades out: both stacked in place.
+                  <Animated.View
+                    key={working.code}
+                    entering={FadeIn.duration(QR_FADE)}
+                    exiting={FadeOut.duration(QR_FADE)}
+                    style={{ position: "absolute", top: 0, left: 0 }}
+                  >
                     <QrCode value={working.code} size={QR} />
                   </Animated.View>
                 ) : (
