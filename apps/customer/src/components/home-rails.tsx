@@ -27,8 +27,9 @@ import { Text } from "./text";
 type Game = components["schemas"]["Game"];
 
 const GUTTER = 24;
-// Between the cards in a rail.
+// Between the cards in a rail; wider between the wide cards (Free tonight, user 2026-11-23).
 const GAP = 16;
+const WIDE_GAP = 24;
 const WIDE = 250;
 const NARROW = 168;
 const GAME = 232;
@@ -66,6 +67,7 @@ export function Rail<T>({
   width: number;
 }) {
   const { t } = useTranslation();
+  const gap = width === WIDE ? WIDE_GAP : GAP;
   return (
     <View className="pt-8">
       <View className="flex-row items-end justify-between gap-4 px-6">
@@ -98,7 +100,7 @@ export function Rail<T>({
         renderItem={({ item }) => <View style={{ width }}>{render(item)}</View>}
         showsHorizontalScrollIndicator={false}
         // Free scrolling, like the app's other sideways rows (no snapping).
-        contentContainerStyle={{ gap: GAP, paddingHorizontal: GUTTER, paddingTop: 14 }}
+        contentContainerStyle={{ gap, paddingHorizontal: GUTTER, paddingTop: 14 }}
       />
     </View>
   );
@@ -119,7 +121,10 @@ export function RailSkeleton({ kind }: { kind: "wide" | "narrow" | "game" }) {
         <Bone className="h-5 w-40 rounded-md" />
         {kind === "wide" ? <Bone className="h-3.5 w-48 rounded-md" /> : null}
       </View>
-      <View className="flex-row gap-4 overflow-hidden px-6 pt-3.5">
+      <View
+        className="flex-row overflow-hidden px-6 pt-3.5"
+        style={{ gap: kind === "wide" ? WIDE_GAP : GAP }}
+      >
         {[0, 1, 2].map((i) =>
           kind === "game" ? (
             <Bone key={i} className="h-[116px] rounded-2xl" style={{ width }} />
