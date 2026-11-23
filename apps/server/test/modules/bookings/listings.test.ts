@@ -51,6 +51,16 @@ const listed = async (needed = 3, settings: Record<string, unknown> = {}) => {
 const join = (token: string, gameId: string) => call(token, "POST", `/games/${gameId}/join`);
 
 describe("listing a booking", () => {
+  it("points the booker to their booking from the game, and no one else", async () => {
+    const { booker, booking, gameId } = await listed();
+    const own = Game.parse(await (await call(booker.token, "GET", `/games/${gameId}`)).json());
+    expect(own.me).toMatchObject({ booker: true, bookingId: booking.id });
+    const player = await signedIn("+201005550001");
+    await join(player.token, gameId);
+    const theirs = Game.parse(await (await call(player.token, "GET", `/games/${gameId}`)).json());
+    expect(theirs.me).toMatchObject({ booker: false, bookingId: null });
+  });
+
   it("lists a confirmed app booking with the share and fee, capped by the ground", async () => {
     const { booking } = await listed();
     expect(booking.listing).toMatchObject({

@@ -109,6 +109,10 @@ export const Game = z
     me: z
       .object({
         booker: z.boolean(),
+        bookingId: z.uuid().nullable().meta({
+          description:
+            "The booker's own booking, where they manage the game; null for anyone else.",
+        }),
         status: z.enum(["JOINED", "LEFT", "REMOVED"]).nullable(),
         checkIn: CheckInWindow.nullable().meta({
           description: "Joined players: when to show the code.",

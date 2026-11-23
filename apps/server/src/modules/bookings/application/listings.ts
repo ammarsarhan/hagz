@@ -404,6 +404,7 @@ const gameSelect = {
   note: true,
   sharePrice: true,
   joinFee: true,
+  bookingId: true,
   booking: {
     select: {
       status: true,
@@ -484,6 +485,7 @@ const presentGame = (
     me: viewer
       ? {
           booker: isBooker,
+          bookingId: isBooker ? row.bookingId : null,
           status: viewer.status,
           checkIn:
             joined && ["CONFIRMED", "COMPLETED", "NO_SHOW"].includes(booking.status)

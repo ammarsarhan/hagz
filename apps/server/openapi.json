@@ -7696,6 +7696,14 @@
               "booker": {
                 "type": "boolean"
               },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booker's own booking, where they manage the game; null for anyone else."
+              },
               "status": {
                 "type": [
                   "string",
@@ -7742,6 +7750,7 @@
             },
             "required": [
               "booker",
+              "bookingId",
               "status",
               "checkIn"
             ],

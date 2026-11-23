@@ -19428,6 +19428,11 @@ export interface components {
             /** @description Null for guests. */
             me: {
                 booker: boolean;
+                /**
+                 * Format: uuid
+                 * @description The booker's own booking, where they manage the game; null for anyone else.
+                 */
+                bookingId: string | null;
                 /** @enum {string|null} */
                 status: "JOINED" | "LEFT" | "REMOVED" | null;
                 /** @description Joined players: when to show the code. */
