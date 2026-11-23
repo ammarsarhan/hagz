@@ -434,7 +434,6 @@ const en = {
           body: "Show your code from {{from}} until {{until}}.",
         },
         showCode: "Show my code",
-        codeSoon: "Your check-in code comes soon",
         checkedIn: { title: "You’re checked in", body: "At {{time}}. Have a good game." },
         pending: {
           title: "Waiting for {{venue}}",
@@ -465,6 +464,17 @@ const en = {
           DEPOSIT: "{{deposit}} paid online, the rest at the venue.",
           PLATFORM: "Paid online.",
         },
+      },
+      checkIn: {
+        you: "Your code",
+        booker: "Booker",
+        newCode_one: "New code in {{count}} s",
+        newCode_other: "New code in {{count}} s",
+        noScreenshots: "Screenshots stop working",
+        openUntil: "Ask the desk to scan it. Check-in is open until {{until}}.",
+        opensAt: "Ask the desk to scan it from {{from}} until {{until}}.",
+        doneTitle: "You’re checked in",
+        doneBody: "{{time}} at {{venue}}. Have a good game.",
       },
       booked: {
         sentTitle: "Sent to {{venue}}",
