@@ -45,8 +45,8 @@ export function MatchTicket({
           />
           <Text className="text-caption leading-[18px] font-medium">{status.label}</Text>
         </View>
-        <Text className="pt-2.5 text-heading font-semibold">{`${day}${comma}`}</Text>
-        <Text className="text-heading font-semibold">{range}</Text>
+        <Text className="pt-2.5 text-heading leading-7 font-semibold">{`${day}${comma}`}</Text>
+        <Text className="text-heading leading-7 font-semibold">{range}</Text>
         <Text className="pt-2 text-label leading-5 text-ink-2">{ground}</Text>
         <Text className="text-label leading-5 text-ink-2">{venue}</Text>
       </View>
