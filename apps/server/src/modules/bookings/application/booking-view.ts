@@ -40,6 +40,30 @@ export const presentCharge = (
   taxAmount: line.taxAmount,
 });
 
+// The weekly game a reservation belongs to: since when, and how many of its last eight past weeks
+// were played. One booking per week (released and cancelled weeks still count as weeks).
+const WEEKS = 8;
+const weeklyGame = async (regularId: string) => {
+  const now = new Date();
+  const [regular, past] = await Promise.all([
+    prisma.venueRegular.findUniqueOrThrow({
+      where: { id: regularId },
+      select: { startsOn: true },
+    }),
+    prisma.booking.findMany({
+      where: { regularId, startsAt: { lt: now } },
+      orderBy: { startsAt: "desc" },
+      take: WEEKS,
+      select: { status: true },
+    }),
+  ]);
+  return {
+    since: regular.startsOn.toISOString().slice(0, 10),
+    weeks: past.length,
+    played: past.filter((booking) => booking.status === "COMPLETED").length,
+  };
+};
+
 export const bookingView = async (bookingId: string, language: Language): Promise<Booking> => {
   const booking = await prisma.booking.findUniqueOrThrow({
     where: { id: bookingId },
@@ -152,6 +176,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     checkIn: bookingCheckIn(booking),
     move: await moveFor(booking.id, language),
     ...endingOf(booking),
+    regular: booking.regularId ? await weeklyGame(booking.regularId) : null,
     createdAt: booking.createdAt.toISOString(),
   };
 };

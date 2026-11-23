@@ -17914,6 +17914,18 @@ export interface components {
              * @enum {string|null}
              */
             expiredFrom: "PENDING" | "HELD" | null;
+            /** @description Weekly reservations: the weekly game it's part of. */
+            regular: {
+                /**
+                 * Format: date
+                 * @description Its first week, in the venue's timezone.
+                 */
+                since: string;
+                /** @description Weeks already past, of the last eight. */
+                weeks: number;
+                /** @description Of those, the ones played. */
+                played: number;
+            } | null;
             /** Format: date-time */
             createdAt: string;
         };

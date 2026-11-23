@@ -134,6 +134,16 @@ const ExpiredFrom = z.enum(["PENDING", "HELD"]).nullable().meta({
   description: "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).",
 });
 
+// A regular's weekly reservation: the weekly game it belongs to.
+const BookingRegular = z
+  .object({
+    since: z.iso.date().meta({ description: "Its first week, in the venue's timezone." }),
+    weeks: z.int().meta({ description: "Weeks already past, of the last eight." }),
+    played: z.int().meta({ description: "Of those, the ones played." }),
+  })
+  .nullable()
+  .meta({ description: "Weekly reservations: the weekly game it's part of." });
+
 export const Booking = z
   .object({
     id: z.uuid(),
@@ -188,6 +198,7 @@ export const Booking = z
     }),
     cancelled: Cancelled,
     expiredFrom: ExpiredFrom,
+    regular: BookingRegular,
     createdAt: Instant,
   })
   .meta({ id: "Booking" });

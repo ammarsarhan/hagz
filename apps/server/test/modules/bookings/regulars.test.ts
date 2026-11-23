@@ -160,9 +160,14 @@ describe("regulars", () => {
       data: { customerId: (await prisma.customer.findFirstOrThrow()).id },
     });
     const [week1, week2] = made.reservations;
-    expect(
-      (await asCustomer(token, "POST", `/bookings/${week1?.id}/reservation/confirm`)).status,
-    ).toBe(200);
+    const confirmed = await asCustomer(token, "POST", `/bookings/${week1?.id}/reservation/confirm`);
+    expect(confirmed.status).toBe(200);
+    // The booking says which weekly game it's part of; nothing's been played yet.
+    expect((await confirmed.json()).regular).toEqual({
+      since: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      weeks: 0,
+      played: 0,
+    });
     expect(
       (await asCustomer(token, "POST", `/bookings/${week2?.id}/reservation/release`)).status,
     ).toBe(200);

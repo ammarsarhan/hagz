@@ -3139,6 +3139,33 @@
             ],
             "description": "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`)."
           },
+          "regular": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "since": {
+                "type": "string",
+                "format": "date",
+                "description": "Its first week, in the venue's timezone."
+              },
+              "weeks": {
+                "type": "integer",
+                "description": "Weeks already past, of the last eight."
+              },
+              "played": {
+                "type": "integer",
+                "description": "Of those, the ones played."
+              }
+            },
+            "required": [
+              "since",
+              "weeks",
+              "played"
+            ],
+            "description": "Weekly reservations: the weekly game it's part of."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3167,6 +3194,7 @@
           "move",
           "cancelled",
           "expiredFrom",
+          "regular",
           "createdAt"
         ]
       },
