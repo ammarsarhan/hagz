@@ -47,7 +47,7 @@ export const PaymentFilter = z.enum(["CASH", "ONLINE"]).meta({
 });
 
 // A comma-separated list of an enum's values, as one query parameter ("A,B").
-const listOf = (values: readonly string[], description: string) =>
+export const listOf = (values: readonly string[], description: string) =>
   z
     .string()
     .refine((text) => text.split(",").every((part) => values.includes(part)), {

@@ -23311,6 +23311,81 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "Any of these surfaces.",
+              "example": "NATURAL_GRASS,ARTIFICIAL_TURF"
+            },
+            "required": false,
+            "description": "Any of these surfaces.",
+            "name": "surface",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these: indoor, outdoor or covered.",
+              "example": "INDOOR,OUTDOOR"
+            },
+            "required": false,
+            "description": "Any of these: indoor, outdoor or covered.",
+            "name": "setting",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 23,
+              "description": "Starting at this hour or later, at the venue."
+            },
+            "required": false,
+            "description": "Starting at this hour or later, at the venue.",
+            "name": "fromHour",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24,
+              "description": "Starting before this hour, at the venue."
+            },
+            "required": false,
+            "description": "Starting before this hour, at the venue.",
+            "name": "toHour",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "In minor units: a player's share and joining fee together, at most this."
+            },
+            "required": false,
+            "description": "In minor units: a player's share and joining fee together, at most this.",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30,
+              "description": "At least this many spots left (to join with friends)."
+            },
+            "required": false,
+            "description": "At least this many spots left (to join with friends).",
+            "name": "spots",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "required": false,

@@ -10966,6 +10966,18 @@ export interface paths {
                     size?: components["schemas"]["GroundSize"];
                     /** @description A calendar day in the venue's timezone. */
                     date?: string;
+                    /** @description Any of these surfaces. */
+                    surface?: string;
+                    /** @description Any of these: indoor, outdoor or covered. */
+                    setting?: string;
+                    /** @description Starting at this hour or later, at the venue. */
+                    fromHour?: number | null;
+                    /** @description Starting before this hour, at the venue. */
+                    toHour?: number;
+                    /** @description In minor units: a player's share and joining fee together, at most this. */
+                    priceMax?: number | null;
+                    /** @description At least this many spots left (to join with friends). */
+                    spots?: number;
                     cursor?: string;
                     limit?: number;
                 };

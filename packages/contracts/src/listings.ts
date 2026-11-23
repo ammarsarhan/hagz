@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CheckInWindow } from "./check-in";
-import { GroundSize, GroundSport } from "./grounds";
+import { GroundEnvironment, GroundSize, GroundSport, GroundSurface } from "./grounds";
+import { listOf } from "./venue-search";
 
 // Open games (PR 4.7, docs/listings.md): a player lists their app booking as needing players, and
 // others join from the feed or the share link. Each joined player owes the booker `sharePrice` and
@@ -133,6 +134,32 @@ export const GamesQuery = z
     sport: GroundSport.optional(),
     size: GroundSize.optional(),
     date: LocalDate.optional(),
+    surface: listOf(GroundSurface.options, "Any of these surfaces."),
+    setting: listOf(GroundEnvironment.options, "Any of these: indoor, outdoor or covered."),
+    fromHour: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(23)
+      .optional()
+      .meta({ description: "Starting at this hour or later, at the venue." }),
+    toHour: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(24)
+      .optional()
+      .meta({ description: "Starting before this hour, at the venue." }),
+    priceMax: z.coerce.number().int().min(0).optional().meta({
+      description: "In minor units: a player's share and joining fee together, at most this.",
+    }),
+    spots: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(30)
+      .optional()
+      .meta({ description: "At least this many spots left (to join with friends)." }),
     cursor: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(50).default(20),
   })

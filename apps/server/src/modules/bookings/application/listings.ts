@@ -581,8 +581,13 @@ export const gamesFeed = async (
       JOIN "Venue" v ON v.id = l."venueId"
       JOIN "Marketplace" m ON m.id = v."marketplaceId"
       WHERE l.status = 'OPEN' AND b.status = 'CONFIRMED' AND l."startsAt" > ${now}
-        AND l."playerCount" < l."neededPlayers"
+        AND l."neededPlayers" - l."playerCount" >= ${query.spots ?? 1}
         AND (l."communityId" IS NULL OR l."publicAt" <= ${now})
+        ${query.surface ? Prisma.sql`AND g.surface::text = ANY(${query.surface.split(",")})` : Prisma.empty}
+        ${query.setting ? Prisma.sql`AND g.environment::text = ANY(${query.setting.split(",")})` : Prisma.empty}
+        ${query.priceMax !== undefined ? Prisma.sql`AND l."sharePrice" + l."joinFee" <= ${query.priceMax}` : Prisma.empty}
+        ${query.fromHour !== undefined ? Prisma.sql`AND extract(hour FROM l."startsAt" AT TIME ZONE m.timezone) >= ${query.fromHour}` : Prisma.empty}
+        ${query.toHour !== undefined ? Prisma.sql`AND extract(hour FROM l."startsAt" AT TIME ZONE m.timezone) < ${query.toHour}` : Prisma.empty}
         AND v.status IN ('LIVE', 'MAINTENANCE')
         ${query.sport ? Prisma.sql`AND g.sport = ${query.sport}::"GroundSport"` : Prisma.empty}
         ${query.size ? Prisma.sql`AND g.size = ${query.size}::"GroundSize"` : Prisma.empty}

@@ -272,4 +272,32 @@ describe("the feed", () => {
       data: [{ id: gameId }],
     });
   });
+
+  it("narrows by the ground, the start hour, the price and the spots left", async () => {
+    const { gameId } = await listed(3);
+    const ids = async (query: string) =>
+      GamePage.parse(await (await call(null, "GET", `/games?${query}`)).json()).data.map(
+        (game) => game.id,
+      );
+    const [game] = GamePage.parse(await (await call(null, "GET", "/games")).json()).data;
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: game?.timezone,
+        hour: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date(game?.startsAt ?? 0)),
+    );
+    const total = (game?.sharePrice ?? 0) + (game?.joinFee ?? 0);
+
+    expect(await ids("surface=ARTIFICIAL_TURF,SAND")).toEqual([gameId]);
+    expect(await ids("surface=NATURAL_GRASS")).toEqual([]);
+    expect(await ids("setting=OUTDOOR")).toEqual([gameId]);
+    expect(await ids("setting=INDOOR,COVERED")).toEqual([]);
+    expect(await ids(`fromHour=${hour}&toHour=${hour + 1}`)).toEqual([gameId]);
+    expect(await ids(`toHour=${Math.max(1, hour)}`)).toEqual(hour === 0 ? [gameId] : []);
+    expect(await ids(`priceMax=${total}`)).toEqual([gameId]);
+    expect(await ids(`priceMax=${total - 1}`)).toEqual([]);
+    expect(await ids("spots=3")).toEqual([gameId]);
+    expect(await ids("spots=4")).toEqual([]);
+  });
 });
