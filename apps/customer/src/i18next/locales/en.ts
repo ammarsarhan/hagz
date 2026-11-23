@@ -325,6 +325,7 @@ const en = {
         title: "Review and book",
         price: "Price",
         total: "Total",
+        serviceFee: "Service fee",
         vatIncluded: "VAT included.",
         pay: {
           MANUAL: "You pay at the venue, in cash.",

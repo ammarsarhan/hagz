@@ -362,6 +362,7 @@ const ar: ArabicTranslations = {
         title: "راجع واحجز",
         price: "السعر",
         total: "الإجمالي",
+        serviceFee: "رسوم الخدمة",
         vatIncluded: "شامل ضريبة القيمة المضافة.",
         pay: {
           MANUAL: "تدفع في الملعب، نقدًا.",

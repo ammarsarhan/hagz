@@ -44,8 +44,8 @@ import {
 } from "@/lib/venue";
 
 // Review and book (Figma C8 round 2, 251:2, and 252:2 with players on): the booking's last step.
-// What's being booked, its price as the API quotes it (POST /v1/bookings/quote: a line an hour and
-// one per extra, so it's exactly what booking will charge), Need players? (an open game asked for
+// What's being booked, its price as the API quotes it (POST /v1/bookings/quote: a line an hour, one
+// per extra and Hagz's service fee, so it's exactly what booking will charge), Need players? (an open game asked for
 // at checkout, which opens once the booking is confirmed), and the cancellation tiers as real
 // deadlines counted back from kick-off. Book is lime: one of the few big moments.
 
@@ -330,7 +330,9 @@ function Content({
               <Text className="shrink text-body leading-[22px] text-ink-2">
                 {charge.type === "SLOT" && charge.startsAt
                   ? timeOfDay(charge.startsAt, timezone)
-                  : (charge.amenity?.name ?? "")}
+                  : charge.type === "SERVICE_FEE"
+                    ? t("screens.review.serviceFee")
+                    : (charge.amenity?.name ?? "")}
               </Text>
               <Text className="text-body leading-[22px]">
                 {formatPrice(charge.amount, currency)}
