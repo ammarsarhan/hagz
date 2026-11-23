@@ -1,4 +1,5 @@
 import type { Icon } from "@tabler/icons-react-native";
+import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   memo,
@@ -6,6 +7,7 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -273,8 +275,48 @@ export default function SearchTab() {
   const [editing, setEditing] = useState<"where" | "when" | "filters" | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const amenities = useAmenities();
-  const here = where?.kind === "near" ? phone : null;
-  const radius = where?.kind === "near" ? where.radius : null;
+  const here =
+    where?.kind === "near"
+      ? phone
+      : where?.kind === "around"
+        ? { latitude: where.latitude, longitude: where.longitude }
+        : null;
+  const radius = where?.kind === "near" || where?.kind === "around" ? where.radius : null;
+
+  // Opened with a search already set (Similar venues, from a booking the venue couldn't take):
+  // around that venue, the same sport and size, the same day, hour and length. Applied once per
+  // link, keyed by its `at`; the player can change any of it after.
+  const preset = useLocalSearchParams<{
+    at?: string;
+    near?: string;
+    latitude?: string;
+    longitude?: string;
+    sport?: Sport;
+    size?: GroundSize;
+    date?: string;
+    start?: string;
+    hours?: string;
+  }>();
+  const presetApplied = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!preset.at || presetApplied.current === preset.at) return;
+    presetApplied.current = preset.at;
+    if (preset.latitude && preset.longitude)
+      setWhereChoice({
+        kind: "around",
+        latitude: Number(preset.latitude),
+        longitude: Number(preset.longitude),
+        radius: DEFAULT_RADIUS,
+        name: preset.near ?? "",
+      });
+    setSport(preset.sport);
+    setFilters({ ...NO_FILTERS, size: preset.size });
+    setWhen({
+      date: preset.date ?? null,
+      start: preset.start ?? null,
+      hours: Number(preset.hours ?? 1),
+    });
+  }, [preset]);
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
   // the tap never waits on the list.
@@ -340,7 +382,14 @@ export default function SearchTab() {
       : // The count found: the search bar already says where and when (user, 2026-11-20).
         t("screens.search.found", { count: total });
 
-  const whereLabel = here ? t("screens.search.nearMe") : where?.kind === "area" ? where.name : " ";
+  const whereLabel =
+    where?.kind === "around"
+      ? t("screens.search.near", { place: where.name })
+      : here
+        ? t("screens.search.nearMe")
+        : where?.kind === "area"
+          ? where.name
+          : " ";
   const whenLabel = whenText(when, search.timezone);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");

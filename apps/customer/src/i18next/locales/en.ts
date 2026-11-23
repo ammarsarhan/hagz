@@ -571,6 +571,7 @@ const en = {
         // A map pin in a rating sort, for a venue with no rating yet.
         pinNew: "New",
         nearMe: "Near me",
+        near: "Near {{place}}",
         filters: "Filters",
         filtersCount: "Filters · {{count}}",
         filtersOn: "Filters, {{count}} on",

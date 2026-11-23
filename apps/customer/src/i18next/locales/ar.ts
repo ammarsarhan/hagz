@@ -630,6 +630,7 @@ const ar: ArabicTranslations = {
         // A map pin in a rating sort, for a venue with no rating yet.
         pinNew: "جديد",
         nearMe: "بالقرب مني",
+        near: "بالقرب من {{place}}",
         filters: "الفلاتر",
         filtersCount: "الفلاتر · {{count}}",
         filtersOn: "الفلاتر، {{count}} مفعّلة",

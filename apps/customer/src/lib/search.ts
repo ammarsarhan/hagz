@@ -41,7 +41,9 @@ export interface SearchParams extends FilterQuery {
 // (a governorate at the widest: never the whole country, user 2026-11-20).
 export type Where =
   | { kind: "near"; radius: number }
-  | { kind: "area"; id: string; name: string; within: string | null };
+  | { kind: "area"; id: string; name: string; within: string | null }
+  // Around a place that isn't the player (a venue that couldn't take a booking: Similar venues).
+  | { kind: "around"; latitude: number; longitude: number; radius: number; name: string };
 
 export const DEFAULT_RADIUS = 10;
 export const MAX_RADIUS = 50;
