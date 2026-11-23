@@ -263,6 +263,9 @@ export const useVenueCount = (params: SearchParams, enabled: boolean) => {
 };
 
 interface State {
+  // The day searched: the one asked for, or with none, the one the server chose (today, or
+  // tomorrow once today has nothing left).
+  date: string | null;
   cards: VenueCard[];
   total: number | null;
   currency: string;
@@ -275,6 +278,7 @@ interface State {
 }
 
 const EMPTY: State = {
+  date: null,
   cards: [],
   total: null,
   currency: "EGP",
@@ -327,6 +331,7 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
       }
       const page = result.data;
       setState((previous) => ({
+        date: page.date,
         cards: reset ? page.data : [...previous.cards, ...page.data],
         total: reset ? page.total : previous.total,
         currency: page.currency,

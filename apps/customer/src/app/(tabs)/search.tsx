@@ -44,6 +44,7 @@ import {
   MAX_RADIUS,
   dayText,
   hourLabel,
+  localDate,
   sizeName,
   sportName,
   useCoverage,
@@ -321,6 +322,13 @@ export default function SearchTab() {
     },
     phone !== undefined && where !== null,
   );
+
+  // No day picked, and the server searched tomorrow (today has nothing left): take that day, so the
+  // bar says Tomorrow, the When sheet has it picked, and a venue opens on it.
+  useEffect(() => {
+    if (when.date === null && search.date && search.date !== localDate(search.timezone))
+      setWhen((now) => (now.date === null ? { ...now, date: search.date } : now));
+  }, [when.date, search.date, search.timezone]);
 
   // Pulled down from the top: the search again, the spinner held until it's back.
   const pull = usePullToRefresh({ scrollY, busy: search.loading, onRefresh: search.refresh });
