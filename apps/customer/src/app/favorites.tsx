@@ -208,7 +208,7 @@ function List({ venues }: { venues: Favorite[] }) {
 // A saved venue as a row (Figma C7, 157:2; the user's pick, 2026-11-20): its photo, then the name,
 // where it is, and what's played there with its rating; the red heart at the end takes it off. Gone
 // from Hagz: faded, with Remove for the heart, and nothing to open.
-const THUMB = 84;
+const THUMB = 68;
 
 function FavoriteRow({ venue }: { venue: Favorite }) {
   const { t } = useTranslation();

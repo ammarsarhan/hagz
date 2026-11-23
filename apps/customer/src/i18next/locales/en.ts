@@ -707,8 +707,8 @@ const en = {
       favorites: {
         title: "Favorites",
         subtitle: "Your favorite venues in one place.",
-        count_one: "{{count}} venue",
-        count_other: "{{count}} venues",
+        count_one: "{{count}} venue liked",
+        count_other: "{{count}} venues liked",
         gone: "No longer on Hagz",
         paused: "Not taking bookings for now",
         remove: "Remove",
