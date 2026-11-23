@@ -116,7 +116,7 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { timezone } = booking.venue;
-  const [code, setCode] = useState<Code | null>(null);
+  const [code, setCode] = useState<Held | null>(null);
   const [failure, setFailure] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
   const now = useSecond();
@@ -134,12 +134,10 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
       );
       if (!active) return;
       if (result.ok) {
-        setCode(result.data);
+        const held = heldFrom(result.data);
+        setCode(held);
         setFailure(null);
-        timer = setTimeout(
-          () => void fetchCode(),
-          Math.max(1000, Date.parse(result.data.refreshAt) - Date.now()),
-        );
+        timer = setTimeout(() => void fetchCode(), Math.max(1000, held.refreshAt - Date.now()));
       } else {
         setFailure(result.error);
         // A problem from the API (check-in closed, not checkable) won't change on its own.
@@ -153,8 +151,8 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
     };
   }, [booking.id, attempt]);
 
-  const working = code && Date.parse(code.expiresAt) > now ? code : null;
-  const secondsLeft = code ? Math.max(0, Math.ceil((Date.parse(code.refreshAt) - now) / 1000)) : 0;
+  const working = code && code.expiresAt > now ? code.code : null;
+  const secondsLeft = useCountdown(code?.refreshAt ?? null);
   const window = booking.checkIn;
   const groundName = booking.ground.name ?? kindOf(booking.ground);
   const opened = window ? now >= Date.parse(window.opensAt) : true;
@@ -265,6 +263,49 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
 }
 
 // The time now, ticking each second.
+// A code as held on the phone: when it's due to change and when it stops working, on the phone's
+// clock. The server's times are on its clock, which can be a second or more off the phone's (it
+// started at 31 s), so only their spans are used: the server issued it CODE_LIFETIME before it
+// expires, so it changes (refreshAt - issued) after it arrived here.
+interface Held {
+  code: Code;
+  refreshAt: number;
+  expiresAt: number;
+}
+// Each code works for 60 seconds (GET /v1/bookings/{id}/check-in-code).
+const CODE_LIFETIME = 60_000;
+const heldFrom = (code: Code): Held => {
+  const arrived = Date.now();
+  const issued = Date.parse(code.expiresAt) - CODE_LIFETIME;
+  return {
+    code,
+    refreshAt: arrived + (Date.parse(code.refreshAt) - issued),
+    expiresAt: arrived + CODE_LIFETIME,
+  };
+};
+
+// Whole seconds until a moment, ticking on that moment's own second marks (not every second from
+// whenever the screen opened), so no number is skipped or shown twice.
+function useCountdown(deadline: number | null) {
+  const left = () =>
+    deadline === null ? 0 : Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+  const [seconds, setSeconds] = useState(left);
+  useEffect(() => {
+    if (deadline === null) return setSeconds(0);
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const remaining = deadline - Date.now();
+      setSeconds(Math.max(0, Math.ceil(remaining / 1000)));
+      if (remaining <= 0) return;
+      // Just past the next whole second before the deadline.
+      timer = setTimeout(tick, (remaining % 1000 || 1000) + 5);
+    };
+    tick();
+    return () => clearTimeout(timer);
+  }, [deadline]);
+  return seconds;
+}
+
 function useSecond() {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -277,13 +318,13 @@ function useSecond() {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // A ring emptying, smoothly, until the next code: full when a code arrives, gone at its refreshAt.
-function Countdown({ refreshAt }: { refreshAt: string }) {
+function Countdown({ refreshAt }: { refreshAt: number }) {
   const radius = (RING - RING_STROKE) / 2;
   const length = 2 * Math.PI * radius;
   const left = useSharedValue(1);
 
   useEffect(() => {
-    const remaining = Math.max(0, Date.parse(refreshAt) - Date.now());
+    const remaining = Math.max(0, refreshAt - Date.now());
     left.value = 1;
     left.value = withTiming(0, { duration: remaining, easing: Easing.linear });
     return () => cancelAnimation(left);
