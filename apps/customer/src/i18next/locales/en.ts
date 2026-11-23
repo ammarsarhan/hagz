@@ -635,7 +635,6 @@ const en = {
           nothingCharged: "Nothing was charged.",
           paidBack: "Everything you paid comes back.",
           similar: "Similar venues",
-          viewTimes: "View times",
         },
         why: {
           unanswered: "The venue didn’t answer in time, so the hours were let go.",

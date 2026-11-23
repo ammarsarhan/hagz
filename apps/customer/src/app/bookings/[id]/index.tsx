@@ -492,28 +492,6 @@ function Standing({
   if (!card) return null;
   return (
     <View className="mt-[22px] gap-3 rounded-[20px] bg-chip p-[18px]">
-      {card.elsewhere ? (
-        // Declined: the same ground's times that day, an underlined link over the title.
-        <Pressable
-          accessibilityRole="button"
-          onPress={() =>
-            push({
-              pathname: "/venue/[slug]/times",
-              params: {
-                slug: booking.venue.slug,
-                ground: booking.ground.id,
-                date: localDateOf(booking.startsAt, booking.venue.timezone),
-              },
-            })
-          }
-          hitSlop={8}
-          className="self-start active:opacity-60"
-        >
-          <Text className="text-label leading-5 font-medium underline">
-            {t("screens.booking.declined.viewTimes")}
-          </Text>
-        </Pressable>
-      ) : null}
       <View className="gap-0.5">
         <Text className="text-subtitle leading-[22px] font-medium">{card.title}</Text>
         <Text className={`text-label leading-5 text-ink-2 ${card.spaced ? "pt-1" : ""}`}>

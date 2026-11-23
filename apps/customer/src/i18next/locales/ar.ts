@@ -710,7 +710,6 @@ const ar: ArabicTranslations = {
           nothingCharged: "لم يُخصم أي مبلغ.",
           paidBack: "يُرد إليك كل ما دفعته.",
           similar: "ملاعب مشابهة",
-          viewTimes: "عرض المواعيد",
         },
         why: {
           unanswered: "لم يرد الملعب في الوقت، فأُفرجت الساعات.",
