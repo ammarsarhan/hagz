@@ -167,7 +167,7 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top, paddingBottom: 32 }}
       >
-        {/* Where the rails look (a governorate, and how many venues), to change it; search. */}
+        {/* Where the rails look (a governorate), to change it; search. */}
         <View className="flex-row items-center justify-between px-6">
           <Pressable
             accessibilityRole="button"
@@ -178,23 +178,13 @@ export default function Home() {
           >
             <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
             {governorate ? (
-              <View className="shrink">
-                <View className="flex-row items-center gap-1">
-                  <Text className="shrink text-body leading-5 font-medium" numberOfLines={1}>
-                    {governorate.name}
-                  </Text>
-                  <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
-                </View>
-                <Text className="text-caption leading-[18px] text-ink-2" numberOfLines={1}>
-                  {t("formats.venues", { count: governorate.venues })}
-                </Text>
-              </View>
+              <Text className="shrink text-body font-medium" numberOfLines={1}>
+                {governorate.name}
+              </Text>
             ) : (
-              <View className="gap-1.5">
-                <Bone className="h-4 w-28 rounded-md" />
-                <Bone className="h-3 w-16 rounded-md" />
-              </View>
+              <Bone className="h-4 w-28 rounded-md" />
             )}
+            <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
           </Pressable>
           <RoundButton
             icon={IconSearch}
