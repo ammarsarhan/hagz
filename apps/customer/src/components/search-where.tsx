@@ -138,16 +138,82 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function Pill({
+  label,
+  on,
+  small = false,
+  onPress,
+}: {
+  label: string;
+  on: boolean;
+  small?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className={`h-10 justify-center rounded-full px-4 ${on ? "bg-ink" : "border border-border bg-white"}`}
+      className={`justify-center rounded-full ${small ? "h-9 px-3.5" : "h-10 px-4"} ${on ? "bg-ink" : "border border-border bg-white"}`}
     >
-      <Text className={`text-body font-medium ${on ? "text-white" : "text-ink"}`}>{label}</Text>
+      <Text
+        className={`${small ? "text-label" : "text-body"} font-medium ${on ? "text-white" : "text-ink"}`}
+      >
+        {label}
+      </Text>
     </Pressable>
+  );
+}
+
+type Governorate = NonNullable<ReturnType<typeof useCoverage>>[number];
+
+// A governorate's areas as pills, "All of …" first.
+function AreaPills({
+  governorate,
+  where,
+  onPick,
+  small = false,
+  className = "",
+}: {
+  governorate: Governorate;
+  where: Where;
+  onPick: (where: Where) => void;
+  small?: boolean;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View className={`flex-row flex-wrap gap-2 ${className}`}>
+      <Pill
+        small={small}
+        label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
+        on={where.kind === "area" && where.id === governorate.id}
+        onPress={() =>
+          onPick({
+            kind: "area",
+            id: governorate.id,
+            name: governorate.name ?? "",
+            within: null,
+          })
+        }
+      />
+      {governorate.areas.map((area) => (
+        <Pill
+          small={small}
+          key={area.id}
+          label={area.name ?? ""}
+          on={where.kind === "area" && where.id === area.id}
+          onPress={() =>
+            onPick({
+              kind: "area",
+              id: area.id,
+              name: area.name ?? "",
+              within: governorate.name,
+            })
+          }
+        />
+      ))}
+    </View>
   );
 }
 
@@ -367,7 +433,18 @@ export function SearchWhere({
             </Animated.View>
           ) : (
             <Animated.View key="area" entering={FadeIn.duration(220)}>
-              {(coverage ?? []).map((governorate) => {
+              {/* Only one governorate (user, 2026-11-23): its areas straight away, a size
+                  smaller, with nothing to open. */}
+              {coverage?.length === 1 && coverage[0] ? (
+                <AreaPills
+                  governorate={coverage[0]}
+                  where={where}
+                  onPick={pick}
+                  small
+                  className="pt-5"
+                />
+              ) : null}
+              {(coverage?.length === 1 ? [] : (coverage ?? [])).map((governorate) => {
                 const expanded = governorate.id === open;
                 return (
                   <View key={governorate.id} className="border-b border-border py-4">
@@ -386,35 +463,12 @@ export function SearchWhere({
                       <Chevron open={expanded} />
                     </Pressable>
                     <Collapsible open={expanded}>
-                      <View className="flex-row flex-wrap gap-2 pt-4">
-                        <Pill
-                          label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
-                          on={where.kind === "area" && where.id === governorate.id}
-                          onPress={() =>
-                            pick({
-                              kind: "area",
-                              id: governorate.id,
-                              name: governorate.name ?? "",
-                              within: null,
-                            })
-                          }
-                        />
-                        {governorate.areas.map((area) => (
-                          <Pill
-                            key={area.id}
-                            label={area.name ?? ""}
-                            on={where.kind === "area" && where.id === area.id}
-                            onPress={() =>
-                              pick({
-                                kind: "area",
-                                id: area.id,
-                                name: area.name ?? "",
-                                within: governorate.name,
-                              })
-                            }
-                          />
-                        ))}
-                      </View>
+                      <AreaPills
+                        governorate={governorate}
+                        where={where}
+                        onPick={pick}
+                        className="pt-4"
+                      />
                     </Collapsible>
                   </View>
                 );
