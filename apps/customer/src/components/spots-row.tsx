@@ -30,8 +30,9 @@ export function SpotsRow({
   const letter = `${size >= 30 ? "text-[13px]" : "text-[10px]"} font-semibold`;
   const initial = (name: string) => name.trim().charAt(0).toUpperCase();
   return (
+    // Wraps onto more lines for a big game (an 11-a-side has 22 discs).
     <View
-      className="flex-row"
+      className="flex-row flex-wrap"
       style={{ gap: size >= 30 ? 6 : 4 }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
