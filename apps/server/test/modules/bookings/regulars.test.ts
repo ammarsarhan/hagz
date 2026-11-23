@@ -1,4 +1,10 @@
-import { StaffBookingDetail, VenueRegularDetail, VenueRegularList } from "@hagz/contracts";
+import {
+  Booking,
+  BookingPage,
+  StaffBookingDetail,
+  VenueRegularDetail,
+  VenueRegularList,
+} from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { expireDueBookings } from "@/modules/bookings/application/expire-bookings";
 import { topUpVenue } from "@/modules/bookings/application/regulars";
@@ -163,7 +169,7 @@ describe("regulars", () => {
     const confirmed = await asCustomer(token, "POST", `/bookings/${week1?.id}/reservation/confirm`);
     expect(confirmed.status).toBe(200);
     // The booking says which weekly game it's part of; nothing's been played yet.
-    expect((await confirmed.json()).regular).toEqual({
+    expect(Booking.parse(await confirmed.json()).regular).toMatchObject({
       since: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       weeks: 0,
       played: 0,
@@ -192,6 +198,15 @@ describe("regulars", () => {
       "UNCONFIRMED",
       "UNCONFIRMED",
     ]);
+    // Upcoming shows the weekly game as its next week only; that week lists the ones after it.
+    const upcoming = BookingPage.parse(
+      await (await asCustomer(token, "GET", "/bookings?when=upcoming")).json(),
+    );
+    expect(upcoming.data.map((booking) => booking.id)).toEqual([week1?.id]);
+    const next = Booking.parse(
+      await (await asCustomer(token, "GET", `/bookings/${week1?.id}`)).json(),
+    );
+    expect(next.regular?.later.map((week) => week.status)).toEqual(["UNCONFIRMED", "UNCONFIRMED"]);
   });
 
   it("releases a week nobody confirmed at its deadline, counted as missed", async () => {

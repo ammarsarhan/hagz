@@ -140,6 +140,9 @@ const BookingRegular = z
     since: z.iso.date().meta({ description: "Its first week, in the venue's timezone." }),
     weeks: z.int().meta({ description: "Weeks already past, of the last eight." }),
     played: z.int().meta({ description: "Of those, the ones played." }),
+    later: z
+      .array(z.object({ startsAt: Instant, endsAt: Instant, status: BookingStatus }))
+      .meta({ description: "The weeks reserved after this one, soonest first." }),
   })
   .nullable()
   .meta({ description: "Weekly reservations: the weekly game it's part of." });

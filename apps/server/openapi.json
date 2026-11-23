@@ -3157,12 +3157,38 @@
               "played": {
                 "type": "integer",
                 "description": "Of those, the ones played."
+              },
+              "later": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "startsAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "endsAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "status": {
+                      "$ref": "#/components/schemas/BookingStatus"
+                    }
+                  },
+                  "required": [
+                    "startsAt",
+                    "endsAt",
+                    "status"
+                  ]
+                },
+                "description": "The weeks reserved after this one, soonest first."
               }
             },
             "required": [
               "since",
               "weeks",
-              "played"
+              "played",
+              "later"
             ],
             "description": "Weekly reservations: the weekly game it's part of."
           },

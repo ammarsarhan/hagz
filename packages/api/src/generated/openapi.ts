@@ -17925,6 +17925,14 @@ export interface components {
                 weeks: number;
                 /** @description Of those, the ones played. */
                 played: number;
+                /** @description The weeks reserved after this one, soonest first. */
+                later: {
+                    /** Format: date-time */
+                    startsAt: string;
+                    /** Format: date-time */
+                    endsAt: string;
+                    status: components["schemas"]["BookingStatus"];
+                }[];
             } | null;
             /** Format: date-time */
             createdAt: string;

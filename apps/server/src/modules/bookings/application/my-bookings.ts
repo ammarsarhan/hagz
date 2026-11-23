@@ -15,7 +15,7 @@ import { openMove, originSelect } from "./move-response";
 // A player's bookings (PR 4.4): the Bookings tab's Upcoming and Past, and one booking's detail. A
 // player's bookings are spread over one VenueCustomer per venue, all linked to their account.
 
-const STILL_TO_PLAY = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"] as const;
+export const STILL_TO_PLAY = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"] as const;
 
 const invalidCursor = () =>
   new AppError({
@@ -73,9 +73,21 @@ export const listMyBookings = async (
       }
     : {};
   const order = upcoming ? "asc" : "desc";
+  // A weekly game shows as its next week only; the weeks after it are on that booking's page.
+  const nextWeeks = upcoming
+    ? await prisma.booking.findMany({
+        where: { customer: { customerId }, regularId: { not: null }, ...when },
+        orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+        distinct: ["regularId"],
+        select: { id: true },
+      })
+    : [];
+  const weekly: Prisma.BookingWhereInput = upcoming
+    ? { OR: [{ regularId: null }, { id: { in: nextWeeks.map((week) => week.id) } }] }
+    : {};
 
   const rows = await prisma.booking.findMany({
-    where: { customer: { customerId }, AND: [when, after] },
+    where: { customer: { customerId }, AND: [when, after, weekly] },
     orderBy: [{ startsAt: order }, { id: order }],
     take: query.limit + 1,
     select: {

@@ -6,6 +6,7 @@ import type { ChargeLine } from "../domain/charges";
 import { endingOf, endingSelect, ENDING_EVENTS } from "./booking-ending";
 import { bookingCheckIn } from "./check-in";
 import { moveFor } from "./move-response";
+import { STILL_TO_PLAY } from "./my-bookings";
 import { bookerListing } from "./listings";
 
 // How a booking is shown to the player who made it.
@@ -43,9 +44,9 @@ export const presentCharge = (
 // The weekly game a reservation belongs to: since when, and how many of its last eight past weeks
 // were played. One booking per week (released and cancelled weeks still count as weeks).
 const WEEKS = 8;
-const weeklyGame = async (regularId: string) => {
+const weeklyGame = async (regularId: string, after: Date) => {
   const now = new Date();
-  const [regular, past] = await Promise.all([
+  const [regular, past, later] = await Promise.all([
     prisma.venueRegular.findUniqueOrThrow({
       where: { id: regularId },
       select: { startsOn: true },
@@ -56,11 +57,25 @@ const weeklyGame = async (regularId: string) => {
       take: WEEKS,
       select: { status: true },
     }),
+    prisma.booking.findMany({
+      where: {
+        regularId,
+        startsAt: { gt: after },
+        status: { in: [...STILL_TO_PLAY] },
+      },
+      orderBy: { startsAt: "asc" },
+      select: { startsAt: true, endsAt: true, status: true },
+    }),
   ]);
   return {
     since: regular.startsOn.toISOString().slice(0, 10),
     weeks: past.length,
     played: past.filter((booking) => booking.status === "COMPLETED").length,
+    later: later.map((week) => ({
+      startsAt: week.startsAt.toISOString(),
+      endsAt: week.endsAt.toISOString(),
+      status: week.status,
+    })),
   };
 };
 
@@ -176,7 +191,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     checkIn: bookingCheckIn(booking),
     move: await moveFor(booking.id, language),
     ...endingOf(booking),
-    regular: booking.regularId ? await weeklyGame(booking.regularId) : null,
+    regular: booking.regularId ? await weeklyGame(booking.regularId, booking.startsAt) : null,
     createdAt: booking.createdAt.toISOString(),
   };
 };
