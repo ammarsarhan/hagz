@@ -79,6 +79,28 @@ const weeklyGame = async (regularId: string, after: Date) => {
   };
 };
 
+// The player's first booking in the app: one they made (not staff, not a regular's week), with none
+// of theirs before it at any venue. Ids are uuid v7, so an earlier id is an earlier booking.
+const isFirstBooking = async (booking: {
+  id: string;
+  creatorId: string | null;
+  regularId: string | null;
+  customer: { customerId: string | null };
+}) => {
+  const account = booking.customer.customerId;
+  if (!account || booking.creatorId || booking.regularId) return false;
+  const earlier = await prisma.booking.findFirst({
+    where: {
+      id: { lt: booking.id },
+      creatorId: null,
+      regularId: null,
+      customer: { customerId: account },
+    },
+    select: { id: true },
+  });
+  return earlier === null;
+};
+
 export const bookingView = async (bookingId: string, language: Language): Promise<Booking> => {
   const booking = await prisma.booking.findUniqueOrThrow({
     where: { id: bookingId },
@@ -92,6 +114,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       creatorId: true,
       regularId: true,
       checkedInAt: true,
+      customer: { select: { customerId: true } },
       total: true,
       depositAmount: true,
       paymentMode: true,
@@ -192,6 +215,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     move: await moveFor(booking.id, language),
     ...endingOf(booking),
     regular: booking.regularId ? await weeklyGame(booking.regularId, booking.startsAt) : null,
+    first: await isFirstBooking(booking),
     createdAt: booking.createdAt.toISOString(),
   };
 };

@@ -3194,6 +3194,10 @@
             ],
             "description": "Weekly reservations: the weekly game it's part of."
           },
+          "first": {
+            "type": "boolean",
+            "description": "The player's first booking in the app, at any venue (the confirmation celebrates it). Bookings staff entered and regulars' weeks don't count."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3223,6 +3227,7 @@
           "cancelled",
           "expiredFrom",
           "regular",
+          "first",
           "createdAt"
         ]
       },

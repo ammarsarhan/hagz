@@ -202,6 +202,11 @@ export const Booking = z
     cancelled: Cancelled,
     expiredFrom: ExpiredFrom,
     regular: BookingRegular,
+    first: z.boolean().meta({
+      description:
+        "The player's first booking in the app, at any venue (the confirmation celebrates it). " +
+        "Bookings staff entered and regulars' weeks don't count.",
+    }),
     createdAt: Instant,
   })
   .meta({ id: "Booking" });

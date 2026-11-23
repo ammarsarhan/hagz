@@ -18020,6 +18020,8 @@ export interface components {
                     status: components["schemas"]["BookingStatus"];
                 }[];
             } | null;
+            /** @description The player's first booking in the app, at any venue (the confirmation celebrates it). Bookings staff entered and regulars' weeks don't count. */
+            first: boolean;
             /** Format: date-time */
             createdAt: string;
         };
