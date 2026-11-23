@@ -6,9 +6,11 @@ import { Text } from "./text";
 
 // An open game's spots (Figma C11, the signature): the booker as an outlined disc, each player
 // who's joined black with their initial, each spot still open dashed. A player whose name isn't
-// shown yet (until you join) is hatched: there, but not who.
+// shown yet (until you join) is hatched in grey: there, but not who.
 
 const OPEN = "#b5b9bf";
+// The hatching, faint: someone's there, but quieter than a named player.
+const HATCH = 0.35;
 
 export function SpotsRow({
   booker,
@@ -79,11 +81,20 @@ function Hatched({ size }: { size: number }) {
             x2={x + size}
             y2={0}
             stroke={colors.ink}
+            strokeOpacity={HATCH}
             strokeWidth={1.25}
           />
         ))}
       </G>
-      <Circle cx={r} cy={r} r={r - 0.5} stroke={colors.ink} strokeWidth={1} fill="none" />
+      <Circle
+        cx={r}
+        cy={r}
+        r={r - 0.5}
+        stroke={colors.ink}
+        strokeOpacity={HATCH}
+        strokeWidth={1}
+        fill="none"
+      />
     </Svg>
   );
 }
