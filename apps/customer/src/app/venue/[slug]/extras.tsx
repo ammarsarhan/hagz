@@ -277,7 +277,7 @@ function Picker({
         )}
 
         {/* Need players?: on, how many (each pays the booker their share) and a note. */}
-        <View className="flex-row items-center gap-3">
+        <View className="flex-row items-center gap-6">
           <View className="flex-1">
             <Text className="text-body leading-5 font-medium">
               {t("screens.extras.players.title")}
