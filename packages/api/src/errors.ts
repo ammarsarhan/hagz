@@ -356,6 +356,10 @@ const messages = {
     en: "You can host {limit} games at a time.",
     ar: "يمكنك استضافة {limit} مباريات في نفس الوقت.",
   },
+  BOOKING_NOT_FOUND: {
+    en: "This booking link doesn't work. Check it with whoever sent it.",
+    ar: "رابط الحجز هذا لا يعمل. تأكد منه مع من أرسله.",
+  },
   REJOIN_LIMIT: {
     en: "You've joined this game {limit} times, the most you can.",
     ar: "انضممت إلى هذه المباراة {limit} مرات، وهذا الحد الأقصى.",

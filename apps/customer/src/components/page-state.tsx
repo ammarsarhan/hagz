@@ -1,5 +1,4 @@
 import { isProblem } from "@hagz/api";
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
+import { goBack } from "@/lib/navigation";
 import { Button } from "./button";
 import { useHudAnchor } from "./hud";
 import { BackButton } from "./nav";
@@ -41,7 +41,7 @@ export function PageState({
     >
       <StatusBar style="dark" />
       <View className="h-10 justify-center px-4">
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={goBack} />
       </View>
       {loading ? (
         <View className="flex-1 items-center justify-center">

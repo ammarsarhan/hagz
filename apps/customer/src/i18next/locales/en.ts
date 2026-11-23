@@ -171,6 +171,24 @@ const en = {
       hoursBefore_other: "{{count}} hours before",
     },
     screens: {
+      shared: {
+        seeVenue: "See {{venue}}",
+        someones:
+          "Someone shared their game at {{venue}} with you. Want your own? See its free times and book.",
+        played:
+          "This game at {{venue}} has been played. Want your own? See its free times and book.",
+        moved: {
+          title: "This game has a new time",
+          was: "Was",
+          now: "Now",
+          line: "This link was for the old time. The new time has its own link.",
+          action: "See the new time",
+        },
+        off: {
+          title: "This game isn't happening",
+          line: "It was called off, so there's nothing to join. {{venue}} may have other free times.",
+        },
+      },
       notifications: {
         title: "Notifications",
         empty: {

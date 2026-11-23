@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { View } from "react-native";
@@ -10,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isRTL } from "@/lib/language";
+import { goBack } from "@/lib/navigation";
 import { BackButton } from "./nav";
 
 // A page with back at the top that scrolls the whole height of the screen, under a white bar,
@@ -68,7 +68,7 @@ export function ScrollPage({
         style={{ height: row + ROW + BELOW, paddingTop: row }}
       >
         <View className="-mx-1 flex-row items-center justify-between" style={{ height: ROW }}>
-          <BackButton onPress={() => router.back()} />
+          <BackButton onPress={goBack} />
           {right}
         </View>
         <Animated.View

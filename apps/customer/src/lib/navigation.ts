@@ -13,6 +13,13 @@ export const push = (href: Href) => {
   router.push(href);
 };
 
+// Back, or Home when there's nothing to go back to: a link (/booking/{code}) that opened the app
+// straight onto a page.
+export const goBack = () => {
+  if (router.canGoBack()) router.back();
+  else router.replace("/home");
+};
+
 // Crossing the signed-in boundary (signing in, signing up, signing out) starts a fresh history:
 // nothing from the other side stays underneath to swipe back to.
 export const resetTo = (href: Href) => {
