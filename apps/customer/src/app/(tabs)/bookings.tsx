@@ -3,14 +3,21 @@ import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, View } from "react-native";
+import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { MatchTicket } from "@/components/match-ticket";
 import { NoNameArt } from "@/components/no-name-art";
+import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { FailedMessage } from "@/components/page-state";
 import { Segment } from "@/components/segment";
 import { Text } from "@/components/text";
@@ -36,6 +43,10 @@ import { push } from "@/lib/navigation";
 // ground, the venue, and one line on where it stands. Read again each time the tab is opened (a
 // booking just made, signing in elsewhere) and on pull to refresh; more pages load near the end.
 // A guest gets Account's "Uh oh!" with a way in.
+//
+// It scrolls the way Search does: the title at the top of the page, and Upcoming | Past riding up
+// with it until it docks under the status bar, a white header fading in behind it; pull to
+// refresh holds a small spinner at the top (components/pull-to-refresh.tsx).
 
 type Summary = components["schemas"]["BookingSummary"];
 type When = "upcoming" | "past";
@@ -52,6 +63,9 @@ type Item =
 const PAGE = 20;
 // The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
 const TAB_ROW = 49;
+// The segment's height (components/segment.tsx), and the gap from the title down to it.
+const SEGMENT = 44;
+const TITLE_TO_SEGMENT = 18;
 const direction = isRTL ? "rtl" : "ltr";
 
 export default function BookingsTab() {
@@ -73,10 +87,10 @@ export default function BookingsTab() {
   );
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.white, direction }}>
+    <View className="flex-1 bg-white" style={{ direction }}>
       <StatusBar style="dark" />
       {signedIn === undefined ? null : signedIn ? <Bookings /> : <Guest />}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -88,7 +102,7 @@ function Bookings() {
     upcoming: { state: "loading" },
     past: { state: "loading" },
   });
-  const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
   // The latest request per list wins: a slow answer from an earlier load is dropped.
   const requests = useRef({ upcoming: 0, past: 0 });
 
@@ -149,11 +163,36 @@ function Bookings() {
     }, [load, when]),
   );
 
-  const refresh = async () => {
-    setRefreshing(true);
-    await load(when);
-    setRefreshing(false);
-  };
+  // The page's scroll, the segment's place in it, and where it docks: just under the status bar.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const top = insets.top + 16;
+  const segmentStart = useSharedValue(top + 34 + TITLE_TO_SEGMENT);
+  const dockAt = insets.top + 6;
+  const segmentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockAt, segmentStart.value - scrollY.value) }],
+  }));
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      segmentStart.value - scrollY.value,
+      [dockAt + 24, dockAt],
+      [0, 1],
+      "clamp",
+    ),
+  }));
+
+  // Pulled down from the top: the list on show read again, the spinner held until it's back.
+  const [reloading, setReloading] = useState(false);
+  const pull = usePullToRefresh({
+    scrollY,
+    busy: reloading,
+    onRefresh: () => {
+      setReloading(true);
+      void load(when).finally(() => setReloading(false));
+    },
+  });
 
   const retry = () => {
     setList(when, { state: "loading" });
@@ -167,74 +206,95 @@ function Bookings() {
     list.state === "ready" ? itemsOf(when, list.items, t("screens.bookings.later")) : [];
 
   return (
-    <FlatList
-      data={items}
-      keyExtractor={(item) => (item.kind === "heading" ? item.key : item.booking.id)}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.ink} />
-      }
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.5}
-      ListHeaderComponent={
-        <View>
-          <Text
-            accessibilityRole="header"
-            className="pt-3 text-title font-semibold tracking-[-0.4px]"
-          >
-            {t("screens.bookings.title")}
-          </Text>
-          <Segment
-            className="mt-[18px]"
-            options={[
-              { key: "upcoming", label: t("screens.bookings.upcoming") },
-              { key: "past", label: t("screens.bookings.past") },
-            ]}
-            value={when}
-            onChange={setWhen}
-          />
-        </View>
-      }
-      renderItem={({ item }) =>
-        item.kind === "next" ? (
-          <Next booking={item.booking} onPress={openBooking} />
-        ) : item.kind === "heading" ? (
-          <Text
-            className={`${item.first ? "pt-[22px]" : "pt-[26px]"} text-caption leading-[18px] text-unit`}
-          >
-            {item.label}
-          </Text>
-        ) : (
-          <Row booking={item.booking} last={item.last} onPress={openBooking} />
-        )
-      }
-      ListEmptyComponent={
-        list.state === "loading" ? (
-          <View className="flex-1 items-center justify-center pb-16">
-            <ActivityIndicator color={colors.ink} />
+    <View className="flex-1">
+      <Animated.FlatList
+        data={items}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        keyExtractor={(item) => (item.kind === "heading" ? item.key : item.booking.id)}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: 24,
+          paddingTop: top,
+          paddingBottom: 24,
+        }}
+        refreshControl={pull.control}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListHeaderComponent={
+          <View>
+            <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+              {t("screens.bookings.title")}
+            </Text>
+            {/* The segment's slot: the segment floats over it (below), so it can dock. */}
+            <View
+              style={{ height: SEGMENT, marginTop: TITLE_TO_SEGMENT }}
+              onLayout={(event) => {
+                segmentStart.value = top + event.nativeEvent.layout.y;
+              }}
+            />
           </View>
-        ) : list.state === "failed" ? (
-          <View className="flex-1 items-center justify-center pb-10">
-            <FailedMessage error={list.error} />
-            <View className="mt-6 self-stretch">
-              <Button label={t("common.actions.tryAgain")} variant="secondary" onPress={retry} />
+        }
+        renderItem={({ item }) =>
+          item.kind === "next" ? (
+            <Next booking={item.booking} onPress={openBooking} />
+          ) : item.kind === "heading" ? (
+            <Text
+              className={`${item.first ? "pt-[22px]" : "pt-[26px]"} text-caption leading-[18px] text-unit`}
+            >
+              {item.label}
+            </Text>
+          ) : (
+            <Row booking={item.booking} last={item.last} onPress={openBooking} />
+          )
+        }
+        ListEmptyComponent={
+          list.state === "loading" ? (
+            <View className="flex-1 items-center justify-center pb-16">
+              <ActivityIndicator color={colors.ink} />
             </View>
-          </View>
-        ) : when === "upcoming" ? (
-          <Empty />
-        ) : (
-          <Text className="pt-6 text-subtitle text-ink-2">{t("screens.bookings.noPast")}</Text>
-        )
-      }
-      ListFooterComponent={
-        list.state === "ready" && list.loadingMore ? (
-          <View className="py-6">
-            <ActivityIndicator color={colors.ink} />
-          </View>
-        ) : undefined
-      }
-    />
+          ) : list.state === "failed" ? (
+            <View className="flex-1 items-center justify-center pb-10">
+              <FailedMessage error={list.error} />
+              <View className="mt-6 self-stretch">
+                <Button label={t("common.actions.tryAgain")} variant="secondary" onPress={retry} />
+              </View>
+            </View>
+          ) : when === "upcoming" ? (
+            <Empty />
+          ) : (
+            <Text className="pt-6 text-subtitle text-ink-2">{t("screens.bookings.noPast")}</Text>
+          )
+        }
+        ListFooterComponent={
+          list.state === "ready" && list.loadingMore ? (
+            <View className="py-6">
+              <ActivityIndicator color={colors.ink} />
+            </View>
+          ) : undefined
+        }
+      />
+
+      {pull.spinner}
+
+      {/* The header the segment docks in: white, fading in as it arrives. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + SEGMENT + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-6 left-6" style={segmentStyle}>
+        <Segment
+          options={[
+            { key: "upcoming", label: t("screens.bookings.upcoming") },
+            { key: "past", label: t("screens.bookings.past") },
+          ]}
+          value={when}
+          onChange={setWhen}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -483,8 +543,12 @@ function Empty() {
 // A guest: Account's "Uh oh!" (the shirt with no name), worded for bookings.
 function Guest() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   return (
-    <View className="flex-1 items-center justify-center px-8 pb-6">
+    <View
+      className="flex-1 items-center justify-center px-8 pb-6"
+      style={{ paddingTop: insets.top }}
+    >
       <NoNameArt />
       <Text accessibilityRole="header" className="mt-3 text-heading font-semibold">
         {t("screens.account.guestTitle")}
