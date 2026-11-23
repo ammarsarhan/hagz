@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { type EntryKind, KindTag } from "./kind-tag";
 import { Text } from "./text";
 
 // The match ticket (Figma C8, 260:2 and 261:2), the bookings' signature element: a white card with a
@@ -20,6 +21,8 @@ export function MatchTicket({
   codeLabel,
   priceLabel,
   price,
+  kind,
+  plainCode = false,
 }: {
   // "Waiting for the venue" with a grey dot, "Confirmed" with a black one.
   status: { label: string; dot: "grey" | "black" };
@@ -31,6 +34,10 @@ export function MatchTicket({
   codeLabel: string;
   priceLabel: string;
   price: string;
+  // What it is (Booking, Game), tagged at the top right.
+  kind?: EntryKind;
+  // A name rather than a code under the tear (a joined game: who booked it), without the spacing.
+  plainCode?: boolean;
 }) {
   const { t } = useTranslation();
   // The day runs into the hours under it: "Thu 26 Nov," then "9 – 11 pm" (user, 2026-11-23). The
@@ -43,7 +50,8 @@ export function MatchTicket({
           <View
             className={`size-[7px] rounded-full ${status.dot === "black" ? "bg-ink" : "bg-ink-3"}`}
           />
-          <Text className="text-caption leading-[18px] font-medium">{status.label}</Text>
+          <Text className="flex-1 text-caption leading-[18px] font-medium">{status.label}</Text>
+          {kind ? <KindTag kind={kind} /> : null}
         </View>
         <Text className="pt-2.5 text-heading leading-7 font-semibold">{`${day}${comma}`}</Text>
         <Text className="text-heading leading-7 font-semibold">{range}</Text>
@@ -72,7 +80,11 @@ export function MatchTicket({
       <View className="flex-row items-end justify-between px-5 pt-4 pb-[18px]">
         <View className="gap-0.5">
           <Text className="text-caption leading-[18px] text-unit">{codeLabel}</Text>
-          <Text className="text-[20px] leading-6 font-semibold tracking-[1.4px]">{code}</Text>
+          <Text
+            className={`text-[20px] leading-6 font-semibold ${plainCode ? "" : "tracking-[1.4px]"}`}
+          >
+            {code}
+          </Text>
         </View>
         <View className="items-end">
           <Text className="text-caption leading-[18px] text-unit">{priceLabel}</Text>
