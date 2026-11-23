@@ -247,6 +247,12 @@ export default function SearchTab() {
     date?: string;
     start?: string;
     hours?: string;
+    // Home's See all: where Home looks (an area), the rail's order and its filter.
+    area?: string;
+    areaName?: string;
+    sort?: SearchSort;
+    instant?: string;
+    priceMax?: string;
   }>();
   const presetApplied = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -260,8 +266,16 @@ export default function SearchTab() {
         radius: DEFAULT_RADIUS,
         name: preset.near ?? "",
       });
+    if (preset.area)
+      setWhereChoice({ kind: "area", id: preset.area, name: preset.areaName ?? "", within: null });
     setSport(preset.sport);
-    setFilters({ ...NO_FILTERS, size: preset.size });
+    setSortChoice(preset.sort);
+    setFilters({
+      ...NO_FILTERS,
+      size: preset.size,
+      instant: preset.instant === "true",
+      ...(preset.priceMax ? { priceMax: Number(preset.priceMax) } : {}),
+    });
     setWhen({
       date: preset.date ?? null,
       start: preset.start ?? null,

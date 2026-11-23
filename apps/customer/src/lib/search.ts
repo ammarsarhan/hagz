@@ -31,6 +31,8 @@ export interface SearchParams extends FilterQuery {
   area?: string;
   date?: string;
   start?: string;
+  // Free times from this time on, with no ground needed at exactly then (Home's Free tonight).
+  after?: string;
   hours?: number;
   sport?: Sport;
   sort?: SearchSort;

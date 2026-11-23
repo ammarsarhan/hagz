@@ -171,6 +171,36 @@ const en = {
       hoursBefore_other: "{{count}} hours before",
     },
     screens: {
+      home: {
+        greeting: {
+          morning: "Morning, {{name}}",
+          afternoon: "Afternoon, {{name}}",
+          evening: "Evening, {{name}}",
+        },
+        guestTitle: "Find a game tonight",
+        changeWhere: "Change where Home looks",
+        search: "Search",
+        nextGame: "Your next game",
+        checkInFrom: "Check in from {{time}}",
+        myCode: "My code",
+        seeAll: "See all",
+        seeAllOf: "See all: {{title}}",
+        tonight: "Free tonight",
+        tomorrowNight: "Free tomorrow night",
+        near: "Near {{place}}",
+        nearYou: "Near you",
+        fromHour: "{{place}}, from {{time}}",
+        games: "Games needing players",
+        gameWhen: "{{day}}, {{time}}",
+        left_one: "{{count}} left",
+        left_other: "{{count}} left",
+        topRated: "Top rated",
+        instant: "Instant confirmation",
+        instantLine: "Booked the moment you book",
+        instantBadge: "Instant",
+        budget: "Within budget",
+        budgetLine: "Under {{price}} an hour",
+      },
       // The Arabic lines need their own wordplay, not a translation (ar.ts).
       onboarding: {
         pitches: {
