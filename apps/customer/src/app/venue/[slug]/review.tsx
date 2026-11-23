@@ -267,6 +267,7 @@ function Content({
         {/* The quote: a line an hour, one per extra, the total, and how it's paid. */}
         <PriceSection
           charges={quote.charges}
+          endsAt={endsAt}
           total={quote.total}
           currency={currency}
           timezone={timezone}

@@ -199,13 +199,13 @@ function Content({ booking }: { booking: Booking }) {
 
         {/* Getting there: the map, the venue and its address, call and directions. */}
         <View className="gap-1">
-          <View className="pb-2">
+          <View className="pb-3">
             <GroupHeading>{t("screens.booking.gettingThere")}</GroupHeading>
           </View>
           {venue.coordinates ? (
-            <VenueMap coordinates={venue.coordinates} height={120} radius={14} />
+            <VenueMap coordinates={venue.coordinates} height={160} radius={14} />
           ) : null}
-          <View className="flex-row items-center justify-between gap-4 pt-3">
+          <View className="flex-row items-center justify-between gap-4 pt-[18px]">
             <View className="shrink gap-0.5">
               <Text className="text-subtitle leading-[22px] font-medium">{venueName}</Text>
               {place ? <Text className="text-label leading-5 text-ink-2">{place}</Text> : null}
@@ -240,6 +240,7 @@ function Content({ booking }: { booking: Booking }) {
 
         <PriceSection
           charges={booking.charges}
+          endsAt={booking.endsAt}
           total={booking.total}
           currency={currency}
           timezone={timezone}

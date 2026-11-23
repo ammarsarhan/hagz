@@ -3,7 +3,7 @@ import type { components } from "@hagz/api";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { formatPrice } from "@/lib/money";
-import { hoursLabel, momentLabel, timeOfDay } from "@/lib/venue";
+import { hoursLabel, momentLabel, timeRange } from "@/lib/venue";
 import { Text } from "./text";
 import { GroupHeading, Hairline } from "./venue-sections";
 
@@ -23,22 +23,31 @@ export function SectionBreak() {
   );
 }
 
-// The price: a line an hour (its start time), one per extra, the service fee, then the total and
+// The price: a line an hour ("7 – 8 am": from its start to the next hour's, or to the booking's end
+// for the last), one per extra, the service fee, then the total and
 // a grey line on VAT and how it's paid.
 export function PriceSection({
   charges,
+  endsAt,
   total,
   currency,
   timezone,
   note,
 }: {
   charges: Charge[];
+  // When the booking ends, which the last hour runs to.
+  endsAt: string;
   total: number;
   currency: string;
   timezone: string;
   note: string;
 }) {
   const { t } = useTranslation();
+  const starts = charges
+    .flatMap((charge) => (charge.type === "SLOT" && charge.startsAt ? [charge.startsAt] : []))
+    .sort();
+  const hourOf = (startsAt: string) =>
+    timeRange(startsAt, starts.find((start) => start > startsAt) ?? endsAt, timezone);
   return (
     <View className="gap-2">
       <View className="pb-1.5">
@@ -48,7 +57,7 @@ export function PriceSection({
         <View key={index} className="flex-row justify-between gap-4">
           <Text className="shrink text-body leading-[22px] text-ink-2">
             {charge.type === "SLOT" && charge.startsAt
-              ? timeOfDay(charge.startsAt, timezone)
+              ? hourOf(charge.startsAt)
               : charge.type === "SERVICE_FEE"
                 ? t("screens.review.serviceFee")
                 : (charge.amenity?.name ?? "")}
