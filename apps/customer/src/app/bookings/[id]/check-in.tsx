@@ -175,13 +175,13 @@ function MyCode({ booking, name }: { booking: Booking; name: string }) {
           {name || t("screens.checkIn.you")}
         </Text>
         {/* Who, which ground, when: spaced apart, a dot between each. */}
-        <View className="flex-row flex-wrap items-center justify-center gap-x-2 pt-1">
+        <View className="flex-row flex-wrap items-center justify-center gap-x-1.5 pt-1">
           {[
             t("screens.checkIn.booker"),
             groundName,
             timeRange(booking.startsAt, booking.endsAt, timezone),
           ].map((part, index) => (
-            <View key={index} className="flex-row items-center gap-x-2">
+            <View key={index} className="flex-row items-center gap-x-1.5">
               {index > 0 ? <Text className="text-body leading-[23px] text-ink-3">·</Text> : null}
               <Text className="text-body leading-[23px] text-ink-2">{part}</Text>
             </View>
