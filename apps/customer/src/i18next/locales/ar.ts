@@ -529,6 +529,15 @@ const ar: ArabicTranslations = {
           playedOf_other: "{{played}} من آخر {{count}} أسبوع",
           setUp: "{{venue}} أعدّ هذا لك. اطلب منهم تغييره أو إيقافه.",
         },
+        declined: {
+          title: "لم يستطع {{venue}} قبول هذا الحجز",
+          nothingCharged: "لم يُخصم أي مبلغ.",
+          paidBack: "يُرد إليك كل ما دفعته.",
+          stillPlay: "ما زلت تريد اللعب في هذا الوقت؟",
+          stillPlayBody: "سنعرض لك ملاعب قريبة فيها نفس نوع الملعب متاح في هذا الوقت.",
+          similar: "ملاعب مشابهة",
+          anotherTime: "وقت آخر في {{venue}}",
+        },
         why: {
           unanswered: "لم يرد الملعب في الوقت، فأُفرجت الساعات.",
           unpaid: "لم يُدفع في الوقت، فأُفرجت الساعات.",

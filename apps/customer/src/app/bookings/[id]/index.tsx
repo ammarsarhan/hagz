@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CancelSection, PriceSection, SectionBreak } from "@/components/booking-sections";
+import { DeclinedBooking } from "@/components/booking-declined";
 import { MovedBooking } from "@/components/booking-move";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
@@ -110,6 +111,8 @@ export default function BookingPage() {
     Date.parse(booking.endsAt) > Date.now()
   )
     return <MovedBooking booking={{ ...booking, move: booking.move }} onAnswered={update} />;
+  if (booking.status === "CANCELLED" && booking.cancelled?.declined)
+    return <DeclinedBooking booking={booking} />;
   return <Content booking={booking} onChange={update} />;
 }
 

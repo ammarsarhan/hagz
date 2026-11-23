@@ -481,6 +481,15 @@ const en = {
           playedOf_other: "{{played}} of the last {{count}} weeks",
           setUp: "{{venue}} set this up for you. Ask them to change or stop it.",
         },
+        declined: {
+          title: "{{venue}} couldn’t take this booking",
+          nothingCharged: "Nothing was charged.",
+          paidBack: "Everything you paid comes back.",
+          stillPlay: "Still want to play then?",
+          stillPlayBody: "We’ll show venues nearby with the same kind of ground free at that time.",
+          similar: "Similar venues",
+          anotherTime: "Another time at {{venue}}",
+        },
         why: {
           unanswered: "The venue didn’t answer in time, so the hours were let go.",
           unpaid: "It wasn’t paid in time, so the hours were let go.",
