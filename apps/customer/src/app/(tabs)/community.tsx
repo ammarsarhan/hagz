@@ -76,14 +76,8 @@ export default function CommunityTab() {
   return (
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <StatusBar style="dark" />
-      {tab === "mine" && signedIn === false ? (
-        <View className="flex-1" style={{ paddingTop: insets.top }}>
-          <Header tab={tab} onTab={setTab} />
-          <Guest />
-        </View>
-      ) : (
-        <Games key={tab} tab={tab} onTab={setTab} />
-      )}
+      {/* One list for both tabs, so the switcher stays put and slides as it's tapped. */}
+      <Games tab={tab} onTab={setTab} signedIn={signedIn} />
     </View>
   );
 }
@@ -108,7 +102,15 @@ function Header({ tab, onTab }: { tab: Tab; onTab: (tab: Tab) => void }) {
   );
 }
 
-function Games({ tab, onTab }: { tab: Tab; onTab: (tab: Tab) => void }) {
+function Games({
+  tab,
+  onTab,
+  signedIn,
+}: {
+  tab: Tab;
+  onTab: (tab: Tab) => void;
+  signedIn: boolean | undefined;
+}) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const here = useHere();
@@ -123,8 +125,22 @@ function Games({ tab, onTab }: { tab: Tab; onTab: (tab: Tab) => void }) {
   const asked = useRef(0);
   const discover = tab === "discover";
   const near = filters.near && here ? here : null;
-  // Discover waits for the phone to say where it is (or that it can't).
-  const ready = !discover || here !== undefined;
+  // Discover waits for the phone to say where it is (or that it can't); Mine, for whether they're
+  // signed in, and a guest's Mine asks for nothing.
+  const guest = !discover && signedIn === false;
+  const ready = discover ? here !== undefined : signedIn === true;
+
+  // Another tab: what the last one showed goes, and its answers too.
+  const [shownTab, setShownTab] = useState(tab);
+  if (shownTab !== tab) {
+    setShownTab(tab);
+    asked.current++;
+    setLoading(false);
+    setMore(false);
+    setGames(null);
+    setCursor(null);
+    setFailure(null);
+  }
 
   const load = useCallback(
     async (after: string | null) => {
@@ -248,7 +264,9 @@ function Games({ tab, onTab }: { tab: Tab; onTab: (tab: Tab) => void }) {
           if (discover && cursor && !more && !loading) void load(cursor);
         }}
         ListEmptyComponent={
-          games === null || (loading && games.length === 0) ? (
+          guest ? (
+            <Guest />
+          ) : games === null || (loading && games.length === 0) ? (
             failure ? (
               <View className="flex-1 items-center justify-center px-8 pb-10">
                 <FailedMessage error={failure} />
