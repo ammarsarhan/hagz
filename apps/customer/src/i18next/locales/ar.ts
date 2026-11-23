@@ -708,7 +708,7 @@ const ar: ArabicTranslations = {
           body: "{{when}} في {{venue}}. ادفع {{share}} لـ {{name}} و{{fee}} للملعب عند وصولك.",
         },
         signIn: {
-          title: "سجّل الدخول للانضمام",
+          title: "سجّل الدخول للانضمام!",
           body: "أنشئ حسابًا أو سجّل الدخول، ثم انضم إلى مباراة {{name}}.",
         },
       },

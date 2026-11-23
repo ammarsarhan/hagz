@@ -635,7 +635,7 @@ const en = {
           body: "{{when}} at {{venue}}. Pay {{share}} to {{name}} and {{fee}} to the venue when you get there.",
         },
         signIn: {
-          title: "Sign in to join",
+          title: "Sign in to join!",
           body: "Create an account or sign in, then join {{name}}’s game.",
         },
       },
