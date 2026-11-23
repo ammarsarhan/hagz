@@ -8,8 +8,8 @@ import { Text } from "./text";
 // notch cut into each edge, and the booking code beside what's paid where.
 
 const NOTCH = 22;
-// From the tear line's ends (inset 20) out to the card's edge, centred on its 1px border.
-const NOTCH_OFFSET = -(20 + NOTCH / 2 + 1);
+// From the tear line's ends (inset 20) out to the card's outer edge, past its 1px border.
+const EDGE = -(20 + 1);
 
 export function MatchTicket({
   status,
@@ -67,13 +67,20 @@ export function MatchTicket({
             style={{ height: 2, borderWidth: 1, borderStyle: "dashed", borderColor: "#ebebeb" }}
           />
         </View>
-        {[{ left: NOTCH_OFFSET }, { right: NOTCH_OFFSET }].map((side, index) => (
+        {/* Each notch is a circle centred on the card's edge, clipped to the half inside it: only
+            that half's arc draws, and its white covers the card's border between its ends. */}
+        {(["left", "right"] as const).map((side) => (
           <View
-            key={index}
+            key={side}
             pointerEvents="none"
-            className="absolute rounded-full border border-border bg-white"
-            style={{ ...side, top: -NOTCH / 2, width: NOTCH, height: NOTCH }}
-          />
+            className="absolute overflow-hidden"
+            style={{ [side]: EDGE, top: -NOTCH / 2, width: NOTCH / 2 + 1, height: NOTCH }}
+          >
+            <View
+              className="absolute top-0 rounded-full border border-border bg-white"
+              style={{ [side]: -NOTCH / 2 + 0.5, width: NOTCH, height: NOTCH }}
+            />
+          </View>
         ))}
       </View>
 
