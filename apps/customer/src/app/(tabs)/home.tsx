@@ -54,9 +54,6 @@ import { timeOfDay, timeRange } from "@/lib/venue";
 
 // The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
 const TAB_ROW = 49;
-// The where row (the search button's height), which docks under the status bar like the other
-// tabs' bar and switchers.
-const WHERE_ROW = 40;
 const TONIGHT_HOUR = Number(TONIGHT_FROM.slice(0, 2));
 
 // "Morning", "Afternoon" or "Evening", by the phone's clock.
@@ -100,15 +97,11 @@ export default function Home() {
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
-  // The other tabs' header: the where row rides up with the page and docks just under the status
-  // bar, a white header with its hairline fading in behind it; the greeting scrolls away.
+  // Everything scrolls, the where row too; once the page is under the status bar, a white strip
+  // with its hairline fades in behind it over the first few points (as ScrollPage does).
   const top = insets.top + 12;
-  const dockAt = insets.top + 6;
-  const rowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: Math.max(dockAt, top - scrollY.value) }],
-  }));
-  const headerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(top - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
+  const stripStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 12], [0, 1], "clamp"),
   }));
 
   const busy = [tonight, games, topRated, instant, budget, freed, popular, newest].some(
@@ -174,8 +167,41 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top, paddingBottom: 32 }}
       >
-        {/* The where row's slot: the row floats over it (below), so it can dock. */}
-        <View style={{ height: WHERE_ROW }} />
+        {/* Where the rails look (a governorate, and how many venues), to change it; search. */}
+        <View className="flex-row items-center justify-between px-6">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("screens.home.changeWhere")}
+            hitSlop={8}
+            onPress={() => setPicking(true)}
+            className="shrink flex-row items-center gap-1.5 active:opacity-60"
+          >
+            <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
+            {governorate ? (
+              <View className="shrink">
+                <View className="flex-row items-center gap-1">
+                  <Text className="shrink text-body leading-5 font-medium" numberOfLines={1}>
+                    {governorate.name}
+                  </Text>
+                  <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
+                </View>
+                <Text className="text-caption leading-[18px] text-ink-2" numberOfLines={1}>
+                  {t("formats.venues", { count: governorate.venues })}
+                </Text>
+              </View>
+            ) : (
+              <View className="gap-1.5">
+                <Bone className="h-4 w-28 rounded-md" />
+                <Bone className="h-3 w-16 rounded-md" />
+              </View>
+            )}
+          </Pressable>
+          <RoundButton
+            icon={IconSearch}
+            label={t("screens.home.search")}
+            onPress={() => router.navigate("/search")}
+          />
+        </View>
 
         {name || next !== undefined ? (
           <Text
@@ -296,39 +322,12 @@ export default function Home() {
 
       {pull.spinner}
 
-      {/* The header the where row docks in, then the row: where the rails look, and search. */}
+      {/* Behind the status bar once the page scrolls under it. */}
       <Animated.View
         pointerEvents="none"
         className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
-        style={[{ height: dockAt + WHERE_ROW + 10 }, headerStyle]}
+        style={[{ height: insets.top }, stripStyle]}
       />
-      <Animated.View
-        className="absolute top-0 right-6 left-6 flex-row items-center justify-between"
-        style={[{ height: WHERE_ROW }, rowStyle]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("screens.home.changeWhere")}
-          hitSlop={8}
-          onPress={() => setPicking(true)}
-          className="shrink flex-row items-center gap-1.5 active:opacity-60"
-        >
-          <IconMapPin size={18} color={colors.ink} strokeWidth={1.75} />
-          {governorate ? (
-            <Text className="shrink text-body font-medium" numberOfLines={1}>
-              {governorate.name}
-            </Text>
-          ) : (
-            <Bone className="h-4 w-32 rounded-md" />
-          )}
-          <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
-        </Pressable>
-        <RoundButton
-          icon={IconSearch}
-          label={t("screens.home.search")}
-          onPress={() => router.navigate("/search")}
-        />
-      </Animated.View>
 
       {coverage ? (
         <HomeGovernorateSheet
