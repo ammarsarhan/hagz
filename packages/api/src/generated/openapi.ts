@@ -17967,6 +17967,11 @@ export interface components {
                 cover: {
                     url: string;
                 } | null;
+                /**
+                 * @description The venue's IANA timezone, for showing times on its clock.
+                 * @example Africa/Cairo
+                 */
+                timezone: string;
             };
             ground: {
                 /** Format: uuid */
@@ -17979,6 +17984,39 @@ export interface components {
             currency: string;
             /** @description Minor units, VAT included. */
             total: number;
+            paymentMode: components["schemas"]["PaymentMode"];
+            /** @description App bookings, once confirmed: when check-in opens, and whether they did. */
+            checkIn: {
+                /**
+                 * Format: date-time
+                 * @description 15 minutes before kick-off.
+                 */
+                opensAt: string;
+                /**
+                 * Format: date-time
+                 * @description 30 minutes after kick-off.
+                 */
+                closesAt: string;
+                /** Format: date-time */
+                checkedInAt: string | null;
+            } | null;
+            /** @description The venue moved it and the player can still answer, until respondBy. */
+            move: {
+                /** Format: date-time */
+                respondBy: string;
+            } | null;
+            /** @description `CANCELLED`: who did it. */
+            cancellation: {
+                /** @enum {string} */
+                by: "CUSTOMER" | "VENUE" | "ADMIN";
+                /** @description The venue said no while it waited for approval. */
+                declined: boolean;
+            } | null;
+            /**
+             * @description `EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).
+             * @enum {string|null}
+             */
+            expiredFrom: "PENDING" | "HELD" | null;
         };
         SharedBooking: {
             code: string;

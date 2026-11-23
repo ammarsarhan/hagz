@@ -71,6 +71,60 @@ describe("my bookings", () => {
     expect(past.data.map((booking) => booking.id)).toEqual([third, second, first]);
   });
 
+  it("says what each booking needs on the list, and how the past ones ended", async () => {
+    const { token, bookings } = await fourBookings();
+    const [declined, cancelled, unanswered, upcoming] = bookings.map((booking) => booking.id);
+    await moveToPast(declined ?? "", 1);
+    await moveToPast(cancelled ?? "", 2);
+    await moveToPast(unanswered ?? "", 3);
+    await prisma.booking.update({ where: { id: declined }, data: { status: "CANCELLED" } });
+    await prisma.cancellation.create({
+      data: { bookingId: declined ?? "", initiator: "VENUE", refundPercent: 100, refundAmount: 0 },
+    });
+    await prisma.bookingEvent.create({ data: { bookingId: declined ?? "", type: "DECLINED" } });
+    await prisma.booking.update({ where: { id: cancelled }, data: { status: "CANCELLED" } });
+    await prisma.cancellation.create({
+      data: {
+        bookingId: cancelled ?? "",
+        initiator: "CUSTOMER",
+        refundPercent: 0,
+        refundAmount: 0,
+      },
+    });
+    await prisma.booking.update({ where: { id: unanswered }, data: { status: "EXPIRED" } });
+    await prisma.bookingEvent.create({
+      data: { bookingId: unanswered ?? "", type: "EXPIRED", data: { from: "PENDING" } },
+    });
+
+    const [next] = (await list(token, "when=upcoming")).data;
+    expect(next).toMatchObject({
+      id: upcoming,
+      venue: { timezone: "Africa/Cairo" },
+      paymentMode: "MANUAL",
+      checkIn: { checkedInAt: null },
+      move: null,
+      cancellation: null,
+      expiredFrom: null,
+    });
+    expect(Date.parse(next?.checkIn?.opensAt ?? "")).toBe(
+      Date.parse(next?.startsAt ?? "") - 15 * 60_000,
+    );
+
+    const ended = new Map((await list(token, "when=past")).data.map((each) => [each.id, each]));
+    expect(ended.get(declined ?? "")).toMatchObject({
+      cancellation: { by: "VENUE", declined: true },
+      expiredFrom: null,
+    });
+    expect(ended.get(cancelled ?? "")).toMatchObject({
+      cancellation: { by: "CUSTOMER", declined: false },
+    });
+    expect(ended.get(unanswered ?? "")).toMatchObject({
+      cancellation: null,
+      expiredFrom: "PENDING",
+      checkIn: null,
+    });
+  });
+
   it("leaves out a moved booking, and anyone else's", async () => {
     const { token, bookings, ground, hours } = await fourBookings();
     await prisma.booking.update({

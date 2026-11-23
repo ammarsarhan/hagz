@@ -3293,6 +3293,11 @@
                 "required": [
                   "url"
                 ]
+              },
+              "timezone": {
+                "type": "string",
+                "description": "The venue's IANA timezone, for showing times on its clock.",
+                "example": "Africa/Cairo"
               }
             },
             "required": [
@@ -3300,7 +3305,8 @@
               "slug",
               "name",
               "area",
-              "cover"
+              "cover",
+              "timezone"
             ]
           },
           "ground": {
@@ -3337,6 +3343,93 @@
           "total": {
             "type": "integer",
             "description": "Minor units, VAT included."
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "checkIn": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "opensAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "15 minutes before kick-off."
+              },
+              "closesAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "30 minutes after kick-off."
+              },
+              "checkedInAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "opensAt",
+              "closesAt",
+              "checkedInAt"
+            ],
+            "description": "App bookings, once confirmed: when check-in opens, and whether they did."
+          },
+          "move": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "respondBy": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "respondBy"
+            ],
+            "description": "The venue moved it and the player can still answer, until respondBy."
+          },
+          "cancellation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "by": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "VENUE",
+                  "ADMIN"
+                ]
+              },
+              "declined": {
+                "type": "boolean",
+                "description": "The venue said no while it waited for approval."
+              }
+            },
+            "required": [
+              "by",
+              "declined"
+            ],
+            "description": "`CANCELLED`: who did it."
+          },
+          "expiredFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PENDING",
+              "HELD",
+              null
+            ],
+            "description": "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`)."
           }
         },
         "required": [
@@ -3349,7 +3442,12 @@
           "venue",
           "ground",
           "currency",
-          "total"
+          "total",
+          "paymentMode",
+          "checkIn",
+          "move",
+          "cancellation",
+          "expiredFrom"
         ]
       },
       "SharedBooking": {

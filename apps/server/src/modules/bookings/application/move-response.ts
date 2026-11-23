@@ -35,7 +35,7 @@ const cantMoveBack = () =>
 
 const names = { translations: { select: { language: true, name: true } } } as const;
 
-const originSelect = {
+export const originSelect = {
   status: true,
   startsAt: true,
   customer: { select: { customerId: true } },
@@ -56,7 +56,7 @@ type WithOrigin = Prisma.BookingGetPayload<{ select: typeof originSelect }>;
 
 // The move still waiting for the player's answer, if there is one. A move the player made
 // themselves (moving it back) has no staff member and isn't one to answer.
-const openMove = (booking: WithOrigin, now: Date) => {
+export const openMove = (booking: WithOrigin, now: Date) => {
   const origin = booking.rescheduledFrom;
   if (!origin || origin.type === "REFILL" || origin.staffId === null) return null;
   if (booking.events.length > 0 || !MOVABLE.includes(booking.status)) return null;

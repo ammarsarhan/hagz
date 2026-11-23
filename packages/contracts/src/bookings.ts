@@ -178,6 +178,10 @@ export const BookingSummary = z
       name: z.string().nullable(),
       area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
       cover: z.object({ url: z.string() }).nullable(),
+      timezone: z.string().meta({
+        description: "The venue's IANA timezone, for showing times on its clock.",
+        example: "Africa/Cairo",
+      }),
     }),
     ground: z.object({
       id: z.uuid(),
@@ -187,6 +191,28 @@ export const BookingSummary = z
     }),
     currency: z.string().meta({ example: "EGP" }),
     total: z.int().meta({ description: "Minor units, VAT included." }),
+    paymentMode: PaymentMode,
+    checkIn: CheckInWindow.nullable().meta({
+      description: "App bookings, once confirmed: when check-in opens, and whether they did.",
+    }),
+    move: z
+      .object({ respondBy: Instant })
+      .nullable()
+      .meta({
+        description: "The venue moved it and the player can still answer, until respondBy.",
+      }),
+    cancellation: z
+      .object({
+        by: z.enum(["CUSTOMER", "VENUE", "ADMIN"]),
+        declined: z
+          .boolean()
+          .meta({ description: "The venue said no while it waited for approval." }),
+      })
+      .nullable()
+      .meta({ description: "`CANCELLED`: who did it." }),
+    expiredFrom: z.enum(["PENDING", "HELD"]).nullable().meta({
+      description: "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).",
+    }),
   })
   .meta({ id: "BookingSummary" });
 
