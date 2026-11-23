@@ -171,7 +171,15 @@ const en = {
       hoursBefore_other: "{{count}} hours before",
     },
     screens: {
+      notifications: {
+        title: "Notifications",
+        empty: {
+          title: "No notifications yet",
+          body: "Booking updates, reminders and games you've joined will show up here.",
+        },
+      },
       home: {
+        notifications: "Notifications",
         greeting: {
           morning: "Morning, {{name}}",
           afternoon: "Afternoon, {{name}}",

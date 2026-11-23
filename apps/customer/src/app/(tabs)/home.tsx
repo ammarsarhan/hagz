@@ -23,7 +23,7 @@ import {
   whenDay,
 } from "@/components/home-rails";
 import { useHudAnchor } from "@/components/hud";
-import { IconChevronDown, IconMapPin, IconSearch } from "@/components/icons";
+import { IconBell, IconChevronDown, IconMapPin, IconSearch } from "@/components/icons";
 import { RoundButton } from "@/components/nav";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { HomeGovernorateSheet } from "@/components/home-governorate";
@@ -186,11 +186,18 @@ export default function Home() {
             )}
             <IconChevronDown size={16} color={colors.ink} strokeWidth={2} />
           </Pressable>
-          <RoundButton
-            icon={IconSearch}
-            label={t("screens.home.search")}
-            onPress={() => router.navigate("/search")}
-          />
+          <View className="flex-row gap-2">
+            <RoundButton
+              icon={IconSearch}
+              label={t("screens.home.search")}
+              onPress={() => router.navigate("/search")}
+            />
+            <RoundButton
+              icon={IconBell}
+              label={t("screens.home.notifications")}
+              onPress={() => push("/notifications")}
+            />
+          </View>
         </View>
 
         {name || next !== undefined ? (

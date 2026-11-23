@@ -189,7 +189,15 @@ const ar: ArabicTranslations = {
       hoursBefore_other: "قبل البدء بـ {{count}} ساعة",
     },
     screens: {
+      notifications: {
+        title: "الإشعارات",
+        empty: {
+          title: "لا إشعارات بعد",
+          body: "ستظهر هنا تحديثات حجوزاتك والتذكيرات والمباريات التي انضممت إليها.",
+        },
+      },
       home: {
+        notifications: "الإشعارات",
         greeting: {
           morning: "صباح الخير، {{name}}",
           afternoon: "مساء الخير، {{name}}",
