@@ -55,7 +55,7 @@ const HOUR = 3_600_000;
 
 type Loaded =
   | { state: "loading" }
-  | { state: "failed"; message: string }
+  | { state: "failed"; error: unknown }
   | { state: "ready"; venue: PublicVenue; quote: Quote };
 
 export default function Review() {
@@ -93,8 +93,8 @@ export default function Review() {
       ),
     ]).then(([venue, quote]) => {
       if (!active) return;
-      if (!venue.ok) setLoaded({ state: "failed", message: hudMessage(venue.error) });
-      else if (!quote.ok) setLoaded({ state: "failed", message: hudMessage(quote.error) });
+      if (!venue.ok) setLoaded({ state: "failed", error: venue.error });
+      else if (!quote.ok) setLoaded({ state: "failed", error: quote.error });
       else setLoaded({ state: "ready", venue: venue.data, quote: quote.data });
     });
     return () => {
@@ -104,10 +104,10 @@ export default function Review() {
 
   if (loaded.state === "loading") return <PageState loading />;
   if (loaded.state === "failed") {
-    return <PageState message={loaded.message} onRetry={() => setAttempt((n) => n + 1)} />;
+    return <PageState error={loaded.error} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   const ground = loaded.venue.grounds.find((each) => each.id === params.ground);
-  if (!ground) return <PageState message="" />;
+  if (!ground) return <PageState />;
   return (
     <Content
       venue={loaded.venue}

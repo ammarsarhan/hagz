@@ -6,6 +6,12 @@ import type { ArabicTranslations } from "./en";
 const ar: ArabicTranslations = {
   translation: {
     components: {
+      pageState: {
+        offlineTitle: "أنت غير متصل",
+        offlineBody: "تحقق من الواي فاي أو بيانات الهاتف، ثم حاول مرة أخرى.",
+        failedTitle: "حدث خطأ ما",
+        failedBody: "لم يتم التحميل. حاول مرة أخرى.",
+      },
       tabs: {
         home: "الرئيسية",
         search: "البحث",

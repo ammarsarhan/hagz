@@ -26,7 +26,7 @@ import { Text } from "@/components/text";
 import { Toggle } from "@/components/toggle";
 import { Hairline } from "@/components/venue-sections";
 import { api } from "@/lib/api";
-import { hudMessage, send } from "@/lib/api-errors";
+import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL, language } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
@@ -61,7 +61,7 @@ const FIRST_ASK = 3;
 
 type Loaded =
   | { state: "loading" }
-  | { state: "failed"; message: string }
+  | { state: "failed"; error: unknown }
   | { state: "ready"; venue: PublicVenue; quote: Quote };
 
 export default function Extras() {
@@ -96,8 +96,8 @@ export default function Extras() {
       ),
     ]).then(([venue, quote]) => {
       if (!active) return;
-      if (!venue.ok) setLoaded({ state: "failed", message: hudMessage(venue.error) });
-      else if (!quote.ok) setLoaded({ state: "failed", message: hudMessage(quote.error) });
+      if (!venue.ok) setLoaded({ state: "failed", error: venue.error });
+      else if (!quote.ok) setLoaded({ state: "failed", error: quote.error });
       else setLoaded({ state: "ready", venue: venue.data, quote: quote.data });
     });
     return () => {
@@ -107,10 +107,10 @@ export default function Extras() {
 
   if (loaded.state === "loading") return <PageState loading />;
   if (loaded.state === "failed") {
-    return <PageState message={loaded.message} onRetry={() => setAttempt((n) => n + 1)} />;
+    return <PageState error={loaded.error} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   const ground = loaded.venue.grounds.find((each) => each.id === params.ground);
-  if (!ground) return <PageState message="" />;
+  if (!ground) return <PageState />;
   return (
     <Picker
       venue={loaded.venue}

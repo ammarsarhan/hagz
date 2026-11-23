@@ -13,7 +13,7 @@ import { CloseButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
-import { hudMessage, send } from "@/lib/api-errors";
+import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { justBooked, type Booking } from "@/lib/just-booked";
 import { intlLocale, isRTL } from "@/lib/language";
@@ -43,7 +43,7 @@ const EVENING = 17;
 
 type Loaded =
   | { state: "loading" }
-  | { state: "failed"; message: string }
+  | { state: "failed"; error: unknown }
   | { state: "ready"; booking: Booking; venue: PublicVenue };
 
 export default function Booked() {
@@ -65,7 +65,7 @@ export default function Booked() {
       );
       if (!active) return;
       if (!booking.ok) {
-        setLoaded({ state: "failed", message: hudMessage(booking.error) });
+        setLoaded({ state: "failed", error: booking.error });
         return;
       }
       const venue = await send(
@@ -75,7 +75,7 @@ export default function Booked() {
       setLoaded(
         venue.ok
           ? { state: "ready", booking: booking.data, venue: venue.data }
-          : { state: "failed", message: hudMessage(venue.error) },
+          : { state: "failed", error: venue.error },
       );
     })();
     return () => {
@@ -85,7 +85,7 @@ export default function Booked() {
 
   if (loaded.state === "loading") return <PageState loading />;
   if (loaded.state === "failed") {
-    return <PageState message={loaded.message} onRetry={() => setAttempt((n) => n + 1)} />;
+    return <PageState error={loaded.error} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   return <Content booking={loaded.booking} venue={loaded.venue} />;
 }

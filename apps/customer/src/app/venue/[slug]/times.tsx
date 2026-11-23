@@ -62,7 +62,9 @@ const FADE = 24;
 const RISE = 6;
 
 type Loaded<T> =
-  { state: "loading" } | { state: "failed"; message: string } | { state: "ready"; data: T };
+  | { state: "loading" }
+  | { state: "failed"; message: string; error: unknown }
+  | { state: "ready"; data: T };
 
 interface Day {
   date: string;
@@ -129,7 +131,7 @@ export default function Times() {
       setVenue(
         result.ok
           ? { state: "ready", data: result.data }
-          : { state: "failed", message: hudMessage(result.error) },
+          : { state: "failed", message: hudMessage(result.error), error: result.error },
       );
     });
     return () => {
@@ -151,7 +153,7 @@ export default function Times() {
       const result = await read(date);
       if (!active) return;
       if (!result.ok) {
-        setDay({ state: "failed", message: hudMessage(result.error) });
+        setDay({ state: "failed", message: hudMessage(result.error), error: result.error });
         return;
       }
       setDays(result.data.days);
@@ -178,7 +180,7 @@ export default function Times() {
   if (venue.state === "failed" || (venue.state === "ready" && !ground)) {
     return (
       <PageState
-        message={venue.state === "failed" ? venue.message : ""}
+        error={venue.state === "failed" ? venue.error : undefined}
         onRetry={() => setAttempt((n) => n + 1)}
       />
     );

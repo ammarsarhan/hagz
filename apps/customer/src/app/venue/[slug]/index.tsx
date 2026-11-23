@@ -37,6 +37,7 @@ import {
   IconShare,
 } from "@/components/icons";
 import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
+import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
@@ -52,7 +53,7 @@ import {
   WhereSection,
 } from "@/components/venue-sections";
 import { api, reachable } from "@/lib/api";
-import { hudMessage, problem, send } from "@/lib/api-errors";
+import { problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useDistanceTo } from "@/lib/distance";
 import {
@@ -90,7 +91,7 @@ type Tab = "grounds" | "booking" | "amenities" | "reviews" | "map";
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
-  | { state: "failed"; message: string }
+  | { state: "failed"; error: unknown }
   | { state: "ready"; venue: PublicVenue };
 
 export default function VenuePage() {
@@ -111,7 +112,7 @@ export default function VenuePage() {
       if (!active) return;
       if (venue.ok) setLoaded({ state: "ready", venue: venue.data });
       else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") setLoaded({ state: "missing" });
-      else setLoaded({ state: "failed", message: hudMessage(venue.error) });
+      else setLoaded({ state: "failed", error: venue.error });
     })();
     return () => {
       active = false;
@@ -119,19 +120,22 @@ export default function VenuePage() {
   }, [slug, attempt]);
 
   if (loaded.state === "ready") return <VenueView venue={loaded.venue} filter={filter} />;
-  return (
-    <Waiting
-      loaded={loaded}
-      onRetry={() => {
-        setLoaded({ state: "loading" });
-        setAttempt((n) => n + 1);
-      }}
-    />
-  );
+  if (loaded.state === "failed") {
+    return (
+      <PageState
+        error={loaded.error}
+        onRetry={() => {
+          setLoaded({ state: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
+  }
+  return <Waiting missing={loaded.state === "missing"} />;
 }
 
-// Loading, a venue that isn't public (or never was), or one that couldn't be read.
-function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
+// Loading, or a venue that isn't public (or never was). One that couldn't be read is PageState's.
+function Waiting({ missing }: { missing: boolean }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
@@ -143,29 +147,14 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
       <View className="h-14 justify-center">
         <BackButton progress={null} />
       </View>
-      {loaded.state === "loading" ? (
+      {!missing ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.ink} />
         </View>
       ) : (
         <View className="flex-1 justify-center gap-2 px-1 pb-24">
-          <Text className="text-heading font-semibold">
-            {loaded.state === "missing"
-              ? t("screens.venue.missingTitle")
-              : t("screens.venue.failedTitle")}
-          </Text>
-          <Text className="text-subtitle text-ink-2">
-            {loaded.state === "missing"
-              ? t("screens.venue.missingBody")
-              : loaded.state === "failed"
-                ? loaded.message
-                : ""}
-          </Text>
-          {loaded.state === "failed" ? (
-            <View className="mt-4 items-start">
-              <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
-            </View>
-          ) : null}
+          <Text className="text-heading font-semibold">{t("screens.venue.missingTitle")}</Text>
+          <Text className="text-subtitle text-ink-2">{t("screens.venue.missingBody")}</Text>
         </View>
       )}
     </View>

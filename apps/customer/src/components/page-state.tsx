@@ -1,34 +1,47 @@
+import { isProblem } from "@hagz/api";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { Button } from "./button";
+import { useHudAnchor } from "./hud";
 import { BackButton } from "./nav";
+import { OfflineArt } from "./offline-art";
 import { Text } from "./text";
 
-// A pushed screen whose data isn't in yet: the back button, and a spinner while it loads, or what
-// couldn't be read with Try again (See times, Extras).
+// A pushed screen whose data isn't in yet: the back button, and a spinner while it loads. When it
+// couldn't be read, an error screen laid out like the blocked one: the Unplugged scene, a title and
+// what happened centred above a pinned Try again. No answer at all (openapi-fetch threw, so the
+// error isn't a problem from the API) reads "You're offline"; an answer that's an error gives its
+// own few words under "Something went wrong".
 export function PageState({
   loading = false,
-  message = "",
+  error,
   onRetry,
 }: {
   loading?: boolean;
-  message?: string;
+  // What failed, as `send` returned it; leave out for a plain "Something went wrong".
+  error?: unknown;
   onRetry?: () => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [footer, setFooter] = useState(0);
+  useHudAnchor(footer);
+  const offline = error !== undefined && !isProblem(error);
+
   return (
     <View
-      className="flex-1 bg-white px-5"
+      className="flex-1 bg-white"
       style={{ paddingTop: insets.top, direction: isRTL ? "rtl" : "ltr" }}
     >
       <StatusBar style="dark" />
-      <View className="-mx-1 h-10 justify-center">
+      <View className="h-10 justify-center px-4">
         <BackButton onPress={() => router.back()} />
       </View>
       {loading ? (
@@ -36,14 +49,39 @@ export function PageState({
           <ActivityIndicator color={colors.ink} />
         </View>
       ) : (
-        <View className="flex-1 justify-center gap-4 px-1 pb-24">
-          <Text className="text-subtitle text-ink-2">{message}</Text>
+        <>
+          {/* Centred in what's left above the pinned button. */}
+          <View
+            className="flex-1 items-center justify-center px-6"
+            style={{ paddingBottom: footer }}
+          >
+            <OfflineArt />
+            <Text
+              accessibilityRole="header"
+              className="mt-3 mb-2 text-center text-title font-semibold tracking-[-0.4px]"
+            >
+              {offline
+                ? t("components.pageState.offlineTitle")
+                : t("components.pageState.failedTitle")}
+            </Text>
+            <Text className="text-center text-subtitle text-ink-2">
+              {offline
+                ? t("components.pageState.offlineBody")
+                : error !== undefined
+                  ? hudMessage(error)
+                  : t("components.pageState.failedBody")}
+            </Text>
+          </View>
           {onRetry ? (
-            <View className="items-start">
+            <View
+              className="absolute right-0 bottom-0 left-0 px-5 pt-3"
+              style={{ paddingBottom: insets.bottom + 12 }}
+              onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
+            >
               <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
             </View>
           ) : null}
-        </View>
+        </>
       )}
     </View>
   );

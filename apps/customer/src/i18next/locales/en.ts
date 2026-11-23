@@ -7,6 +7,12 @@
 const en = {
   translation: {
     components: {
+      pageState: {
+        offlineTitle: "You’re offline",
+        offlineBody: "Check your Wi-Fi or mobile data, then try again.",
+        failedTitle: "Something went wrong",
+        failedBody: "That didn’t load. Give it another go.",
+      },
       tabs: {
         home: "Home",
         search: "Search",
