@@ -1,3 +1,5 @@
+import { afterEach, beforeEach } from "vitest";
+import { LIMITS } from "@/modules/bookings/application/limits";
 import { randomUUID } from "node:crypto";
 import { router } from "@/http/router";
 import { signJwt } from "@/platform/crypto/jwt";
@@ -156,4 +158,16 @@ export const moreHours = async (
     })),
   });
   return [...hours, ...extra];
+};
+
+// For tests about something else that book a lot for one player: the at-once limits lifted while
+// they run, and put back after.
+export const liftLimits = () => {
+  const kept = { ...LIMITS };
+  beforeEach(() => {
+    Object.assign(LIMITS, { payAtVenue: 1000, joined: 1000, hosted: 1000 });
+  });
+  afterEach(() => {
+    Object.assign(LIMITS, kept);
+  });
 };

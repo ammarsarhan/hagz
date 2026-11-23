@@ -11,6 +11,7 @@ import { BOOKING_EVENTS } from "../domain/events";
 import { checkLength, coversExactly, slotUnavailable } from "../domain/rules";
 import { startOf } from "../domain/status";
 import { newCode, withFreshCode } from "./booking-rows";
+import { checkPayAtVenue } from "./limits";
 import { listAtCheckout } from "./listings";
 import { bookingTerms, type BookingTerms } from "./booking-terms";
 import { amenityNames, presentCharge } from "./booking-view";
@@ -133,6 +134,7 @@ export const createBooking = async (
       const slots = await lockFreeSlots(tx, terms.groundId, terms.startsAt, terms.endsAt);
       if (!coversExactly(slots, terms.startsAt, terms.endsAt)) throw slotUnavailable();
       const booking = priced(terms, slots, now);
+      if (booking.paymentMode === "MANUAL") await checkPayAtVenue(tx, account.id, now);
       const venueCustomerId = await venueCustomerForAccount(tx, terms.venueId, {
         id: account.id,
         name: account.name,
@@ -184,7 +186,9 @@ export const createBooking = async (
         id,
         booking.start.status === "CONFIRMED" ? "BOOKED" : "HELD",
       );
-      if (request.listing) await listAtCheckout(tx, id, request.listing, terms.startsAt);
+      if (request.listing) {
+        await listAtCheckout(tx, account.id, id, request.listing, terms.startsAt, now);
+      }
       const stored: StoredKey = {
         id,
         groundId: terms.groundId,

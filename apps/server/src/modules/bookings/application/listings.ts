@@ -25,6 +25,7 @@ import {
   shareOf,
 } from "../domain/listings";
 import { bookingNotFound, lockBooking } from "./booking-rows";
+import { checkHosted, checkJoined } from "./limits";
 
 // Open games (PR 4.7, docs/listings.md). A player lists their confirmed app booking as needing
 // players; others join from the feed or the share link. Joining, leaving and changing the number
@@ -112,15 +113,18 @@ const checkNeeded = (booking: Listable, needed: number) => {
 // At checkout (docs/listings.md "At checkout"): the listing waits until the booking is confirmed.
 export const listAtCheckout = async (
   tx: Tx,
+  customerId: string,
   bookingId: string,
   request: ListingRequest,
   startsAt: Date,
+  now: Date,
 ) => {
   const booking = await tx.booking.findUniqueOrThrow({
     where: { id: bookingId },
     select: listableSelect,
   });
   checkNeeded(booking, request.neededPlayers);
+  await checkHosted(tx, customerId, now);
   await tx.bookingListing.create({
     data: {
       bookingId,
@@ -212,6 +216,9 @@ export const listBooking = async (
       throw notListable();
     }
     checkNeeded(booking, request.neededPlayers);
+    if (booking.listing?.status !== "OPEN" && booking.listing?.status !== "WAITING") {
+      await checkHosted(tx, customerId, now);
+    }
     const note = request.note === "" ? null : (request.note ?? null);
     if (!booking.listing) {
       await tx.bookingListing.create({
@@ -338,6 +345,7 @@ export const joinGame = async (
         AND b."startsAt" < ${booking.endsAt} AND b."endsAt" > ${booking.startsAt}
       LIMIT 1`;
     if (clashes.length > 0) throw clash();
+    await checkJoined(tx, customerId, now);
     await tx.listingPlayer.upsert({
       where: { listingId_customerId: { listingId, customerId } },
       create: { listingId, customerId, joinedAt: now },

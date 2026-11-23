@@ -20,7 +20,7 @@ const unavailable = problemResponse("The database is unavailable; retry.");
 const notBookable = {
   404: problemResponse("GROUND_NOT_FOUND: no ground with that id at a live venue."),
   409: problemResponse(
-    "SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now.",
+    "SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. PAY_AT_VENUE_LIMIT or HOSTING_LIMIT (with `limit`): too many bookings paid at the venue, or games hosted, at once.",
   ),
   422: problemResponse(
     "INVALID_BOOKING_TIME (with the limit it broke: `minimumNotice`, `horizonDays`, or `minimumSlots` and `maximumSlots`), or AMENITY_NOT_AVAILABLE.",

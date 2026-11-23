@@ -15,7 +15,7 @@ import { router } from "@/http/router";
 import { expireDueBookings } from "@/modules/bookings/application/expire-bookings";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
-import { aGround, at, book, HOUR, signedIn } from "../../support/bookings";
+import { aGround, at, book, HOUR, signedIn, liftLimits } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { createAdmin } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
@@ -27,6 +27,9 @@ beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
 });
+
+// These book a lot for one player; the at-once limits have their own tests (limits.test.ts).
+liftLimits();
 
 const adminCookie = async () => {
   const { secret } = await createAdmin();

@@ -4,7 +4,7 @@ import { completeEndedBookings } from "@/modules/bookings/application/complete-b
 import { markBooking } from "@/modules/bookings/application/staff-decisions";
 import { ALL_PERMISSIONS } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
-import { aGround, at, book, HOUR, signedIn, staffAt } from "../../support/bookings";
+import { aGround, at, book, HOUR, signedIn, staffAt, liftLimits } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { resetRedis } from "../../support/redis";
 
@@ -15,6 +15,9 @@ beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
 });
+
+// These book a lot for one player; the at-once limits have their own tests (limits.test.ts).
+liftLimits();
 
 const booked = async (token: string, body: object) => {
   const res = await book(token, body);

@@ -86,7 +86,7 @@ export const joinGame = createRoute({
     403: problemResponse("REMOVED_FROM_GAME: the booker removed you."),
     404: problemResponse("GAME_NOT_FOUND"),
     409: problemResponse(
-      "GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, or GAME_CLASH: you have a game or a booking at this time.",
+      "GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, or JOINING_LIMIT (with `limit`): in too many games at once.",
     ),
   },
 });
@@ -122,7 +122,9 @@ export const listBooking = createRoute({
     200: booking,
     401: unauthenticated,
     404: notYours,
-    409: problemResponse("BOOKING_NOT_LISTABLE or ALREADY_LISTED"),
+    409: problemResponse(
+      "BOOKING_NOT_LISTABLE, ALREADY_LISTED, or HOSTING_LIMIT (with `limit`): hosting too many games at once.",
+    ),
     422: problemResponse("TOO_MANY_PLAYERS (with `maximum`)"),
   },
 });

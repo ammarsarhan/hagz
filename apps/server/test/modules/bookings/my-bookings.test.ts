@@ -3,7 +3,7 @@ import { Booking, BookingPage } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { prisma } from "@/platform/db/prisma";
-import { aGround, at, book, HOUR, signedIn } from "../../support/bookings";
+import { aGround, at, book, HOUR, signedIn, liftLimits } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { resetRedis } from "../../support/redis";
 
@@ -13,6 +13,9 @@ beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
 });
+
+// These book a lot for one player; the at-once limits have their own tests (limits.test.ts).
+liftLimits();
 
 const get = async (path: string, token: string) =>
   router.request(`/v1${path}`, {

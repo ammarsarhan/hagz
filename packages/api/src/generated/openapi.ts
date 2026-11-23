@@ -4518,7 +4518,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. */
+                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. PAY_AT_VENUE_LIMIT or HOSTING_LIMIT (with `limit`): too many bookings paid at the venue, or games hosted, at once. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4679,7 +4679,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. */
+                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. PAY_AT_VENUE_LIMIT or HOSTING_LIMIT (with `limit`): too many bookings paid at the venue, or games hosted, at once. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11173,7 +11173,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, or GAME_CLASH: you have a game or a booking at this time. */
+                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, or JOINING_LIMIT (with `limit`): in too many games at once. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11313,7 +11313,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description BOOKING_NOT_LISTABLE or ALREADY_LISTED */
+                /** @description BOOKING_NOT_LISTABLE, ALREADY_LISTED, or HOSTING_LIMIT (with `limit`): hosting too many games at once. */
                 409: {
                     headers: {
                         [name: string]: unknown;
