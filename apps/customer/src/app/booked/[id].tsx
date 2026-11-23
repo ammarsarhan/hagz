@@ -21,11 +21,10 @@ import { webLinks } from "@/lib/links";
 import { formatPrice } from "@/lib/money";
 import {
   dayLabel,
-  hourAt,
+  daysUntil,
+  deadlineLabel,
   kindOf,
   localDateOf,
-  momentLabel,
-  timeOfDay,
   timeRange,
   type PublicVenue,
 } from "@/lib/venue";
@@ -37,9 +36,6 @@ import {
 
 const ROW = 40;
 const TITLE_GAP = 22;
-const DAY = 86_400_000;
-// From this hour on, a deadline later today reads "tonight".
-const EVENING = 17;
 
 type Loaded =
   | { state: "loading" }
@@ -90,14 +86,6 @@ export default function Booked() {
   return <Content booking={loaded.booking} venue={loaded.venue} />;
 }
 
-// Whole days from today to a date, both at the venue's clock.
-const daysUntil = (iso: string, timezone: string) =>
-  Math.round(
-    (Date.parse(localDateOf(iso, timezone)) -
-      Date.parse(localDateOf(new Date().toISOString(), timezone))) /
-      DAY,
-  );
-
 function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -120,19 +108,6 @@ function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
     });
     return () => listener.remove();
   });
-
-  // "10:40 pm tonight", "9 am tomorrow", or "Wed 25 Nov, 9 pm".
-  const deadline = (iso: string) => {
-    const days = daysUntil(iso, timezone);
-    const time = timeOfDay(iso, timezone);
-    if (days === 0)
-      return t(
-        hourAt(iso, timezone) >= EVENING ? "screens.booked.tonight" : "screens.booked.today",
-        { time },
-      );
-    if (days === 1) return t("screens.booked.tomorrow", { time });
-    return momentLabel(iso, timezone);
-  };
 
   // "See you today / tomorrow / Thursday / on Thu 3 Dec."
   const seeYou = () => {
@@ -190,7 +165,7 @@ function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
         <Text className="mt-1.5 text-body text-ink-2">
           {sent
             ? t("screens.booked.sentBody", {
-                deadline: booking.expiresAt ? deadline(booking.expiresAt) : "",
+                deadline: booking.expiresAt ? deadlineLabel(booking.expiresAt, timezone) : "",
               })
             : seeYou()}
         </Text>

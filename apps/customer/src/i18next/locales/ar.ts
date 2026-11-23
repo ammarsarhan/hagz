@@ -70,6 +70,12 @@ const ar: ArabicTranslations = {
       searchWithin: "ابحث في نطاق {{km}} كم",
     },
     formats: {
+      // A deadline at the venue’s clock, today or tomorrow.
+      deadline: {
+        tonight: "{{time}} الليلة",
+        today: "{{time}} اليوم",
+        tomorrow: "{{time}} غدًا",
+      },
       listComma: "، ",
       // "و" joins the word after it: "خماسي وسباعي".
       listAnd: " و",
@@ -425,9 +431,6 @@ const ar: ArabicTranslations = {
         sentTitle: "أُرسل إلى {{venue}}",
         sentTitleNoName: "أُرسل إلى الملعب",
         sentBody: "يؤكد الملعب الحجوزات بنفسه. سنخبرك فور تأكيده، في موعد أقصاه {{deadline}}.",
-        tonight: "{{time}} الليلة",
-        today: "{{time}} اليوم",
-        tomorrow: "{{time}} غدًا",
         held: "الساعات محجوزة لك حتى ذلك الحين.",
         bookedTitle: "تم الحجز",
         seeYouToday: "نراك اليوم. أظهر رمزك عند المكتب حين تصل.",

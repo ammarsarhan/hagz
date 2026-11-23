@@ -88,6 +88,30 @@ export const momentLabel = (iso: string, timezone: string) =>
     time: timeOfDay(iso, timezone),
   });
 
+// Whole days from today to a moment, both at the venue's clock: 0 today, 1 tomorrow, -1 yesterday.
+export const daysUntil = (iso: string, timezone: string) =>
+  Math.round(
+    (Date.parse(localDateOf(iso, timezone)) -
+      Date.parse(localDateOf(new Date().toISOString(), timezone))) /
+      86_400_000,
+  );
+
+// From this hour on, a deadline later today reads "tonight".
+const EVENING = 17;
+
+// A deadline: "10:40 pm tonight", "9 am today", "9 am tomorrow", or "Wed 25 Nov, 9 pm".
+export const deadlineLabel = (iso: string, timezone: string) => {
+  const days = daysUntil(iso, timezone);
+  const time = timeOfDay(iso, timezone);
+  if (days === 0)
+    return i18n.t(
+      hourAt(iso, timezone) >= EVENING ? "formats.deadline.tonight" : "formats.deadline.today",
+      { time },
+    );
+  if (days === 1) return i18n.t("formats.deadline.tomorrow", { time });
+  return momentLabel(iso, timezone);
+};
+
 // The day after a date (YYYY-MM-DD), as a date.
 export const nextDate = (date: string) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);

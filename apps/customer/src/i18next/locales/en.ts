@@ -67,6 +67,12 @@ const en = {
       searchWithin: "Search within {{km}} km",
     },
     formats: {
+      // A deadline at the venue’s clock, today or tomorrow.
+      deadline: {
+        tonight: "{{time}} tonight",
+        today: "{{time}} today",
+        tomorrow: "{{time}} tomorrow",
+      },
       // Joining a list: "Football, padel and tennis".
       listComma: ", ",
       listAnd: " and ",
@@ -385,9 +391,6 @@ const en = {
         sentTitleNoName: "Sent to the venue",
         sentBody:
           "They confirm bookings themselves. We’ll tell you as soon as they do, by {{deadline}} at the latest.",
-        tonight: "{{time}} tonight",
-        today: "{{time}} today",
-        tomorrow: "{{time}} tomorrow",
         held: "The hours are held for you until then.",
         bookedTitle: "You’re booked",
         seeYouToday: "See you today. Show your code at the desk when you arrive.",
