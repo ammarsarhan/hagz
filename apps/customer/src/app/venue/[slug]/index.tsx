@@ -1,4 +1,3 @@
-import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +8,7 @@ import {
   FlatList,
   Pressable,
   ScrollView,
+  Share,
   useWindowDimensions,
   View,
   type LayoutChangeEvent,
@@ -29,13 +29,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import {
-  IconChevronLeft,
-  IconCircleCheckFilled,
-  IconHeart,
-  IconHeartFilled,
-  IconShare,
-} from "@/components/icons";
+import { IconChevronLeft, IconHeart, IconHeartFilled, IconShare } from "@/components/icons";
 import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
 import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
@@ -630,14 +624,15 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
                 icon={IconShare}
                 label={t("screens.venue.share")}
                 progress={barProgress}
-                onPress={() => {
-                  // Done, not a problem: a check in place of the HUD's alert.
-                  void Clipboard.setStringAsync(link).then(() =>
-                    hud.show(t("screens.venue.copied"), {
-                      leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
+                // The system's share sheet: send it in a chat, copy it, post it.
+                onPress={() =>
+                  void Share.share({
+                    message: t("screens.venue.shareMessage", {
+                      venue: venue.name ?? t("screens.venue.fallbackName"),
+                      link,
                     }),
-                  );
-                }}
+                  })
+                }
               />
             ) : null}
             {/* Saving (PR 3.4): a guest is asked to sign in first, as everywhere a choice needs an

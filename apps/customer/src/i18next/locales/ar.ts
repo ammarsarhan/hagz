@@ -782,7 +782,7 @@ const ar: ArabicTranslations = {
         save: "احفظ هذا الملعب",
         unsave: "إزالة من المحفوظات",
         share: "انسخ رابط الملعب",
-        copied: "تم نسخ الرابط",
+        shareMessage: "{{venue}} على Hagz: {{link}}",
         photoOf: "صورة {{name}}",
         photoOfVenue: "صورة الملعب",
         photoCount: "{{index}} / {{count}}",

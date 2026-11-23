@@ -718,7 +718,7 @@ const en = {
         save: "Save this venue",
         unsave: "Remove from saved",
         share: "Copy the venue’s link",
-        copied: "Link copied",
+        shareMessage: "{{venue}} on Hagz: {{link}}",
         photoOf: "Photo of {{name}}",
         photoOfVenue: "Photo of the venue",
         photoCount: "{{index}} / {{count}}",
