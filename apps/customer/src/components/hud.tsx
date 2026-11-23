@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Animated, Platform, View } from "react-native";
+import { Animated, Platform, useWindowDimensions, View } from "react-native";
 import { FullWindowOverlay } from "react-native-screens";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
@@ -173,6 +173,8 @@ function Hud({
   onHidden: () => void;
 }) {
   const progress = useRef(new Animated.Value(0)).current;
+  // Three quarters of the screen at most; a longer message wraps, to two lines (user, 2026-11-23).
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     const animation = Animated.sequence([
@@ -193,8 +195,9 @@ function Hud({
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
-        className="h-14 flex-row items-center gap-2.5 rounded-hud border border-hairline bg-hud pe-[22px] ps-[18px]"
+        className="min-h-[52px] flex-row items-center gap-2 rounded-hud border border-hairline bg-hud py-2.5 pe-5 ps-4"
         style={{
+          maxWidth: width * 0.75,
           opacity: progress,
           transform: [
             { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
@@ -205,8 +208,10 @@ function Hud({
           shadowOffset: { width: 0, height: 6 },
         }}
       >
-        {leading ?? <IconAlertCircleFilled size={22} color={colors.ink} />}
-        <Text className="text-subtitle font-medium">{message}</Text>
+        {leading ?? <IconAlertCircleFilled size={20} color={colors.ink} />}
+        <Text className="shrink text-body font-medium" numberOfLines={2}>
+          {message}
+        </Text>
       </Animated.View>
     </View>
   );
