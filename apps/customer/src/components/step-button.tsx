@@ -8,11 +8,14 @@ export function StepButton({
   icon,
   label,
   disabled,
+  small = false,
   onPress,
 }: {
   icon: "minus" | "plus";
   label: string;
   disabled: boolean;
+  // 32 with a 16 icon, beside smaller type (the booker's players needed).
+  small?: boolean;
   onPress: () => void;
 }) {
   const Glyph = icon === "minus" ? IconMinus : IconPlus;
@@ -24,9 +27,9 @@ export function StepButton({
       disabled={disabled}
       onPress={onPress}
       hitSlop={6}
-      className="size-9 items-center justify-center rounded-full bg-chip active:opacity-70"
+      className={`${small ? "size-8" : "size-9"} items-center justify-center rounded-full bg-chip active:opacity-70`}
     >
-      <Glyph size={18} color={disabled ? colors.ink3 : colors.ink} strokeWidth={2} />
+      <Glyph size={small ? 16 : 18} color={disabled ? colors.ink3 : colors.ink} strokeWidth={2} />
     </Pressable>
   );
 }

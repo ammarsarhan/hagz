@@ -123,8 +123,7 @@ function Content({
   changed.current = onChange;
   const [closing, setClosing] = useState(false);
   const [sending, setSending] = useState(false);
-  const [footer, setFooter] = useState(0);
-  useHudAnchor(footer > 0 ? footer : insets.bottom);
+  useHudAnchor(insets.bottom);
 
   const { timezone } = booking.venue;
   const venueName = booking.venue.name ?? t("screens.venue.fallbackName");
@@ -199,29 +198,9 @@ function Content({
 
   return (
     <ScrollPage
-      bottom={(footer || insets.bottom) + 24}
+      bottom={insets.bottom + 24}
       footer={
         <>
-          {/* Remove the listing, pinned at the bottom: until kick-off. */}
-          {started ? null : (
-            <View
-              className="absolute right-0 bottom-0 left-0 items-center bg-white pt-3"
-              style={{ paddingBottom: insets.bottom + 12 }}
-              onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
-            >
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={10}
-                onPress={() => setClosing(true)}
-                className="py-2 active:opacity-60"
-              >
-                <Text className="text-subtitle font-medium underline">
-                  {t("screens.hosting.removeListing")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
-
           {/* Remove a player (308:2). */}
           <Sheet visible={asking} onClose={() => !sending && setAsking(false)}>
             {removing ? (
@@ -338,7 +317,7 @@ function Content({
           size={34}
         />
         <Text className="pt-3 text-label leading-5 text-ink-2">
-          <Text className="text-label leading-5 font-semibold text-ink">
+          <Text className="text-label leading-5 font-medium text-ink">
             {left > 0 ? t("screens.hosting.spotsLeft", { count: left }) : t("screens.hosting.full")}
           </Text>
           {` ${t("screens.hosting.pays", { share, venue: venueName, fee })}`}
@@ -361,17 +340,19 @@ function Content({
           players.map((player, index) => (
             <View
               key={player.customerId}
-              className={`flex-row items-center gap-3.5 py-3.5 ${index < players.length - 1 ? "border-b border-border" : ""}`}
+              className={`flex-row items-center gap-3 py-3 ${index < players.length - 1 ? "border-b border-border" : ""}`}
             >
-              <View className="size-11 items-center justify-center rounded-full bg-chip">
-                <Text className="text-[15px] font-semibold">{initial(player.firstName)}</Text>
+              <View className="size-10 items-center justify-center rounded-full bg-chip">
+                <Text className="text-[14px] font-semibold">{initial(player.firstName)}</Text>
               </View>
               <View className="flex-1 gap-0.5">
-                <Text className="text-subtitle leading-[22px] font-medium">{player.firstName}</Text>
+                <Text className="text-body leading-5 font-medium">{player.firstName}</Text>
                 {player.phone ? (
-                  <Text className="text-label leading-5 text-ink-2">{phoneText(player.phone)}</Text>
+                  <Text className="text-caption leading-[18px] text-ink-2">
+                    {phoneText(player.phone)}
+                  </Text>
                 ) : null}
-                <Text className="text-label leading-5 text-ink-2">
+                <Text className="text-caption leading-[18px] text-ink-2">
                   <Standing player={player} timezone={timezone} />
                 </Text>
               </View>
@@ -405,17 +386,16 @@ function Content({
           </View>
           <View className="flex-row items-center justify-between gap-4 pt-5">
             <View className="shrink">
-              <Text className="text-subtitle leading-[22px] font-medium">
-                {t("screens.hosting.needed")}
-              </Text>
-              <Text className="pt-0.5 text-label leading-5 text-ink-2">
+              <Text className="text-body leading-5 font-medium">{t("screens.hosting.needed")}</Text>
+              <Text className="pt-0.5 text-caption leading-[18px] text-ink-2">
                 {joined > 0
                   ? t("screens.hosting.downTo", { count: joined })
                   : t("screens.hosting.upTo", { count: most })}
               </Text>
             </View>
-            <View className="flex-row items-center gap-3.5">
+            <View className="flex-row items-center gap-3">
               <StepButton
+                small
                 icon="minus"
                 label={t("screens.extras.players.less")}
                 disabled={needed <= least}
@@ -423,11 +403,12 @@ function Content({
               />
               <Text
                 accessibilityLiveRegion="polite"
-                className="min-w-5 text-center text-heading font-semibold"
+                className="min-w-5 text-center text-[18px] leading-6 font-semibold"
               >
                 {needed}
               </Text>
               <StepButton
+                small
                 icon="plus"
                 label={t("screens.extras.players.more")}
                 disabled={needed >= most}
@@ -436,6 +417,22 @@ function Content({
             </View>
           </View>
         </>
+      )}
+
+      {/* Remove the listing, at the end of the page: until kick-off. */}
+      {started ? null : (
+        <View className="mt-10 items-center">
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => setClosing(true)}
+            className="py-2 active:opacity-60"
+          >
+            <Text className="text-body font-medium underline">
+              {t("screens.hosting.removeListing")}
+            </Text>
+          </Pressable>
+        </View>
       )}
     </ScrollPage>
   );
