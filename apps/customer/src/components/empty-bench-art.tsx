@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { interpolate, useAnimatedStyle } from "react-native-reanimated";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Svg, { Path, Rect } from "react-native-svg";
+import { Football } from "./football";
 import { Layer, LIGHTS_OUT_SIZE, useLoop } from "./lights-out-art";
 
 // "Empty bench", Community · Mine's empty state (no games joined yet; user, 2026-11-23): a dugout
@@ -80,8 +81,7 @@ export function EmptyBenchArt() {
       </Svg>
       {/* The ball, bobbing on the pitch. */}
       <Layer style={ball}>
-        <Circle cx={227} cy={153} r={13} fill={WHITE} stroke={BLACK} strokeWidth={3} />
-        <Path d="M227 146.5 L232.5 150.5 L230.5 157 L223.5 157 L221.5 150.5Z" fill={BLACK} />
+        <Football x={227} y={153} r={13} />
       </Layer>
       <Layer style={bigSpark}>
         <Path d={spark(226, 62, 8)} fill={BLACK} />

@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { interpolate, useAnimatedStyle } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Path, Rect } from "react-native-svg";
+import { Football } from "./football";
 import { Layer, LIGHTS_OUT_SIZE, useLoop } from "./lights-out-art";
 
 // The blocked screen's two scenes (app/blocked.tsx), drawn like the empty states (Lights out, No name
@@ -29,17 +30,9 @@ const spark = (x: number, y: number, r: number) => {
   );
 };
 
-// The ball from Lights out, centred on (x, y).
+// The football, centred on (x, y).
 function Ball({ x, y }: { x: number; y: number }) {
-  return (
-    <>
-      <Circle cx={x} cy={y} r={14} fill={WHITE} stroke={BLACK} strokeWidth={3} />
-      <Path
-        d={`M${x} ${y - 7} L${x + 6} ${y - 3} L${x + 4} ${y + 4} L${x - 4} ${y + 4} L${x - 6} ${y - 3}Z`}
-        fill={BLACK}
-      />
-    </>
-  );
+  return <Football x={x} y={y} r={14} />;
 }
 
 // The pitch along the bottom, with its halfway line.

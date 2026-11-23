@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+import { Football } from "./football";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 
 // "Lights out", Search's empty state when no venue matches (Figma "C3 · Tabs & Search", section
@@ -137,8 +138,7 @@ export function LightsOutArt() {
           )),
         )}
         {/* The ball, waiting. */}
-        <Circle cx={176} cy={156} r={14} fill={WHITE} stroke={BLACK} strokeWidth={3} />
-        <Path d="M176 149 L182 153 L180 160 L172 160 L170 153Z" fill={BLACK} />
+        <Football x={176} y={156} r={14} />
       </Svg>
       {/* The moon: a grey disc with a white one over most of it. */}
       <Layer style={moon}>
