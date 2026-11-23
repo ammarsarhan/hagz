@@ -1,5 +1,6 @@
 import { isProblem } from "@hagz/api";
 import type { components } from "@hagz/api";
+import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -17,7 +18,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { Button } from "@/components/button";
-import { CheckedInArt } from "@/components/checked-in-art";
+import { CheckedInArt, TORN_AT } from "@/components/checked-in-art";
 import { CloseButton } from "@/components/nav";
 import { FailedMessage, PageState } from "@/components/page-state";
 import { QrCode } from "@/components/qr-code";
@@ -104,7 +105,8 @@ function Content({ initial, name }: { initial: Booking; name: string }) {
   }, [booking.id, checkedInAt]);
 
   return checkedInAt ? (
-    <Done booking={booking} at={checkedInAt} />
+    // The tear plays when the scan comes in while it's open, not on opening it again later.
+    <Done booking={booking} at={checkedInAt} intro={!initial.checkIn?.checkedInAt} />
   ) : (
     <MyCode booking={booking} name={name} />
   );
@@ -315,10 +317,22 @@ function Countdown({ refreshAt }: { refreshAt: string }) {
 }
 
 // The desk scanned it: the stub torn off, when and where, and Done back to the booking.
-function Done({ booking, at }: { booking: Booking; at: string }) {
+function Done({ booking, at, intro }: { booking: Booking; at: string; intro: boolean }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const venueName = booking.venue.name ?? t("screens.venue.fallbackName");
+  // A success tap in the hand as the stub tears off.
+  useEffect(() => {
+    if (!intro) return;
+    const timer = setTimeout(
+      () => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+      TORN_AT,
+    );
+    return () => clearTimeout(timer);
+  }, [intro]);
+  // The words, then Done, come in once it's torn.
+  const after = intro ? TORN_AT : 0;
+  const words = FadeIn.delay(after + 150).duration(320);
   return (
     <Animated.View
       entering={FadeIn.duration(220)}
@@ -327,23 +341,29 @@ function Done({ booking, at }: { booking: Booking; at: string }) {
     >
       <StatusBar style="dark" />
       <View className="items-center px-6" style={{ paddingTop: insets.top + 96 }}>
-        <CheckedInArt />
-        <Text
-          accessibilityRole="header"
-          className="pt-6 text-center text-title font-semibold tracking-[-0.4px]"
-        >
-          {t("screens.checkIn.doneTitle")}
-        </Text>
-        <Text className="pt-1.5 text-center text-body leading-[23px] text-ink-2">
-          {t("screens.checkIn.doneBody", {
-            time: timeOfDay(at, booking.venue.timezone),
-            venue: venueName,
-          })}
-        </Text>
+        <CheckedInArt intro={intro} />
+        <Animated.View entering={words} className="items-center">
+          <Text
+            accessibilityRole="header"
+            className="pt-6 text-center text-title font-semibold tracking-[-0.4px]"
+          >
+            {t("screens.checkIn.doneTitle")}
+          </Text>
+          <Text className="pt-1.5 text-center text-body leading-[23px] text-ink-2">
+            {t("screens.checkIn.doneBody", {
+              time: timeOfDay(at, booking.venue.timezone),
+              venue: venueName,
+            })}
+          </Text>
+        </Animated.View>
       </View>
-      <View className="absolute right-6 left-6" style={{ bottom: insets.bottom + 12 }}>
+      <Animated.View
+        entering={FadeIn.delay(after + 350).duration(320)}
+        className="absolute right-6 left-6"
+        style={{ bottom: insets.bottom + 12 }}
+      >
         <Button label={t("screens.booked.done")} onPress={() => router.back()} />
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }
