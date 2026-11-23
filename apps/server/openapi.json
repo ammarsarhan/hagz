@@ -3094,6 +3094,51 @@
             ],
             "description": "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise."
           },
+          "cancelled": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "by": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "VENUE",
+                  "ADMIN"
+                ]
+              },
+              "declined": {
+                "type": "boolean",
+                "description": "The venue said no while it waited for approval."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "What the venue or support said, if anything."
+              }
+            },
+            "required": [
+              "by",
+              "declined",
+              "reason"
+            ],
+            "description": "`CANCELLED`: who did it."
+          },
+          "expiredFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PENDING",
+              "HELD",
+              null
+            ],
+            "description": "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`)."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3120,6 +3165,8 @@
           "listing",
           "checkIn",
           "move",
+          "cancelled",
+          "expiredFrom",
           "createdAt"
         ]
       },
@@ -3445,11 +3492,19 @@
               "declined": {
                 "type": "boolean",
                 "description": "The venue said no while it waited for approval."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "What the venue or support said, if anything."
               }
             },
             "required": [
               "by",
-              "declined"
+              "declined",
+              "reason"
             ],
             "description": "`CANCELLED`: who did it."
           },

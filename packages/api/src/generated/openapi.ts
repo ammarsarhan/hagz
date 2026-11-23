@@ -17900,6 +17900,20 @@ export interface components {
                 /** Format: date-time */
                 movedAt: string;
             } | null;
+            /** @description `CANCELLED`: who did it. */
+            cancelled: {
+                /** @enum {string} */
+                by: "CUSTOMER" | "VENUE" | "ADMIN";
+                /** @description The venue said no while it waited for approval. */
+                declined: boolean;
+                /** @description What the venue or support said, if anything. */
+                reason: string | null;
+            } | null;
+            /**
+             * @description `EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).
+             * @enum {string|null}
+             */
+            expiredFrom: "PENDING" | "HELD" | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -18023,6 +18037,8 @@ export interface components {
                 by: "CUSTOMER" | "VENUE" | "ADMIN";
                 /** @description The venue said no while it waited for approval. */
                 declined: boolean;
+                /** @description What the venue or support said, if anything. */
+                reason: string | null;
             } | null;
             /**
              * @description `EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).

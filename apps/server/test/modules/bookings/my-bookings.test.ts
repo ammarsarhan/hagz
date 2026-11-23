@@ -79,7 +79,13 @@ describe("my bookings", () => {
     await moveToPast(unanswered ?? "", 3);
     await prisma.booking.update({ where: { id: declined }, data: { status: "CANCELLED" } });
     await prisma.cancellation.create({
-      data: { bookingId: declined ?? "", initiator: "VENUE", refundPercent: 100, refundAmount: 0 },
+      data: {
+        bookingId: declined ?? "",
+        initiator: "VENUE",
+        reason: "Pitch closed for repairs",
+        refundPercent: 100,
+        refundAmount: 0,
+      },
     });
     await prisma.bookingEvent.create({ data: { bookingId: declined ?? "", type: "DECLINED" } });
     await prisma.booking.update({ where: { id: cancelled }, data: { status: "CANCELLED" } });
@@ -112,9 +118,17 @@ describe("my bookings", () => {
 
     const ended = new Map((await list(token, "when=past")).data.map((each) => [each.id, each]));
     expect(ended.get(declined ?? "")).toMatchObject({
-      cancellation: { by: "VENUE", declined: true },
+      cancellation: { by: "VENUE", declined: true, reason: "Pitch closed for repairs" },
       expiredFrom: null,
     });
+    // The booking itself says the same.
+    const detail = Booking.parse(await (await get(`/bookings/${declined}`, token)).json());
+    expect(detail).toMatchObject({
+      cancelled: { by: "VENUE", declined: true, reason: "Pitch closed for repairs" },
+      expiredFrom: null,
+    });
+    const lapsed = Booking.parse(await (await get(`/bookings/${unanswered}`, token)).json());
+    expect(lapsed).toMatchObject({ cancelled: null, expiredFrom: "PENDING" });
     expect(ended.get(cancelled ?? "")).toMatchObject({
       cancellation: { by: "CUSTOMER", declined: false },
     });

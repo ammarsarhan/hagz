@@ -117,6 +117,23 @@ export const BookingMove = z
   })
   .meta({ id: "BookingMove" });
 
+// How a booking ended, when it did: who cancelled it (and whether that was the venue saying no
+// while it waited for approval, with the reason given), or what ran out.
+const Cancelled = z
+  .object({
+    by: z.enum(["CUSTOMER", "VENUE", "ADMIN"]),
+    declined: z.boolean().meta({ description: "The venue said no while it waited for approval." }),
+    reason: z
+      .string()
+      .nullable()
+      .meta({ description: "What the venue or support said, if anything." }),
+  })
+  .nullable()
+  .meta({ description: "`CANCELLED`: who did it." });
+const ExpiredFrom = z.enum(["PENDING", "HELD"]).nullable().meta({
+  description: "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).",
+});
+
 export const Booking = z
   .object({
     id: z.uuid(),
@@ -144,7 +161,8 @@ export const Booking = z
         }),
       })
       .meta({
-        description: "Read with the booking, whatever the venue's status now: it can stop being public.",
+        description:
+          "Read with the booking, whatever the venue's status now: it can stop being public.",
       }),
     ground: z.object({
       id: z.uuid(),
@@ -168,6 +186,8 @@ export const Booking = z
       description:
         "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise.",
     }),
+    cancelled: Cancelled,
+    expiredFrom: ExpiredFrom,
     createdAt: Instant,
   })
   .meta({ id: "Booking" });
@@ -214,24 +234,11 @@ export const BookingSummary = z
     checkIn: CheckInWindow.nullable().meta({
       description: "App bookings, once confirmed: when check-in opens, and whether they did.",
     }),
-    move: z
-      .object({ respondBy: Instant })
-      .nullable()
-      .meta({
-        description: "The venue moved it and the player can still answer, until respondBy.",
-      }),
-    cancellation: z
-      .object({
-        by: z.enum(["CUSTOMER", "VENUE", "ADMIN"]),
-        declined: z
-          .boolean()
-          .meta({ description: "The venue said no while it waited for approval." }),
-      })
-      .nullable()
-      .meta({ description: "`CANCELLED`: who did it." }),
-    expiredFrom: z.enum(["PENDING", "HELD"]).nullable().meta({
-      description: "`EXPIRED`: what ran out, the venue's approval (`PENDING`) or payment (`HELD`).",
+    move: z.object({ respondBy: Instant }).nullable().meta({
+      description: "The venue moved it and the player can still answer, until respondBy.",
     }),
+    cancellation: Cancelled,
+    expiredFrom: ExpiredFrom,
   })
   .meta({ id: "BookingSummary" });
 

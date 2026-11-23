@@ -3,6 +3,7 @@ import type { Language } from "@/generated/prisma/enums";
 import { nameIn, pinOf, placeOf, translationIn } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import type { ChargeLine } from "../domain/charges";
+import { endingOf, endingSelect, ENDING_EVENTS } from "./booking-ending";
 import { bookingCheckIn } from "./check-in";
 import { moveFor } from "./move-response";
 import { bookerListing } from "./listings";
@@ -59,6 +60,11 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       cancellationTiers: true,
       note: true,
       createdAt: true,
+      cancellation: endingSelect.cancellation,
+      events: {
+        where: { type: { in: ENDING_EVENTS } },
+        select: { type: true, data: true },
+      },
       venue: {
         select: {
           id: true,
@@ -145,6 +151,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     listing: await bookerListing(booking.id),
     checkIn: bookingCheckIn(booking),
     move: await moveFor(booking.id, language),
+    ...endingOf(booking),
     createdAt: booking.createdAt.toISOString(),
   };
 };

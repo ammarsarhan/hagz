@@ -7,6 +7,7 @@ import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
 import { storage } from "@/platform/storage/storage";
 import { BOOKING_EVENTS } from "../domain/events";
+import { endingOf, endingSelect, ENDING_EVENTS } from "./booking-ending";
 import { bookingNotFound } from "./booking-rows";
 import { bookingCheckIn } from "./check-in";
 import { openMove, originSelect } from "./move-response";
@@ -90,12 +91,12 @@ export const listMyBookings = async (
       regularId: true,
       checkedInAt: true,
       rescheduledFrom: originSelect.rescheduledFrom,
-      cancellation: { select: { initiator: true } },
+      cancellation: endingSelect.cancellation,
       // MOVE_ACCEPTED for the open move; DECLINED and EXPIRED for how it ended.
       events: {
         where: {
           type: {
-            in: [BOOKING_EVENTS.MOVE_ACCEPTED, BOOKING_EVENTS.DECLINED, BOOKING_EVENTS.EXPIRED],
+            in: [BOOKING_EVENTS.MOVE_ACCEPTED, ...ENDING_EVENTS],
           },
         },
         select: { id: true, type: true, data: true },
@@ -124,7 +125,6 @@ export const listMyBookings = async (
   return {
     data: pageRows.map((booking) => {
       const cover = booking.venue.media[0];
-      const eventOf = (type: string) => booking.events.find((event) => event.type === type);
       const move = openMove(
         {
           ...booking,
@@ -133,8 +133,7 @@ export const listMyBookings = async (
         },
         now,
       );
-      const expiredFrom = (eventOf(BOOKING_EVENTS.EXPIRED)?.data as { from?: unknown } | undefined)
-        ?.from;
+      const { cancelled, expiredFrom } = endingOf(booking);
       return {
         id: booking.id,
         code: booking.code,
@@ -161,17 +160,8 @@ export const listMyBookings = async (
         paymentMode: booking.paymentMode,
         checkIn: bookingCheckIn(booking),
         move: move ? { respondBy: move.respondBy.toISOString() } : null,
-        cancellation:
-          booking.status === "CANCELLED" && booking.cancellation
-            ? {
-                by: booking.cancellation.initiator,
-                declined: eventOf(BOOKING_EVENTS.DECLINED) !== undefined,
-              }
-            : null,
-        expiredFrom:
-          booking.status === "EXPIRED" && (expiredFrom === "PENDING" || expiredFrom === "HELD")
-            ? expiredFrom
-            : null,
+        cancellation: cancelled,
+        expiredFrom,
       };
     }),
     nextCursor: rows.length > query.limit && last ? encodeCursor(last) : null,
