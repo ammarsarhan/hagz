@@ -18,6 +18,7 @@ import { colors } from "@/lib/colors";
 import { justBooked, type Booking } from "@/lib/just-booked";
 import { intlLocale, isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
+import { push } from "@/lib/navigation";
 import { formatPrice } from "@/lib/money";
 import {
   dayLabel,
@@ -225,8 +226,7 @@ function Content({ booking, venue }: { booking: Booking; venue: PublicVenue }) {
       >
         <Button
           label={t("screens.booked.view")}
-          // The booking page is the next screen to build; until then, it says so.
-          onPress={() => hud.show(t("screens.booked.bookingPageSoon"))}
+          onPress={() => push({ pathname: "/bookings/[id]", params: { id: booking.id } })}
         />
         {sent ? (
           <Button label={t("screens.booked.done")} variant="secondary" onPress={close} />

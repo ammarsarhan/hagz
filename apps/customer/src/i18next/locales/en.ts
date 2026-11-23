@@ -428,6 +428,44 @@ const en = {
         guest:
           "You’re not signed in. Sign in or create an account to book and keep track of your games.",
       },
+      booking: {
+        checkIn: {
+          title: "Check in at the desk",
+          body: "Show your code from {{from}} until {{until}}.",
+        },
+        showCode: "Show my code",
+        codeSoon: "Your check-in code comes soon",
+        checkedIn: { title: "You’re checked in", body: "At {{time}}. Have a good game." },
+        pending: {
+          title: "Waiting for {{venue}}",
+          body: "They’ll answer by {{deadline}}. The hours are held for you until then.",
+        },
+        held: { title: "Waiting for payment", body: "Pay by {{deadline}} to keep it." },
+        weekly: { title: "Your weekly game", body: "Confirm by {{deadline}} to keep it." },
+        moved: {
+          title: "The venue moved this",
+          body: "Answer by {{deadline}}. If you don’t, it stays moved.",
+        },
+        ended: {
+          COMPLETED: "Played",
+          NO_SHOW: "Marked as a no-show",
+          CANCELLED: "Cancelled",
+          EXPIRED: "Expired",
+          RELEASED: "Not this week",
+        },
+        game: "Open game · {{joined}} of {{needed}} joined",
+        coming_one: "{{names}} is coming",
+        coming_other: "{{names}} are coming",
+        noOneYet: "No one’s joined yet",
+        gameSoon: "Managing your open game comes soon",
+        gettingThere: "Getting there",
+        call: "Call the venue",
+        pay: {
+          MANUAL: "You pay at the venue, in cash.",
+          DEPOSIT: "{{deposit}} paid online, the rest at the venue.",
+          PLATFORM: "Paid online.",
+        },
+      },
       booked: {
         sentTitle: "Sent to {{venue}}",
         sentTitleNoName: "Sent to the venue",
@@ -452,7 +490,6 @@ const en = {
         share: "Share",
         shareMessage: "{{ground}} at {{venue}}, {{when}}: {{link}}",
         view: "View booking",
-        bookingPageSoon: "The booking page comes soon",
         done: "Done",
       },
       favorites: {

@@ -199,7 +199,8 @@ function Bookings() {
     void load(when);
   };
 
-  const openBooking = () => hud.show(t("screens.booked.bookingPageSoon"));
+  const openBooking = (booking: Summary) =>
+    push({ pathname: "/bookings/[id]", params: { id: booking.id } });
 
   const list = lists[when];
   const items =
@@ -238,7 +239,7 @@ function Bookings() {
         }
         renderItem={({ item }) =>
           item.kind === "next" ? (
-            <Next booking={item.booking} onPress={openBooking} />
+            <Next booking={item.booking} onPress={() => openBooking(item.booking)} />
           ) : item.kind === "heading" ? (
             <Text
               className={`${item.first ? "pt-[22px]" : "pt-[26px]"} text-caption leading-[18px] text-unit`}
@@ -246,7 +247,11 @@ function Bookings() {
               {item.label}
             </Text>
           ) : (
-            <Row booking={item.booking} last={item.last} onPress={openBooking} />
+            <Row
+              booking={item.booking}
+              last={item.last}
+              onPress={() => openBooking(item.booking)}
+            />
           )
         }
         ListEmptyComponent={
