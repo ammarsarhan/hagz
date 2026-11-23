@@ -18,7 +18,7 @@ Flow ids (`C6`, `D11`, `A7b`) match the board. Each diagram uses the same colors
 - **Language and theme:** screens are designed in English (LTR) first, then mirrored to Arabic. Light theme only in v1.
 - **Customer tabs:** Explore · Search · Games · Bookings · Account. The inbox is behind a bell on Explore.
 - **Explore** is a feed of rails: Nearby, Play again, Free tonight, Just freed, Instant confirmation, Top rated, Within budget, Most booked this week, New on Hagz, loyalty progress, and Games needing players. Each venue card shows a photo, rating, distance, perk pills (amenities, instant confirmation, loyalty, discounts) and free-time chips.
-- **Booking is short steps,** each with a pinned total bar and Continue: ground and time (layout first) → extras (skipped when the venue has none) → players (optional) → review and pay.
+- **Booking is short steps,** each with a pinned total bar and Continue: ground and time (layout first) → anything else? (the venue's priced extras, then Need players?, at every venue) → review and book, a summary with nothing left to choose (changed on 2026-11-23: players moved into the extras step).
 - **Players asked at checkout:** the listing opens automatically once the booking is `CONFIRMED`. This changes the "who can list" rule in [listings.md](listings.md), to be updated with PR 4.7.
 - **Guests sign in through a bottom sheet** and land back on the same step with their choices kept.
 - **The web is view only:** public venue listings for search engines and exposure, shared links, and sending people to the apps. Nothing is booked on the web.
@@ -124,10 +124,9 @@ flowchart LR
   classDef state fill:#FFECBD,stroke:#FFC943
   classDef result fill:#CDF4D3,stroke:#66D575
   classDef danger fill:#FFCDC2,stroke:#FF7556
-  s1["1 Ground and time (from C5)"] --> signin["Sign-in sheet if guest (C2)"]:::sheet --> s2["2 Extras: priced amenities (skipped if none)"]
-  s2 --> s3["3 Players (optional): needed, note (share and joining fee shown)"]
-  s3 --> s4["4 Review and pay: breakdown, VAT, policy, discount code, loyalty reward, payment method"]
-  s4 --> pay["Pay: card, wallet, Apple Pay, Google Pay (Paymob fields), Fawry code, or at the venue"]:::sheet
+  s1["1 Ground and time (from C5)"] --> signin["Sign-in sheet if guest (C2)"]:::sheet --> s2["2 Anything else?: priced extras, then Need players? (needed, note, share shown)"]
+  s2 --> s3["3 Review and book: summary, breakdown with service fee, VAT, open game, policy, discount code, loyalty reward, payment method"]
+  s3 --> pay["Pay: card, wallet, Apple Pay, Google Pay (Paymob fields), Fawry code, or at the venue"]:::sheet
   pay --> confirmed["Confirmed"]:::result
   pay --> approval["Waiting for approval"]:::state
   pay --> awaiting["Awaiting payment: countdown, Fawry code"]:::state
