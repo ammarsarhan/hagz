@@ -502,8 +502,8 @@ function Standing({
       {card.showCode ? (
         <Button
           label={t("screens.booking.showCode")}
-          size="small"
-          icon={<IconQrcode size={20} color={colors.white} strokeWidth={2} />}
+          size="compact"
+          icon={<IconQrcode size={18} color={colors.white} strokeWidth={2} />}
           onPress={() => push({ pathname: "/bookings/[id]/check-in", params: { id: booking.id } })}
         />
       ) : null}

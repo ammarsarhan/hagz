@@ -537,8 +537,8 @@ function CheckInCard({ game }: { game: Game }) {
       {card.showCode ? (
         <Button
           label={t("screens.booking.showCode")}
-          size="small"
-          icon={<IconQrcode size={20} color={colors.white} strokeWidth={2} />}
+          size="compact"
+          icon={<IconQrcode size={18} color={colors.white} strokeWidth={2} />}
           onPress={() => push({ pathname: "/game/[id]/check-in", params: { id: game.id } })}
         />
       ) : null}
