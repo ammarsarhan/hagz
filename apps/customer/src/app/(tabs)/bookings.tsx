@@ -58,9 +58,10 @@ type List =
   | {
       state: "ready";
       items: Summary[];
-      // The games joined (Community), merged in by time.
+      // The games joined (Community), merged in by time; each list pages on its own.
       games: Game[];
       cursor: string | null;
+      gamesCursor: string | null;
       loadingMore: boolean;
     };
 
@@ -82,20 +83,67 @@ const keyOf = (entry: Entry) =>
 // The bookings loaded so far and the games joined, by time. Bookings come a page at a time, so a
 // game only joins once the bookings around it have loaded (else it could sit out of order ahead of
 // the next page); with every page in, all of them.
-const entriesOf = (when: When, list: Extract<List, { state: "ready" }>): Entry[] => {
-  const last = list.items.at(-1);
-  const edge = list.cursor && last ? Date.parse(last.startsAt) : null;
-  const games = list.games.filter((game) => {
-    if (edge === null) return true;
-    const at = Date.parse(game.startsAt);
-    return when === "upcoming" ? at <= edge : at >= edge;
-  });
+type Ready = Extract<List, { state: "ready" }>;
+
+// How far a paged list reaches: its last row's start, or null when it's all loaded.
+const edgeOf = (rows: { startsAt: string }[], cursor: string | null) => {
+  const last = rows.at(-1);
+  return cursor && last ? Date.parse(last.startsAt) : null;
+};
+
+// Bookings and games page separately, so only what both have reached is shown: past the nearer
+// edge, a row from the list that's behind could still belong in between. Null: everything's loaded.
+const frontierOf = (when: When, list: Ready) => {
+  const edges = [edgeOf(list.items, list.cursor), edgeOf(list.games, list.gamesCursor)].filter(
+    (edge): edge is number => edge !== null,
+  );
+  if (edges.length === 0) return null;
+  return when === "upcoming" ? Math.min(...edges) : Math.max(...edges);
+};
+
+const entriesOf = (when: When, list: Ready): Entry[] => {
+  const frontier = frontierOf(when, list);
+  const reached = (startsAt: string) => {
+    if (frontier === null) return true;
+    const at = Date.parse(startsAt);
+    return when === "upcoming" ? at <= frontier : at >= frontier;
+  };
   const entries: Entry[] = [
-    ...list.items.map((booking) => ({ kind: "booking" as const, booking })),
-    ...games.map((game) => ({ kind: "game" as const, game })),
+    ...list.items
+      .filter((booking) => reached(booking.startsAt))
+      .map((booking) => ({ kind: "booking" as const, booking })),
+    ...list.games
+      .filter((game) => reached(game.startsAt))
+      .map((game) => ({ kind: "game" as const, game })),
   ];
   const sign = when === "upcoming" ? 1 : -1;
   return entries.sort((a, b) => sign * (Date.parse(startOf(a)) - Date.parse(startOf(b))));
+};
+
+// Whether a comes after b in the list's order (the server's: when it starts, then id).
+const comesAfter = (
+  when: When,
+  a: { id: string; startsAt: string },
+  b: { id: string; startsAt: string },
+) => {
+  const sign = when === "upcoming" ? 1 : -1;
+  const at = Date.parse(a.startsAt) - Date.parse(b.startsAt);
+  return at !== 0 ? sign * at > 0 : sign * a.id.localeCompare(b.id) > 0;
+};
+
+// The first page read again, with the pages already loaded under it kept (and where they end), so
+// coming back from a booking far down doesn't cut the list short or jump the scroll.
+const refreshed = <Row extends { id: string; startsAt: string }>(
+  when: When,
+  fresh: { data: Row[]; nextCursor: string | null },
+  before: { rows: Row[]; cursor: string | null } | null,
+) => {
+  const last = fresh.data.at(-1);
+  if (!fresh.nextCursor || !last || !before) return { rows: fresh.data, cursor: fresh.nextCursor };
+  const deeper = before.rows.filter((row) => comesAfter(when, row, last));
+  return deeper.length > 0
+    ? { rows: [...fresh.data, ...deeper], cursor: before.cursor }
+    : { rows: fresh.data, cursor: fresh.nextCursor };
 };
 
 const PAGE = 20;
@@ -146,57 +194,91 @@ function Bookings() {
 
   const setList = (which: When, list: List) => setLists((all) => ({ ...all, [which]: list }));
 
-  // The first page. What's already shown stays while it loads, and stays if it fails.
+  // The first page of each. What's already shown stays while it loads, and stays if it fails.
   const load = useCallback(async (which: When) => {
     const request = ++requests.current[which];
     const [result, games] = await Promise.all([
       send(api.GET("/v1/bookings", { params: { query: { when: which, limit: PAGE } } })),
-      send(api.GET("/v1/games/mine", { params: { query: { when: which, limit: 50 } } })),
+      send(api.GET("/v1/games/mine", { params: { query: { when: which, limit: PAGE } } })),
     ]);
     if (request !== requests.current[which]) return;
     setLists((all) => {
+      const before = all[which].state === "ready" ? all[which] : null;
       if (result.ok) {
-        const before = all[which];
+        const bookings = refreshed(
+          which,
+          result.data,
+          before ? { rows: before.items, cursor: before.cursor } : null,
+        );
+        // The games failing doesn't hold the bookings back: the ones already shown stay.
+        const joined = games.ok
+          ? refreshed(
+              which,
+              games.data,
+              before ? { rows: before.games, cursor: before.gamesCursor } : null,
+            )
+          : { rows: before?.games ?? [], cursor: before?.gamesCursor ?? null };
         const list: List = {
           state: "ready",
-          items: result.data.data,
-          // The games failing doesn't hold the bookings back: the ones already shown stay.
-          games: games.ok ? games.data.data : before.state === "ready" ? before.games : [],
-          cursor: result.data.nextCursor,
+          items: bookings.rows,
+          cursor: bookings.cursor,
+          games: joined.rows,
+          gamesCursor: joined.cursor,
           loadingMore: false,
         };
         return { ...all, [which]: list };
       }
-      return all[which].state === "ready"
-        ? all
-        : { ...all, [which]: { state: "failed", error: result.error } };
+      return before ? all : { ...all, [which]: { state: "failed", error: result.error } };
     });
   }, []);
 
+  // Near the end: the next page of whichever list is holding the rest back (both when they're
+  // level), again until something new can be shown or both have run out.
   const loadMore = async () => {
     const list = lists[when];
-    if (list.state !== "ready" || !list.cursor || list.loadingMore) return;
+    if (list.state !== "ready" || list.loadingMore || (!list.cursor && !list.gamesCursor)) return;
     const which = when;
     const request = requests.current[which];
     setList(which, { ...list, loadingMore: true });
-    const result = await send(
-      api.GET("/v1/bookings", {
-        params: { query: { when: which, limit: PAGE, cursor: list.cursor } },
-      }),
-    );
-    if (request !== requests.current[which]) return;
-    setList(
-      which,
-      result.ok
-        ? {
-            ...list,
-            state: "ready",
-            items: [...list.items, ...result.data.data],
-            cursor: result.data.nextCursor,
-            loadingMore: false,
-          }
-        : { ...list, loadingMore: false },
-    );
+    let next: Ready = list;
+    for (let round = 0; round < 5; round++) {
+      const shown = entriesOf(which, next).length;
+      const frontier = frontierOf(which, next);
+      const holding = (rows: { startsAt: string }[], cursor: string | null) =>
+        cursor !== null && edgeOf(rows, cursor) === frontier;
+      const bookingsCursor = holding(next.items, next.cursor) ? next.cursor : null;
+      const gamesCursor = holding(next.games, next.gamesCursor) ? next.gamesCursor : null;
+      const [bookings, games] = await Promise.all([
+        bookingsCursor
+          ? send(
+              api.GET("/v1/bookings", {
+                params: { query: { when: which, limit: PAGE, cursor: bookingsCursor } },
+              }),
+            )
+          : null,
+        gamesCursor
+          ? send(
+              api.GET("/v1/games/mine", {
+                params: { query: { when: which, limit: PAGE, cursor: gamesCursor } },
+              }),
+            )
+          : null,
+      ]);
+      if (request !== requests.current[which]) return;
+      next = {
+        ...next,
+        ...(bookings?.ok
+          ? { items: [...next.items, ...bookings.data.data], cursor: bookings.data.nextCursor }
+          : {}),
+        ...(games?.ok
+          ? { games: [...next.games, ...games.data.data], gamesCursor: games.data.nextCursor }
+          : {}),
+      };
+      const failed = (bookings && !bookings.ok) || (games && !games.ok);
+      if (failed || entriesOf(which, next).length > shown) break;
+      if (!next.cursor && !next.gamesCursor) break;
+    }
+    setList(which, { ...next, loadingMore: false });
   };
 
   // Each time the tab is opened, and on switching: the list on show, read again.
