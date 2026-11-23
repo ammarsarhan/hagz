@@ -219,7 +219,7 @@ const ar: ArabicTranslations = {
           afternoon: "مساء الخير، {{name}}",
           evening: "مساء الخير، {{name}}",
         },
-        guestTitle: "اعثر على مباراة الليلة",
+        guestTitle: "اعثر على مباراة الليلة!",
         search: "بحث",
         nextGame: "مباراتك القادمة",
         checkInFrom: "سجّل حضورك من {{time}}",

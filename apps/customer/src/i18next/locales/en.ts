@@ -203,7 +203,7 @@ const en = {
           afternoon: "Afternoon, {{name}}",
           evening: "Evening, {{name}}",
         },
-        guestTitle: "Find a game tonight",
+        guestTitle: "Find a game tonight!",
         search: "Search",
         nextGame: "Your next game",
         checkInFrom: "Check in from {{time}}",
