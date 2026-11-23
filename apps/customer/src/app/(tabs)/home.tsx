@@ -260,6 +260,7 @@ export default function Home() {
               setPicking(false);
             }}
             onClose={() => setPicking(false)}
+            areasOnly
           />
         </Animated.View>
       ) : null}
