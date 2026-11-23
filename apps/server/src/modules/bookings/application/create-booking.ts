@@ -31,7 +31,7 @@ const accountUnavailable = () =>
 
 const priced = (terms: BookingTerms, slots: Parameters<typeof priceBooking>[0], now: Date) => {
   checkLength(slots.length, terms.minimumSlots, terms.maximumSlots);
-  const price = priceBooking(slots, terms.amenities, terms.taxRate);
+  const price = priceBooking(slots, terms.amenities, terms.taxRate, terms.serviceFee);
   // Nothing to collect online for a free booking: it's settled like a pay-at-venue one.
   const paymentMode = price.total > 0 ? terms.paymentMode : "MANUAL";
   const deposit =

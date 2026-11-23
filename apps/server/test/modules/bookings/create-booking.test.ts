@@ -86,6 +86,26 @@ describe("booking a ground", () => {
     expect(booking.charges).toEqual(priced.charges);
   });
 
+  it("adds Hagz's service fee, the ground's players per hour, to the quote and the booking", async () => {
+    // 1 EGP per player per hour (100 piastres); a 5-a-side pitch for 2 hours: 10 × 2 = 20 EGP.
+    const { ground, hours } = await aGround({ marketplace: { serviceFee: 100, taxRate: 1400 } });
+    const { token } = await signedIn();
+    const request = { groundId: ground.id, ...at(hours, 1, 3) };
+
+    const priced = BookingQuote.parse(await (await quote(request)).json());
+    expect(priced.total).toBe(100_000 + 2_000);
+    expect(priced.charges.at(-1)).toMatchObject({ type: "SERVICE_FEE", amount: 2_000 });
+
+    const booking = Booking.parse(await (await book(token, request)).json());
+    expect(booking.total).toBe(priced.total);
+    expect(booking.charges).toEqual(priced.charges);
+    const fee = await prisma.bookingCharge.findFirstOrThrow({
+      where: { bookingId: booking.id, type: "SERVICE_FEE" },
+    });
+    // Hagz's VAT, though this venue has no tax number.
+    expect(fee).toMatchObject({ amount: 2_000, taxRate: 1400, taxAmount: 246 });
+  });
+
   it("charges VAT for a venue with a tax number, and priced extras per hour or per booking", async () => {
     const { ground, hours, venue, marketplace } = await aGround({
       venue: { taxNumber: "123-456-789" },

@@ -30,7 +30,7 @@ export const respondBy = (movedAt: Date, startsAt: Date): Date =>
   new Date(Math.min(movedAt.getTime() + MOVE_RESPONSE_HOURS * 60 * 60_000, startsAt.getTime()));
 
 export interface StoredCharge {
-  type: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD" | "ADJUSTMENT";
+  type: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD" | "ADJUSTMENT" | "SERVICE_FEE";
   startsAt: Date | null;
   tier: PriceTier | null;
   optionId: string | null;
@@ -43,7 +43,8 @@ export interface StoredCharge {
 
 // The moved booking's charges: one line per new slot at the price it carries now, at the original's
 // VAT rate (its terms); per-hour amenities follow the new number of hours at the price paid per
-// hour; everything else (flat amenities, a discount, a reward, staff's adjustment) as it was. A
+// hour; everything else (flat amenities, a discount, a reward, staff's adjustment, Hagz's service
+// fee: the venue moved it, so the player pays no more) as it was. A
 // staff discount bigger than the new price shrinks so the total stops at 0.
 export const chargesAfterMove = (
   charges: readonly StoredCharge[],

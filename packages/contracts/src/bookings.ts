@@ -29,11 +29,11 @@ export const BookingStatus = z
   });
 
 export const BookingChargeType = z
-  .enum(["SLOT", "AMENITY", "DISCOUNT", "REWARD", "ADJUSTMENT"])
+  .enum(["SLOT", "AMENITY", "DISCOUNT", "REWARD", "ADJUSTMENT", "SERVICE_FEE"])
   .meta({
     id: "BookingChargeType",
     description:
-      "`ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign).",
+      "`ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign). `SERVICE_FEE`: Hagz's fee on an app booking (the ground's players × hours × the marketplace's rate); kept when the player cancels, collected by the venue and taken at payout.",
   });
 
 const Instant = z.iso.datetime();

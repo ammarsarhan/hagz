@@ -17757,10 +17757,10 @@ export interface components {
             taxAmount: number;
         };
         /**
-         * @description `ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign).
+         * @description `ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign). `SERVICE_FEE`: Hagz's fee on an app booking (the ground's players × hours × the marketplace's rate); kept when the player cancels, collected by the venue and taken at payout.
          * @enum {string}
          */
-        BookingChargeType: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD" | "ADJUSTMENT";
+        BookingChargeType: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD" | "ADJUSTMENT" | "SERVICE_FEE";
         BookingRequest: {
             /** Format: uuid */
             groundId: string;

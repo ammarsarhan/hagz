@@ -16,7 +16,7 @@ export interface PricedAmenity {
 }
 
 export interface ChargeLine {
-  type: "SLOT" | "AMENITY" | "ADJUSTMENT";
+  type: "SLOT" | "AMENITY" | "ADJUSTMENT" | "SERVICE_FEE";
   startsAt: Date | null;
   tier: PriceTier | null;
   optionId: string | null;
@@ -31,18 +31,27 @@ export interface ChargeLine {
 export const vatInside = (amount: number, taxRate: number): number =>
   taxRate === 0 ? 0 : Math.round((amount * taxRate) / (10_000 + taxRate));
 
-// Charges for the slots (one line per slot, at the price it carries) and the chosen amenities (per
-// hour amenities multiplied by the number of slots). `taxRate` is the marketplace's when the venue
-// has a tax number, else 0.
+// Hagz's service fee on an app booking (user, 2026-11-23): the marketplace's rate (minor units per
+// player per hour) for every player the ground takes, for as long as the booking runs, rounded to
+// the minor unit. 1 EGP on a 5-a-side pitch for 2 hours: 100 × 10 × 2 = 2,000 (20 EGP).
+export const serviceFeeFor = (players: number, perPlayerHour: number, minutes: number): number =>
+  Math.round((players * perPlayerHour * minutes) / 60);
+
+// Charges for the slots (one line per slot, at the price it carries), the chosen amenities (per
+// hour amenities multiplied by the number of slots) and, for an app booking, Hagz's service fee.
+// `taxRate` is the marketplace's when the venue has a tax number, else 0; the fee is Hagz's own, so
+// it carries the marketplace's VAT whatever the venue's.
 export const priceBooking = (
   slots: readonly PricedSlot[],
   amenities: readonly PricedAmenity[],
   taxRate: number,
+  serviceFee: { amount: number; taxRate: number } | null = null,
 ): { lines: ChargeLine[]; total: number; tax: number } => {
   const line = (
     fields: Omit<ChargeLine, "taxRate" | "taxAmount" | "amount">,
     amount: number,
-  ): ChargeLine => ({ ...fields, amount, taxRate, taxAmount: vatInside(amount, taxRate) });
+    rate = taxRate,
+  ): ChargeLine => ({ ...fields, amount, taxRate: rate, taxAmount: vatInside(amount, rate) });
 
   const lines = [
     ...slots.map((slot) =>
@@ -63,6 +72,15 @@ export const priceBooking = (
         amenity.pricing === "PER_HOUR" ? amenity.price * slots.length : amenity.price,
       ),
     ),
+    ...(serviceFee && serviceFee.amount > 0
+      ? [
+          line(
+            { type: "SERVICE_FEE", startsAt: null, tier: null, optionId: null, pricing: null },
+            serviceFee.amount,
+            serviceFee.taxRate,
+          ),
+        ]
+      : []),
   ];
   return {
     lines,

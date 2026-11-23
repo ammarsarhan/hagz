@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { depositFor, priceBooking, vatInside } from "@/modules/bookings/domain/charges";
+import {
+  depositFor,
+  priceBooking,
+  serviceFeeFor,
+  vatInside,
+} from "@/modules/bookings/domain/charges";
 import {
   chargesAfterMove,
   depositAfterMove,
@@ -140,6 +145,32 @@ describe("charges", () => {
     );
     expect(tax).toBe(0);
     expect(lines[0]).toMatchObject({ taxRate: 0, taxAmount: 0 });
+  });
+
+  it("works out Hagz's service fee per player per hour of the booking", () => {
+    expect(serviceFeeFor(10, 100, 120)).toBe(2_000); // 5-a-side, 2 hours: 20 EGP
+    expect(serviceFeeFor(14, 100, 60)).toBe(1_400); // 7-a-side, 1 hour: 14 EGP
+    expect(serviceFeeFor(10, 100, 90)).toBe(1_500); // an hour and a half
+    expect(serviceFeeFor(10, 0, 120)).toBe(0);
+  });
+
+  it("adds the service fee as its own line, at the marketplace's VAT whatever the venue's", () => {
+    const { lines, total, tax } = priceBooking(
+      [{ startsAt: at("2026-12-01T18:00:00Z"), tier: "BASE", price: 40_000 }],
+      [],
+      0,
+      { amount: 1_000, taxRate: 1400 },
+    );
+    expect(lines.at(-1)).toMatchObject({
+      type: "SERVICE_FEE",
+      amount: 1_000,
+      taxRate: 1400,
+      taxAmount: vatInside(1_000, 1400),
+    });
+    expect(total).toBe(41_000);
+    expect(tax).toBe(vatInside(1_000, 1400));
+    // None when there's no fee.
+    expect(priceBooking([], [], 0, { amount: 0, taxRate: 1400 }).lines).toEqual([]);
   });
 
   it("rounds a deposit up, at least 1 and at most the total", () => {

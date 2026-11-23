@@ -1,8 +1,8 @@
-import type { BookingRequest, CancellationTier } from "@hagz/contracts";
+import { playersOn, type BookingRequest, type CancellationTier } from "@hagz/contracts";
 import { HORIZON_DAYS, resolvedTiers } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
-import type { PricedAmenity } from "../domain/charges";
+import { serviceFeeFor, type PricedAmenity } from "../domain/charges";
 import { checkRange } from "../domain/rules";
 
 // What a booking request is checked and priced against: the ground, its venue's settings, and the
@@ -43,6 +43,8 @@ const loadGround = (groundId: string) =>
     select: {
       id: true,
       status: true,
+      sport: true,
+      size: true,
       settings: { select: { minimumSlots: true, maximumSlots: true } },
       venue: {
         select: {
@@ -50,7 +52,9 @@ const loadGround = (groundId: string) =>
           status: true,
           taxNumber: true,
           commissionRate: true,
-          marketplace: { select: { currency: true, taxRate: true, commissionRate: true } },
+          marketplace: {
+            select: { currency: true, taxRate: true, commissionRate: true, serviceFee: true },
+          },
           settings: {
             select: {
               autoConfirm: true,
@@ -90,7 +94,24 @@ export interface BookingTerms {
   cancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
   cancellationTiers: CancellationTier[];
   amenities: PricedAmenity[];
+  // Hagz's fee on the booking, at the marketplace's VAT; null when the marketplace charges none.
+  serviceFee: { amount: number; taxRate: number } | null;
 }
+
+const serviceFeeOf = (
+  ground: { sport: Parameters<typeof playersOn>[0]; size: Parameters<typeof playersOn>[1] },
+  marketplace: { serviceFee: number; taxRate: number },
+  startsAt: Date,
+  endsAt: Date,
+) => {
+  const minutes = (endsAt.getTime() - startsAt.getTime()) / 60_000;
+  const amount = serviceFeeFor(
+    playersOn(ground.sport, ground.size),
+    marketplace.serviceFee,
+    minutes,
+  );
+  return amount > 0 ? { amount, taxRate: marketplace.taxRate } : null;
+};
 
 // Checks everything that doesn't need the slots: the ground and venue can take bookings, the time
 // is inside the notice and horizon, and every extra is one the venue prices.
@@ -146,5 +167,6 @@ export const bookingTerms = async (request: BookingRequest, now: Date): Promise<
     cancellationPolicy: settings.cancellationPolicy,
     cancellationTiers: tiers,
     amenities,
+    serviceFee: serviceFeeOf(ground, venue.marketplace, startsAt, endsAt),
   };
 };
