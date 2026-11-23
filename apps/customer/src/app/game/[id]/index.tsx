@@ -1,20 +1,20 @@
 import type { components } from "@hagz/api";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SectionBreak } from "@/components/booking-sections";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconBrandWhatsapp, IconPhone, IconQrcode } from "@/components/icons";
-import { BackButton, RoundButton } from "@/components/nav";
+import { RoundButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { Sheet } from "@/components/sheet";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { SpotsRow } from "@/components/spots-row";
+import { ScrollPage } from "@/components/scroll-page";
 import { Text } from "@/components/text";
 import { VenueLink } from "@/components/venue-link";
 import { GroupHeading } from "@/components/venue-sections";
@@ -50,7 +50,6 @@ type Game = components["schemas"]["Game"];
 type Loaded =
   { state: "loading" } | { state: "failed"; error: unknown } | { state: "ready"; game: Game };
 
-const ROW = 40;
 const EVENING = 17;
 
 // "Tonight" (from 5 pm, else "Today"), "Tomorrow", or "Sat 28 Nov".
@@ -148,35 +147,22 @@ function Page({
   footer?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const { timezone, venue, ground } = game;
   const venueName = venue.name ?? t("screens.venue.fallbackName");
   const area = venue.area?.split(",")[0]?.trim();
   return (
-    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
-      <StatusBar style="dark" />
-      <View className="px-5" style={{ paddingTop: insets.top + 8 }}>
-        <View className="-mx-1 flex-row items-center" style={{ height: ROW }}>
-          <BackButton onPress={() => router.back()} />
-        </View>
-      </View>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 10, paddingBottom: bottom }}
-      >
-        {above}
-        <Title game={game} />
-        <Text className="mt-1 text-body leading-[23px] text-ink-2">
-          {[
-            ground.name ?? kindOf(ground),
-            kindOf(ground),
-            area ? `${venueName}, ${area}` : venueName,
-          ].join(" · ")}
-        </Text>
-        {children}
-      </ScrollView>
-      {footer}
-    </View>
+    <ScrollPage bottom={bottom} footer={footer}>
+      {above}
+      <Title game={game} />
+      <Text className="mt-1 text-body leading-[23px] text-ink-2">
+        {[
+          ground.name ?? kindOf(ground),
+          kindOf(ground),
+          area ? `${venueName}, ${area}` : venueName,
+        ].join(" · ")}
+      </Text>
+      {children}
+    </ScrollPage>
   );
 }
 
