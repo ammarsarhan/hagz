@@ -175,16 +175,27 @@ function AreaPills({
   onPick,
   small = false,
   className = "",
+  near,
 }: {
   governorate: Governorate;
   where: Where;
   onPick: (where: Where) => void;
   small?: boolean;
   className?: string;
+  // Home's picker: Near me first, the way back from an area to around the player.
+  near?: (() => void) | null;
 }) {
   const { t } = useTranslation();
   return (
     <View className={`flex-row flex-wrap gap-2 ${className}`}>
+      {near ? (
+        <Pill
+          small={small}
+          label={t("screens.search.where.nearMe")}
+          on={where.kind === "near"}
+          onPress={near}
+        />
+      ) : null}
       <Pill
         small={small}
         label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
@@ -294,6 +305,9 @@ export function SearchWhere({
   }, [q, here]);
 
   const [recents, setRecents] = useState<RecentSearch[]>(recentSearches);
+  // Home's picker has no Near me tab, so Near me is a pill (when the phone's position is known).
+  const nearPill =
+    areasOnly && here ? () => onPick({ kind: "near", radius: DEFAULT_RADIUS }) : null;
 
   const pick = (where: Where) => {
     Keyboard.dismiss();
@@ -463,7 +477,16 @@ export function SearchWhere({
                   onPick={pick}
                   small
                   className="pt-5"
+                  near={nearPill}
                 />
+              ) : nearPill ? (
+                <View className="flex-row pt-5">
+                  <Pill
+                    label={t("screens.search.where.nearMe")}
+                    on={where.kind === "near"}
+                    onPress={nearPill}
+                  />
+                </View>
               ) : null}
               {(coverage?.length === 1 ? [] : (coverage ?? [])).map((governorate) => {
                 const expanded = governorate.id === open;
