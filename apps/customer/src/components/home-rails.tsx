@@ -70,7 +70,8 @@ export function Rail<T>({
   const gap = width === WIDE ? WIDE_GAP : GAP;
   return (
     <View className="pt-8">
-      <View className="flex-row items-end justify-between gap-4 px-6">
+      {/* See all sits level with the middle of the title and its line. */}
+      <View className="flex-row items-center justify-between gap-4 px-6">
         <View className="shrink">
           <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
             {title}
@@ -85,7 +86,7 @@ export function Rail<T>({
             accessibilityLabel={t("screens.home.seeAllOf", { title })}
             hitSlop={8}
             onPress={onSeeAll}
-            className="pb-0.5 active:opacity-60"
+            className="active:opacity-60"
           >
             <Text className="text-label leading-5 font-medium underline">
               {t("screens.home.seeAll")}

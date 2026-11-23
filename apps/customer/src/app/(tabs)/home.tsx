@@ -2,7 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
