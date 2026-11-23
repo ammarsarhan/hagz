@@ -11028,6 +11028,8 @@ export interface paths {
                 query?: {
                     when?: "upcoming" | "past";
                     limit?: number;
+                    /** @description nextCursor from the page before. */
+                    cursor?: string;
                 };
                 header?: never;
                 path?: never;
@@ -11035,13 +11037,22 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The games */
+                /** @description A page of the games */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["GameList"];
+                        "application/json": components["schemas"]["GamePage"];
+                    };
+                };
+                /** @description INVALID_CURSOR */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
                 /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
@@ -19443,9 +19454,6 @@ export interface components {
             }[] | null;
             /** @description Once you've joined, until 24 hours after kick-off. */
             bookerPhone: string | null;
-        };
-        GameList: {
-            data: components["schemas"]["Game"][];
         };
         ListingRequest: {
             /** @description Players wanted, besides the booker; at most the ground's players less one. */

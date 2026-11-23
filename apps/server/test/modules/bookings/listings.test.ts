@@ -1,6 +1,7 @@
 import { Booking, Game, GamePage, StaffBookingDetail } from "@hagz/contracts";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
+import { LIMITS } from "@/modules/bookings/application/limits";
 import { prisma } from "@/platform/db/prisma";
 import { aGround, asStaff, at, book, signedIn, staffAt } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
@@ -259,6 +260,56 @@ describe("following the booking", () => {
   });
 });
 
+describe("my games", () => {
+  const kept = { ...LIMITS };
+  afterEach(() => {
+    Object.assign(LIMITS, kept);
+  });
+
+  it("pages through the games joined, soonest first, without repeating or skipping any", async () => {
+    // Three games at once is past the joining limit; this is about pages.
+    LIMITS.joined = 10;
+    const setup = await aGround();
+    const game = async (hour: number, phone: string) => {
+      const booker = await signedIn(phone);
+      const booking = await booked(booker.token, {
+        groundId: setup.ground.id,
+        ...at(setup.hours, hour, hour + 1),
+      });
+      const res = await call(booker.token, "POST", `/bookings/${booking.id}/listing`, {
+        neededPlayers: 3,
+      });
+      return Booking.parse(await res.json()).listing?.id ?? "";
+    };
+    const ids = [
+      await game(0, "+201005550011"),
+      await game(1, "+201005550012"),
+      await game(2, "+201005550013"),
+    ];
+    const player = await signedIn("+201005550001");
+    for (const id of ids) expect((await join(player.token, id)).ok).toBe(true);
+
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    let pages = 0;
+    do {
+      const res = await call(
+        player.token,
+        "GET",
+        `/games/mine?when=upcoming&limit=2${cursor ? `&cursor=${cursor}` : ""}`,
+      );
+      const page = GamePage.parse(await res.json());
+      seen.push(...page.data.map((each) => each.id));
+      cursor = page.nextCursor;
+      pages++;
+    } while (cursor);
+    expect(pages).toBe(2);
+    expect(seen).toEqual(ids);
+
+    expect((await call(player.token, "GET", "/games/mine?cursor=nonsense")).status).toBe(400);
+  });
+});
+
 describe("the feed", () => {
   it("lists open games that aren't full, by sport", async () => {
     const { gameId } = await listed(1);
@@ -270,10 +321,8 @@ describe("the feed", () => {
     const player = await signedIn("+201005550001");
     await join(player.token, gameId);
     expect(GamePage.parse(await (await call(null, "GET", "/games")).json()).data).toEqual([]);
-    const mine = await call(player.token, "GET", "/games/mine");
-    expect((await mine.json()) as { data: { id: string }[] }).toMatchObject({
-      data: [{ id: gameId }],
-    });
+    const mine = GamePage.parse(await (await call(player.token, "GET", "/games/mine")).json());
+    expect(mine).toMatchObject({ data: [{ id: gameId }], nextCursor: null });
   });
 
   it("narrows by the ground, the start hour, the price and the spots left", async () => {

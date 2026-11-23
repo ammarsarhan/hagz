@@ -7801,20 +7801,6 @@
           "bookerPhone"
         ]
       },
-      "GameList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Game"
-            }
-          }
-        },
-        "required": [
-          "data"
-        ]
-      },
       "ListingRequest": {
         "type": "object",
         "properties": {
@@ -23476,15 +23462,35 @@
             "required": false,
             "name": "limit",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "nextCursor from the page before."
+            },
+            "required": false,
+            "description": "nextCursor from the page before.",
+            "name": "cursor",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "The games",
+            "description": "A page of the games",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GameList"
+                  "$ref": "#/components/schemas/GamePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CURSOR",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

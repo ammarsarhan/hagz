@@ -28,9 +28,7 @@ export const bookingsGameRoutes = createRouter()
   )
   .openapi(route.myGames, async (c) =>
     c.json(
-      {
-        data: await myGames(c.get("customer").customerId, c.req.valid("query"), requestLanguage(c)),
-      },
+      await myGames(c.get("customer").customerId, c.req.valid("query"), requestLanguage(c)),
       200,
     ),
   )

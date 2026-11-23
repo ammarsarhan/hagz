@@ -25,6 +25,7 @@ import {
   shareOf,
 } from "../domain/listings";
 import { bookingNotFound, lockBooking } from "./booking-rows";
+import { decodeCursor as decodePageCursor, encodeCursor as encodePageCursor } from "./cursor";
 import { checkHosted, checkJoined } from "./limits";
 
 // Open games (PR 4.7, docs/listings.md). A player lists their confirmed app booking as needing
@@ -656,32 +657,53 @@ export const gamesFeed = async (
   };
 };
 
-// The games I've joined, upcoming soonest first or past latest first.
+// The games I've joined, upcoming soonest first or past latest first, a page at a time (kick-off,
+// then the game's id, so games at the same hour don't repeat or go missing across pages).
 export const myGames = async (
   customerId: string,
-  { when, limit }: MyGamesQuery,
+  { when, limit, cursor: token }: MyGamesQuery,
   language: Language,
   clock: Clock = systemClock,
-): Promise<Game[]> => {
+): Promise<GamePage> => {
   const now = clock.now();
+  const upcoming = when === "upcoming";
+  const order = upcoming ? "asc" : "desc";
+  const direction = upcoming ? "gt" : "lt";
+  const cursor = token ? decodePageCursor(token) : null;
   const rows = await prisma.listingPlayer.findMany({
     where: {
       customerId,
       status: "JOINED",
       listing: {
-        booking: when === "upcoming" ? { endsAt: { gt: now } } : { endsAt: { lte: now } },
+        booking: upcoming ? { endsAt: { gt: now } } : { endsAt: { lte: now } },
       },
+      ...(cursor
+        ? {
+            OR: [
+              { listing: { startsAt: { [direction]: cursor.startsAt } } },
+              { listing: { startsAt: cursor.startsAt }, listingId: { [direction]: cursor.id } },
+            ],
+          }
+        : {}),
     },
-    orderBy: { listing: { startsAt: when === "upcoming" ? "asc" : "desc" } },
-    take: limit,
-    select: { listingId: true },
+    orderBy: [{ listing: { startsAt: order } }, { listingId: order }],
+    take: limit + 1,
+    select: { listingId: true, listing: { select: { startsAt: true } } },
   });
-  return gamesById(
-    rows.map((row) => row.listingId),
-    customerId,
-    language,
-    now,
-  );
+  const page = rows.slice(0, limit);
+  const last = page.at(-1);
+  return {
+    data: await gamesById(
+      page.map((row) => row.listingId),
+      customerId,
+      language,
+      now,
+    ),
+    nextCursor:
+      rows.length > limit && last
+        ? encodePageCursor({ startsAt: last.listing.startsAt, id: last.listingId })
+        : null,
+  };
 };
 
 // The booker's listing on their booking, with each joined player's number and reliability.

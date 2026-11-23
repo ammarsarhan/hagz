@@ -2,7 +2,6 @@ import { createRoute, z } from "@hono/zod-openapi";
 import {
   Booking,
   Game,
-  GameList,
   GamePage,
   GamesQuery,
   ListingRequest,
@@ -54,7 +53,11 @@ export const myGames = createRoute({
   middleware: [requireCustomer] as const,
   security,
   request: { query: MyGamesQuery },
-  responses: { 200: { description: "The games", ...json(GameList) }, 401: unauthenticated },
+  responses: {
+    200: { description: "A page of the games", ...json(GamePage) },
+    400: problemResponse("INVALID_CURSOR"),
+    401: unauthenticated,
+  },
 });
 
 export const getGame = createRoute({

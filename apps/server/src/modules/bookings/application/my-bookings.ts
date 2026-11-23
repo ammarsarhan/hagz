@@ -4,45 +4,18 @@ import type { Language } from "@/generated/prisma/enums";
 import { nameIn, placeOf } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
-import { AppError } from "@/platform/errors/app-error";
 import { storage } from "@/platform/storage/storage";
 import { BOOKING_EVENTS } from "../domain/events";
 import { endingOf, endingSelect, ENDING_EVENTS } from "./booking-ending";
 import { bookingNotFound } from "./booking-rows";
 import { bookingCheckIn } from "./check-in";
+import { decodeCursor, encodeCursor } from "./cursor";
 import { openMove, originSelect } from "./move-response";
 
 // A player's bookings (PR 4.4): the Bookings tab's Upcoming and Past, and one booking's detail. A
 // player's bookings are spread over one VenueCustomer per venue, all linked to their account.
 
 export const STILL_TO_PLAY = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"] as const;
-
-const invalidCursor = () =>
-  new AppError({
-    code: "INVALID_CURSOR",
-    status: 400,
-    detail: "That page link has expired. Load the list again.",
-  });
-
-interface Cursor {
-  startsAt: Date;
-  id: string;
-}
-
-const encodeCursor = ({ startsAt, id }: Cursor) =>
-  Buffer.from(JSON.stringify([startsAt.toISOString(), id])).toString("base64url");
-
-const decodeCursor = (text: string): Cursor => {
-  try {
-    const [startsAt, id] = JSON.parse(Buffer.from(text, "base64url").toString()) as unknown[];
-    if (typeof startsAt !== "string" || typeof id !== "string") throw new Error("Malformed.");
-    const date = new Date(startsAt);
-    if (Number.isNaN(date.getTime())) throw new Error("Malformed.");
-    return { startsAt: date, id };
-  } catch {
-    throw invalidCursor();
-  }
-};
 
 const names = { translations: { select: { language: true, name: true } } } as const;
 

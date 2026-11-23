@@ -181,6 +181,7 @@ export const MyGamesQuery = z
   .object({
     when: z.enum(["upcoming", "past"]).default("upcoming"),
     limit: z.coerce.number().int().min(1).max(50).default(20),
+    cursor: z.string().optional().meta({ description: "nextCursor from the page before." }),
   })
   .meta({ id: "MyGamesQuery" });
 
