@@ -213,13 +213,6 @@ function Games({
           contentContainerClassName="gap-2 px-6"
         >
           <Chip
-            on={Boolean(near)}
-            label={t("screens.community.nearMe")}
-            icon={IconMapPin}
-            onPress={() => setFilters((now) => ({ ...now, near: !now.near }))}
-          />
-          <Chip on={filters.date !== null} label={dayChip} onPress={() => setSheet("day")} />
-          <Chip
             on={filtered}
             label={
               filters.sport
@@ -231,6 +224,13 @@ function Games({
             icon={IconAdjustmentsHorizontal}
             onPress={() => setSheet("filters")}
           />
+          <Chip
+            on={Boolean(near)}
+            label={t("screens.community.nearMe")}
+            icon={IconMapPin}
+            onPress={() => setFilters((now) => ({ ...now, near: !now.near }))}
+          />
+          <Chip on={filters.date !== null} label={dayChip} onPress={() => setSheet("day")} />
         </ScrollView>
       ) : null}
     </View>
