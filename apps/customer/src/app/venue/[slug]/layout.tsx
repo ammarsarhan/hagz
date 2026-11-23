@@ -14,6 +14,7 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
 import { kindOf, type PublicVenue } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 type Loaded =
   | { state: "loading" }
@@ -99,7 +100,7 @@ export default function VenueLayoutScreen() {
       // Only a search with a time to aim for says it; otherwise the usual hint.
       note={search.start ? note : undefined}
       onTimes={(groundId) =>
-        router.push({
+        push({
           pathname: "/venue/[slug]/times",
           params: {
             slug,

@@ -28,6 +28,7 @@ import {
   timeOfDay,
   timeRange,
 } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // The Bookings tab (Figma C8 "Bookings · Upcoming", 255:2, and C10 "Bookings · Past", 267:2):
 // Upcoming | Past. Upcoming puts the next game first as the match ticket, then the rest under
@@ -489,12 +490,12 @@ function Guest() {
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"
-          onPress={() => router.push("/sign-up")}
+          onPress={() => push("/sign-up")}
         />
         <Button
           label={t("common.actions.signIn")}
           variant="secondary"
-          onPress={() => router.push("/sign-in")}
+          onPress={() => push("/sign-in")}
         />
       </View>
     </View>

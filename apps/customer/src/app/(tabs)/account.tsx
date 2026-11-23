@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import type { Icon } from "@tabler/icons-react-native";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, ScrollView, Switch, View } from "react-native";
@@ -33,6 +33,7 @@ import { displayPhone, isolate, maskedPhone } from "@/lib/phone";
 import { preparePhoto, putPhoto } from "@/lib/photos";
 import { signOut } from "@/lib/session";
 import { contactSupport, hasSupport } from "@/lib/support";
+import { push } from "@/lib/navigation";
 
 type Profile = components["schemas"]["CustomerProfile"];
 
@@ -99,12 +100,12 @@ function Guest() {
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"
-          onPress={() => router.push("/sign-up")}
+          onPress={() => push("/sign-up")}
         />
         <Button
           label={t("common.actions.signIn")}
           variant="secondary"
-          onPress={() => router.push("/sign-in")}
+          onPress={() => push("/sign-in")}
         />
       </View>
     </View>
@@ -254,7 +255,7 @@ function SignedIn({
               : t("screens.account.favorites.none")
           }
           trailing={chevron}
-          onPress={() => router.push("/favorites")}
+          onPress={() => push("/favorites")}
         />
 
         <SettingsHeading>{t("screens.account.security")}</SettingsHeading>
@@ -279,7 +280,7 @@ function SignedIn({
           title={t("screens.account.password.title")}
           body={t("screens.account.password.body")}
           trailing={chevron}
-          onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
+          onPress={() => push({ pathname: "/forgot-password", params: { phone } })}
         />
 
         <SettingsHeading>{t("screens.account.app")}</SettingsHeading>

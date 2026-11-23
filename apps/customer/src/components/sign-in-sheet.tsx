@@ -1,9 +1,9 @@
-import { router, type Href } from "expo-router";
+import { type Href } from "expo-router";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { auth } from "@/lib/api";
-import { signInFrom } from "@/lib/navigation";
+import { push, signInFrom } from "@/lib/navigation";
 import { Button } from "./button";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
@@ -54,7 +54,7 @@ export function useSignInSheet(from: Href) {
         next.current = null;
         if (!href) return;
         signInFrom(from);
-        router.push(href);
+        push(href);
       }}
     >
       <Text className="mb-1.5 text-heading font-semibold">{ask.title}</Text>

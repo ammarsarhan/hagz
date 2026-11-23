@@ -38,6 +38,7 @@ import {
   type PublicGround,
   type PublicVenue,
 } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // Anything else? (Figma C8 round 2, 250:2, with 252:2's Need players? moved here by the user,
 // 2026-11-23): the booking's second step, after See times. The venue's priced amenities as rows to
@@ -383,7 +384,7 @@ function Picker({
             label={t("screens.extras.continue")}
             size="small"
             onPress={() =>
-              router.push({
+              push({
                 pathname: "/venue/[slug]/review",
                 params: {
                   ...booking,

@@ -39,6 +39,7 @@ import {
   type PublicGround,
   type PublicVenue,
 } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // See times (Figma C6 round 2, 161:2: "Pick slots"; the user's pick, 2026-11-20): a ground's free
 // hours for a day, as chips grouped by part of the day, and the player taps the hours they want,
@@ -497,7 +498,7 @@ function Picker({
             onPress={() => {
               // Anything else? next: extras and Need players?, at every venue.
               if (!first || !last || !day) return;
-              router.push({
+              push({
                 pathname: "/venue/[slug]/extras",
                 params: {
                   slug: venue.slug,

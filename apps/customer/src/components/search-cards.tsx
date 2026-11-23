@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View, type ViewStyle } from "react-native";
@@ -14,6 +14,7 @@ import { groundsText, sportsText, type VenueCard } from "@/lib/search";
 import { timeOfDay } from "@/lib/venue";
 import { IconStarFilled } from "./icons";
 import { Text } from "./text";
+import { push } from "@/lib/navigation";
 
 // A venue in Search's results (Figma "C3 · Tabs & Search"): the list's card (option 1, 96:2) and
 // the map's card (option 3, 98:2), both with the venue's next free start times as chips (Fresha's
@@ -23,7 +24,7 @@ import { Text } from "./text";
 // don't match are greyed out there.
 type Params = Record<string, string>;
 const openVenue = (card: VenueCard, params: Params) =>
-  router.push({ pathname: "/venue/[slug]", params: { ...params, slug: card.slug } });
+  push({ pathname: "/venue/[slug]", params: { ...params, slug: card.slug } });
 
 function Rating({ card }: { card: VenueCard }) {
   if (card.rating.average === null) return null;

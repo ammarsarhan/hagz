@@ -27,6 +27,7 @@ import { colors } from "@/lib/colors";
 import { syncFavorites, toggleFavorite, useFavoriteIds } from "@/lib/favorites";
 import { isRTL } from "@/lib/language";
 import { sportsText } from "@/lib/search";
+import { push } from "@/lib/navigation";
 
 type Favorite = components["schemas"]["FavoriteVenue"];
 type Loaded = { state: "loading" } | { state: "failed"; message: string } | { state: "ready" };
@@ -229,7 +230,7 @@ function FavoriteRow({ venue }: { venue: Favorite }) {
     <Pressable
       accessibilityRole={gone ? undefined : "button"}
       disabled={gone}
-      onPress={() => router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } })}
+      onPress={() => push({ pathname: "/venue/[slug]", params: { slug: venue.slug } })}
       className="flex-row items-center gap-3.5 py-3.5"
     >
       <View

@@ -66,6 +66,7 @@ import { isRTL, language } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { fromPerHour } from "@/lib/money";
 import { cheapestHour, nextDate, paymentShort, type PublicVenue } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
 // bar, then the venue and every section a player checks before booking, with Book pinned to the
@@ -525,7 +526,7 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
   };
   const openTimes = (groundId: string | undefined) => {
     if (!groundId) return;
-    router.push({
+    push({
       pathname: "/venue/[slug]/times",
       params: { slug: venue.slug, ground: groundId, ...searchParams },
     });
@@ -537,7 +538,7 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
     const unavailable = matches
       ? venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id)
       : [];
-    router.push({
+    push({
       pathname: "/venue/[slug]/layout",
       params: {
         slug: venue.slug,

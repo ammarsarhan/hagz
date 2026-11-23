@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import { router } from "expo-router";
+
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Keyboard, Pressable, TextInput, View } from "react-native";
@@ -33,6 +33,7 @@ import { IconBallFootball, IconChevronDown, IconMapPin, IconSearch, IconX } from
 import { RadiusSlider } from "./radius-slider";
 import { Text } from "./text";
 import { Segment } from "./segment";
+import { push } from "@/lib/navigation";
 
 type Area = components["schemas"]["Area"];
 
@@ -391,7 +392,7 @@ export function SearchWhere({
                     .join(" · ")}
                   onPress={() => {
                     Keyboard.dismiss();
-                    router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
+                    push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
                   }}
                 />
               ))}
