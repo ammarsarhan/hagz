@@ -5,7 +5,7 @@ CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRME
 CREATE TYPE "ReschedulingType" AS ENUM ('MOVE', 'SWAP', 'REFILL');
 
 -- CreateEnum
-CREATE TYPE "BookingChargeType" AS ENUM ('SLOT', 'AMENITY', 'DISCOUNT', 'REWARD', 'ADJUSTMENT');
+CREATE TYPE "BookingChargeType" AS ENUM ('SLOT', 'AMENITY', 'DISCOUNT', 'REWARD', 'ADJUSTMENT', 'SERVICE_FEE');
 
 -- CreateEnum
 CREATE TYPE "CancellationActor" AS ENUM ('CUSTOMER', 'VENUE', 'ADMIN');
@@ -146,6 +146,9 @@ CREATE UNIQUE INDEX "BookingCharge_reward_key" ON "BookingCharge"("bookingId") W
 CREATE UNIQUE INDEX "BookingCharge_adjustment_key" ON "BookingCharge"("bookingId") WHERE ("type" = 'ADJUSTMENT');
 
 -- CreateIndex
+CREATE UNIQUE INDEX "BookingCharge_service_fee_key" ON "BookingCharge"("bookingId") WHERE ("type" = 'SERVICE_FEE');
+
+-- CreateIndex
 CREATE INDEX "BookingEvent_bookingId_createdAt_idx" ON "BookingEvent"("bookingId", "createdAt");
 
 -- CreateIndex
@@ -249,6 +252,7 @@ ALTER TABLE "BookingCharge" ADD CONSTRAINT "BookingCharge_kind_check" CHECK (
   OR (type = 'DISCOUNT' AND "discountId" IS NOT NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount < 0)
   OR (type = 'REWARD' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount < 0)
   OR (type = 'ADJUSTMENT' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount <> 0)
+  OR (type = 'SERVICE_FEE' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount > 0)
 );
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)

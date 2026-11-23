@@ -163,6 +163,7 @@ enum BookingChargeType {
   DISCOUNT
   REWARD // Loyalty.
   ADJUSTMENT // A staff-entered booking's custom total: the difference from the priced lines, either sign.
+  SERVICE_FEE // Hagz's fee on an app booking: the ground's players × hours × Marketplace.serviceFee.
 }
 
 // Listings

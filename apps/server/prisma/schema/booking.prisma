@@ -83,7 +83,8 @@ model Cancellation {
 // once; sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
 // CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
 // DISCOUNT (with discountId) and REWARD (first two slot hours) have neither, amount < 0, one each
-// per booking; ADJUSTMENT (a staff booking's custom total) has neither, amount <> 0, one per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
+// per booking; ADJUSTMENT (a staff booking's custom total) has neither, amount <> 0, one per booking;
+// SERVICE_FEE (Hagz's, app bookings only, at the marketplace's VAT) has neither, amount > 0, one per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
 model BookingCharge {
   id         String            @id @default(uuid(7)) @db.Uuid
   bookingId  String            @db.Uuid
@@ -107,6 +108,7 @@ model BookingCharge {
   @@unique([bookingId], map: "BookingCharge_discount_key", where: { type: "DISCOUNT" })
   @@unique([bookingId], map: "BookingCharge_reward_key", where: { type: "REWARD" })
   @@unique([bookingId], map: "BookingCharge_adjustment_key", where: { type: "ADJUSTMENT" })
+  @@unique([bookingId], map: "BookingCharge_service_fee_key", where: { type: "SERVICE_FEE" })
   @@index([optionId])
   @@index([discountId])
 }
