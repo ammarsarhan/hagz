@@ -374,7 +374,12 @@ function Bookings() {
               {item.label}
             </Text>
           ) : (
-            <Row entry={item.entry} last={item.last} onPress={() => open(item.entry)} />
+            <Row
+              entry={item.entry}
+              last={item.last}
+              past={when === "past"}
+              onPress={() => open(item.entry)}
+            />
           )
         }
         ListEmptyComponent={
@@ -661,7 +666,24 @@ function BookingTicket({ booking }: { booking: Summary }) {
 
 // A row: the day (weekday over the date), the hours and ground, the venue, where it stands, and
 // what it is (Booking or Game) tagged before the chevron.
-function Row({ entry, last, onPress }: { entry: Entry; last: boolean; onPress: () => void }) {
+// In Past the row is the time and place only (user, 2026-11-23): one that didn't go ahead has its
+// first line struck through, and why is said to screen readers; coming up, it says where it stands.
+const wentAhead = (entry: Entry) =>
+  entry.kind === "booking"
+    ? entry.booking.status === "CONFIRMED" || entry.booking.status === "COMPLETED"
+    : entry.game.status !== "CANCELLED";
+
+function Row({
+  entry,
+  last,
+  past,
+  onPress,
+}: {
+  entry: Entry;
+  last: boolean;
+  past: boolean;
+  onPress: () => void;
+}) {
   const bookingStanding = useStanding();
   const gameStanding = useGameStanding();
   const place = entry.kind === "booking" ? entry.booking : entry.game;
@@ -678,9 +700,17 @@ function Row({ entry, last, onPress }: { entry: Entry; last: boolean; onPress: (
     start,
   );
 
+  const struck = past && !wentAhead(entry);
+  const first = `${timeRange(place.startsAt, place.endsAt, timezone)} · ${groundName(place)}`;
+
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={
+        past
+          ? [`${weekday} ${day}`, first, venueLine(place), standing.text].filter(Boolean).join(", ")
+          : undefined
+      }
       onPress={onPress}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-70 ${last ? "" : "border-b border-border"}`}
     >
@@ -689,13 +719,16 @@ function Row({ entry, last, onPress }: { entry: Entry; last: boolean; onPress: (
         <Text className="text-[22px] leading-[26px] font-semibold">{day}</Text>
       </View>
       <View className="flex-1">
-        <Text className="text-body leading-5 font-medium" numberOfLines={1}>
-          {`${timeRange(place.startsAt, place.endsAt, timezone)} · ${groundName(place)}`}
+        <Text
+          className={`text-body leading-5 font-medium ${struck ? "line-through" : ""}`}
+          numberOfLines={1}
+        >
+          {first}
         </Text>
         <Text className="pt-0.5 text-caption leading-[18px] text-ink-2" numberOfLines={1}>
           {venueLine(place)}
         </Text>
-        {standing.text ? (
+        {standing.text && !past ? (
           <Text className={`pt-1 text-caption leading-[18px] ${standing.act ? "font-medium" : ""}`}>
             {standing.text}
           </Text>
