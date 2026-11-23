@@ -115,4 +115,18 @@ describe("games", () => {
     expect((await call(player.token, "POST", `/games/${games[0]}/leave`)).ok).toBe(true);
     expect((await call(player.token, "POST", `/games/${games[2]}/join`)).ok).toBe(true);
   });
+
+  it("lets a player join the same game three times, leaving in between, and no more", async () => {
+    const { ground, hours } = await aGround();
+    const booker = await signedIn("+201005550011");
+    const game = await hosted(booker.token, ground.id, hours, 0);
+    const player = await signedIn();
+    for (let i = 0; i < 3; i++) {
+      expect((await call(player.token, "POST", `/games/${game.id}/join`)).ok).toBe(true);
+      expect((await call(player.token, "POST", `/games/${game.id}/leave`)).ok).toBe(true);
+    }
+    const fourth = await call(player.token, "POST", `/games/${game.id}/join`);
+    expect(fourth.status).toBe(409);
+    expect(await fourth.json()).toMatchObject({ code: "REJOIN_LIMIT", limit: 3 });
+  });
 });

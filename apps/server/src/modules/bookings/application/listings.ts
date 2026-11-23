@@ -73,6 +73,16 @@ const alreadyJoined = () => problem("ALREADY_JOINED", 409, "You've already joine
 const removed = () => problem("REMOVED_FROM_GAME", 403, "The booker removed you from this game.");
 const clash = () =>
   problem("GAME_CLASH", 409, "You already have a game or a booking at this time.");
+// Leaving and joining again: three joins in all (user, 2026-11-23), so a spot isn't held and let go
+// over and over.
+const MAX_JOINS = 3;
+const rejoinLimit = () =>
+  new AppError({
+    code: "REJOIN_LIMIT",
+    status: 409,
+    detail: `You can join a game ${MAX_JOINS} times at most.`,
+    extensions: { limit: MAX_JOINS },
+  });
 const notJoined = () => problem("NOT_JOINED", 409, "You haven't joined this game.");
 const started = () => problem("GAME_STARTED", 409, "This game has already started.");
 // ---- Inside other changes' transactions -------------------------------------------------------
@@ -325,10 +335,11 @@ export const joinGame = async (
     if (booking.customer.customerId === customerId) throw ownGame();
     const existing = await tx.listingPlayer.findUnique({
       where: { listingId_customerId: { listingId, customerId } },
-      select: { status: true },
+      select: { status: true, joins: true },
     });
     if (existing?.status === "JOINED") throw alreadyJoined();
     if (existing?.status === "REMOVED") throw removed();
+    if (existing && existing.joins >= MAX_JOINS) throw rejoinLimit();
     if (listing.playerCount >= listing.neededPlayers) throw gameFull();
     const clashes = await tx.$queryRaw<{ n: number }[]>`
       SELECT 1 AS n FROM "ListingPlayer" p
@@ -349,7 +360,7 @@ export const joinGame = async (
     await tx.listingPlayer.upsert({
       where: { listingId_customerId: { listingId, customerId } },
       create: { listingId, customerId, joinedAt: now },
-      update: { status: "JOINED", joinedAt: now, leftAt: null },
+      update: { status: "JOINED", joinedAt: now, leftAt: null, joins: { increment: 1 } },
     });
     await tx.bookingListing.update({
       where: { id: listingId },

@@ -45,6 +45,7 @@ model ListingPlayer {
   customerId        String              @db.Uuid
   status            ListingPlayerStatus @default(JOINED)
   joinedAt          DateTime            @default(now()) @db.Timestamptz
+  joins             Int                 @default(1) // Times joined: leaving and joining again counts, up to 3 (user, 2026-11-23).
   leftAt            DateTime?           @db.Timestamptz
   checkedInAt       DateTime?           @db.Timestamptz // Showed their QR code at the venue (or staff ticked them in).
   checkedInById     String?             @db.Uuid // Staff who checked them in.

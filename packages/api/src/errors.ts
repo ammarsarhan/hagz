@@ -343,6 +343,10 @@ const messages = {
     en: "You can host {limit} games at a time.",
     ar: "يمكنك استضافة {limit} مباريات في نفس الوقت.",
   },
+  REJOIN_LIMIT: {
+    en: "You've joined this game {limit} times, the most you can.",
+    ar: "انضممت إلى هذه المباراة {limit} مرات، وهذا الحد الأقصى.",
+  },
   JOINING_LIMIT: {
     en: "You can be in {limit} games at a time. Play or leave one first.",
     ar: "يمكنك المشاركة في {limit} مباريات في نفس الوقت. العب أو غادر واحدة أولًا.",
@@ -422,6 +426,7 @@ const short = {
     ar: "{limit} حجوزات فقط بالدفع في الملعب",
   },
   HOSTING_LIMIT: { en: "Only {limit} hosted games at once", ar: "{limit} مباريات فقط تستضيفها" },
+  REJOIN_LIMIT: { en: "Joined {limit} times already", ar: "انضممت {limit} مرات بالفعل" },
   JOINING_LIMIT: { en: "Only {limit} games at once", ar: "{limit} مباريات فقط في نفس الوقت" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;

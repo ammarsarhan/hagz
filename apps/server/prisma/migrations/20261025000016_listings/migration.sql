@@ -31,6 +31,7 @@ CREATE TABLE "ListingPlayer" (
     "customerId" UUID NOT NULL,
     "status" "ListingPlayerStatus" NOT NULL DEFAULT 'JOINED',
     "joinedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "joins" INTEGER NOT NULL DEFAULT 1,
     "leftAt" TIMESTAMPTZ,
     "checkedInAt" TIMESTAMPTZ,
     "checkedInById" UUID,
@@ -89,3 +90,6 @@ ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_public_check" CHECK 
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_status_check" CHECK ((status = 'JOINED') = ("leftAt" IS NULL) AND ("checkedInAt" IS NULL OR status = 'JOINED') AND (("checkedInAt" IS NULL) = ("checkedInById" IS NULL)) AND (NOT "checkedInManually" OR "checkedInAt" IS NOT NULL));
+
+-- AddCheck (hand-added): joined at least once.
+ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_joins_check" CHECK ("joins" >= 1);

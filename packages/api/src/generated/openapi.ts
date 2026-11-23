@@ -11173,7 +11173,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, or JOINING_LIMIT (with `limit`): in too many games at once. */
+                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, JOINING_LIMIT (with `limit`): in too many games at once, or REJOIN_LIMIT (with `limit`): joined this game too many times. */
                 409: {
                     headers: {
                         [name: string]: unknown;

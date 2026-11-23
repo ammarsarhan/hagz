@@ -86,7 +86,7 @@ export const joinGame = createRoute({
     403: problemResponse("REMOVED_FROM_GAME: the booker removed you."),
     404: problemResponse("GAME_NOT_FOUND"),
     409: problemResponse(
-      "GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, or JOINING_LIMIT (with `limit`): in too many games at once.",
+      "GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, JOINING_LIMIT (with `limit`): in too many games at once, or REJOIN_LIMIT (with `limit`): joined this game too many times.",
     ),
   },
 });
