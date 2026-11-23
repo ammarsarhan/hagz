@@ -505,11 +505,13 @@ function Row({ booking, last, onPress }: { booking: Summary; last: boolean; onPr
         <Text className="text-body leading-5 font-medium" numberOfLines={1}>
           {`${timeRange(booking.startsAt, booking.endsAt, timezone)} · ${groundName(booking)}`}
         </Text>
-        <Text className="pt-0.5 text-caption leading-[18px] text-ink-2" numberOfLines={1}>
+        <Text className="pt-px text-caption leading-[18px] text-ink-2" numberOfLines={1}>
           {venueLine(booking)}
         </Text>
         {standing.text ? (
-          <Text className={`pt-1 text-caption leading-[18px] ${standing.act ? "font-medium" : ""}`}>
+          <Text
+            className={`pt-[3px] text-caption leading-[18px] ${standing.act ? "font-medium" : ""}`}
+          >
             {standing.text}
           </Text>
         ) : null}

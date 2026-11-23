@@ -40,8 +40,11 @@ export function MatchTicket({
           />
           <Text className="text-caption leading-[18px] font-medium">{status.label}</Text>
         </View>
-        <Text className="pt-2.5 text-heading font-semibold">{day}</Text>
-        <Text className="text-heading font-semibold">{range}</Text>
+        {/* The day and the hours read as one block: no gap between them, and a tighter line. */}
+        <View className="pt-2.5">
+          <Text className="text-heading leading-[27px] font-semibold">{day}</Text>
+          <Text className="text-heading leading-[27px] font-semibold">{range}</Text>
+        </View>
         <Text className="pt-2 text-label leading-5 text-ink-2">{ground}</Text>
         <Text className="text-label leading-5 text-ink-2">{venue}</Text>
       </View>
