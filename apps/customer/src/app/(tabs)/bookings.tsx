@@ -761,15 +761,25 @@ function Empty() {
   );
 }
 
-// A guest: Account's "Uh oh!" (the shirt with no name), worded for bookings.
+// A guest: Account's "Uh oh!" (the shirt with no name), worded for bookings, under the tab's title
+// where the signed-in list has it.
 function Guest() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
-    <View
-      className="flex-1 items-center justify-center px-8 pb-6"
-      style={{ paddingTop: insets.top }}
-    >
+    <View className="flex-1" style={{ paddingTop: insets.top + 16 }}>
+      <Text accessibilityRole="header" className="px-6 text-title font-semibold tracking-[-0.4px]">
+        {t("screens.bookings.title")}
+      </Text>
+      <GuestBody />
+    </View>
+  );
+}
+
+function GuestBody() {
+  const { t } = useTranslation();
+  return (
+    <View className="flex-1 items-center justify-center px-8 pb-6">
       <NoNameArt />
       <Text accessibilityRole="header" className="mt-3 text-heading font-semibold">
         {t("screens.account.guestTitle")}

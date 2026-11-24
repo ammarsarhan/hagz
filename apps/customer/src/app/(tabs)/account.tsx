@@ -84,8 +84,20 @@ export default function AccountTab() {
 
 // A guest (Figma C7, 170:2, "No name on the shirt"; the user's pick, 2026-11-20): Search's "Uh oh!"
 // empty state for the Account tab, the shirt with no name, then Create account (lime, a big moment)
-// and Sign in.
+// and Sign in. The tab's title over it, where Community and Bookings have theirs.
 function Guest() {
+  const { t } = useTranslation();
+  return (
+    <View className="flex-1 pt-4">
+      <Text accessibilityRole="header" className="px-6 text-title font-semibold tracking-[-0.4px]">
+        {t("screens.account.title")}
+      </Text>
+      <GuestBody />
+    </View>
+  );
+}
+
+function GuestBody() {
   const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-8 pb-6">
