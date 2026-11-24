@@ -16,9 +16,9 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { FailedMessage } from "@/components/page-state";
+import { FittedFailure } from "@/components/page-state";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
-import { LightsOutArt, LIGHTS_OUT_SIZE } from "@/components/lights-out-art";
+import { LightsOutArt } from "@/components/lights-out-art";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconMap, IconSearch } from "@/components/icons";
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
@@ -205,48 +205,6 @@ function SearchPill({
         </Pressable>
       </Animated.View>
     </Pressable>
-  );
-}
-
-// A failed search: Unplugged, like every other page that couldn't load (offline, or the API's few
-// words), and Try again. It takes the room left under the header and fits it exactly, the page not
-// scrolling at all (user, 2026-11-24): the words and button at their size, the scene shrunk to
-// what's left.
-const ART_TOP = 24;
-const ART_GAP = 24; // From the words to the button.
-function Failed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-  const { t } = useTranslation();
-  const [room, setRoom] = useState(0);
-  const [words, setWords] = useState(0);
-  const [button, setButton] = useState(0);
-  const { height } = LIGHTS_OUT_SIZE;
-  const fits = room > 0 && words > 0 && button > 0;
-  // The scene's height as it comes in FailedMessage (full size), so `words` is the rest of it.
-  const scale = fits
-    ? Math.max(0.3, Math.min(1, (room - ART_TOP - words - ART_GAP - button) / height))
-    : 1;
-  return (
-    <Animated.View
-      entering={FadeIn.duration(260)}
-      className="flex-1"
-      onLayout={(event) => setRoom(event.nativeEvent.layout.height)}
-    >
-      {/* Hidden for the frame it takes to measure, so it never shows at the wrong size. */}
-      <View className="items-center px-2" style={{ paddingTop: ART_TOP, opacity: fits ? 1 : 0 }}>
-        <View
-          className="items-center"
-          onLayout={(event) => setWords(event.nativeEvent.layout.height - height * scale)}
-        >
-          <FailedMessage error={error} artScale={scale} compact />
-        </View>
-        <View
-          style={{ marginTop: ART_GAP }}
-          onLayout={(event) => setButton(event.nativeEvent.layout.height)}
-        >
-          <Button label={t("common.actions.tryAgain")} size="compact" onPress={onRetry} />
-        </View>
-      </View>
-    </Animated.View>
   );
 }
 
@@ -560,13 +518,13 @@ export default function SearchTab() {
 
   const failure = nowhere ? coverageError : search.error;
   const empty = nowhere ? (
-    <Failed error={coverageError} onRetry={retryCoverage} />
+    <FittedFailure error={coverageError} onRetry={retryCoverage} />
   ) : search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
     </View>
   ) : search.error ? (
-    <Failed error={search.error} onRetry={search.refresh} />
+    <FittedFailure error={search.error} onRetry={search.refresh} />
   ) : (
     // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
     <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
