@@ -25,7 +25,8 @@ const spark = (x: number, y: number, r: number) => {
   return `M${x} ${y - r} C${x + k} ${y - k} ${x + k} ${y - k} ${x + r} ${y} C${x + k} ${y + k} ${x + k} ${y + k} ${x} ${y + r} C${x - k} ${y + k} ${x - k} ${y + k} ${x - r} ${y} C${x - k} ${y - k} ${x - k} ${y - k} ${x} ${y - r}Z`;
 };
 
-export function OfflineArt() {
+// `scale` shrinks the whole scene (layers too) into a smaller box, for a page short on room.
+export function OfflineArt({ scale = 1 }: { scale?: number }) {
   const reach = useLoop(4200);
   const bob = useLoop(5600, 600);
   const twinkle = useLoop(3200, 900);
@@ -44,56 +45,68 @@ export function OfflineArt() {
 
   return (
     <View
-      style={{ width: W, height: H }}
+      style={{ width: W * scale, height: H * scale }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-        <Path d={BLOB} fill={BLACK} fillOpacity={0.07} />
-        {/* The pitch, with its halfway line. */}
-        <Rect x={34} y={168} width={212} height={34} rx={12} fill={BLACK} />
-        <Rect x={139} y={168} width={2} height={34} fill={WHITE} />
-        {/* The scoreboard on its legs, its score gone: a dash each side of the colon. */}
-        <Rect x={92} y={120} width={8} height={50} rx={3} fill={BLACK} />
-        <Rect x={180} y={120} width={8} height={50} rx={3} fill={BLACK} />
-        <Rect x={60} y={44} width={160} height={84} rx={14} fill={BLACK} />
-        <Rect x={76} y={58} width={48} height={56} rx={8} fill={GREY} />
-        <Rect x={156} y={58} width={48} height={56} rx={8} fill={GREY} />
-        <Rect x={88} y={83} width={24} height={6} rx={3} fill={WHITE} />
-        <Rect x={168} y={83} width={24} height={6} rx={3} fill={WHITE} />
-        <Circle cx={140} cy={76} r={4} fill={WHITE} />
-        <Circle cx={140} cy={96} r={4} fill={WHITE} />
-        {/* The socket it should be plugged into. */}
-        <Rect
-          x={246}
-          y={136}
-          width={18}
-          height={26}
-          rx={5}
-          fill={WHITE}
-          stroke={BLACK}
-          strokeWidth={3}
-        />
-        <Rect x={252} y={143} width={6} height={3} rx={1.5} fill={BLACK} />
-        <Rect x={252} y={152} width={6} height={3} rx={1.5} fill={BLACK} />
-      </Svg>
-      {/* The cable from the scoreboard and its plug, drifting short of the socket. */}
-      <Layer style={plug}>
-        <Path
-          d="M220 100 C246 104 196 150 216 149"
-          stroke={BLACK}
-          strokeWidth={4}
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Rect x={214} y={141} width={18} height={16} rx={4} fill={BLACK} />
-        <Rect x={231} y={144} width={8} height={3} rx={1.5} fill={BLACK} />
-        <Rect x={231} y={151} width={8} height={3} rx={1.5} fill={BLACK} />
-      </Layer>
-      <Layer style={sparks}>
-        <Path d={spark(40, 70, 8)} fill={BLACK} />
-        <Path d={spark(236, 40, 5)} fill={GREY} />
-      </Layer>
+      {/* Drawn at full size and scaled about its middle into the box. */}
+      <View
+        style={{
+          position: "absolute",
+          width: W,
+          height: H,
+          left: (W * scale - W) / 2,
+          top: (H * scale - H) / 2,
+          transform: [{ scale }],
+        }}
+      >
+        <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          <Path d={BLOB} fill={BLACK} fillOpacity={0.07} />
+          {/* The pitch, with its halfway line. */}
+          <Rect x={34} y={168} width={212} height={34} rx={12} fill={BLACK} />
+          <Rect x={139} y={168} width={2} height={34} fill={WHITE} />
+          {/* The scoreboard on its legs, its score gone: a dash each side of the colon. */}
+          <Rect x={92} y={120} width={8} height={50} rx={3} fill={BLACK} />
+          <Rect x={180} y={120} width={8} height={50} rx={3} fill={BLACK} />
+          <Rect x={60} y={44} width={160} height={84} rx={14} fill={BLACK} />
+          <Rect x={76} y={58} width={48} height={56} rx={8} fill={GREY} />
+          <Rect x={156} y={58} width={48} height={56} rx={8} fill={GREY} />
+          <Rect x={88} y={83} width={24} height={6} rx={3} fill={WHITE} />
+          <Rect x={168} y={83} width={24} height={6} rx={3} fill={WHITE} />
+          <Circle cx={140} cy={76} r={4} fill={WHITE} />
+          <Circle cx={140} cy={96} r={4} fill={WHITE} />
+          {/* The socket it should be plugged into. */}
+          <Rect
+            x={246}
+            y={136}
+            width={18}
+            height={26}
+            rx={5}
+            fill={WHITE}
+            stroke={BLACK}
+            strokeWidth={3}
+          />
+          <Rect x={252} y={143} width={6} height={3} rx={1.5} fill={BLACK} />
+          <Rect x={252} y={152} width={6} height={3} rx={1.5} fill={BLACK} />
+        </Svg>
+        {/* The cable from the scoreboard and its plug, drifting short of the socket. */}
+        <Layer style={plug}>
+          <Path
+            d="M220 100 C246 104 196 150 216 149"
+            stroke={BLACK}
+            strokeWidth={4}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Rect x={214} y={141} width={18} height={16} rx={4} fill={BLACK} />
+          <Rect x={231} y={144} width={8} height={3} rx={1.5} fill={BLACK} />
+          <Rect x={231} y={151} width={8} height={3} rx={1.5} fill={BLACK} />
+        </Layer>
+        <Layer style={sparks}>
+          <Path d={spark(40, 70, 8)} fill={BLACK} />
+          <Path d={spark(236, 40, 5)} fill={GREY} />
+        </Layer>
+      </View>
     </View>
   );
 }
