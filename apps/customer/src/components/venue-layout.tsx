@@ -2,13 +2,15 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
+import { AmenityIcon } from "./amenity-icon";
 import { Text } from "./text";
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { PublicGround, PublicVenue } from "@/lib/venue";
 
 // A venue's map (the layout screen, app/venue/[slug]/layout.tsx; Figma C5 215:2, round 2): the
-// owner's grid at a cell to every `width / columns` points, its lines very faint and under
+// part of the owner's grid with something on it (windowOf), fitted to the width, a cell at most
+// MAX_CELL points, its lines very faint and under
 // everything (user, 2026-11-22: drawn plainly, the grid broken up by the tiles looked bad; brought
 // back faint the same day), with no outline; the grey card is the venue, its
 // entrances black tags across its edge. Each ground is drawn top-down with its markings and name; the
@@ -38,6 +40,51 @@ const MARGIN = 5;
 const EDGE = 8;
 // The card's padding (p-3), between its edge and the drawing.
 const PAD = 12;
+// The biggest a cell draws: a venue with a couple of small courts stays a map, not giant blocks.
+const MAX_CELL = 44;
+// Room kept around what's drawn, in cells (the walkway the owner's grid has round its tiles).
+const MARGIN_CELLS = 1;
+
+interface Window {
+  left: number;
+  top: number;
+  columns: number;
+  rows: number;
+}
+
+// The part of the owner's grid worth drawing (user, 2026-11-24: venues whose grounds sit in a
+// corner of a wide grid came out tiny): the box round every tile and the entrances' places along
+// their edges, a cell of walkway round it, inside the grid. The screen fits this, not the grid.
+const windowOf = (layout: Layout): Window => {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const placed of layout.grounds) {
+    const [w, h] =
+      placed.orientation === "VERTICAL"
+        ? [placed.height, placed.width]
+        : [placed.width, placed.height];
+    xs.push(placed.x, placed.x + w);
+    ys.push(placed.y, placed.y + h);
+  }
+  for (const tile of layout.amenities) {
+    xs.push(tile.x, tile.x + tile.width);
+    ys.push(tile.y, tile.y + tile.height);
+  }
+  if (xs.length === 0) return { left: 0, top: 0, columns: layout.columns, rows: layout.rows };
+  // An entrance stays on its edge; only where along it counts.
+  for (const entrance of layout.entrances) {
+    if (entrance.side === "TOP" || entrance.side === "BOTTOM") {
+      xs.push(entrance.offset, entrance.offset + 1);
+    } else {
+      ys.push(entrance.offset, entrance.offset + 1);
+    }
+  }
+  const left = Math.max(0, Math.min(...xs) - MARGIN_CELLS);
+  const top = Math.max(0, Math.min(...ys) - MARGIN_CELLS);
+  const right = Math.min(layout.columns, Math.max(...xs) + MARGIN_CELLS);
+  const bottom = Math.min(layout.rows, Math.max(...ys) + MARGIN_CELLS);
+  return { left, top, columns: right - left, rows: bottom - top };
+};
 
 interface Box {
   x: number;
@@ -45,6 +92,9 @@ interface Box {
   w: number;
   h: number;
 }
+
+// Whether an amenity's name fits across its tile (10 pt, about 5.6 a letter).
+const fitsName = (name: string, box: Box) => name.length * 5.6 < box.w - 6;
 
 // The lines of a ground, along the tile's long side.
 function Markings({
@@ -168,12 +218,13 @@ function PickedOverlay({
 }
 
 // A white pill with the ground's name in the middle of its tile; the status is dropped when the
-// tile is too small for both.
+// tile is too small for both. The pill is as wide as the name, so on a small tile (a padel court) it
+// hangs over the walkway rather than the name spilling out of it.
 function Tag({ box, name, status }: { box: Box; name: string; status?: string }) {
   const full = status ? `${name} · ${status}` : name;
   const widthOf = (text: string) => text.length * 6.2 + 14;
   const text = widthOf(full) <= box.w - 6 ? full : name;
-  const width = Math.min(widthOf(text), box.w - 4);
+  const width = widthOf(text);
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
   return (
@@ -211,20 +262,22 @@ export function VenueLayout({
   // The width there is, and the drawing's cell: as wide as fits, unless that's too tall.
   const [room, setRoom] = useState(0);
   const around = 2 * (PAD + EDGE);
+  const view = windowOf(layout);
   const cell =
     room > 0
       ? Math.min(
-          (room - around) / layout.columns,
-          maxHeight === undefined ? Infinity : Math.max(0, maxHeight - around) / layout.rows,
+          MAX_CELL,
+          (room - around) / view.columns,
+          maxHeight === undefined ? Infinity : Math.max(0, maxHeight - around) / view.rows,
         )
       : 0;
-  const width = cell * layout.columns;
-  const height = cell * layout.rows;
+  const width = cell * view.columns;
+  const height = cell * view.rows;
   const groundById = new Map(grounds.map((ground) => [ground.id, ground]));
   const amenityById = new Map(amenities.map((amenity) => [amenity.id, amenity]));
   const boxOf = (x: number, y: number, w: number, h: number): Box => ({
-    x: x * cell + INSET,
-    y: y * cell + INSET,
+    x: (x - view.left) * cell + INSET,
+    y: (y - view.top) * cell + INSET,
     w: w * cell - 2 * INSET,
     h: h * cell - 2 * INSET,
   });
@@ -238,7 +291,7 @@ export function VenueLayout({
         {width > 0 ? (
           <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
             <G transform={`translate(${EDGE}, ${EDGE})`}>
-              {Array.from({ length: layout.columns - 1 }, (_, i) => (
+              {Array.from({ length: view.columns - 1 }, (_, i) => (
                 <Line
                   key={`c${i}`}
                   x1={(i + 1) * cell}
@@ -249,7 +302,7 @@ export function VenueLayout({
                   strokeWidth={GRID_WIDTH}
                 />
               ))}
-              {Array.from({ length: layout.rows - 1 }, (_, i) => (
+              {Array.from({ length: view.rows - 1 }, (_, i) => (
                 <Line
                   key={`r${i}`}
                   x1={0}
@@ -276,7 +329,7 @@ export function VenueLayout({
                       stroke={AMENITY_LINE}
                       strokeWidth={1}
                     />
-                    {name.length * 5.6 < box.w - 6 ? (
+                    {fitsName(name, box) ? (
                       <SvgText
                         x={box.x + box.w / 2}
                         y={box.y + box.h / 2 + 3.5}
@@ -324,8 +377,37 @@ export function VenueLayout({
             </G>
           </Svg>
         ) : (
-          <View style={{ aspectRatio: layout.columns / layout.rows }} />
+          <View style={{ aspectRatio: view.columns / view.rows }} />
         )}
+        {/* An amenity too small for its name shows its icon (an SVG can't hold the icon's own
+            SVG), faded as its tile is. */}
+        {width > 0
+          ? layout.amenities.map((tile, i) => {
+              const box = boxOf(tile.x, tile.y, tile.width, tile.height);
+              const amenity = amenityById.get(tile.optionId);
+              if (!amenity || fitsName(amenity.name ?? "", box)) return null;
+              const size = Math.min(16, box.w - 6, box.h - 6);
+              if (size < 8) return null;
+              return (
+                <View
+                  key={`ai${i}`}
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  className="items-center justify-center"
+                  style={{
+                    position: "absolute",
+                    left: PAD + EDGE + box.x,
+                    top: PAD + EDGE + box.y,
+                    width: box.w,
+                    height: box.h,
+                    opacity: 0.5,
+                  }}
+                >
+                  <AmenityIcon name={amenity.icon} size={size} color={UNIT} />
+                </View>
+              );
+            })
+          : null}
         {/* The buttons, one over each ground's tile (an SVG shape can't be a button a screen reader
           finds). */}
         {width > 0
@@ -358,12 +440,16 @@ export function VenueLayout({
         {/* The entrances, across the card's own edge (half of each tag hangs outside it). */}
         {width > 0
           ? layout.entrances.map((entrance, i) => {
-              const along = PAD + EDGE + (entrance.offset + 0.5) * cell;
               const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
+              const along =
+                PAD + EDGE + (entrance.offset - (horizontal ? view.left : view.top) + 0.5) * cell;
               const card = { width: width + 2 * (PAD + EDGE), height: height + 2 * (PAD + EDGE) };
               const cx = horizontal ? along : entrance.side === "LEFT" ? 0 : card.width;
               const cy = horizontal ? (entrance.side === "TOP" ? 0 : card.height) : along;
-              const [w, h] = horizontal ? [58, 16] : [16, 58];
+              // One tag, turned on the sides so its word runs along the edge, tops of the letters
+              // facing out.
+              const [w, h] = [58, 16];
+              const turn = horizontal ? "0deg" : entrance.side === "LEFT" ? "-90deg" : "90deg";
               return (
                 <View
                   key={`e${i}`}
@@ -375,13 +461,12 @@ export function VenueLayout({
                     top: cy - h / 2,
                     width: w,
                     height: h,
+                    transform: [{ rotate: turn }],
                   }}
                 >
-                  {horizontal ? (
-                    <Text className="text-[9.5px] leading-[12px] font-semibold text-white">
-                      {t("components.venueLayout.entrance")}
-                    </Text>
-                  ) : null}
+                  <Text className="text-[9.5px] leading-[12px] font-semibold text-white">
+                    {t("components.venueLayout.entrance")}
+                  </Text>
                 </View>
               );
             })
