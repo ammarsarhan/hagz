@@ -9,3 +9,8 @@ export { bookingsGameRoutes } from "./http/game-routes";
 export { bookingsRegularRoutes } from "./http/regular-routes";
 export { bookingsStaffRoutes } from "./http/staff-routes";
 export { startBookingExpiry } from "./jobs/booking-expiry";
+// For the development seeds (seed:alexandria): games through the real path, past bookings' codes,
+// and the per-player limits lifted for the seed players.
+export { newCode } from "./application/booking-rows";
+export { LIMITS } from "./application/limits";
+export { joinGame, listBooking } from "./application/listings";
