@@ -97,6 +97,8 @@ const en = {
       // A moment: "Wed 25 Nov, 9 pm".
       moment: "{{day}}, {{time}}",
       today: "Today",
+      // Today from 5 pm, for a game's day ("Tonight, 9 pm"); not Home's "Free tonight" rail.
+      tonight: "Tonight",
       tomorrow: "Tomorrow",
       // The search bar's when: "Today · any time", "Fri 21 · 9–11 pm".
       whenAnyTime: "{{day}} · any time",

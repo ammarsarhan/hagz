@@ -43,7 +43,7 @@ export const whenDay = (iso: string, timezone: string) => {
   const date = localDateOf(iso, timezone);
   if (date === today)
     return hourAt(iso, timezone) >= EVENING
-      ? i18n.t("screens.home.tonight")
+      ? i18n.t("formats.tonight")
       : i18n.t("formats.today");
   if (date === tomorrow) return i18n.t("formats.tomorrow");
   return dayLabel(date);

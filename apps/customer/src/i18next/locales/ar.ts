@@ -106,6 +106,7 @@ const ar: ArabicTranslations = {
       // A moment: "Wed 25 Nov, 9 pm".
       moment: "{{day}}، {{time}}",
       today: "اليوم",
+      tonight: "الليلة",
       tomorrow: "غدًا",
       whenAnyTime: "{{day}} · أي وقت",
       whenRange: "{{day}} · {{range}}",
