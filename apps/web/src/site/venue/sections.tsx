@@ -58,7 +58,8 @@ export function Section({
 }) {
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex items-baseline justify-between gap-4">
+      {/* A note goes under the title on a phone, beside it from tablet up (user, 2026-11-24). */}
+      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-4">
         <h2 className="text-heading font-semibold tracking-[-0.3px] rtl:tracking-normal">
           {title}
         </h2>
@@ -417,7 +418,8 @@ export function Where({ venue, locale }: { venue: PublicVenue; locale: Locale })
             href={`https://www.google.com/maps/dir/?api=1&destination=${point}`}
             target="_blank"
             rel="noreferrer"
-            className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-chip px-[18px] text-[15px] font-semibold"
+            // Smaller on a phone, like the header's Get the app (user, 2026-11-24).
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-chip px-3.5 text-[13px] font-semibold md:h-10 md:gap-2 md:px-[18px] md:text-[15px] [&>svg]:size-4 md:[&>svg]:size-[18px]"
           >
             <IconMapPin size={18} stroke={1.75} />
             {words.directions}
