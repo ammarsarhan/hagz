@@ -108,9 +108,9 @@ function GuestBody() {
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {t("screens.account.guest")}
       </Text>
-      {/* Stacked, at the illustration screens' size (user, 2026-11-24): Create account, then Sign
-          in, as wide as each other (the column takes the wider one's width). */}
-      <View className="mt-6 gap-2.5">
+      {/* Stacked and full width, at the illustration screens' height (user, 2026-11-24): Create
+          account, then Sign in. */}
+      <View className="mt-6 gap-2.5 self-stretch">
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"
