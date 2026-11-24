@@ -17,11 +17,14 @@ import { cache, queueConnection } from "@/platform/redis/connections";
 // Development only: the Test Player's bookings in each state the app has a screen for (user,
 // 2026-11-24), to walk through on a phone. Every one goes through the real code (createBooking, the
 // staff's move and decline, the expiry sweep, a weekly regular, a check-in), with a clock moved
-// back where the state needs time to have passed. Each run adds a fresh set.
+// back where the state needs time to have passed. Each run replaces the last run's set (one of each
+// state, user 2026-11-24): its bookings carry TAG as their note, which moves copy along.
 //
 //   pnpm --filter @hagz/server seed:states
 
 const PLAYER = "+201000000001";
+// On every booking this makes; the player never sees a booking's note, staff do.
+const TAG = "Seeded for testing (seed:states)";
 const HOUR = 3_600_000;
 
 const at = (date: Date): Clock => ({ now: () => date });
@@ -76,6 +79,7 @@ const book = async (
       startsAt: slot.startsAt.toISOString(),
       endsAt: slot.endsAt.toISOString(),
       amenities: [],
+      note: TAG,
     },
     crypto.randomUUID(),
     clock,
@@ -85,6 +89,59 @@ const book = async (
 
 const codeOf = async (id: string) =>
   (await prisma.booking.findUniqueOrThrow({ where: { id }, select: { code: true } })).code;
+
+// The last run's set, gone: its tagged bookings, whatever they were moved from or to, and the
+// Test Player's weekly regulars (only this script makes them) with their weeks. Their slots come
+// free again. One transaction, so a failure leaves the last set as it was.
+const clearPrevious = async (playerId: string) => {
+  const regulars = (
+    await prisma.venueRegular.findMany({
+      where: { customer: { customerId: playerId } },
+      select: { id: true },
+    })
+  ).map((regular) => regular.id);
+  const ids = new Set(
+    (
+      await prisma.booking.findMany({
+        where: { OR: [{ note: TAG }, { regularId: { in: regulars } }] },
+        select: { id: true },
+      })
+    ).map((booking) => booking.id),
+  );
+  // Follow moves both ways until nothing new turns up.
+  for (let size = -1; size !== ids.size;) {
+    size = ids.size;
+    const links = await prisma.rescheduling.findMany({
+      where: { OR: [{ fromBookingId: { in: [...ids] } }, { toBookingId: { in: [...ids] } }] },
+      select: { fromBookingId: true, toBookingId: true },
+    });
+    for (const link of links) {
+      ids.add(link.fromBookingId);
+      ids.add(link.toBookingId);
+    }
+  }
+  const bookingId = { in: [...ids] };
+  await prisma.$transaction([
+    prisma.groundSlot.updateMany({
+      where: { bookingId },
+      data: { bookingId: null, status: "AVAILABLE" },
+    }),
+    prisma.venueReview.deleteMany({ where: { bookingId } }),
+    prisma.cancellation.deleteMany({ where: { bookingId } }),
+    prisma.rescheduling.deleteMany({
+      where: { OR: [{ fromBookingId: bookingId }, { toBookingId: bookingId }] },
+    }),
+    prisma.ledgerEntry.deleteMany({ where: { bookingId } }),
+    prisma.payment.deleteMany({ where: { bookingId } }),
+    prisma.loyaltyStamp.deleteMany({ where: { bookingId } }),
+    prisma.notification.deleteMany({ where: { bookingId } }),
+    prisma.listingPlayer.deleteMany({ where: { listing: { bookingId } } }),
+    prisma.bookingListing.deleteMany({ where: { bookingId } }),
+    prisma.booking.deleteMany({ where: { id: bookingId } }),
+    prisma.venueRegular.deleteMany({ where: { id: { in: regulars } } }),
+  ]);
+  return ids.size;
+};
 
 export const seedStates = async () => {
   if (env.APP_ENV !== "development") {
@@ -96,6 +153,8 @@ export const seedStates = async () => {
     where: { phone: PLAYER },
     select: { id: true },
   });
+  const cleared = await clearPrevious(player.id);
+  if (cleared > 0) console.log(`Removed the last run's ${cleared} bookings.`);
   const now = new Date();
   const auto = (await venuesWhere(true)).map((venue) => venue.id);
   const approval = (await venuesWhere(false)).map((venue) => venue.id);
