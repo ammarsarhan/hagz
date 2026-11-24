@@ -55,6 +55,7 @@ export default defineConfig(globalIgnores(["src/generated/"]), base, {
                   "app.ts",
                   "worker.ts",
                   "create-admin.ts",
+                  "seed-alexandria.ts",
                   "seed-bookings.ts",
                   "seed-invitations.ts",
                   "seed-nearby.ts",
