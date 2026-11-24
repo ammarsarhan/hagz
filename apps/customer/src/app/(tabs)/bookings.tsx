@@ -505,19 +505,19 @@ const byDay = (iso: string, timezone: string) => {
   return dayLabel(localDateOf(iso, timezone));
 };
 
-// Where a booking stands, in one line, and whether it needs the player (then medium).
+// Where a booking stands, in one line. Lines that need the player (moved, weekly, pay by) are the
+// same weight as the rest (user, 2026-11-24).
 function useStanding() {
   const { t } = useTranslation();
-  return (booking: Summary): { text: string; act: boolean } => {
+  return (booking: Summary): { text: string } => {
     const { timezone } = booking.venue;
     const ended = Date.parse(booking.endsAt) <= Date.now();
-    const said = (text: string, act = false) => ({ text, act });
+    const said = (text: string) => ({ text });
     if (booking.move && !ended)
       return said(
         t("screens.bookings.moved", {
           deadline: deadlineLabel(booking.move.respondBy, timezone),
         }),
-        true,
       );
     switch (booking.status) {
       case "CONFIRMED":
@@ -539,12 +539,11 @@ function useStanding() {
               t("screens.bookings.payBy", {
                 deadline: deadlineLabel(booking.expiresAt, timezone),
               }),
-              true,
             );
       case "UNCONFIRMED":
         return ended || !booking.expiresAt
           ? said(t("screens.bookings.released"))
-          : said(t("screens.bookings.weekly", { day: byDay(booking.expiresAt, timezone) }), true);
+          : said(t("screens.bookings.weekly", { day: byDay(booking.expiresAt, timezone) }));
       case "NO_SHOW":
         return said(t("screens.bookings.noShow"));
       case "RELEASED":
@@ -692,9 +691,7 @@ function Row({
   const gameStanding = useGameStanding();
   const place = entry.kind === "booking" ? entry.booking : entry.game;
   const standing =
-    entry.kind === "booking"
-      ? bookingStanding(entry.booking)
-      : { text: gameStanding(entry.game), act: false };
+    entry.kind === "booking" ? bookingStanding(entry.booking) : { text: gameStanding(entry.game) };
   const timezone = timezoneOf(entry);
   const start = new Date(startOf(entry));
   const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: timezone, weekday: "short" })
@@ -733,9 +730,7 @@ function Row({
           {venueLine(place)}
         </Text>
         {standing.text && !past ? (
-          <Text className={`pt-1 text-caption leading-[18px] ${standing.act ? "font-medium" : ""}`}>
-            {standing.text}
-          </Text>
+          <Text className="pt-1 text-caption leading-[18px]">{standing.text}</Text>
         ) : null}
       </View>
       <KindTag kind={entry.kind === "booking" ? "BOOKING" : "GAME"} />
