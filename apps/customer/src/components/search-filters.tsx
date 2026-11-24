@@ -50,6 +50,9 @@ const SORTS: { sort: SearchSort; near?: boolean }[] = [
   { sort: "PRICE" },
   { sort: "RATING" },
   { sort: "SOONEST" },
+  // Home's Popular and Newest rails open Search in these, so they're here to see and pick again.
+  { sort: "POPULAR" },
+  { sort: "NEWEST" },
 ];
 const FOOTBALL_SIZES: GroundSize[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
 const SURFACES: Surface[] = ["ARTIFICIAL_TURF", "NATURAL_GRASS", "HARD_COURT", "HARD_WOOD", "SAND"];
