@@ -211,15 +211,44 @@ function PickedOverlay({
   );
 }
 
-// A white pill with the ground's name in the middle of its tile; the status is dropped when the
-// tile is too small for both. The pill is as wide as the name, so on a small tile (a padel court) it
-// hangs over the walkway rather than the name spilling out of it.
-function Tag({ box, name, status }: { box: Box; name: string; status?: string }) {
+// The ground's name. On a tile big enough, a white pill in its middle, as wide as the name; the
+// status is dropped when the tile's too narrow for both. On a small one (a padel court: 2 × 1 cells),
+// the pill would cover the court's lines, so the name sits under the tile as plain text on the
+// walkway instead, like a label on a map (user, 2026-11-24); the status only when it fits the tile
+// and a cell of walkway.
+// A tile's short side under this can't hold the pill and still look like a court.
+const PILL_ROOM = 36;
+function Tag({
+  box,
+  cell,
+  name,
+  status,
+}: {
+  box: Box;
+  cell: number;
+  name: string;
+  status?: string;
+}) {
   const full = status ? `${name} · ${status}` : name;
+  const cx = box.x + box.w / 2;
+  if (Math.min(box.w, box.h) < PILL_ROOM) {
+    const text = full.length * 5.9 <= box.w + cell ? full : name;
+    return (
+      <SvgText
+        x={cx}
+        y={box.y + box.h + INSET + 11}
+        textAnchor="middle"
+        fontSize={10}
+        fontWeight="600"
+        fill={INK}
+      >
+        {text}
+      </SvgText>
+    );
+  }
   const widthOf = (text: string) => text.length * 6.2 + 14;
   const text = widthOf(full) <= box.w - 6 ? full : name;
   const width = widthOf(text);
-  const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
   return (
     <G>
@@ -356,6 +385,7 @@ export function VenueLayout({
                     <PickedOverlay sport={ground.sport} box={box} picked={picked} />
                     <Tag
                       box={box}
+                      cell={cell}
                       name={ground.name ?? ""}
                       status={
                         ground.status === "MAINTENANCE"
