@@ -100,7 +100,12 @@ export function Rail<T>({
         keyExtractor={keyOf}
         renderItem={({ item }) => <View style={{ width }}>{render(item)}</View>}
         showsHorizontalScrollIndicator={false}
-        // Free scrolling, like the app's other sideways rows (no snapping).
+        // Each card stops at the gutter (user, 2026-11-24): a card and its gap per step, and a quick
+        // stop so a flick lands on the next card rather than gliding past several.
+        snapToInterval={width + gap}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
         contentContainerStyle={{ gap, paddingHorizontal: GUTTER, paddingTop: 14 }}
       />
     </View>
