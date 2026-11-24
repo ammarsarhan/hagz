@@ -25,6 +25,7 @@ import {
 import { useHudAnchor } from "@/components/hud";
 import { IconBell, IconMapPin, IconSearch } from "@/components/icons";
 import { RoundButton } from "@/components/nav";
+import { FittedFailure } from "@/components/page-state";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
@@ -41,7 +42,7 @@ import {
 import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
 import { push } from "@/lib/navigation";
-import { hourLabel, localDate, useCoverage, type VenueCard } from "@/lib/search";
+import { hourLabel, localDate, useCoverageState, type VenueCard } from "@/lib/search";
 import { timeOfDay, timeRange } from "@/lib/venue";
 
 // Home (Figma C12: 311:2 signed in, 312:2 guest, 313:2 the whole scroll): where the rails look
@@ -68,7 +69,7 @@ export default function Home() {
 
   // Where: a governorate (lib/home.ts, useHomeGovernorate); Search narrows further.
   const phone = useHere();
-  const coverage = useCoverage();
+  const { coverage, error: coverageError, retry: retryCoverage } = useCoverageState();
   const governorate = useHomeGovernorate(phone, coverage);
   const ready = governorate !== null;
   const base = governorate ? { area: governorate.id } : {};
@@ -102,9 +103,19 @@ export default function Home() {
     opacity: interpolate(scrollY.value, [0, 12], [0, 1], "clamp"),
   }));
 
-  const busy = [tonight, games, topRated, instant, budget, freed, popular, newest].some(
-    (rail) => rail.loading,
-  );
+  const rails = [tonight, games, topRated, instant, budget, freed, popular, newest];
+  const busy = rails.some((rail) => rail.loading);
+  // Couldn't load (user, 2026-11-24): no governorates to pick from (so nowhere to look), or every
+  // rail failed with nothing to show. Unplugged under the header, fitted, and nothing scrolls.
+  const nowhere = governorate === null && coverageError !== null;
+  const railsFailed =
+    ready && rails.every((rail) => !rail.loading && rail.error !== null && rail.items.length === 0);
+  const failure = nowhere ? coverageError : railsFailed ? rails[0]?.error : null;
+  const tryAgain = () => {
+    if (nowhere) retryCoverage();
+    setGeneration((n) => n + 1);
+    void read();
+  };
   // Skeletons until a rail's first answer; a refresh keeps the rails already there.
   const waiting = (rail: { loading: boolean; items: unknown[] }) =>
     rail.loading && rail.items.length === 0;
@@ -163,7 +174,9 @@ export default function Home() {
         scrollEventThrottle={16}
         refreshControl={pull.control}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: top, paddingBottom: 32 }}
+        scrollEnabled={!failure}
+        // Grows to the screen, so the failed scene can take what's left of it.
+        contentContainerStyle={{ flexGrow: 1, paddingTop: top, paddingBottom: 32 }}
       >
         {/* Where the rails look (a governorate; picking one comes later), then search and
             notifications. */}
@@ -174,7 +187,7 @@ export default function Home() {
               <Text className="shrink text-body font-medium" numberOfLines={1}>
                 {governorate.name}
               </Text>
-            ) : (
+            ) : nowhere ? null : (
               <Bone className="h-4 w-28 rounded-md" />
             )}
           </View>
@@ -214,9 +227,11 @@ export default function Home() {
           </View>
         ) : null}
 
+        {failure ? <FittedFailure error={failure} onRetry={tryAgain} /> : null}
+
         {/* The rails. Right under the title (no ticket: a guest, or nothing coming up) the first
             sits a little closer, as the ticket would. */}
-        <View className={next ? "" : "-mt-3"}>
+        <View className={failure ? "hidden" : next ? "" : "-mt-3"}>
           {played.length > 0 ? (
             <Rail
               title={t("screens.home.playAgain")}

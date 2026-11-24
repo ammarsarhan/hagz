@@ -25,9 +25,12 @@ export interface Rail<T> {
   // The day searched (Free tonight moves to tomorrow once tonight's over); null for games.
   date: string | null;
   loading: boolean;
+  // The last read's failure (`send`'s error), null once one works: Home shows Unplugged when
+  // every rail failed.
+  error: unknown;
 }
 
-const EMPTY = { items: [], date: null, loading: true };
+const EMPTY = { items: [], date: null, loading: true, error: null };
 
 // A rail of venues: the search with Home's where and the rail's own choices.
 export const useVenueRail = (
@@ -62,10 +65,11 @@ export const useVenueRail = (
               items: result.data.data,
               date: result.data.date,
               loading: false,
+              error: null,
               currency: result.data.currency,
               timezone: result.data.timezone,
             }
-          : { ...now, loading: false },
+          : { ...now, loading: false, error: result.error },
       );
     });
     return () => {
@@ -103,8 +107,8 @@ export const useGameRail = (params: SearchParams, ready: boolean, generation: nu
       if (!active) return;
       setRail((now) =>
         result.ok
-          ? { items: result.data.data, date: null, loading: false }
-          : { ...now, loading: false },
+          ? { items: result.data.data, date: null, loading: false, error: null }
+          : { ...now, loading: false, error: result.error },
       );
     });
     return () => {
