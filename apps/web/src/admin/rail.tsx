@@ -3,6 +3,7 @@
 import {
   IconBell,
   IconBuildingStadium,
+  IconCalendarEvent,
   IconCash,
   IconHome,
   IconLifebuoy,
@@ -24,6 +25,7 @@ export const groups: { label: string; items: { href: string; label: string; icon
     label: "Operations",
     items: [
       { href: "/admin/venues", label: "Venues", icon: IconBuildingStadium },
+      { href: "/admin/bookings", label: "Bookings", icon: IconCalendarEvent },
       { href: "/admin/support", label: "Support", icon: IconLifebuoy },
       { href: "/admin/finance", label: "Finance", icon: IconCash },
       { href: "/admin/moderation", label: "Moderation", icon: IconShieldCheck },

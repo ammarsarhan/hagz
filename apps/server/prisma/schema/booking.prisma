@@ -11,12 +11,15 @@ model Booking {
   customerId         String             @db.Uuid
   creatorId          String?            @db.Uuid // Staff who entered it.
   regularId          String?            @db.Uuid // A regular's weekly reservation.
-  code               String             @unique // Share link, /b/[code].
+  code               String             @unique // Share link, /booking/[code].
   status             BookingStatus
   startsAt           DateTime           @db.Timestamptz
   endsAt             DateTime           @db.Timestamptz
   note               String? // From the customer.
   expiresAt          DateTime?          @db.Timestamptz // PENDING, HELD and UNCONFIRMED release slots after this.
+  checkedInAt        DateTime?          @db.Timestamptz // The booker showed their QR code (or staff ticked them in), around kick-off.
+  checkedInById      String?            @db.Uuid // Staff who checked them in.
+  checkedInManually  Boolean            @default(false) // Ticked in by name, without the code.
   idempotencyKey     String?            @db.Uuid // Idempotency-Key header; a retry gets this booking.
   // Terms copied at booking time; never updated.
   total              Int // Sum of its charges, VAT included.
@@ -31,7 +34,8 @@ model Booking {
   venue           Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
   ground          Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
   customer        VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
-  creator         Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  creator         Staff?          @relation("BookingCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  checkedInBy     Staff?          @relation("BookingCheckIn", fields: [checkedInById], references: [id], onDelete: Restrict)
   regular         VenueRegular?   @relation(fields: [regularId, venueId], references: [id, venueId], onDelete: Restrict)
   tokens          ReminderToken[]
   slots           GroundSlot[]
@@ -51,14 +55,17 @@ model Booking {
   @@unique([id, venueId]) // GroundSlot relation target.
   @@unique([id, customerId]) // Loyalty and review relation target.
   @@unique([venueId, idempotencyKey]) // Not customerId: a retry may create a new VenueCustomer.
-  @@unique([regularId, startsAt]) // One reservation per regular per week.
+  // One live reservation per regular per week. Released ones are kept, so pausing and resuming can
+  // reserve the week again.
+  @@unique([regularId, startsAt], map: "Booking_regularId_startsAt_key", where: raw("(status = ANY (ARRAY['PENDING'::\"BookingStatus\", 'HELD'::\"BookingStatus\", 'UNCONFIRMED'::\"BookingStatus\", 'CONFIRMED'::\"BookingStatus\", 'COMPLETED'::\"BookingStatus\", 'NO_SHOW'::\"BookingStatus\"]))"))
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
   @@index([status, expiresAt])
+  @@index([status, endsAt]) // The completion sweep.
 }
 
-// Why and how a CANCELLED booking was cancelled; who did it is its CANCELLED BookingEvent. Players
+// Why and how a CANCELLED booking was cancelled; who did it is its BookingEvent (DECLINED, MOVE_REJECTED). Players
 // get the booking's tier for their notice; venue cancellations always refund in full. Refunds are
 // Refund rows. CHECKs: refundPercent 0–100, and 100 for VENUE; refundAmount >= 0.
 model Cancellation {
@@ -76,7 +83,8 @@ model Cancellation {
 // once; sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
 // CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
 // DISCOUNT (with discountId) and REWARD (first two slot hours) have neither, amount < 0, one each
-// per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
+// per booking; ADJUSTMENT (a staff booking's custom total) has neither, amount <> 0, one per booking;
+// SERVICE_FEE (Hagz's, app bookings only, at the marketplace's VAT) has neither, amount > 0, one per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
 model BookingCharge {
   id         String            @id @default(uuid(7)) @db.Uuid
   bookingId  String            @db.Uuid
@@ -99,6 +107,8 @@ model BookingCharge {
   @@unique([bookingId, optionId])
   @@unique([bookingId], map: "BookingCharge_discount_key", where: { type: "DISCOUNT" })
   @@unique([bookingId], map: "BookingCharge_reward_key", where: { type: "REWARD" })
+  @@unique([bookingId], map: "BookingCharge_adjustment_key", where: { type: "ADJUSTMENT" })
+  @@unique([bookingId], map: "BookingCharge_service_fee_key", where: { type: "SERVICE_FEE" })
   @@index([optionId])
   @@index([discountId])
 }
@@ -136,7 +146,7 @@ model Rescheduling {
   toBookingId     String           @db.Uuid
   type            ReschedulingType
   groupId         String?          @db.Uuid // Shared by the two moves of a SWAP.
-  staffId         String?          @db.Uuid // Who moved it, or entered the refill; null when a customer refilled it in the app.
+  staffId         String?          @db.Uuid // Who moved it, or entered the refill; null when a customer refilled it or moved it back in the app.
   reason          String?
   priceDifference Int? // Minor units.
   createdAt       DateTime         @default(now()) @db.Timestamptz

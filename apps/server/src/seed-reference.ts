@@ -187,6 +187,8 @@ const ensureMarketplace = async () => {
       dialCode: "+20",
       timezone: "Africa/Cairo",
       taxRate: 1400,
+      // 1 EGP per player per hour: 10 EGP an hour on a 5-a-side pitch (user, 2026-11-23).
+      serviceFee: 100,
       isActive: true,
       translations: { create: names("Egypt", "مصر") },
     },

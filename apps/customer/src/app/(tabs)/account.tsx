@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import type { Icon } from "@tabler/icons-react-native";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, ScrollView, Switch, View } from "react-native";
@@ -33,6 +33,7 @@ import { displayPhone, isolate, maskedPhone } from "@/lib/phone";
 import { preparePhoto, putPhoto } from "@/lib/photos";
 import { signOut } from "@/lib/session";
 import { contactSupport, hasSupport } from "@/lib/support";
+import { push } from "@/lib/navigation";
 
 type Profile = components["schemas"]["CustomerProfile"];
 
@@ -83,8 +84,20 @@ export default function AccountTab() {
 
 // A guest (Figma C7, 170:2, "No name on the shirt"; the user's pick, 2026-11-20): Search's "Uh oh!"
 // empty state for the Account tab, the shirt with no name, then Create account (lime, a big moment)
-// and Sign in.
+// and Sign in. The tab's title over it, where Community and Bookings have theirs.
 function Guest() {
+  const { t } = useTranslation();
+  return (
+    <View className="flex-1 pt-4">
+      <Text accessibilityRole="header" className="px-6 text-title font-semibold tracking-[-0.4px]">
+        {t("screens.account.title")}
+      </Text>
+      <GuestBody />
+    </View>
+  );
+}
+
+function GuestBody() {
   const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-8 pb-6">
@@ -95,16 +108,20 @@ function Guest() {
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {t("screens.account.guest")}
       </Text>
+      {/* Stacked and full width, at the illustration screens' height (user, 2026-11-24): Create
+          account, then Sign in. */}
       <View className="mt-6 gap-2.5 self-stretch">
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"
-          onPress={() => router.push("/sign-up")}
+          size="small"
+          onPress={() => push("/sign-up")}
         />
         <Button
           label={t("common.actions.signIn")}
           variant="secondary"
-          onPress={() => router.push("/sign-in")}
+          size="small"
+          onPress={() => push("/sign-in")}
         />
       </View>
     </View>
@@ -254,7 +271,7 @@ function SignedIn({
               : t("screens.account.favorites.none")
           }
           trailing={chevron}
-          onPress={() => router.push("/favorites")}
+          onPress={() => push("/favorites")}
         />
 
         <SettingsHeading>{t("screens.account.security")}</SettingsHeading>
@@ -279,7 +296,7 @@ function SignedIn({
           title={t("screens.account.password.title")}
           body={t("screens.account.password.body")}
           trailing={chevron}
-          onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
+          onPress={() => push({ pathname: "/forgot-password", params: { phone } })}
         />
 
         <SettingsHeading>{t("screens.account.app")}</SettingsHeading>
@@ -379,6 +396,10 @@ function PhotoSheet({
   ];
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden} closeButton={false}>
+      {/* A small title over the choices, so the sheet says what it's for (user, 2026-11-24). */}
+      <Text accessibilityRole="header" className="mb-1 text-center text-body font-semibold">
+        {t("screens.account.photo.title")}
+      </Text>
       <View>
         {choices.map(({ key, icon: Glyph, label }, index) => (
           <SettingsRow

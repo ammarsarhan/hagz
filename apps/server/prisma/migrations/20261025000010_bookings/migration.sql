@@ -5,7 +5,7 @@ CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRME
 CREATE TYPE "ReschedulingType" AS ENUM ('MOVE', 'SWAP', 'REFILL');
 
 -- CreateEnum
-CREATE TYPE "BookingChargeType" AS ENUM ('SLOT', 'AMENITY', 'DISCOUNT', 'REWARD');
+CREATE TYPE "BookingChargeType" AS ENUM ('SLOT', 'AMENITY', 'DISCOUNT', 'REWARD', 'ADJUSTMENT', 'SERVICE_FEE');
 
 -- CreateEnum
 CREATE TYPE "CancellationActor" AS ENUM ('CUSTOMER', 'VENUE', 'ADMIN');
@@ -24,6 +24,9 @@ CREATE TABLE "Booking" (
     "endsAt" TIMESTAMPTZ NOT NULL,
     "note" TEXT,
     "expiresAt" TIMESTAMPTZ,
+    "checkedInAt" TIMESTAMPTZ,
+    "checkedInById" UUID,
+    "checkedInManually" BOOLEAN NOT NULL DEFAULT false,
     "idempotencyKey" UUID,
     "total" INTEGER NOT NULL,
     "depositAmount" INTEGER,
@@ -113,6 +116,9 @@ CREATE INDEX "Booking_customerId_startsAt_idx" ON "Booking"("customerId", "start
 CREATE INDEX "Booking_status_expiresAt_idx" ON "Booking"("status", "expiresAt");
 
 -- CreateIndex
+CREATE INDEX "Booking_status_endsAt_idx" ON "Booking"("status", "endsAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Booking_id_venueId_key" ON "Booking"("id", "venueId");
 
 -- CreateIndex
@@ -137,13 +143,19 @@ CREATE UNIQUE INDEX "BookingCharge_discount_key" ON "BookingCharge"("bookingId")
 CREATE UNIQUE INDEX "BookingCharge_reward_key" ON "BookingCharge"("bookingId") WHERE ("type" = 'REWARD');
 
 -- CreateIndex
+CREATE UNIQUE INDEX "BookingCharge_adjustment_key" ON "BookingCharge"("bookingId") WHERE ("type" = 'ADJUSTMENT');
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BookingCharge_service_fee_key" ON "BookingCharge"("bookingId") WHERE ("type" = 'SERVICE_FEE');
+
+-- CreateIndex
 CREATE INDEX "BookingEvent_bookingId_createdAt_idx" ON "BookingEvent"("bookingId", "createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Booking_venueId_idempotencyKey_key" ON "Booking"("venueId", "idempotencyKey");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Booking_regularId_startsAt_key" ON "Booking"("regularId", "startsAt");
+CREATE UNIQUE INDEX "Booking_regularId_startsAt_key" ON "Booking"("regularId", "startsAt") WHERE (status IN ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
 
 -- CreateIndex
 CREATE INDEX "Rescheduling_fromBookingId_idx" ON "Rescheduling"("fromBookingId");
@@ -171,6 +183,9 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_customerId_venueId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "Booking" ADD CONSTRAINT "Booking_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_checkedInById_fkey" FOREIGN KEY ("checkedInById") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Cancellation" ADD CONSTRAINT "Cancellation_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -223,6 +238,10 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_total_check"
   CHECK (total >= 0);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- A check-in is always by a staff member; ticked in by name only when checked in.
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_check_in_check" CHECK (("checkedInAt" IS NULL) = ("checkedInById" IS NULL) AND (NOT "checkedInManually" OR "checkedInAt" IS NOT NULL));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "BookingEvent" ADD CONSTRAINT "BookingEvent_actor_check"
   CHECK (num_nonnulls("staffId", "customerId", "adminId") <= 1);
 
@@ -232,6 +251,8 @@ ALTER TABLE "BookingCharge" ADD CONSTRAINT "BookingCharge_kind_check" CHECK (
   OR (type = 'AMENITY' AND "optionId" IS NOT NULL AND "startsAt" IS NULL AND tier IS NULL AND "discountId" IS NULL AND amount >= 0)
   OR (type = 'DISCOUNT' AND "discountId" IS NOT NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount < 0)
   OR (type = 'REWARD' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount < 0)
+  OR (type = 'ADJUSTMENT' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount <> 0)
+  OR (type = 'SERVICE_FEE' AND "discountId" IS NULL AND "startsAt" IS NULL AND tier IS NULL AND "optionId" IS NULL AND pricing IS NULL AND amount > 0)
 );
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
@@ -256,3 +277,10 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_regular_check" CHECK (("regularId"
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_values_check" CHECK ("fromBookingId" <> "toBookingId" AND (type = 'SWAP') = ("groupId" IS NOT NULL) AND (type = 'REFILL') = ("priceDifference" IS NULL));
+
+-- AddExclusion (hand-added: Prisma cannot declare exclusion constraints). A backstop behind the slot
+-- claim: no two bookings that hold a ground's time overlap on it. A move or swap ends the old booking
+-- (RESCHEDULED) before inserting the new one, since this is checked at each statement.
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
+  EXCLUDE USING gist ("groundId" WITH =, tstzrange("startsAt", "endsAt") WITH &&)
+  WHERE (status IN ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));

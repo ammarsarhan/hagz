@@ -10,6 +10,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { isCompletePhone, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Reset, step 1: the number (filled in from sign in when there was one). The API answers the same
 // for every number, so nobody can tell from here whether one has an account.
@@ -36,7 +37,7 @@ export default function ResetPhone() {
       }
       return;
     }
-    router.push({
+    push({
       pathname: "/forgot-password/code",
       params: { phone, resendAfter: String(result.data.resendAfter) },
     });

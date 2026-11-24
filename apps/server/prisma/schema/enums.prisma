@@ -162,10 +162,13 @@ enum BookingChargeType {
   AMENITY
   DISCOUNT
   REWARD // Loyalty.
+  ADJUSTMENT // A staff-entered booking's custom total: the difference from the priced lines, either sign.
+  SERVICE_FEE // Hagz's fee on an app booking: the ground's players × hours × Marketplace.serviceFee.
 }
 
 // Listings
 enum ListingStatus {
+  WAITING // Asked for at checkout; opens once the booking is confirmed.
   OPEN
   CLOSED // Turned off by the booker.
   CANCELLED // The booking was cancelled.

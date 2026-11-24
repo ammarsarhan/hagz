@@ -215,6 +215,7 @@ model VenueCustomer {
   customerId   String?   @db.Uuid
   name         String
   phone        String? // E.164. Null after the linked account is deleted.
+  note         String? // Staff's own note about them, never shown to the customer.
   // Kept up to date with every booking change, for ranking candidates to fill a slot.
   lastBookedAt DateTime? @db.Timestamptz
   bookingCount Int       @default(0) // Completed.

@@ -63,6 +63,7 @@ export const QUEUE_NAMES = [
   "slot-maintenance",
   "venue-photo-sweeper",
   "customer-avatar-sweeper",
+  "booking-expiry",
 ] as const;
 export const QueueName = z.enum(QUEUE_NAMES).meta({ id: "QueueName" });
 

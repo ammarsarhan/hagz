@@ -1,6 +1,13 @@
 "use client";
 
-import { IconDots, IconSearch, type Icon } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconChevronDown,
+  IconDots,
+  IconSearch,
+  IconX,
+  type Icon,
+} from "@tabler/icons-react";
 import {
   FlexRender,
   type ReactTable,
@@ -185,6 +192,102 @@ export function TableSearch({
         className="h-full min-w-0 flex-1 bg-transparent text-label text-ink outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:hidden"
       />
     </label>
+  );
+}
+
+// A dropdown beside a TableSearch, the same height and shape, that narrows the table by one value,
+// e.g. a venue's bookings by ground. Native, so the keyboard and screen readers get the platform's
+// own picker.
+export function TableFilter({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  // What it filters by, for screen readers: the toolbar shows no label.
+  label: string;
+}) {
+  return (
+    <span className="relative flex h-9 shrink-0 items-center rounded-[0.625rem] border border-border bg-white text-label text-ink transition-colors focus-within:border-ink">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3 outline-none"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <IconChevronDown
+        size={16}
+        className="pointer-events-none absolute right-3 size-4 text-ink-3"
+        stroke={1.75}
+      />
+    </span>
+  );
+}
+
+// A day to narrow a table to, beside its search: "Any date" until one is picked, then the day and
+// an × to clear it. The browser's own calendar opens from it (an invisible date input under it).
+// value is YYYY-MM-DD, or "" for any day.
+export function TableDate({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  // What the day means, for screen readers: "Starts on".
+  label: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  // The day as written, read as a calendar day (UTC on both sides, so no zone moves it).
+  const shown = value
+    ? new Intl.DateTimeFormat("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(`${value}T00:00:00Z`))
+    : "Any date";
+  return (
+    <span className="relative flex h-9 shrink-0 items-center rounded-[0.625rem] border border-border bg-white text-label text-ink transition-colors focus-within:border-ink">
+      <input
+        ref={input}
+        type="date"
+        tabIndex={-1}
+        aria-hidden
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="pointer-events-none absolute inset-0 opacity-0"
+      />
+      <button
+        type="button"
+        aria-label={`${label}: ${shown}`}
+        onClick={() => input.current?.showPicker()}
+        className={`relative flex h-full cursor-pointer items-center gap-2 pl-3 outline-none ${value ? "pr-1.5" : "pr-3"}`}
+      >
+        <IconCalendar size={16} className="size-4 text-ink-3" stroke={1.75} />
+        <span className={`tabular-nums ${value ? "text-ink" : "text-ink-2"}`}>{shown}</span>
+      </button>
+      {value ? (
+        <button
+          type="button"
+          aria-label="Any date"
+          onClick={() => onChange("")}
+          className="relative mr-2 flex size-5 cursor-pointer items-center justify-center rounded-full text-ink-3 hover:bg-chip hover:text-ink"
+        >
+          <IconX size={14} className="size-3.5" stroke={2} />
+        </button>
+      ) : null}
+    </span>
   );
 }
 

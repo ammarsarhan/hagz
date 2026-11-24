@@ -18,7 +18,8 @@ model Staff {
   memberships   VenueMembership[]
   invites       VenueInvitation[]
   events        VenueEvent[]
-  bookings      Booking[] // Entered on a customer's behalf.
+  bookings      Booking[]           @relation("BookingCreator") // Entered on a customer's behalf.
+  checkIns      Booking[]           @relation("BookingCheckIn") // Bookers checked in.
   bookingEvents BookingEvent[]
   payments      Payment[] // Cash recorded.
   refunds       Refund[] // Issued.
@@ -26,7 +27,7 @@ model Staff {
   discounts     VenueDiscount[]
   regulars      VenueRegular[] // Set up.
   reschedulings Rescheduling[]
-  arrivals      BookingListing[] // Open-game arrivals recorded.
+  gameCheckIns  ListingPlayer[] // Open-game players checked in.
   tournaments   Tournament[] // Created for a venue.
   history       AccountEvent[] // What admins did to this account.
 }

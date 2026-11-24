@@ -2,30 +2,58 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import i18n from "@/i18next/i18next";
 import { colors } from "@/lib/colors";
+import { formatDistance } from "@/lib/distance";
 import { formatPrice } from "@/lib/money";
-import type { VenueCard } from "@/lib/search";
-import { IconList } from "./icons";
+import type { SearchSort, VenueCard } from "@/lib/search";
+import { timeOfDay } from "@/lib/venue";
+import { IconList, IconStarFilled } from "./icons";
 import { VenueMapCard } from "./search-cards";
 import { Text } from "./text";
 
 // Search on a map (Figma "C3 · Tabs & Search", option 3, 98:2): Google Maps under the search bar,
-// each venue's hourly price as a pin, and the picked venue's card floating at the bottom. The
-// picked pin is black with a lime price; the map first fits every venue found (and the player).
+// each venue as a pin labelled by what the list is sorted by, and the picked venue's card floating
+// at the bottom. The picked pin is black with a lime label; the map first fits every venue found
+// (and the player).
 
 const CAIRO = { latitude: 30.0444, longitude: 31.2357 };
 
-// A price pin: white, or black with a lime price when picked. It switches at once rather than
-// fading: a Google Maps marker is a picture of its view, so fading it means redrawing that picture
-// every frame on the main thread, which stutters and takes frames from the card's cross-fade too
-// (user, 2026-11-20).
-function PricePin({ price, picked }: { price: string; picked: boolean }) {
+// What a pin says (user, 2026-11-22): nearest shows the distance, price the price per hour, rating
+// the rating beside a star ("New" without one yet), soonest the first free time on any of its
+// grounds that fits the search (a search is one day, named in the bar, so the time alone, as on the
+// cards); best match shows the price.
+const pinLabel = (card: VenueCard, sort: SearchSort, currency: string, timezone: string) => {
+  if (sort === "DISTANCE" && card.distance !== null) {
+    return { text: formatDistance(card.distance), star: false };
+  }
+  const soonest = card.nextTimes[0];
+  if (sort === "SOONEST" && soonest) {
+    return { text: timeOfDay(soonest.startsAt, timezone), star: false };
+  }
+  if (sort === "RATING") {
+    const { average } = card.rating;
+    return {
+      text: average === null ? i18n.t("screens.search.pinNew") : average.toFixed(2),
+      star: true,
+    };
+  }
+  const price = formatPrice(card.priceFrom, currency);
+  return { text: sort === "PRICE" ? price + i18n.t("formats.perHour") : price, star: false };
+};
+
+// A pin: white, or black with a lime label when picked. It switches at once rather than fading: a
+// Google Maps marker is a picture of its view, so fading it means redrawing that picture every frame
+// on the main thread, which stutters and takes frames from the card's cross-fade too (user,
+// 2026-11-20).
+function Pin({ text, star, picked }: { text: string; star: boolean; picked: boolean }) {
   return (
     <View
-      className={`h-7 justify-center rounded-full px-2.5 ${picked ? "bg-ink" : "border border-ink bg-white"}`}
+      className={`h-7 flex-row items-center gap-1 rounded-full px-2.5 ${picked ? "bg-ink" : "border border-ink bg-white"}`}
     >
+      {star ? <IconStarFilled size={12} color={picked ? colors.lime : colors.ink} /> : null}
       <Text className={`text-caption font-semibold ${picked ? "text-primary" : "text-ink"}`}>
-        {price}
+        {text}
       </Text>
     </View>
   );
@@ -33,6 +61,7 @@ function PricePin({ price, picked }: { price: string; picked: boolean }) {
 
 export function SearchMap({
   cards,
+  sort,
   currency,
   timezone,
   params,
@@ -42,6 +71,7 @@ export function SearchMap({
   onList,
 }: {
   cards: VenueCard[];
+  sort: SearchSort;
   currency: string;
   timezone: string;
   // What the search asked of the grounds, for the venue page's link.
@@ -87,17 +117,17 @@ export function SearchMap({
         {placed.map((card) => {
           const isPicked = card.id === picked?.id;
           return card.coordinates ? (
-            // Remounted when picked or let go, so its picture is drawn once in its new look and
-            // otherwise left alone.
+            // Remounted when picked or let go, or the sort changes its label, so its picture is
+            // drawn once in its new look and otherwise left alone.
             <Marker
-              key={`${card.id}-${isPicked ? "on" : "off"}`}
+              key={`${card.id}-${sort}-${isPicked ? "on" : "off"}`}
               coordinate={card.coordinates}
               anchor={{ x: 0.5, y: 0.5 }}
               tracksViewChanges={false}
               zIndex={isPicked ? 2 : 1}
               onPress={() => pick(card.id)}
             >
-              <PricePin price={formatPrice(card.priceFrom, currency)} picked={isPicked} />
+              <Pin {...pinLabel(card, sort, currency, timezone)} picked={isPicked} />
             </Marker>
           ) : null;
         })}

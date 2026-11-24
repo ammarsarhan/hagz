@@ -1,12 +1,20 @@
-import { VenueCoverage, VenueFreeHours, VenueSearchResults, VenueSpread } from "@hagz/contracts";
+import {
+  VenueCoverage,
+  VenueFreeHours,
+  VenueFreeHoursQuery,
+  VenueSearchQuery,
+  VenueSearchResults,
+  VenueSpread,
+} from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { router } from "@/http/router";
 import { signJwt } from "@/platform/crypto/jwt";
 import { reconcileGround } from "@/modules/venues/application/slot-generation";
+import { freeHours, searchVenues } from "@/modules/venues/application/venue-search";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { createCustomer, createMarketplace } from "../../support/factories";
+import { createAdmin, createCustomer, createMarketplace } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 // Search (PR 3.3): where, when, the filters, ordering and pages.
@@ -201,6 +209,55 @@ beforeEach(async () => {
   await resetRedis();
 });
 
+describe("most booked and newest", () => {
+  it("ranks by the bookings made this week, leaving out venues with none", async () => {
+    const { nile } = await setup();
+    const customer = await prisma.venueCustomer.create({
+      data: { venueId: nile.id, name: "Omar", phone: "+201001234567" },
+    });
+    await prisma.booking.create({
+      data: {
+        venueId: nile.id,
+        groundId: nile.groundId,
+        customerId: customer.id,
+        code: "POPULAR1",
+        status: "CONFIRMED",
+        startsAt: new Date(`${tomorrow()}T20:00:00+02:00`),
+        endsAt: new Date(`${tomorrow()}T21:00:00+02:00`),
+        total: 60000,
+        paymentMode: "MANUAL",
+        commissionRate: 0,
+        cancellationPolicy: "FLEXIBLE",
+        cancellationTiers: [],
+      },
+    });
+    expect((await found({ sort: "POPULAR" })).data.map((card) => card.id)).toEqual([nile.id]);
+    // A week-old booking no longer counts.
+    await prisma.booking.updateMany({ data: { createdAt: new Date(Date.now() - 8 * 86_400_000) } });
+    expect((await found({ sort: "POPULAR" })).data).toHaveLength(0);
+  });
+
+  it("puts the venue that went live last first", async () => {
+    const { nile, padel } = await setup();
+    const { id: adminId } = await createAdmin();
+    await prisma.venueEvent.createMany({
+      data: [
+        {
+          venueId: nile.id,
+          adminId,
+          type: "VENUE_LIVE",
+          createdAt: new Date(Date.now() - 86_400_000),
+        },
+        { venueId: padel.id, adminId, type: "VENUE_LIVE", createdAt: new Date() },
+      ],
+    });
+    expect((await found({ sort: "NEWEST" })).data.map((card) => card.id)).toEqual([
+      padel.id,
+      nile.id,
+    ]);
+  });
+});
+
 describe("where", () => {
   it("finds live venues anywhere under an area", async () => {
     const { cairo, maadi, nile } = await setup();
@@ -281,10 +338,65 @@ describe("when", () => {
     expect(card.priceFrom).toBe(60000);
   });
 
+  it("starts the times from a time of day, without a ground needed at exactly then", async () => {
+    const { nile } = await setup();
+    // The 7 pm hour taken: a search starting at 7 pm wouldn't find it, one from 7 pm still does.
+    await prisma.groundSlot.update({
+      where: { id: await slotAt(nile.groundId, "19:00") },
+      data: { status: "BLOCKED" },
+    });
+    expect((await found({ q: "nile", start: "19:00" })).data).toHaveLength(0);
+    const card = page0(await found({ q: "nile", after: "19:00" }));
+    expect(card.nextTimes[0]?.startsAt).toBe(
+      new Date(`${tomorrow()}T20:00:00+02:00`).toISOString(),
+    );
+  });
+
   it("leaves out grounds under maintenance", async () => {
     const { nile } = await setup();
     await prisma.ground.update({ where: { id: nile.groundId }, data: { status: "MAINTENANCE" } });
     expect((await found({ q: "nile" })).data).toEqual([]);
+  });
+});
+
+describe("the day, when none is asked for", () => {
+  // A local time in Cairo, `days` from today, as an instant.
+  const cairoAt = async (days: number, time: string) => {
+    const [row] = await prisma.$queryRaw<{ at: Date }[]>`
+      SELECT (((now() AT TIME ZONE 'Africa/Cairo')::date + ${days}::int + ${time}::time)::timestamp
+        AT TIME ZONE 'Africa/Cairo') AS at`;
+    if (!row) throw new Error("No instant.");
+    return row.at;
+  };
+  const dayOf = (at: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(at);
+
+  it("is today while something can still be booked, then tomorrow; a day asked for is kept", async () => {
+    await setup();
+    // Tomorrow's evening, in the middle of the day: times are left that day.
+    const evening = await cairoAt(1, "18:00");
+    const query = VenueSearchQuery.parse({ marketplace: "EG", ...MAADI, radius: 50 });
+    expect((await searchVenues(query, "EN", null, { now: () => evening })).date).toBe(
+      dayOf(evening),
+    );
+
+    // 11:30 pm: the last hour has started and the next is the next day's, so the search moves on,
+    // the free hours with it.
+    const late = await cairoAt(1, "23:30");
+    const next = dayOf(new Date(late.getTime() + 3 * 3_600_000));
+    const results = await searchVenues(query, "EN", null, { now: () => late });
+    expect(results.date).toBe(next);
+    expect(results.data.map((card) => card.name)).toContain("Nile Kickoff");
+    const hours = await freeHours(
+      VenueFreeHoursQuery.parse({ marketplace: "EG", ...MAADI, radius: 50 }),
+      { now: () => late },
+    );
+    expect(hours.date).toBe(next);
+
+    // Asked for that day by name, it stays, empty as it is.
+    const asked = VenueSearchQuery.parse({ ...query, date: dayOf(late) });
+    const today = await searchVenues(asked, "EN", null, { now: () => late });
+    expect(today).toMatchObject({ date: dayOf(late), total: 0 });
   });
 });
 
@@ -577,6 +689,17 @@ describe("best match and just freed", () => {
     await setup();
     const res = await search(near, "en", "not-a-token");
     expect(res.status).toBe(401);
+  });
+
+  it("finds only the venues with a time that came free again, when asked", async () => {
+    const { nile, padel } = await setup();
+    await prisma.groundSlot.update({
+      where: { id: await slotAt(nile.groundId, "22:00") },
+      data: { freedAt: new Date(Date.now() - 3_600_000) },
+    });
+    const ids = (await found({ justFreed: "true" })).data.map((card) => card.id);
+    expect(ids).toEqual([nile.id]);
+    expect((await found({})).data.map((card) => card.id)).toContain(padel.id);
   });
 
   it("marks free times that came free again near kick-off", async () => {

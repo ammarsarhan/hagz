@@ -29,7 +29,8 @@ interface ButtonProps {
   // An icon before the label (WhatsApp on Contact support).
   icon?: ReactNode;
   // `small`: 48 high with a 16 label, beside other content in a bar (the venue page's Book).
-  size?: "regular" | "small";
+  // `compact`: 44 high with a 15 label, a pair inside a card (the weekly game's Confirm).
+  size?: "regular" | "small" | "compact";
   // A quieter label in a button of the same size (14 rather than 16 or 17).
   quietLabel?: boolean;
 }
@@ -56,7 +57,7 @@ export function Button({
         Keyboard.dismiss();
         onPress?.();
       }}
-      className={`${size === "small" ? "h-12 px-5" : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${look.box}`}
+      className={`${size === "compact" ? "h-11 px-4" : size === "small" ? "h-12 px-5" : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${look.box}`}
     >
       {loading ? (
         <ActivityIndicator color={style.spinner} />
@@ -64,7 +65,7 @@ export function Button({
         <View className="flex-row items-center gap-2">
           {icon}
           <Text
-            className={`text-center ${quietLabel ? "text-label" : size === "small" ? "text-subtitle" : "text-button"} font-semibold ${look.label}`}
+            className={`text-center ${quietLabel ? "text-label" : size === "compact" ? "text-body" : size === "small" ? "text-subtitle" : "text-button"} font-semibold ${look.label}`}
           >
             {label}
           </Text>

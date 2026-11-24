@@ -11,6 +11,7 @@ CREATE TABLE "Marketplace" (
     "taxRate" INTEGER NOT NULL DEFAULT 0,
     "commissionRate" INTEGER NOT NULL DEFAULT 0,
     "joinFeeRate" INTEGER NOT NULL DEFAULT 1000,
+    "serviceFee" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
     "boundary" geography(MultiPolygon, 4326),
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,6 +99,9 @@ ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_commission_check" CHECK ("
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_join_fee_check" CHECK ("joinFeeRate" BETWEEN 0 AND 10000);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_service_fee_check" CHECK ("serviceFee" >= 0);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_boundary_check" CHECK ("boundary" IS NULL OR ST_IsValid("boundary"::geometry));

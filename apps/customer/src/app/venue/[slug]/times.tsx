@@ -2,30 +2,23 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { Pressable, ScrollView, useWindowDimensions, View, type ViewStyle } from "react-native";
 import Animated, {
-  Easing,
   FadeIn,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
-import { useHud, useHudAnchor } from "@/components/hud";
+import { useHudAnchor } from "@/components/hud";
 import { IconInfoCircle } from "@/components/icons";
 import { BackButton } from "@/components/nav";
 import { Text } from "@/components/text";
+import { PageState } from "@/components/page-state";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -40,10 +33,12 @@ import {
   partOfDay,
   timeOfDay,
   timeRange,
+  dayLabel,
   type FreeSlot,
   type PublicGround,
   type PublicVenue,
 } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // See times (Figma C6 round 2, 161:2: "Pick slots"; the user's pick, 2026-11-20): a ground's free
 // hours for a day, as chips grouped by part of the day, and the player taps the hours they want,
@@ -67,7 +62,9 @@ const FADE = 24;
 const RISE = 6;
 
 type Loaded<T> =
-  { state: "loading" } | { state: "failed"; message: string } | { state: "ready"; data: T };
+  | { state: "loading" }
+  | { state: "failed"; message: string; error: unknown }
+  | { state: "ready"; data: T };
 
 interface Day {
   date: string;
@@ -85,17 +82,6 @@ const daysFrom = (first: string, last: string) => {
   while (out.length < DAYS && (out.at(-1) ?? first) < last) out.push(nextDate(out.at(-1) ?? first));
   return out;
 };
-
-// "Fri 20 Nov", in the app's language, Western digits.
-const dayLabel = (date: string) =>
-  new Intl.DateTimeFormat(intlLocale, {
-    timeZone: "UTC",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  })
-    .format(new Date(`${date}T12:00:00Z`))
-    .replace(",", "");
 
 // What a tap on `slot` does to the picked run of hours (in time order, each starting where the last
 // ended): next to it, added (up to `longest`); an end, taken off; anywhere else, a fresh start.
@@ -145,7 +131,7 @@ export default function Times() {
       setVenue(
         result.ok
           ? { state: "ready", data: result.data }
-          : { state: "failed", message: hudMessage(result.error) },
+          : { state: "failed", message: hudMessage(result.error), error: result.error },
       );
     });
     return () => {
@@ -167,7 +153,7 @@ export default function Times() {
       const result = await read(date);
       if (!active) return;
       if (!result.ok) {
-        setDay({ state: "failed", message: hudMessage(result.error) });
+        setDay({ state: "failed", message: hudMessage(result.error), error: result.error });
         return;
       }
       setDays(result.data.days);
@@ -193,13 +179,13 @@ export default function Times() {
   // Only the venue's own failure takes the page; a day that doesn't load says so in its place.
   if (venue.state === "failed" || (venue.state === "ready" && !ground)) {
     return (
-      <Failed
-        message={venue.state === "failed" ? venue.message : ""}
+      <PageState
+        error={venue.state === "failed" ? venue.error : undefined}
         onRetry={() => setAttempt((n) => n + 1)}
       />
     );
   }
-  if (!ground || venue.state !== "ready") return <Failed loading />;
+  if (!ground || venue.state !== "ready") return <PageState loading />;
   return (
     <Picker
       venue={venue.data}
@@ -216,45 +202,6 @@ export default function Times() {
       onDate={setDate}
       onRetry={() => setAttempt((n) => n + 1)}
     />
-  );
-}
-
-// Loading the venue, or something that couldn't be read.
-function Failed({
-  loading = false,
-  message = "",
-  onRetry,
-}: {
-  loading?: boolean;
-  message?: string;
-  onRetry?: () => void;
-}) {
-  const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  return (
-    <View
-      className="flex-1 bg-white px-5"
-      style={{ paddingTop: insets.top, direction: isRTL ? "rtl" : "ltr" }}
-    >
-      <StatusBar style="dark" />
-      <View className="-mx-1 h-10 justify-center">
-        <BackButton onPress={() => router.back()} />
-      </View>
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.ink} />
-        </View>
-      ) : (
-        <View className="flex-1 justify-center gap-4 px-1 pb-24">
-          <Text className="text-subtitle text-ink-2">{message}</Text>
-          {onRetry ? (
-            <View className="items-start">
-              <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
-            </View>
-          ) : null}
-        </View>
-      )}
-    </View>
   );
 }
 
@@ -283,7 +230,6 @@ function Picker({
   onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [picked, setPicked] = useState<FreeSlot[]>([]);
@@ -523,8 +469,9 @@ function Picker({
 
       {/* What's picked and what it comes to, and Continue (lime once there's enough). */}
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
-        style={{ paddingBottom: insets.bottom + 8 }}
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white pt-3.5"
+        // The button closer to the edge than the price, as on the venue page's Book bar.
+        style={{ paddingStart: 24, paddingEnd: 16, paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
         <View className="shrink gap-0.5">
@@ -547,7 +494,22 @@ function Picker({
             variant={ready ? "moment" : "secondary"}
             size="small"
             disabled={!ready}
-            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+            onPress={() => {
+              // Anything else? next: extras and Need players?, at every venue.
+              if (!first || !last || !day) return;
+              push({
+                pathname: "/venue/[slug]/extras",
+                params: {
+                  slug: venue.slug,
+                  ground: ground.id,
+                  date: day.date,
+                  startsAt: first.startsAt,
+                  endsAt: last.endsAt,
+                  slots: String(picked.length),
+                  price: String(total),
+                },
+              });
+            }}
           />
         </View>
       </View>
@@ -636,20 +598,6 @@ function DayTile({
       </Animated.View>
     </Pressable>
   );
-}
-
-// A grey stand-in, gently pulsing, in a real piece's exact size, so nothing moves when it arrives.
-function Bone({ className }: { className: string }) {
-  const pulse = useSharedValue(1);
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(0.45, { duration: 700, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-  }, [pulse]);
-  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  return <Animated.View className={`bg-chip ${className}`} style={style} />;
 }
 
 // The day tiles before the first day comes back.
