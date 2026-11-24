@@ -21,8 +21,9 @@ import { Text } from "./text";
 // A booking the venue moved, while the player can still answer (Figma C8 "Booking · Moved by the
 // venue", 264:2): the page is the question. What it was, struck through, over what it is now, the
 // venue's reason, and what it costs; when the answer is due (silence keeps the new time); then
-// Keep the new time, Move it back (while the old time is still free) and I can't make it, which asks
-// first in a sheet (265:2): it counts as the venue's cancellation, so nothing is owed.
+// two answers (user, 2026-11-24): while the old time is still free, Keep the new time and Move it
+// back; once it isn't, Keep the new time and I can't make it, which asks first in a sheet (265:2):
+// it counts as the venue's cancellation, so nothing is owed.
 
 type Booking = components["schemas"]["Booking"];
 type Answer = "accept" | "back" | "reject";
@@ -179,17 +180,18 @@ export function MovedBooking({
             disabled={sending !== null && sending !== "back"}
             onPress={() => void answer("back")}
           />
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          disabled={sending !== null}
-          onPress={() => setAsking(true)}
-          className="items-center py-1.5 active:opacity-60"
-        >
-          <Text className="text-body leading-[22px] font-medium underline">
-            {t("screens.booking.move.cantMake")}
-          </Text>
-        </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            disabled={sending !== null}
+            onPress={() => setAsking(true)}
+            className="items-center py-1.5 active:opacity-60"
+          >
+            <Text className="text-body leading-[22px] font-medium underline">
+              {t("screens.booking.move.cantMake")}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* I can't make it: asked first, since it can't be undone. */}
