@@ -15,6 +15,7 @@ import { cache, queueConnection } from "@/platform/redis/connections";
 import { createLocalDiskStorage } from "@/platform/storage/providers";
 import { LOCAL_STORAGE_ROOT, storage } from "@/platform/storage/storage";
 import { seedBookings } from "./seed-bookings";
+import { seedLayouts } from "./seed-layouts";
 
 // Development only: 50 live venues across Alexandria, enough to try every Search filter, every Home
 // rail and open games (user, 2026-11-24). Run on an empty database after seed:reference:
@@ -34,6 +35,7 @@ import { seedBookings } from "./seed-bookings";
 // - Bookings through the real path over the next days (Most booked, fewer free times), some left
 //   awaiting payment or approval to expire; a few slots marked freed lately (Just freed).
 // - About 30 open games, hosted and joined through the real path, some full, some one short.
+// - A layout for each (seed:layouts): grounds to size, walkways, parking and the café, entrances.
 // - Accounts: an admin, the owner of every venue, a player with history (Play again with a usual
 //   time, the next-game ticket, saved venues, a game joined) and a player with none (their first
 //   booking gets the confetti). The pool of seed players fills the rest.
@@ -1062,6 +1064,9 @@ try {
       });
     }
   }
+
+  console.log("Layouts…");
+  console.log(`  ${await seedLayouts()} venues laid out`);
 
   console.log("\nDone. Sign in with:");
   console.log(

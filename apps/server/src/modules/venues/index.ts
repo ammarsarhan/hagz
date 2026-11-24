@@ -32,8 +32,9 @@ export { venuesStaffRoutes } from "./http/staff-routes";
 // For the development seed scripts.
 export { createInvitation } from "./application/invitations";
 export { reconcileGround } from "./application/slot-generation";
-// For the development seeds: when a venue went live (Search's Newest).
+// For the development seeds: when a venue went live (Search's Newest), and layouts.
 export { VENUE_LIVE } from "./domain/events";
+export { saveLayout } from "./application/layout";
 export { ALL_PERMISSIONS } from "./domain/permissions";
 export { startPhotoSweeper } from "./jobs/photo-sweeper";
 export { startSlotGeneration } from "./jobs/slot-generation";

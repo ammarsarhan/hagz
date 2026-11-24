@@ -22,6 +22,7 @@
     "seed:alexandria": "tsx src/seed-alexandria.ts",
     "seed:bookings": "tsx src/seed-bookings.ts",
     "seed:invitations": "tsx src/seed-invitations.ts",
+    "seed:layouts": "tsx src/seed-layouts.ts",
     "seed:nearby": "tsx src/seed-nearby.ts",
     "seed:reference": "tsx src/seed-reference.ts",
     "seed:scale": "tsx src/seed-scale.ts"
