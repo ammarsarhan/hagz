@@ -53,8 +53,8 @@ interface Window {
 }
 
 // The part of the owner's grid worth drawing (user, 2026-11-24: venues whose grounds sit in a
-// corner of a wide grid came out tiny): the box round every tile and the entrances' places along
-// their edges, a cell of walkway round it, inside the grid. The screen fits this, not the grid.
+// corner of a wide grid came out tiny): the box round every tile, a cell of walkway round it,
+// inside the grid. The screen fits this, not the grid.
 const windowOf = (layout: Layout): Window => {
   const xs: number[] = [];
   const ys: number[] = [];
@@ -70,15 +70,9 @@ const windowOf = (layout: Layout): Window => {
     xs.push(tile.x, tile.x + tile.width);
     ys.push(tile.y, tile.y + tile.height);
   }
+  // Entrances don't widen it: one far along an empty edge would keep the empty grid. They're drawn
+  // on the window's edge, one past its end at that end (still on the right side of everything).
   if (xs.length === 0) return { left: 0, top: 0, columns: layout.columns, rows: layout.rows };
-  // An entrance stays on its edge; only where along it counts.
-  for (const entrance of layout.entrances) {
-    if (entrance.side === "TOP" || entrance.side === "BOTTOM") {
-      xs.push(entrance.offset, entrance.offset + 1);
-    } else {
-      ys.push(entrance.offset, entrance.offset + 1);
-    }
-  }
   const left = Math.max(0, Math.min(...xs) - MARGIN_CELLS);
   const top = Math.max(0, Math.min(...ys) - MARGIN_CELLS);
   const right = Math.min(layout.columns, Math.max(...xs) + MARGIN_CELLS);
@@ -441,8 +435,9 @@ export function VenueLayout({
         {width > 0
           ? layout.entrances.map((entrance, i) => {
               const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
-              const along =
-                PAD + EDGE + (entrance.offset - (horizontal ? view.left : view.top) + 0.5) * cell;
+              const [start, span] = horizontal ? [view.left, view.columns] : [view.top, view.rows];
+              const within = Math.min(Math.max(entrance.offset - start, 0), span - 1);
+              const along = PAD + EDGE + (within + 0.5) * cell;
               const card = { width: width + 2 * (PAD + EDGE), height: height + 2 * (PAD + EDGE) };
               const cx = horizontal ? along : entrance.side === "LEFT" ? 0 : card.width;
               const cy = horizontal ? (entrance.side === "TOP" ? 0 : card.height) : along;
