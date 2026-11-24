@@ -7,7 +7,6 @@ import Animated, {
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
-  useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,10 +54,6 @@ import { timeOfDay, timeRange } from "@/lib/venue";
 
 // The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
 const TAB_ROW = 49;
-// The bar the tab's name rises into, under the status bar, and how it comes in (the venue page's).
-const BAR = 56;
-const FADE = 24;
-const RISE = 6;
 const TONIGHT_HOUR = Number(TONIGHT_FROM.slice(0, 2));
 
 // "Morning", "Afternoon" or "Evening", by the phone's clock.
@@ -101,27 +96,11 @@ export default function Home() {
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
-  // Everything scrolls, the where row too. Once the page is under the status bar, a white strip
-  // fades in behind it over the first few points (as ScrollPage does); once the big title has gone
-  // under, the strip grows into a bar and "Home" rises into it, as the venue page's name does
-  // (user, 2026-11-24).
+  // Everything scrolls, the where row too; once the page is under the status bar, a white strip
+  // with its hairline fades in behind it over the first few points (as ScrollPage does).
   const top = insets.top + 12;
-  const bar = insets.top + BAR;
-  // Where the big title ends, on the UI thread.
-  const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
   const stripStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 12], [0, 1], "clamp"),
-  }));
-  const barProgress = useDerivedValue(() => {
-    const gone = titleEnd.value - bar;
-    return interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
-  });
-  const barStyle = useAnimatedStyle(() => ({ opacity: barProgress.value }));
-  // The strip's hairline gives way to the bar's.
-  const stripLine = useAnimatedStyle(() => ({ opacity: 1 - barProgress.value }));
-  const compactStyle = useAnimatedStyle(() => ({
-    opacity: barProgress.value,
-    transform: [{ translateY: (1 - barProgress.value) * RISE }],
   }));
 
   const rails = [tonight, games, topRated, instant, budget, freed, popular, newest];
@@ -230,10 +209,6 @@ export default function Home() {
           <Text
             accessibilityRole="header"
             className="px-6 pt-5 text-title font-semibold tracking-[-0.4px]"
-            onLayout={(event) => {
-              const { y, height } = event.nativeEvent.layout;
-              titleEnd.value = y + height;
-            }}
           >
             {name
               ? t(`screens.home.greeting.${partOfDay()}`, { name })
@@ -357,33 +332,12 @@ export default function Home() {
 
       {pull.spinner}
 
-      {/* Behind the status bar once the page scrolls under it, */}
+      {/* Behind the status bar once the page scrolls under it. */}
       <Animated.View
         pointerEvents="none"
-        className="absolute top-0 right-0 left-0 bg-white"
-        style={[{ height: insets.top }, stripStyle]}
-      >
-        <Animated.View
-          className="absolute right-0 bottom-0 left-0 border-b border-hairline"
-          style={stripLine}
-        />
-      </Animated.View>
-      {/* then a bar with the tab's name once the big title has gone under it. */}
-      <Animated.View
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
         className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
-        style={[{ height: bar }, barStyle]}
-      >
-        <View className="justify-center px-6" style={{ marginTop: insets.top, height: BAR }}>
-          <Animated.View style={compactStyle}>
-            <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
-              {t("components.tabs.home")}
-            </Text>
-          </Animated.View>
-        </View>
-      </Animated.View>
+        style={[{ height: insets.top }, stripStyle]}
+      />
     </View>
   );
 }
