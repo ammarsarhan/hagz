@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { LightsOutArt } from "@/components/lights-out-art";
+import { FittedFailure } from "@/components/page-state";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconMap, IconSearch } from "@/components/icons";
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
@@ -28,7 +29,6 @@ import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { SPORT_ICONS } from "@/components/sport-icons";
 import { Text } from "@/components/text";
-import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import { groundParams, whenFilter } from "@/lib/ground-filter";
@@ -349,7 +349,12 @@ export default function SearchTab() {
   }, [when.date, search.date, search.timezone]);
 
   // Pulled down from the top: the search again, the spinner held until it's back.
-  const pull = usePullToRefresh({ scrollY, busy: search.loading, onRefresh: search.refresh });
+  // Nowhere to look (the governorates didn't load): a pull reads them again, as Try again does.
+  const pull = usePullToRefresh({
+    scrollY,
+    busy: search.loading,
+    onRefresh: nowhere ? retryCoverage : search.refresh,
+  });
 
   const total = search.total;
   const summary =
@@ -516,13 +521,12 @@ export default function SearchTab() {
     [currency, timezone, venueParams],
   );
 
-  // Couldn't search (offline, or the API's few words), or nowhere to look: what happened and Try
-  // again, plain (user, 2026-11-24: the fitted Unplugged scene taken back off Search).
+  // Couldn't search (offline, or the API's few words), or nowhere to look: Unplugged, its words and
+  // Try again, fitted to the room left above the tab bar (user, 2026-11-24): nothing to scroll down
+  // to, but the list still pulls to refresh.
+  const failure = nowhere ? coverageError : search.error;
   const failed = (error: unknown, retry: () => void) => (
-    <View className="items-start gap-4 pt-10">
-      <Text className="text-subtitle text-ink-2">{hudMessage(error)}</Text>
-      <Button label={t("common.actions.tryAgain")} size="small" onPress={retry} />
-    </View>
+    <FittedFailure error={error} onRetry={retry} />
   );
   const empty = nowhere ? (
     failed(coverageError, retryCoverage)
@@ -627,9 +631,11 @@ export default function SearchTab() {
           ) : undefined
         }
         contentContainerStyle={{
+          // Grows to the screen, so a failed search's scene takes exactly what's left of it.
+          flexGrow: 1,
           paddingHorizontal: 24,
           paddingTop: insets.top + 16,
-          paddingBottom: 96,
+          paddingBottom: failure ? 24 : 96,
         }}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
