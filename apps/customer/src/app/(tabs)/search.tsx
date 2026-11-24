@@ -16,7 +16,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { FittedFailure } from "@/components/page-state";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconMap, IconSearch } from "@/components/icons";
@@ -29,6 +28,7 @@ import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { SPORT_ICONS } from "@/components/sport-icons";
 import { Text } from "@/components/text";
+import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import { groundParams, whenFilter } from "@/lib/ground-filter";
@@ -516,15 +516,22 @@ export default function SearchTab() {
     [currency, timezone, venueParams],
   );
 
-  const failure = nowhere ? coverageError : search.error;
+  // Couldn't search (offline, or the API's few words), or nowhere to look: what happened and Try
+  // again, plain (user, 2026-11-24: the fitted Unplugged scene taken back off Search).
+  const failed = (error: unknown, retry: () => void) => (
+    <View className="items-start gap-4 pt-10">
+      <Text className="text-subtitle text-ink-2">{hudMessage(error)}</Text>
+      <Button label={t("common.actions.tryAgain")} size="small" onPress={retry} />
+    </View>
+  );
   const empty = nowhere ? (
-    <FittedFailure error={coverageError} onRetry={retryCoverage} />
+    failed(coverageError, retryCoverage)
   ) : search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
     </View>
   ) : search.error ? (
-    <FittedFailure error={search.error} onRetry={search.refresh} />
+    failed(search.error, search.refresh)
   ) : (
     // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
     <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
@@ -620,14 +627,10 @@ export default function SearchTab() {
           ) : undefined
         }
         contentContainerStyle={{
-          // Grows to the screen, so a failed search's scene can take what's left of it.
-          flexGrow: 1,
           paddingHorizontal: 24,
           paddingTop: insets.top + 16,
           paddingBottom: 96,
         }}
-        // Failed: the scene fits the screen exactly, so nothing scrolls (Try again reloads).
-        scrollEnabled={!failure}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
         refreshControl={pull.control}
