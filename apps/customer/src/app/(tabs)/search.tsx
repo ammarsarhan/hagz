@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
+import { FailedMessage } from "@/components/page-state";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconMap, IconSearch } from "@/components/icons";
@@ -514,10 +515,13 @@ export default function SearchTab() {
       <ActivityIndicator color={colors.ink} />
     </View>
   ) : search.error ? (
-    <View className="items-start gap-4 pt-10">
-      <Text className="text-subtitle text-ink-2">{search.error}</Text>
-      <Button label={t("common.actions.tryAgain")} size="small" onPress={search.refresh} />
-    </View>
+    // Unplugged, like every other page that couldn't load: offline, or the API's few words.
+    <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
+      <FailedMessage error={search.error} />
+      <View className="mt-6">
+        <Button label={t("common.actions.tryAgain")} size="small" onPress={search.refresh} />
+      </View>
+    </Animated.View>
   ) : (
     // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
     <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">

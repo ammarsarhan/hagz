@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import i18n from "@/i18next/i18next";
 import { api } from "./api";
-import { hudMessage, send } from "./api-errors";
+import { send } from "./api-errors";
 import { intlLocale } from "./language";
 import { currencyName } from "./money";
 
@@ -278,7 +278,8 @@ interface State {
   loading: boolean;
   // Loading the next page, rather than the search again.
   loadingMore: boolean;
-  error: string | null;
+  // What failed, as `send` returned it (FailedMessage tells offline from the API's problem).
+  error: unknown;
 }
 
 const EMPTY: State = {
@@ -329,7 +330,7 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
           ...(reset ? { cards: [], total: null, cursor: null } : {}),
           loading: false,
           loadingMore: false,
-          error: hudMessage(result.error),
+          error: result.error,
         }));
         return;
       }
