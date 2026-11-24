@@ -81,20 +81,39 @@ export const presentSummary = (booking: SummaryRow): AdminBooking => ({
   createdAt: booking.createdAt.toISOString(),
 });
 
+// Bookings starting on a day on their venue's calendar: that day's midnight to the next in each
+// marketplace's timezone (Postgres does the zone, summer time included).
+const dayIn = async (date: string): Promise<Prisma.BookingWhereInput> => {
+  const days = await prisma.$queryRaw<{ id: string; from: Date; to: Date }[]>`
+    SELECT id,
+           (${date}::date)::timestamp AT TIME ZONE timezone AS "from",
+           (${date}::date + 1)::timestamp AT TIME ZONE timezone AS "to"
+    FROM "Marketplace"`;
+  return {
+    OR: days.map((day) => ({
+      venue: { marketplaceId: day.id },
+      startsAt: { gte: day.from, lt: day.to },
+    })),
+  };
+};
+
 export const listAdminBookings = async ({
   venueId,
   groundId,
   status,
+  date,
   q,
   cursor,
   limit,
 }: AdminBookingQuery) => {
   const text = q ? literal(q) : null;
+  const day = date ? await dayIn(date) : null;
   // The venue and ground (a venue's Bookings tab) and the search narrow the counts too; the tab
   // doesn't.
   const search: Prisma.BookingWhereInput = {
     ...(venueId && { venueId }),
     ...(groundId && { groundId }),
+    ...(day && { AND: [day] }),
     ...(text && {
       OR: [
         // Codes are upper case; people type them any way.

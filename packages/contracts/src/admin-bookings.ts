@@ -14,6 +14,10 @@ export const AdminBookingQuery = z
     venueId: z.uuid().optional().meta({ description: "Only this venue's bookings." }),
     groundId: z.uuid().optional().meta({ description: "Only this ground's bookings." }),
     status: BookingStatus.optional(),
+    date: z.iso.date().optional().meta({
+      description: "Only bookings that start on this day, on the venue's calendar.",
+      example: "2026-11-24",
+    }),
     q: z.string().trim().max(100).optional().meta({
       description:
         "The booking's code, or part of the customer's name or phone, or the venue's name.",

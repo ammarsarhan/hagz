@@ -28955,6 +28955,18 @@
           {
             "schema": {
               "type": "string",
+              "format": "date",
+              "description": "Only bookings that start on this day, on the venue's calendar.",
+              "example": "2026-11-24"
+            },
+            "required": false,
+            "description": "Only bookings that start on this day, on the venue's calendar.",
+            "name": "date",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "maxLength": 100,
               "description": "The booking's code, or part of the customer's name or phone, or the venue's name."
             },

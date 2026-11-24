@@ -15861,6 +15861,8 @@ export interface paths {
                     groundId?: string;
                     /** @description `PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it. */
                     status?: components["schemas"]["BookingStatus"];
+                    /** @description Only bookings that start on this day, on the venue's calendar. */
+                    date?: string;
                     /** @description The booking's code, or part of the customer's name or phone, or the venue's name. */
                     q?: string;
                     /** @description `nextCursor` from the previous page. */

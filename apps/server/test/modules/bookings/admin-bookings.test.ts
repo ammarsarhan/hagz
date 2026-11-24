@@ -73,6 +73,35 @@ const post = async (path: string, token: string, body?: object) =>
   });
 
 describe("the admin's bookings", () => {
+  it("narrows to the bookings starting on a day, on the venue's calendar", async () => {
+    const { ground, hours } = await aGround();
+    const ahmed = await signedIn();
+    const today = Booking.parse(
+      await (await book(ahmed.token, { groundId: ground.id, ...at(hours, 0, 1) })).json(),
+    );
+    const later = Booking.parse(
+      await (await book(ahmed.token, { groundId: ground.id, ...at(hours, 1, 2) })).json(),
+    );
+    // A day later; and in the Cairo morning hours, still the same Cairo day though UTC differs.
+    const dayLater = (iso: string) => new Date(Date.parse(iso) + 24 * HOUR);
+    await prisma.booking.update({
+      where: { id: later.id },
+      data: { startsAt: dayLater(later.startsAt), endsAt: dayLater(later.endsAt) },
+    });
+    const cairoDay = (iso: string | Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date(iso));
+    const cookie = await adminCookie();
+
+    const first = await lookup(cookie, `?date=${cairoDay(today.startsAt)}`);
+    expect(first.data.map((booking) => booking.id)).toEqual([today.id]);
+    expect(first.counts).toMatchObject({ CONFIRMED: 1 });
+    const next = await lookup(cookie, `?date=${cairoDay(dayLater(later.startsAt))}`);
+    expect(next.data.map((booking) => booking.id)).toEqual([later.id]);
+    expect((await lookup(cookie, "?date=2020-01-01")).data).toEqual([]);
+    const bad = await get("/admin/bookings?date=24-11-2026", cookie);
+    expect(bad.status).toBe(400);
+  });
+
   it("lists every booking newest first, with counts per status, a tab and a page at a time", async () => {
     const { ground, hours } = await aGround();
     const ahmed = await signedIn();
