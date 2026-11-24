@@ -14,3 +14,9 @@ export { startBookingExpiry } from "./jobs/booking-expiry";
 export { newCode } from "./application/booking-rows";
 export { LIMITS } from "./application/limits";
 export { joinGame, listBooking } from "./application/listings";
+// For the dev seeds (seed-states.ts): the staff's own actions, as the routes run them.
+export { manualCheckIn } from "./application/check-in";
+export { expireDueBookings } from "./application/expire-bookings";
+export { createRegular } from "./application/regulars";
+export { moveBooking } from "./application/rescheduling";
+export { declineBooking } from "./application/staff-decisions";

@@ -59,6 +59,7 @@ export default defineConfig(globalIgnores(["src/generated/"]), base, {
                   "seed-bookings.ts",
                   "seed-invitations.ts",
                   "seed-layouts.ts",
+                  "seed-states.ts",
                   "seed-nearby.ts",
                   "seed-reference.ts",
                 ],
