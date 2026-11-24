@@ -99,7 +99,12 @@ export function SpotsRow({
           </Disc>
         ))}
         {over ? (
-          <View className="items-center justify-center bg-chip" style={disc}>
+          // Outlined like the others (solid, not dashed: it's players and spots, not one spot), so it
+          // reads the same size.
+          <View
+            className="items-center justify-center bg-white"
+            style={[disc, { borderWidth: 1, borderColor: OPEN }]}
+          >
             <Text className={`${letter} text-ink-2`}>+{rest}</Text>
           </View>
         ) : null}
