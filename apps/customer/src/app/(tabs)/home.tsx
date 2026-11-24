@@ -106,7 +106,8 @@ export default function Home() {
   const rails = [tonight, games, topRated, instant, budget, freed, popular, newest];
   const busy = rails.some((rail) => rail.loading);
   // Couldn't load (user, 2026-11-24): no governorates to pick from (so nowhere to look), or every
-  // rail failed with nothing to show. Unplugged under the header, fitted, and nothing scrolls.
+  // rail failed with nothing to show. Unplugged under the header, fitted to the room above the tab
+  // bar: nothing to scroll down to, but the page still pulls to refresh, as Search's does.
   const nowhere = governorate === null && coverageError !== null;
   const railsFailed =
     ready && rails.every((rail) => !rail.loading && rail.error !== null && rail.items.length === 0);
@@ -122,10 +123,8 @@ export default function Home() {
   const pull = usePullToRefresh({
     scrollY,
     busy: busy && generation > 0,
-    onRefresh: () => {
-      setGeneration((n) => n + 1);
-      void read();
-    },
+    // Nowhere to look reads the governorates again too, as Try again does.
+    onRefresh: tryAgain,
   });
 
   // See all: Search, looking where Home looks, with the rail's own choices.
@@ -174,7 +173,6 @@ export default function Home() {
         scrollEventThrottle={16}
         refreshControl={pull.control}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!failure}
         // Grows to the screen, so the failed scene can take what's left of it.
         contentContainerStyle={{ flexGrow: 1, paddingTop: top, paddingBottom: 32 }}
       >
