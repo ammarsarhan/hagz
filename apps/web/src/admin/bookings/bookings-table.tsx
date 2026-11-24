@@ -5,7 +5,7 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/admin/button";
-import { DataTable, TableFilter, TableSearch, Tag } from "@/admin/data-table";
+import { DataTable, TableDate, TableFilter, TableSearch, Tag } from "@/admin/data-table";
 import { formatMoney } from "@/admin/money";
 import { TabPanel, Tabs } from "@/admin/tabs";
 import { bookingHref, bookingTime, STATUSES, statusLabel, statusTone, useBookings } from "./model";
@@ -14,7 +14,8 @@ import { bookingHref, bookingTime, STATUSES, statusLabel, statusTone, useBooking
 // (code, customer, phone, venue), a page at a time with Show more, and a row opens the booking.
 // Every booking on the Bookings page; one venue's on that venue's Bookings tab, where the Venue
 // column gives way to the Ground, a dropdown beside the search narrows it to one ground, and the
-// status is a dropdown too, at the row's right end, instead of tabs.
+// status is a dropdown too, at the row's right end, instead of tabs. Both narrow to a day (the
+// bookings starting on it, on the venue's calendar) from the right end of the search row.
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, AdminBooking>();
@@ -132,10 +133,13 @@ export function BookingsTable({
   const [query, setQuery] = useState("");
   // "" is every ground.
   const [groundId, setGroundId] = useState("");
+  // "" is any day; else YYYY-MM-DD.
+  const [date, setDate] = useState("");
   const status = section === "ALL" ? undefined : section;
   const { data, error, loadingMore, loadMore } = useBookings(status, query, {
     venueId,
     groundId: groundId || undefined,
+    date: date || undefined,
   });
 
   const table = useTable({
@@ -173,8 +177,9 @@ export function BookingsTable({
           ]}
         />
       ) : null}
-      {statusFilter === "dropdown" ? (
-        <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <TableDate label="Starts on" value={date} onChange={setDate} />
+        {statusFilter === "dropdown" ? (
           <TableFilter
             label="Status"
             value={section}
@@ -184,8 +189,8 @@ export function BookingsTable({
               ...STATUSES.map((s) => ({ value: s, label: counted(statusLabel[s], counts?.[s]) })),
             ]}
           />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 
@@ -201,11 +206,13 @@ export function BookingsTable({
             error ??
             (searching
               ? `No booking matches “${query.trim()}”.`
-              : groundId
-                ? "No bookings on this ground."
-                : status
-                  ? `No ${statusLabel[status].toLowerCase()} bookings.`
-                  : "No bookings yet.")
+              : date
+                ? "No bookings on this day."
+                : groundId
+                  ? "No bookings on this ground."
+                  : status
+                    ? `No ${statusLabel[status].toLowerCase()} bookings.`
+                    : "No bookings yet.")
           }
         />
       </div>

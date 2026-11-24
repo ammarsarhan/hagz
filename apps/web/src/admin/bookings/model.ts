@@ -87,7 +87,7 @@ const SEARCH_DELAY_MS = 250;
 export function useBookings(
   status: BookingStatus | undefined,
   query: string,
-  { venueId, groundId }: { venueId?: string; groundId?: string } = {},
+  { venueId, groundId, date }: { venueId?: string; groundId?: string; date?: string } = {},
 ) {
   const [data, setData] = useState<Loaded>();
   const [error, setError] = useState<string>();
@@ -100,10 +100,12 @@ export function useBookings(
     (cursor?: string) =>
       send(
         api.GET("/v1/admin/bookings", {
-          params: { query: { venueId, groundId, status, q: query.trim() || undefined, cursor } },
+          params: {
+            query: { venueId, groundId, status, date, q: query.trim() || undefined, cursor },
+          },
         }),
       ),
-    [venueId, groundId, status, query],
+    [venueId, groundId, status, date, query],
   );
 
   const fail = useCallback(
