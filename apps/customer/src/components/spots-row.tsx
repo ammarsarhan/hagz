@@ -39,6 +39,7 @@ export function SpotsRow({
   names,
   open,
   size = 22,
+  max,
 }: {
   booker: string;
   joined: number;
@@ -46,7 +47,16 @@ export function SpotsRow({
   names: string[] | null;
   open: number;
   size?: number;
+  // At most this many discs, on one line: past it, the last is "+N" for the rest (Home's game
+  // cards, which a second line would make taller than the others in the rail). Unset: all, wrapping.
+  max?: number;
 }) {
+  // Over the limit: keep the booker and the first players and spots, and count the rest.
+  const over = max !== undefined && 1 + joined + open > max;
+  const room = over ? max - 2 : Infinity; // Discs after the booker, before "+N".
+  const shownJoined = Math.min(joined, room);
+  const shownOpen = Math.min(open, room - shownJoined);
+  const rest = joined + open - shownJoined - shownOpen;
   const disc = { width: size, height: size, borderRadius: size / 2 };
   const letter = `${size >= 30 ? "text-[13px]" : "text-[10px]"} font-semibold`;
   const initial = (name: string) => name.trim().charAt(0).toUpperCase();
@@ -64,7 +74,7 @@ export function SpotsRow({
     // Wraps onto more lines for a big game (an 11-a-side has 22 discs).
     <LayoutAnimationConfig skipEntering skipExiting>
       <View
-        className="flex-row flex-wrap"
+        className={`flex-row ${max === undefined ? "flex-wrap" : ""}`}
         style={{ gap: size >= 30 ? 6 : 4 }}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
@@ -72,7 +82,7 @@ export function SpotsRow({
         <View className="items-center justify-center border border-ink bg-white" style={disc}>
           <Text className={letter}>{initial(booker)}</Text>
         </View>
-        {Array.from({ length: joined }, (_, i) => (
+        {Array.from({ length: shownJoined }, (_, i) => (
           <Disc key={keyOf(i)}>
             {names?.[i] ? (
               <View className="items-center justify-center bg-ink" style={disc}>
@@ -83,11 +93,16 @@ export function SpotsRow({
             )}
           </Disc>
         ))}
-        {Array.from({ length: open }, (_, i) => (
+        {Array.from({ length: shownOpen }, (_, i) => (
           <Disc key={`o${i}`}>
             <View style={[disc, { borderWidth: 1, borderStyle: "dashed", borderColor: OPEN }]} />
           </Disc>
         ))}
+        {over ? (
+          <View className="items-center justify-center bg-chip" style={disc}>
+            <Text className={`${letter} text-ink-2`}>+{rest}</Text>
+          </View>
+        ) : null}
       </View>
     </LayoutAnimationConfig>
   );

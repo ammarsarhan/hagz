@@ -352,6 +352,7 @@ export function RailGameCard({ game }: { game: Game }) {
             joined={game.playerCount}
             names={null}
             open={left}
+            max={5}
           />
         </View>
         <Text className="text-label leading-5 font-medium">
