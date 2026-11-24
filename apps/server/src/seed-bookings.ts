@@ -1,24 +1,16 @@
-import { pathToFileURL } from "node:url";
-import { parseArgs } from "node:util";
 import { createBooking } from "@/modules/bookings";
 import { settlePayment, startCheckout } from "@/modules/payments";
 import { env } from "@/platform/config/env";
 import { hashPassword } from "@/platform/crypto/passwords";
 import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
-import { cache, queueConnection } from "@/platform/redis/connections";
 
 // Development only: bookings at random times across one venue's grounds, so its calendar, the admin
 // Bookings table and the player's Bookings tab have something in them. Every booking goes through
 // the real path (createBooking, then a fake checkout where the venue takes money online), so
 // charges, events, slots and statuses are exactly what a player's booking makes. Players come from
-// a fixed pool of seed accounts, made on first use. Safe to run again: each run adds more bookings
-// in whatever time is still free.
-//
-//   pnpm --filter @hagz/server seed:bookings --venue <venueId>
-//   pnpm --filter @hagz/server seed:bookings --venue <venueId> --count 40 --days 7 --seed 7
-//
-// From another script: `await seedBookings(venueId, { count: 10 })`.
+// a fixed pool of seed accounts, made on first use. Each call adds more bookings in whatever time
+// is still free. Not a command of its own: seed:alexandria calls it, `seedBookings(venueId, {...})`.
 
 export interface SeedBookingsOptions {
   // How many bookings to try to make; fewer are made when the free time runs out.
@@ -208,53 +200,3 @@ const pay = async (customerId: string, bookingId: string, outcome: "SUCCEEDED" |
   );
   await settlePayment(checkout.payment.id, outcome);
 };
-
-// Run as a script (not imported).
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { values } = parseArgs({
-    options: {
-      venue: { type: "string" },
-      count: { type: "string", default: "20" },
-      days: { type: "string", default: "14" },
-      pay: { type: "string", default: "0.8" },
-      seed: { type: "string" },
-    },
-  });
-  const options = {
-    count: Number(values.count),
-    days: Number(values.days),
-    payRate: Number(values.pay),
-    seed: values.seed === undefined ? Date.now() : Number(values.seed),
-  };
-  if (
-    !values.venue ||
-    !Number.isInteger(options.count) ||
-    options.count < 1 ||
-    options.count > 500 ||
-    !(options.days > 0 && options.days <= 90) ||
-    !(options.payRate >= 0 && options.payRate <= 1) ||
-    !Number.isFinite(options.seed)
-  ) {
-    console.error(
-      "Usage: seed-bookings --venue <id> [--count 1-500] [--days 1-90] [--pay 0-1] [--seed n]",
-    );
-    process.exit(1);
-  }
-  try {
-    const result = await seedBookings(values.venue, options);
-    console.log(
-      `Made ${result.made} bookings (seed ${options.seed}):`,
-      Object.entries(result.byStatus)
-        .map(([status, n]) => `${n} ${status}`)
-        .join(", ") || "none",
-      result.skipped ? `· ${result.skipped} skipped` : "",
-    );
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  } finally {
-    await prisma.$disconnect();
-    cache.disconnect();
-    queueConnection.disconnect();
-  }
-}

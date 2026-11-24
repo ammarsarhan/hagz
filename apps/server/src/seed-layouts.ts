@@ -1,18 +1,14 @@
-import { pathToFileURL } from "node:url";
 import { FOOTPRINT_RANGES, type VenueLayout } from "@hagz/contracts";
 import { ALL_PERMISSIONS, saveLayout } from "@/modules/venues";
 import { env } from "@/platform/config/env";
 import { prisma } from "@/platform/db/prisma";
-import { cache, queueConnection } from "@/platform/redis/connections";
 
 // Development only: a layout for every live venue that has none (user, 2026-11-24), so the venue
 // page's layout and the staff and admin layout screens have something to show. Each ground at a
 // size within its sport's range, a walkway of one cell around everything, the venue's placeable
 // amenities (parking, a café, changing rooms) after the grounds, and one or two entrances. Saved
 // through the real path (saveLayout, as the venue's owner), so it's checked like any layout.
-// Safe to run again: venues with a layout are left alone. seed:alexandria runs it at the end.
-//
-//   pnpm --filter @hagz/server seed:layouts
+// Venues with a layout are left alone. Not a command of its own: seed:alexandria runs it at the end.
 
 interface Rect {
   x: number;
@@ -174,17 +170,3 @@ export const seedLayouts = async (seed = 2026) => {
   }
   return made;
 };
-
-// Run as a script (not imported).
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try {
-    console.log(`Laid out ${await seedLayouts()} venues.`);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  } finally {
-    await prisma.$disconnect();
-    cache.disconnect();
-    queueConnection.disconnect();
-  }
-}
