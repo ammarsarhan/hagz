@@ -368,10 +368,11 @@ function Games({
             failure ? (
               <View className="flex-1 items-center justify-center px-8 pb-10">
                 <FailedMessage error={failure} />
-                <View className="mt-6 self-stretch">
+                <View className="mt-6">
                   <Button
                     label={t("common.actions.tryAgain")}
                     variant="secondary"
+                    size="small"
                     onPress={() => void load(null)}
                   />
                 </View>
@@ -670,16 +671,19 @@ function Guest() {
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {t("screens.community.guest")}
       </Text>
-      <View className="mt-6 gap-2.5 self-stretch">
-        <Button
-          label={t("common.actions.createAccount")}
-          variant="moment"
-          onPress={() => push("/sign-up")}
-        />
+      {/* Side by side at the illustration screens' size: Sign in, then Create account. */}
+      <View className="mt-6 flex-row gap-2.5">
         <Button
           label={t("common.actions.signIn")}
           variant="secondary"
+          size="small"
           onPress={() => push("/sign-in")}
+        />
+        <Button
+          label={t("common.actions.createAccount")}
+          variant="moment"
+          size="small"
+          onPress={() => push("/sign-up")}
         />
       </View>
     </View>

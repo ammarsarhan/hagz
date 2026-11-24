@@ -262,10 +262,11 @@ function MyCode({
           ) : (
             <>
               <FailedMessage error={failure} />
-              <View className="mt-6 self-stretch">
+              <View className="mt-6">
                 <Button
                   label={t("common.actions.tryAgain")}
                   variant="secondary"
+                  size="small"
                   onPress={() => setAttempt((n) => n + 1)}
                 />
               </View>

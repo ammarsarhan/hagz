@@ -143,7 +143,7 @@ export function FittedFailure({ error, onRetry }: { error: unknown; onRetry: () 
           style={{ marginTop: ART_GAP }}
           onLayout={(event) => setButton(event.nativeEvent.layout.height)}
         >
-          <Button label={t("common.actions.tryAgain")} size="compact" onPress={onRetry} />
+          <Button label={t("common.actions.tryAgain")} size="small" onPress={onRetry} />
         </View>
       </View>
     </Animated.View>
