@@ -74,7 +74,16 @@ export function PageState({
 // The Unplugged scene, a title and what happened: "You're offline" when nothing answered (the
 // error isn't a problem from the API), else "Something went wrong" over the API's few words. Also
 // shown inside a tab whose list didn't load (Bookings), with its own Try again.
-export function FailedMessage({ error, artScale }: { error?: unknown; artScale?: number }) {
+// `compact`: smaller words, for a scene fitted under a header (Search).
+export function FailedMessage({
+  error,
+  artScale,
+  compact = false,
+}: {
+  error?: unknown;
+  artScale?: number;
+  compact?: boolean;
+}) {
   const { t } = useTranslation();
   const offline = error !== undefined && !isProblem(error);
   return (
@@ -82,11 +91,11 @@ export function FailedMessage({ error, artScale }: { error?: unknown; artScale?:
       <OfflineArt scale={artScale} />
       <Text
         accessibilityRole="header"
-        className="mt-3 mb-2 text-center text-title font-semibold tracking-[-0.4px]"
+        className={`mt-3 mb-2 text-center font-semibold ${compact ? "text-heading" : "text-title tracking-[-0.4px]"}`}
       >
         {offline ? t("components.pageState.offlineTitle") : t("components.pageState.failedTitle")}
       </Text>
-      <Text className="text-center text-subtitle text-ink-2">
+      <Text className={`text-center text-ink-2 ${compact ? "text-body" : "text-subtitle"}`}>
         {offline
           ? t("components.pageState.offlineBody")
           : error !== undefined

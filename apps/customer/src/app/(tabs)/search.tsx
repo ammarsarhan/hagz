@@ -223,7 +223,7 @@ function Failed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const fits = room > 0 && words > 0 && button > 0;
   // The scene's height as it comes in FailedMessage (full size), so `words` is the rest of it.
   const scale = fits
-    ? Math.max(0.2, Math.min(1, (room - ART_TOP - words - ART_GAP - button) / height))
+    ? Math.max(0.3, Math.min(1, (room - ART_TOP - words - ART_GAP - button) / height))
     : 1;
   return (
     <Animated.View
@@ -237,13 +237,13 @@ function Failed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
           className="items-center"
           onLayout={(event) => setWords(event.nativeEvent.layout.height - height * scale)}
         >
-          <FailedMessage error={error} artScale={scale} />
+          <FailedMessage error={error} artScale={scale} compact />
         </View>
         <View
           style={{ marginTop: ART_GAP }}
           onLayout={(event) => setButton(event.nativeEvent.layout.height)}
         >
-          <Button label={t("common.actions.tryAgain")} size="small" onPress={onRetry} />
+          <Button label={t("common.actions.tryAgain")} size="compact" onPress={onRetry} />
         </View>
       </View>
     </Animated.View>
