@@ -15,6 +15,7 @@ import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { KindTag } from "@/components/kind-tag";
+import { EmptyBenchArt } from "@/components/empty-bench-art";
 import { LightsOutArt } from "@/components/lights-out-art";
 import { MatchTicket } from "@/components/match-ticket";
 import { NoNameArt } from "@/components/no-name-art";
@@ -390,14 +391,17 @@ function Bookings() {
           ) : list.state === "failed" ? (
             <View className="flex-1 items-center justify-center pb-10">
               <FailedMessage error={list.error} />
-              <View className="mt-6 self-stretch">
-                <Button label={t("common.actions.tryAgain")} variant="secondary" onPress={retry} />
+              <View className="mt-6">
+                <Button
+                  label={t("common.actions.tryAgain")}
+                  variant="secondary"
+                  size="small"
+                  onPress={retry}
+                />
               </View>
             </View>
-          ) : when === "upcoming" ? (
-            <Empty />
           ) : (
-            <Text className="pt-6 text-subtitle text-ink-2">{t("screens.bookings.noPast")}</Text>
+            <Empty past={when === "past"} />
           )
         }
         ListFooterComponent={
@@ -742,20 +746,25 @@ function Row({
   );
 }
 
-// Nothing coming up: the floodlight with its lamps off, and a way to find a pitch.
-function Empty() {
+// Nothing coming up: the floodlight with its lamps off. Nothing played yet: the empty bench
+// (Community · Mine's; user, 2026-11-24). Either way, a way to find a pitch.
+function Empty({ past }: { past: boolean }) {
   const { t } = useTranslation();
   return (
     <View className="flex-1 items-center justify-center px-2 pb-10">
-      <LightsOutArt />
+      {past ? <EmptyBenchArt /> : <LightsOutArt />}
       <Text accessibilityRole="header" className="mt-3 text-heading font-semibold">
-        {t("screens.bookings.emptyTitle")}
+        {past ? t("screens.bookings.pastEmptyTitle") : t("screens.bookings.emptyTitle")}
       </Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
-        {t("screens.bookings.emptyBody")}
+        {past ? t("screens.bookings.noPast") : t("screens.bookings.emptyBody")}
       </Text>
-      <View className="mt-6 self-stretch">
-        <Button label={t("screens.bookings.find")} onPress={() => router.navigate("/search")} />
+      <View className="mt-6">
+        <Button
+          label={t("screens.bookings.find")}
+          size="small"
+          onPress={() => router.navigate("/search")}
+        />
       </View>
     </View>
   );
@@ -787,16 +796,19 @@ function GuestBody() {
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {t("screens.bookings.guest")}
       </Text>
-      <View className="mt-6 gap-2.5 self-stretch">
-        <Button
-          label={t("common.actions.createAccount")}
-          variant="moment"
-          onPress={() => push("/sign-up")}
-        />
+      {/* Side by side at the illustration screens' size: Sign in, then Create account. */}
+      <View className="mt-6 flex-row gap-2.5">
         <Button
           label={t("common.actions.signIn")}
           variant="secondary"
+          size="small"
           onPress={() => push("/sign-in")}
+        />
+        <Button
+          label={t("common.actions.createAccount")}
+          variant="moment"
+          size="small"
+          onPress={() => push("/sign-up")}
         />
       </View>
     </View>

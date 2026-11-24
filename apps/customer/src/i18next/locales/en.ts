@@ -499,6 +499,7 @@ const en = {
         emptyTitle: "No games coming up",
         emptyBody: "Book a pitch and your game shows up here, with its code for the desk.",
         find: "Find a pitch",
+        pastEmptyTitle: "No games played yet",
         noPast: "Games you’ve played show up here.",
         guest:
           "You’re not signed in. Sign in or create an account to book and keep track of your games.",
