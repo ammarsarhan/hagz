@@ -170,7 +170,7 @@ describe("regulars", () => {
     expect(confirmed.status).toBe(200);
     // The booking says which weekly game it's part of; nothing's been played yet.
     expect(Booking.parse(await confirmed.json()).regular).toMatchObject({
-      since: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      since: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as string,
       weeks: 0,
       played: 0,
     });

@@ -55,7 +55,7 @@ describe("play again", () => {
       minute: "2-digit",
       hourCycle: "h23",
     }).format(new Date(first.startsAt));
-    expect(entry?.usual).toEqual({ weekday: expect.any(Number), start: local, hours: 1 });
+    expect(entry?.usual).toEqual({ weekday: expect.any(Number) as number, start: local, hours: 1 });
   });
 
   it("has no usual time after one game", async () => {

@@ -501,7 +501,7 @@ const presentGame = (
       joined || isBooker
         ? row.players.map((player) => ({
             firstName: firstName(player.customer.name),
-            you: player.customerId === viewer?.customerId,
+            you: player.customerId === viewer.customerId,
           }))
         : null,
     bookerPhone: joined && now.getTime() < phoneUntil ? (account?.phone ?? null) : null,
