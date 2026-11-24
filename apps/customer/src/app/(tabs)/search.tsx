@@ -209,8 +209,9 @@ function SearchPill({
 }
 
 // A failed search: Unplugged, like every other page that couldn't load (offline, or the API's few
-// words), and Try again. It takes the room left under the header and fits it without scrolling: the
-// words and button at their size, the scene shrunk to what's left (user, 2026-11-24).
+// words), and Try again. It takes the room left under the header and fits it exactly, the page not
+// scrolling at all (user, 2026-11-24): the words and button at their size, the scene shrunk to
+// what's left.
 const ART_TOP = 24;
 const ART_GAP = 24; // From the words to the button.
 function Failed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -222,7 +223,7 @@ function Failed({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const fits = room > 0 && words > 0 && button > 0;
   // The scene's height as it comes in FailedMessage (full size), so `words` is the rest of it.
   const scale = fits
-    ? Math.max(0.4, Math.min(1, (room - ART_TOP - words - ART_GAP - button) / height))
+    ? Math.max(0.2, Math.min(1, (room - ART_TOP - words - ART_GAP - button) / height))
     : 1;
   return (
     <Animated.View
@@ -658,6 +659,8 @@ export default function SearchTab() {
           paddingTop: insets.top + 16,
           paddingBottom: 96,
         }}
+        // Failed: the scene fits the screen exactly, so nothing scrolls (Try again reloads).
+        scrollEnabled={!search.error}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
         refreshControl={pull.control}
