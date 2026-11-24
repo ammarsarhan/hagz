@@ -366,6 +366,7 @@ const ar: ArabicTranslations = {
         },
         support: "راسل فريق حجز على واتساب.",
         photo: {
+          title: "الصورة الشخصية",
           change: "غيّر صورتك",
           library: "اختر من المعرض",
           camera: "التقط صورة",
