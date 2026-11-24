@@ -35,7 +35,7 @@ import { seedLayouts } from "./seed-layouts";
 // - Bookings through the real path over the next days (Most booked, fewer free times), some left
 //   awaiting payment or approval to expire; a few slots marked freed lately (Just freed).
 // - About 30 open games, hosted and joined through the real path, some full, some one short.
-// - A layout for each (seed:layouts): grounds to size, walkways, parking and the café, entrances.
+// - A layout for each (seed-layouts.ts): grounds to size, walkways, parking and the café, entrances.
 // - Accounts: an admin, the owner of every venue, a player with history (Play again with a usual
 //   time, the next-game ticket, saved venues, a game joined) and a player with none (their first
 //   booking gets the confetti). The pool of seed players fills the rest.
@@ -55,13 +55,13 @@ const TIMEZONE = "Africa/Cairo";
 
 export const ACCOUNTS = {
   admin: { email: "admin@hagz.test", name: "Test Admin", password: "test-admin-password" },
-  // The same owner as seed:nearby and seed:invitations.
+  // Owns every venue; invite other phones from the staff app.
   owner: { phone: "+201000000000", name: "Seed Owner", password: "seed-owner-password" },
   player: { phone: "+201000000001", name: "Test Player", password: "test-player-password" },
   newcomer: { phone: "+201000000002", name: "New Player", password: "test-player-password" },
 };
 
-// The pool: the first eight are seed:bookings' players (same phones), +20 100 000 0010 to 0039.
+// The pool: the first eight are seed-bookings.ts' players (same phones), +20 100 000 0010 to 0039.
 const PLAYER_NAMES = [
   "Omar Hassan",
   "Youssef Adel",
