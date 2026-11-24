@@ -414,11 +414,13 @@ function Layout({
           <StoreBadges locale={locale} />
         </aside>
       </div>
-      {/* On a phone the action is fixed at the bottom (Figma W4 phone frames). */}
+      {/* On a phone the action is fixed at the bottom (Figma W4 phone frames). Join in the app spans
+          the width; See the venue and See the new time are as wide as their words, centred (user,
+          2026-11-24). */}
       <div className="fixed inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 border-t border-border bg-white px-6 pt-3.5 pb-[max(14px,env(safe-area-inset-bottom))] lg:hidden">
         <a
           href={action.href}
-          className={`flex h-12 w-full items-center justify-center rounded-full text-subtitle font-semibold ${button}`}
+          className={`flex h-12 max-w-full items-center justify-center rounded-full text-subtitle font-semibold ${action.join ? "w-full" : "px-7"} ${button}`}
         >
           {action.label}
         </a>
