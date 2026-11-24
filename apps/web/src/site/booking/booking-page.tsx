@@ -365,7 +365,9 @@ function Layout({
   const shared = words.shared;
   const button = action.join ? "bg-primary text-on-primary" : "bg-[#1d1d1d] text-white";
   return (
-    <main className="mx-auto w-full max-w-[1120px] px-6 pt-4 pb-36 lg:pt-10 lg:pb-0 xl:px-0">
+    <main
+      className={`mx-auto w-full max-w-[1120px] px-6 pt-4 lg:pt-10 lg:pb-0 xl:px-0 ${action.join ? "pb-36" : "pb-12"}`}
+    >
       <div className="flex items-start justify-between gap-[60px]">
         <div className="flex min-w-0 flex-1 flex-col lg:max-w-[640px]">
           {/* Left to right in Arabic too, so the # stays in front of the code. */}
@@ -377,6 +379,16 @@ function Layout({
           </h1>
           <p className="mt-1.5 text-label text-ink-2 lg:text-subtitle">{line}</p>
           {children}
+          {/* On a phone, See the venue and See the new time sit in the page under what they're
+              about, not fixed at the bottom (user, 2026-11-24); only Join stays fixed. */}
+          {action.join ? null : (
+            <a
+              href={action.href}
+              className={`mt-6 flex h-12 items-center justify-center self-start rounded-full px-7 text-subtitle font-semibold lg:hidden ${button}`}
+            >
+              {action.label}
+            </a>
+          )}
           {noApp ? (
             <section id="get-the-app" className="mt-8 scroll-mt-[96px] lg:hidden">
               <div className="h-px bg-border" />
@@ -414,18 +426,18 @@ function Layout({
           <StoreBadges locale={locale} />
         </aside>
       </div>
-      {/* On a phone the action is fixed at the bottom (Figma W4 phone frames). Join in the app spans
-          the width; See the venue and See the new time are as wide as their words, centred (user,
-          2026-11-24). */}
-      <div className="fixed inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 border-t border-border bg-white px-6 pt-3.5 pb-[max(14px,env(safe-area-inset-bottom))] lg:hidden">
-        <a
-          href={action.href}
-          className={`flex h-12 max-w-full items-center justify-center rounded-full text-subtitle font-semibold ${action.join ? "w-full" : "px-7"} ${button}`}
-        >
-          {action.label}
-        </a>
-        {action.join ? <div className="text-caption text-ink-2">{shared.joinLine}</div> : null}
-      </div>
+      {/* On a phone Join is fixed at the bottom (Figma W4 phone frames), with its caption. */}
+      {action.join ? (
+        <div className="fixed inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 border-t border-border bg-white px-6 pt-3.5 pb-[max(14px,env(safe-area-inset-bottom))] lg:hidden">
+          <a
+            href={action.href}
+            className={`flex h-12 w-full items-center justify-center rounded-full text-subtitle font-semibold ${button}`}
+          >
+            {action.label}
+          </a>
+          <div className="text-caption text-ink-2">{shared.joinLine}</div>
+        </div>
+      ) : null}
     </main>
   );
 }
