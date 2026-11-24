@@ -15,6 +15,7 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// Only the site's English pages (the venue page and the staff link fallback): never the admin or
-// assets. A /manage link only gets here without the app, so redirecting it never reaches the app.
-export const config = { matcher: ["/venue/:path*", "/manage/:path*"] };
+// Only the site's English pages (the venue page, a booking's share link and the staff link
+// fallback): never the admin or assets. A /booking or /manage link only gets here without the app,
+// so redirecting it never reaches the app.
+export const config = { matcher: ["/venue/:path*", "/booking/:path*", "/manage/:path*"] };
