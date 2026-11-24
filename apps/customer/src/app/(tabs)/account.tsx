@@ -108,19 +108,20 @@ function GuestBody() {
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {t("screens.account.guest")}
       </Text>
-      {/* Side by side at the illustration screens' size: Sign in, then Create account. */}
-      <View className="mt-6 flex-row gap-2.5">
-        <Button
-          label={t("common.actions.signIn")}
-          variant="secondary"
-          size="small"
-          onPress={() => push("/sign-in")}
-        />
+      {/* Stacked, at the illustration screens' size (user, 2026-11-24): Create account, then Sign
+          in, as wide as each other (the column takes the wider one's width). */}
+      <View className="mt-6 gap-2.5">
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"
           size="small"
           onPress={() => push("/sign-up")}
+        />
+        <Button
+          label={t("common.actions.signIn")}
+          variant="secondary"
+          size="small"
+          onPress={() => push("/sign-in")}
         />
       </View>
     </View>
