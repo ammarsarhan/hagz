@@ -11,6 +11,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { isCompletePhone, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Sign up, step 1: the mobile number. The API answers the same whether or not it has an account
 // (no enumeration); an existing account only shows up after the code is confirmed. Signing in is
@@ -37,7 +38,7 @@ export default function SignUpPhone() {
       }
       return;
     }
-    router.push({
+    push({
       pathname: "/sign-up/code",
       params: { phone, resendAfter: String(result.data.resendAfter) },
     });
@@ -55,7 +56,7 @@ export default function SignUpPhone() {
                   <Text
                     accessibilityRole="link"
                     className="font-medium text-ink underline"
-                    onPress={() => router.push({ pathname: "/sign-in", params: { phone } })}
+                    onPress={() => push({ pathname: "/sign-in", params: { phone } })}
                   />
                 ),
               }}

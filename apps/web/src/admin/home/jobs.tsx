@@ -17,6 +17,7 @@ const QUEUE_LABEL: Record<QueueName, string> = {
   "slot-maintenance": "Slot upkeep",
   "venue-photo-sweeper": "Photo cleanup",
   "customer-avatar-sweeper": "Avatar cleanup",
+  "booking-expiry": "Booking expiry",
 };
 
 export function useJobs() {

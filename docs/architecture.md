@@ -65,7 +65,7 @@ apps/server/src/
    Fewer rows than requested means a slot was taken: roll back and return `409 SLOT_UNAVAILABLE`. Concurrent requests queue on the row locks. When the winner commits, Postgres re-checks each waiting row, finds it no longer `AVAILABLE`, and drops it, so every loser gets the 409 without writing anything.
 2. Only then insert the `Booking` and mark the locked slots `HELD` with its id.
 3. Rows are always locked in a fixed order (`startsAt` ascending) so overlapping requests can't deadlock.
-4. Exclusion constraints as a database backstop: overlapping slots are refused now, overlapping bookings from Phase 4 (see [Exclusion constraints](#exclusion-constraints)).
+4. Exclusion constraints as a database backstop: overlapping slots and overlapping live bookings are refused (see [Exclusion constraints](#exclusion-constraints)).
 
 Don't insert the booking first and claim the slots after. Every contender's insert then waits on the others' uncommitted bookings in the `Booking_no_overlap` constraint, so a popular slot turns into lock timeouts and deadlocks, and the stuck transactions hold the whole connection pool (see [Why precomputed slots](#why-precomputed-slots)).
 
@@ -160,10 +160,10 @@ ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_no_overlap"
 -- No two live bookings on a ground overlap in time.
 ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
   EXCLUDE USING gist ("groundId" WITH =, tstzrange("startsAt", "endsAt") WITH &&)
-  WHERE (status IN ('PENDING', 'HELD', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
+  WHERE (status IN ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
 ```
 
-The slot constraint closes a real gap (manual slots), and is in the grounds migration (2026-11-18, with `btree_gist` in the first one); the booking one comes with bookings (Phase 4). The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
+The slot constraint closes a real gap (manual slots), and is in the grounds migration (2026-11-18, with `btree_gist` in the first one); the booking one is in the bookings migration (2026-11-22). Because it's checked at each statement, a move or swap sets the old booking `RESCHEDULED` before inserting the new one. The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
 
 ### Migrations
 

@@ -1,5 +1,6 @@
 import type { components } from "@hagz/api";
 import i18n from "@/i18next/i18next";
+import { intlLocale } from "./language";
 
 // The venue page's reading of the API (GET /v1/venues/{slug} and its /availability): when a ground
 // can start, and the venue's terms in a player's words.
@@ -8,6 +9,7 @@ export type PublicVenue = components["schemas"]["PublicVenue"];
 export type PublicGround = components["schemas"]["PublicGround"];
 export type VenueAvailability = components["schemas"]["VenueAvailability"];
 export type FreeSlot = components["schemas"]["FreeSlot"];
+export type PublicAmenity = components["schemas"]["PublicAmenity"];
 
 // The times a ground can start a booking: each free slot that begins a run of back-to-back free
 // slots (each starting where the last ends) at least the ground's shortest booking long. Slots are
@@ -46,6 +48,13 @@ const timeParts = (iso: string, timezone: string) => {
 const withPeriod = ({ time, pm }: { time: string; pm: boolean }) =>
   i18n.t("formats.time", { time, period: i18n.t(pm ? "formats.pm" : "formats.am") });
 
+// A time's clock and its half of the day apart, for a time set big over its "pm" (Community's
+// agenda): { time: "9:30", period: "pm" }.
+export const clockParts = (iso: string, timezone: string) => {
+  const { time, pm } = timeParts(iso, timezone);
+  return { time, period: i18n.t(pm ? "formats.pm" : "formats.am") };
+};
+
 // "9 pm", "9:30 pm", "12 am".
 export const timeOfDay = (iso: string, timezone: string) => withPeriod(timeParts(iso, timezone));
 
@@ -63,6 +72,52 @@ export const hourAt = (iso: string, timezone: string) =>
       .formatToParts(new Date(iso))
       .find((part) => part.type === "hour")?.value ?? 0,
   );
+
+// "Fri 20 Nov" for a date (YYYY-MM-DD), in the app's language, Western digits.
+export const dayLabel = (date: string) =>
+  new Intl.DateTimeFormat(intlLocale, {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+    .format(new Date(`${date}T12:00:00Z`))
+    .replace(",", "");
+
+// The venue's local date (YYYY-MM-DD) of a moment.
+export const localDateOf = (iso: string, timezone: string) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(iso));
+
+// "Wed 25 Nov, 9 pm": a moment at the venue's clock (a cancellation deadline).
+export const momentLabel = (iso: string, timezone: string) =>
+  i18n.t("formats.moment", {
+    day: dayLabel(localDateOf(iso, timezone)),
+    time: timeOfDay(iso, timezone),
+  });
+
+// Whole days from today to a moment, both at the venue's clock: 0 today, 1 tomorrow, -1 yesterday.
+export const daysUntil = (iso: string, timezone: string) =>
+  Math.round(
+    (Date.parse(localDateOf(iso, timezone)) -
+      Date.parse(localDateOf(new Date().toISOString(), timezone))) /
+      86_400_000,
+  );
+
+// From this hour on, a deadline later today reads "tonight".
+const EVENING = 17;
+
+// A deadline: "10:40 pm tonight", "9 am today", "9 am tomorrow", or "Wed 25 Nov, 9 pm".
+export const deadlineLabel = (iso: string, timezone: string) => {
+  const days = daysUntil(iso, timezone);
+  const time = timeOfDay(iso, timezone);
+  if (days === 0)
+    return i18n.t(
+      hourAt(iso, timezone) >= EVENING ? "formats.deadline.tonight" : "formats.deadline.today",
+      { time },
+    );
+  if (days === 1) return i18n.t("formats.deadline.tomorrow", { time });
+  return momentLabel(iso, timezone);
+};
 
 // The day after a date (YYYY-MM-DD), as a date.
 export const nextDate = (date: string) =>
@@ -109,13 +164,13 @@ export const cheapestHour = (venue: PublicVenue) => {
 const sportName = (sport: PublicGround["sport"]) => i18n.t(`formats.sports.${sport}`);
 
 // "A, B and C" ("أ، ب وج" in Arabic).
-const listText = (items: string[]) =>
+export const listText = (items: string[]) =>
   items.length > 1
     ? `${items.slice(0, -1).join(i18n.t("formats.listComma"))}${i18n.t("formats.listAnd")}${items.at(-1)}`
     : (items[0] ?? "");
 
 // "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
-export const kindOf = (ground: PublicGround) =>
+export const kindOf = (ground: Pick<PublicGround, "sport" | "size">) =>
   ground.size === "STANDARD"
     ? sportName(ground.sport)
     : i18n.t(`formats.footballSizes.${ground.size}`);

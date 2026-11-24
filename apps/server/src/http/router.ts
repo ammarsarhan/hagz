@@ -1,10 +1,19 @@
 import {
+  bookingsAdminRoutes,
+  bookingsCustomerRoutes,
+  bookingsCheckInRoutes,
+  bookingsGameRoutes,
+  bookingsRegularRoutes,
+  bookingsStaffRoutes,
+} from "@/modules/bookings";
+import {
   adminAuthRoutes,
   customerAuthRoutes,
   ensureAdminActive,
   staffAuthRoutes,
   supportAdminRoutes,
 } from "@/modules/identity";
+import { paymentsAdminRoutes, paymentsCustomerRoutes, paymentsDevRoutes } from "@/modules/payments";
 import { locationsRoutes, platformAdminRoutes, whenAmenityUnplaceable } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
 import {
@@ -12,6 +21,7 @@ import {
   venuesAdminRoutes,
   venuesFavoriteRoutes,
   venuesPublicRoutes,
+  venuesCustomerRoutes,
   venuesStaffRoutes,
 } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
@@ -21,6 +31,7 @@ import { notFound, onError } from "@/http/errors";
 import { health } from "@/http/health";
 import { accessLog, bodyLimit, requestContext, requestId, timeout } from "@/http/middleware";
 import { env } from "@/platform/config/env";
+import { payments } from "@/platform/payments/payments";
 import {
   ADMIN_ACCESS_COOKIE,
   ADMIN_COOKIE_AUTH,
@@ -56,14 +67,27 @@ router.route("/v1", staffAuthRoutes);
 router.route("/v1", adminAuthRoutes);
 router.route("/v1", venuesPublicRoutes);
 router.route("/v1", venuesFavoriteRoutes);
+router.route("/v1", bookingsCustomerRoutes);
+router.route("/v1", paymentsCustomerRoutes);
 router.route("/v1", venuesStaffRoutes);
+router.route("/v1", bookingsStaffRoutes);
+router.route("/v1", bookingsRegularRoutes);
+router.route("/v1", bookingsGameRoutes);
+router.route("/v1", bookingsCheckInRoutes);
+router.route("/v1", venuesCustomerRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
 router.route("/v1", venuesAdminRoutes);
+router.route("/v1", bookingsAdminRoutes);
+router.route("/v1", paymentsAdminRoutes);
 router.route("/v1", supportAdminRoutes);
 
 // Photos stored on disk in development are uploaded to and read from here (http/dev-storage.ts).
 if (localDisk) router.route("/v1/dev/storage", devStorage(localDisk));
+
+// Settling payments by hand, while the provider is the stand-in (platform/payments/payments.ts).
+if (env.APP_ENV !== "production" && payments.name === "fake")
+  router.route("/v1", paymentsDevRoutes);
 
 // The contract the apps are built against, and a browsable page for it. Not served in production:
 // they list every route, including admin ones. The committed copy is apps/server/openapi.json.

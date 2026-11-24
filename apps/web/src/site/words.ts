@@ -181,6 +181,50 @@ const en = {
     invitedMeta: (app: string) => `You’re invited · ${app}`,
     otherMeta: (app: string) => `Open in ${app}`,
   },
+  // A booking's share link, /booking/[code] (Figma W4, 316:2–321:2): the booking, and its open game
+  // if it has one, for someone without the app. The app's words (screens.shared, screens.game).
+  shared: {
+    tonight: "Tonight",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    moment: (day: string, time: string) => `${day}, ${time}`,
+    spotsLeft: (left: number, name: string) =>
+      `${left === 1 ? "1 spot" : `${left} spots`} left in ${name}’s game. You’ll see who’s playing once you join.`,
+    full: (name: string) => `Every spot in ${name}’s game is taken.`,
+    started: (name: string) => `${name}’s game has already started.`,
+    closed: (name: string) => `${name}’s game isn’t taking players any more.`,
+    payHeading: "What you pay, at the venue",
+    shareTo: (name: string) => `Your share, to ${name}`,
+    feeTo: (venue: string) => `Joining fee, to ${venue}`,
+    total: "Total",
+    disclaimer:
+      "Hagz doesn’t guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person.",
+    atVenue: (amount: string) => `${amount} at the venue`,
+    split: (share: string, name: string, fee: string, venue: string) =>
+      `${share} to ${name} · ${fee} to ${venue}`,
+    join: "Join in the app",
+    joinLine: "Opens Hagz, or the store if you don’t have it",
+    findAnother: "Find another game in the app",
+    scanGame: "Opens this game in Hagz, or the store if you don’t have it.",
+    noApp: "Don’t have Hagz yet?",
+    noAppLine: "Get the app, sign in with your phone number, and open this link again.",
+    someones: (venue: string) =>
+      `Someone shared their game at ${venue} with you. Want your own? See the free times and book in the app.`,
+    played: (venue: string) =>
+      `This game at ${venue} has been played. Want your own? See the free times and book in the app.`,
+    seeVenue: (venue: string) => `See ${venue}`,
+    movedTitle: "This game has a new time",
+    was: "Was",
+    now: "Now",
+    movedLine: "This link was for the old time. The new one has its own link.",
+    seeNewTime: "See the new time",
+    offTitle: "This game isn’t happening",
+    offLine: (venue: string) =>
+      `It was cancelled, so there’s nothing to join. ${venue} may have other free times.`,
+    gameMeta: (name: string, when: string) => `${name}’s game, ${when} · Hagz`,
+    bookingMeta: (when: string) => `A game, ${when} · Hagz`,
+    notFound: "Booking not found · Hagz",
+  },
 };
 
 export type Words = typeof en;
@@ -381,6 +425,46 @@ const ar: Words = {
     googlePlay: "احصل عليه من Google Play",
     invitedMeta: (app) => `دعوة · ${app}`,
     otherMeta: (app) => `افتح في ${app}`,
+  },
+  shared: {
+    tonight: "الليلة",
+    today: "اليوم",
+    tomorrow: "غدًا",
+    moment: (day, time) => `${day}، ${time}`,
+    spotsLeft: (left, name) =>
+      `${left === 1 ? "مكان واحد متبقٍ" : left === 2 ? "مكانان متبقيان" : `${left} أماكن متبقية`} في مباراة ${name}. سترى من يلعب بعد انضمامك.`,
+    full: (name) => `كل الأماكن في مباراة ${name} محجوزة.`,
+    started: (name) => `بدأت مباراة ${name} بالفعل.`,
+    closed: (name) => `مباراة ${name} لم تعد تقبل لاعبين.`,
+    payHeading: "ما تدفعه في الملعب",
+    shareTo: (name) => `حصتك، لـ ${name}`,
+    feeTo: (venue) => `رسوم الانضمام، لـ ${venue}`,
+    total: "الإجمالي",
+    disclaimer:
+      "لا يضمن Hagz حضور اللاعبين المنضمين أو إقامة المباراة. تدفع حصتك لصاحب الحجز ورسوم الانضمام للملعب، شخصيًا.",
+    atVenue: (amount) => `${amount} في الملعب`,
+    split: (share, name, fee, venue) => `${share} لـ ${name} · ${fee} لـ ${venue}`,
+    join: "انضم من التطبيق",
+    joinLine: "يفتح حجز، أو المتجر إن لم يكن التطبيق لديك",
+    findAnother: "ابحث عن مباراة أخرى في التطبيق",
+    scanGame: "يفتح هذه المباراة في حجز، أو المتجر إن لم يكن التطبيق لديك.",
+    noApp: "ليس لديك حجز بعد؟",
+    noAppLine: "حمّل التطبيق، وسجّل الدخول برقم هاتفك، ثم افتح هذا الرابط مرة أخرى.",
+    someones: (venue) =>
+      `شارك أحدهم مباراته في ${venue} معك. تريد مباراتك؟ اعرض أوقاته المتاحة واحجز من التطبيق.`,
+    played: (venue) =>
+      `لُعبت هذه المباراة في ${venue}. تريد مباراتك؟ اعرض أوقاته المتاحة واحجز من التطبيق.`,
+    seeVenue: (venue) => `اعرض ${venue}`,
+    movedTitle: "لهذه المباراة موعد جديد",
+    was: "كان",
+    now: "الآن",
+    movedLine: "كان هذا الرابط للموعد القديم. للموعد الجديد رابط خاص به.",
+    seeNewTime: "اعرض الموعد الجديد",
+    offTitle: "هذه المباراة لن تُقام",
+    offLine: (venue) => `أُلغيت، فلا شيء للانضمام إليه. قد تكون لدى ${venue} أوقات أخرى متاحة.`,
+    gameMeta: (name, when) => `مباراة ${name}، ${when} · حجز`,
+    bookingMeta: (when) => `مباراة، ${when} · حجز`,
+    notFound: "الحجز غير موجود · حجز",
   },
 };
 

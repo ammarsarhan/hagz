@@ -13,6 +13,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { displayPhone, isolate, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Sign up, step 2: the 6-digit WhatsApp code. It's checked as soon as all six digits are in. Too
 // many wrong tries lock the boxes; a new code can be asked for once the countdown runs out.
@@ -57,7 +58,7 @@ export default function SignUpCode() {
       });
       return;
     }
-    router.push({
+    push({
       pathname: "/sign-up/details",
       params: { phone, token: result.data.verificationToken },
     });

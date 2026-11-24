@@ -72,13 +72,18 @@ export function RadiusSlider({
   const last = useSharedValue(radius);
   const start = useSharedValue(0);
   const dragging = useSharedValue(false);
+  // Hidden (its space kept) until it's measured and the handle's on the radius, so the first
+  // frames, drawn at no width, never show: then it fades in.
+  const ready = useSharedValue(0);
   useEffect(() => {
     cellSV.value = cell;
     if (!dragging.value) {
       x.value = radius * cell;
       last.value = radius;
     }
-  }, [cell, radius, cellSV, x, last, dragging]);
+    if (cell > 0 && ready.value === 0) ready.value = withTiming(1, { duration: 160 });
+  }, [cell, radius, cellSV, x, last, dragging, ready]);
+  const shown = useAnimatedStyle(() => ({ opacity: ready.value }));
 
   const commit = (km: number) => {
     void Haptics.selectionAsync();
@@ -130,7 +135,7 @@ export function RadiusSlider({
   return (
     <GestureHandlerRootView style={{ flex: 0 }}>
       <GestureDetector gesture={Gesture.Exclusive(drag, tap)}>
-        <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+        <Animated.View style={shown} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
           <View className="flex-row items-end" style={{ height: BARS }}>
             {Array.from({ length: MAX_RADIUS }, (_, i) => (
               <View key={i} style={{ width: cell, paddingHorizontal: cell > 5 ? 1 : 0.5 }}>
@@ -174,7 +179,7 @@ export function RadiusSlider({
               </Text>
             ))}
           </View>
-        </View>
+        </Animated.View>
       </GestureDetector>
     </GestureHandlerRootView>
   );

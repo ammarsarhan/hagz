@@ -1,8 +1,8 @@
 import type { components } from "@hagz/api";
-import { router } from "expo-router";
+
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Keyboard, Pressable, TextInput, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
@@ -21,6 +21,8 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeOut,
+  LinearTransition,
   interpolate,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -29,9 +31,24 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Button } from "./button";
-import { IconBallFootball, IconChevronDown, IconMapPin, IconSearch, IconX } from "./icons";
+import {
+  IconBallFootball,
+  IconChevronDown,
+  IconClock,
+  IconMapPin,
+  IconSearch,
+  IconX,
+} from "./icons";
 import { RadiusSlider } from "./radius-slider";
 import { Text } from "./text";
+import { Segment } from "./segment";
+import { push } from "@/lib/navigation";
+import {
+  clearRecentSearches,
+  recentSearches,
+  rememberSearch,
+  type RecentSearch,
+} from "@/lib/recent-searches";
 
 type Area = components["schemas"]["Area"];
 
@@ -84,70 +101,6 @@ function Heading({ children }: { children: string }) {
   );
 }
 
-// Near me | Pick an area: the white thumb slides under the picked side.
-function Segment({
-  options,
-  value,
-  onChange,
-}: {
-  options: { key: "near" | "area"; label: string }[];
-  value: "near" | "area";
-  onChange: (key: "near" | "area") => void;
-}) {
-  const [width, setWidth] = useState(0);
-  const index = Math.max(
-    0,
-    options.findIndex((option) => option.key === value),
-  );
-  const at = useSharedValue(index);
-  useEffect(() => {
-    at.value = withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) });
-  }, [index, at]);
-  const half = (width - 8) / options.length;
-  // The thumb sits at the start, which is the right in Arabic, so it moves the other way there.
-  const thumb = useAnimatedStyle(() => ({
-    transform: [{ translateX: at.value * half * (isRTL ? -1 : 1) }],
-  }));
-  return (
-    <View
-      className="mt-4 h-11 flex-row rounded-[14px] bg-chip p-1"
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-    >
-      {width > 0 ? (
-        <Animated.View
-          className="absolute top-1 bottom-1 left-1 rounded-[11px] bg-white"
-          style={[
-            {
-              width: half,
-              shadowColor: "#0b0b0c",
-              shadowOpacity: 0.08,
-              shadowRadius: 4,
-              shadowOffset: { width: 0, height: 1 },
-            },
-            thumb,
-          ]}
-        />
-      ) : null}
-      {options.map((option) => {
-        const on = option.key === value;
-        return (
-          <Pressable
-            key={option.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(option.key)}
-            className="flex-1 items-center justify-center"
-          >
-            <Text className={`text-body ${on ? "font-medium text-ink" : "text-ink-2"}`}>
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 // An accordion's body: its height opens from nothing to what it measures (and back), the chevron
 // turning with it.
 function Collapsible({ open, children }: { open: boolean; children: ReactNode }) {
@@ -185,16 +138,82 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function Pill({
+  label,
+  on,
+  small = false,
+  onPress,
+}: {
+  label: string;
+  on: boolean;
+  small?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className={`h-10 justify-center rounded-full px-4 ${on ? "bg-ink" : "border border-border bg-white"}`}
+      className={`justify-center rounded-full ${small ? "h-9 px-3.5" : "h-10 px-4"} ${on ? "bg-ink" : "border border-border bg-white"}`}
     >
-      <Text className={`text-body font-medium ${on ? "text-white" : "text-ink"}`}>{label}</Text>
+      <Text
+        className={`${small ? "text-label" : "text-body"} font-medium ${on ? "text-white" : "text-ink"}`}
+      >
+        {label}
+      </Text>
     </Pressable>
+  );
+}
+
+type Governorate = NonNullable<ReturnType<typeof useCoverage>>[number];
+
+// A governorate's areas as pills, "All of …" first.
+function AreaPills({
+  governorate,
+  where,
+  onPick,
+  small = false,
+  className = "",
+}: {
+  governorate: Governorate;
+  where: Where;
+  onPick: (where: Where) => void;
+  small?: boolean;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View className={`flex-row flex-wrap gap-2 ${className}`}>
+      <Pill
+        small={small}
+        label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
+        on={where.kind === "area" && where.id === governorate.id}
+        onPress={() =>
+          onPick({
+            kind: "area",
+            id: governorate.id,
+            name: governorate.name ?? "",
+            within: null,
+          })
+        }
+      />
+      {governorate.areas.map((area) => (
+        <Pill
+          small={small}
+          key={area.id}
+          label={area.name ?? ""}
+          on={where.kind === "area" && where.id === area.id}
+          onPress={() =>
+            onPick({
+              kind: "area",
+              id: area.id,
+              name: area.name ?? "",
+              within: governorate.name,
+            })
+          }
+        />
+      ))}
+    </View>
   );
 }
 
@@ -223,16 +242,8 @@ export function SearchWhere({
   const [tab, setTab] = useState<"near" | "area">(here && where.kind === "near" ? "near" : "area");
   const [radius, setRadius] = useState(where.kind === "near" ? where.radius : DEFAULT_RADIUS);
   const coverage = useCoverage();
-  // The governorate open: the one holding the area picked, else the first.
+  // The governorate open: none until one's tapped, so the list never shifts as it arrives.
   const [open, setOpen] = useState<string | null>(null);
-  const shownOpen =
-    open ??
-    (where.kind === "area"
-      ? (coverage?.find(
-          (governorate) =>
-            governorate.id === where.id || governorate.areas.some((area) => area.id === where.id),
-        )?.id ?? null)
-      : (coverage?.[0]?.id ?? null));
   // The bars leave the radius out, so moving the slider doesn't ask for them again.
   const spread = useSpread(
     here && tab === "near"
@@ -275,9 +286,19 @@ export function SearchWhere({
     };
   }, [q, here]);
 
+  const [recents, setRecents] = useState<RecentSearch[]>(recentSearches);
+
   const pick = (where: Where) => {
     Keyboard.dismiss();
+    if (where.kind === "area") rememberSearch(where);
     onPick(where);
+  };
+
+  const openVenue = (venue: { slug: string; name: string; line: string | null }) => {
+    Keyboard.dismiss();
+    rememberSearch({ kind: "venue", ...venue });
+    setRecents(recentSearches());
+    push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
   };
 
   // The page scrolls under the bar, which rides up with it and docks under the status bar, a white
@@ -326,6 +347,7 @@ export function SearchWhere({
         />
         {typed ? null : (
           <Segment
+            className="mt-4"
             options={[
               { key: "near", label: t("screens.search.where.nearMe") },
               { key: "area", label: t("screens.search.where.pickArea") },
@@ -334,7 +356,51 @@ export function SearchWhere({
             onChange={setTab}
           />
         )}
-        <View className="pt-3">
+        {/* Recent picks: one row of chips under the switcher, so it never moves. */}
+        {!typed && recents.length > 0 ? (
+          <Animated.View exiting={FadeOut.duration(200)}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              className="-mx-6 mt-3"
+              contentContainerClassName="items-center gap-2 px-6"
+            >
+              {recents.map((recent) => (
+                <Pressable
+                  key={recent.kind === "area" ? recent.id : recent.slug}
+                  accessibilityRole="button"
+                  accessibilityHint={
+                    recent.kind === "area"
+                      ? (recent.within ?? undefined)
+                      : (recent.line ?? undefined)
+                  }
+                  onPress={() => (recent.kind === "area" ? pick(recent) : openVenue(recent))}
+                  className="h-9 flex-row items-center gap-1.5 rounded-full border border-border px-3.5 active:opacity-60"
+                >
+                  <IconClock size={15} color={colors.ink2} strokeWidth={1.75} />
+                  <Text className="text-label font-medium" numberOfLines={1}>
+                    {recent.name}
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => {
+                  clearRecentSearches();
+                  setRecents([]);
+                }}
+                className="px-1.5 active:opacity-60"
+              >
+                <Text className="text-label font-medium text-ink-2 underline">
+                  {t("screens.search.where.clearRecent")}
+                </Text>
+              </Pressable>
+            </ScrollView>
+          </Animated.View>
+        ) : null}
+        <Animated.View className="pt-3" layout={LinearTransition.duration(200)}>
           {typed ? null : tab === "near" ? (
             <Animated.View key="near" entering={FadeIn.duration(220)}>
               {here ? (
@@ -367,14 +433,25 @@ export function SearchWhere({
             </Animated.View>
           ) : (
             <Animated.View key="area" entering={FadeIn.duration(220)}>
-              {(coverage ?? []).map((governorate) => {
-                const expanded = governorate.id === shownOpen;
+              {/* Only one governorate (user, 2026-11-23): its areas straight away, a size
+                  smaller, with nothing to open. */}
+              {coverage?.length === 1 && coverage[0] ? (
+                <AreaPills
+                  governorate={coverage[0]}
+                  where={where}
+                  onPick={pick}
+                  small
+                  className="pt-5"
+                />
+              ) : null}
+              {(coverage?.length === 1 ? [] : (coverage ?? [])).map((governorate) => {
+                const expanded = governorate.id === open;
                 return (
                   <View key={governorate.id} className="border-b border-border py-4">
                     <Pressable
                       accessibilityRole="button"
                       accessibilityState={{ expanded }}
-                      onPress={() => setOpen(expanded ? "" : governorate.id)}
+                      onPress={() => setOpen(expanded ? null : governorate.id)}
                       className="flex-row items-center justify-between active:opacity-60"
                     >
                       <View className="gap-0.5">
@@ -386,35 +463,12 @@ export function SearchWhere({
                       <Chevron open={expanded} />
                     </Pressable>
                     <Collapsible open={expanded}>
-                      <View className="flex-row flex-wrap gap-2 pt-4">
-                        <Pill
-                          label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
-                          on={where.kind === "area" && where.id === governorate.id}
-                          onPress={() =>
-                            pick({
-                              kind: "area",
-                              id: governorate.id,
-                              name: governorate.name ?? "",
-                              within: null,
-                            })
-                          }
-                        />
-                        {governorate.areas.map((area) => (
-                          <Pill
-                            key={area.id}
-                            label={area.name ?? ""}
-                            on={where.kind === "area" && where.id === area.id}
-                            onPress={() =>
-                              pick({
-                                kind: "area",
-                                id: area.id,
-                                name: area.name ?? "",
-                                within: governorate.name,
-                              })
-                            }
-                          />
-                        ))}
-                      </View>
+                      <AreaPills
+                        governorate={governorate}
+                        where={where}
+                        onPick={pick}
+                        className="pt-4"
+                      />
                     </Collapsible>
                   </View>
                 );
@@ -451,10 +505,13 @@ export function SearchWhere({
                   ]
                     .filter(Boolean)
                     .join(" · ")}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
-                  }}
+                  onPress={() =>
+                    openVenue({
+                      slug: venue.slug,
+                      name: venue.name ?? t("screens.venue.fallbackName"),
+                      line: venue.area,
+                    })
+                  }
                 />
               ))}
             </>
@@ -464,7 +521,7 @@ export function SearchWhere({
               {t("screens.search.where.noMatch", { query: q.trim() })}
             </Text>
           ) : null}
-        </View>
+        </Animated.View>
       </Animated.ScrollView>
 
       {/* The header the bar docks in, and the bar itself. */}

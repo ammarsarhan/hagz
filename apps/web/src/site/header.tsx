@@ -37,9 +37,10 @@ export function Header({ locale }: { locale: Locale }) {
             </Social>
           </div>
           <div className="hidden h-6 w-px bg-border md:block" />
+          {/* Smaller on a phone, where it sits alone beside the mark (user, 2026-11-24). */}
           <a
             href="#get-the-app"
-            className="flex h-10 items-center rounded-full bg-[#1d1d1d] px-[18px] text-[15px] font-semibold text-white"
+            className="flex h-8 items-center rounded-full bg-[#1d1d1d] px-3.5 text-[13px] font-semibold text-white md:h-10 md:px-[18px] md:text-[15px]"
           >
             {wordsFor(locale).getTheApp}
           </a>

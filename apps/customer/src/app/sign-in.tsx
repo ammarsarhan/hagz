@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { Keyboard, Pressable, View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
 import { useHud } from "@/components/hud";
@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { isCompletePhone, isolate, maskedPhone, toE164 } from "@/lib/phone";
 import { enterWithSession } from "@/lib/session";
+import { push } from "@/lib/navigation";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
 
@@ -49,7 +50,8 @@ export default function SignIn() {
     if (!result.ok) {
       const failure = problem(result.error)?.code;
       if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
-        router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
+        Keyboard.dismiss();
+        push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
       } else if (failure === "INVALID_CREDENTIALS" || failure === "RATE_LIMITED") {
         setError(fieldMessage(result.error));
       } else {
@@ -99,7 +101,7 @@ export default function SignIn() {
       />
       <Pressable
         accessibilityRole="link"
-        onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
+        onPress={() => push({ pathname: "/forgot-password", params: { phone } })}
         hitSlop={8}
         className="self-start"
       >
@@ -163,7 +165,8 @@ function TwoFactorSheet({
         setError(fieldMessage(result.error));
       } else if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
         onClose();
-        router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
+        Keyboard.dismiss();
+        push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
       } else {
         onClose();
         hud.show(hudMessage(result.error));

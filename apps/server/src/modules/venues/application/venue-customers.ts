@@ -4,3 +4,92 @@ import type { Tx } from "@/platform/db/transaction";
 // their history.
 export const linkWalkIns = (tx: Tx, phone: string, customerId: string) =>
   tx.venueCustomer.updateMany({ where: { phone, customerId: null }, data: { customerId } });
+
+// The venue's record of a player booking in the app, made on their first booking there. A walk-in
+// record already under their number becomes theirs. Safe when the same player books twice at once:
+// inserts skip conflicts and the row is read back.
+export const venueCustomerForAccount = async (
+  tx: Tx,
+  venueId: string,
+  account: { id: string; name: string; phone: string },
+): Promise<string> => {
+  const find = () =>
+    tx.venueCustomer.findUnique({
+      where: { venueId_customerId: { venueId, customerId: account.id } },
+      select: { id: true },
+    });
+
+  const linked = await find();
+  if (linked) return linked.id;
+
+  const [walkIn] = await tx.venueCustomer.updateManyAndReturn({
+    where: { venueId, phone: account.phone, customerId: null },
+    data: { customerId: account.id },
+    select: { id: true },
+  });
+  if (walkIn) return walkIn.id;
+
+  const insert = (phone: string | null) =>
+    tx.venueCustomer.createMany({
+      data: [{ venueId, customerId: account.id, name: account.name, phone }],
+      skipDuplicates: true,
+    });
+  await insert(account.phone);
+  const created = await find();
+  if (created) return created.id;
+
+  // The number is on another account's record here (a recycled number), so this one goes without.
+  await insert(null);
+  const withoutPhone = await find();
+  if (!withoutPhone) throw new Error("Couldn't create the venue's customer record.");
+  return withoutPhone.id;
+};
+
+// Someone staff are booking or holding for by name and number (a phone call, the front desk): the
+// venue's record under that number if it has one, otherwise a new walk-in. Inserts skip a conflict
+// with one made at the same moment and read it back.
+export const walkInCustomer = async (
+  tx: Tx,
+  venueId: string,
+  person: { name: string; phone: string },
+): Promise<string> => {
+  const find = () =>
+    tx.venueCustomer.findUnique({
+      where: { venueId_phone: { venueId, phone: person.phone } },
+      select: { id: true },
+    });
+  const known = await find();
+  if (known) return known.id;
+  await tx.venueCustomer.createMany({
+    data: [{ venueId, name: person.name, phone: person.phone }],
+    skipDuplicates: true,
+  });
+  const created = await find();
+  if (!created) throw new Error("Couldn't create the venue's customer record.");
+  return created.id;
+};
+
+// A customer's counters (docs/regulars.md "Filling a slot"): games played, no-shows and when they
+// last played, worked out again from their bookings in the transaction that marked a game, so they
+// never drift. `lastBookedAt` is the start of the last game they played.
+export const refreshCustomerCounters = async (tx: Tx, venueCustomerIds: readonly string[]) => {
+  const ids = [...new Set(venueCustomerIds)].sort();
+  if (ids.length === 0) return;
+  await tx.$executeRaw`
+    UPDATE "VenueCustomer" AS vc SET
+      "bookingCount" = s.played,
+      "noShowCount" = s."noShows",
+      "lastBookedAt" = s.last,
+      "updatedAt" = now()
+    FROM (
+      SELECT c.id,
+        count(b.id) FILTER (WHERE b.status = 'COMPLETED')::int AS played,
+        count(b.id) FILTER (WHERE b.status = 'NO_SHOW')::int AS "noShows",
+        max(b."startsAt") FILTER (WHERE b.status = 'COMPLETED') AS last
+      FROM "VenueCustomer" c
+      LEFT JOIN "Booking" b ON b."customerId" = c.id
+      WHERE c.id = ANY(${ids}::uuid[])
+      GROUP BY c.id
+    ) AS s
+    WHERE vc.id = s.id`;
+};

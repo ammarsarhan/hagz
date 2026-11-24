@@ -16,6 +16,7 @@ import { OnboardingArt } from "@/components/onboarding-art";
 import { Text } from "@/components/text";
 import { isRTL } from "@/lib/language";
 import { hasSeenOnboarding, markOnboardingSeen } from "@/lib/onboarding";
+import { push } from "@/lib/navigation";
 
 // Customer onboarding: four lime slides (a problem in two words, the fix in one), swiped or
 // advancing gently on their own until touched, with Get started (browse as a guest) and Create
@@ -39,7 +40,7 @@ export default function Index() {
 function leave(to: Href) {
   markOnboardingSeen();
   if (to === "/home") router.replace(to);
-  else router.push(to);
+  else push(to);
 }
 
 function Onboarding() {

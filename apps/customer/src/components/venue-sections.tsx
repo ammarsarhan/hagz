@@ -40,21 +40,17 @@ import {
   IconStarFilled,
 } from "./icons";
 import { Text } from "./text";
-import { VenueLayout } from "./venue-layout";
 
 // The venue page's parts (Figma C5, frames 59:2 and 60:2), top to bottom. Rows follow Public's
 // pattern: grey label at the start, the value at the end, hairlines between (mirrored in Arabic).
 
 export const Hairline = () => <View className="h-px bg-border" />;
 
-export function GroupHeading({ children, action }: { children: string; action?: ReactNode }) {
+export function GroupHeading({ children }: { children: string }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
-        {children}
-      </Text>
-      {action}
-    </View>
+    <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
+      {children}
+    </Text>
   );
 }
 
@@ -69,15 +65,20 @@ export function Section({
   title: string;
   // A small grey line under the heading (what the grounds were matched against).
   note?: string;
+  // At the end, centred on the heading and its note together (View layout).
   action?: ReactNode;
   onLayout?: (event: LayoutChangeEvent) => void;
   children: ReactNode;
 }) {
   return (
     <View className="gap-4 px-6 pt-8" onLayout={onLayout}>
-      <View className="gap-1">
-        <GroupHeading action={action}>{title}</GroupHeading>
-        {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
+      <View className="flex-row items-center gap-4">
+        {/* The note right under the heading, no gap (user, 2026-11-22). */}
+        <View className="flex-1">
+          <GroupHeading>{title}</GroupHeading>
+          {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
+        </View>
+        {action}
       </View>
       {children}
     </View>
@@ -276,15 +277,18 @@ const lengthLabel = (ground: PublicGround) =>
       });
 
 // A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
-// it is, how long a booking can be, and a See times button across the bottom. Picking only fades
-// things: a slightly darker grey border over the light one (which stays, so an unpicked card keeps its 1px
-// edge) and the button from grey to lime (user, 2026-11-20). Nothing changes size, so nothing moves.
+// it is, how long a booking can be, and a See times button across the bottom (the venue page; the
+// layout screen's cards have none, its bar has View times). Picking only fades things: a darker
+// border over the light one (which stays, so an unpicked card keeps its 1px edge), a slightly darker
+// grey on the venue page and ink on the layout screen (Figma 215:2), and the button from grey to lime
+// (user, 2026-11-20). Nothing changes size, so nothing moves.
 function GroundOption({
   ground,
   width,
   currency,
   picked,
   unavailable = false,
+  strongPick,
   onPick,
   onSeeTimes,
 }: {
@@ -294,8 +298,11 @@ function GroundOption({
   picked: boolean;
   // Not what the search asked for (lib/ground-filter.ts): greyed out, still there to look at.
   unavailable?: boolean;
+  // The picked card's border in ink rather than grey.
+  strongPick: boolean;
   onPick: () => void;
-  onSeeTimes: () => void;
+  // None: no See times button on the card.
+  onSeeTimes?: () => void;
 }) {
   const { t } = useTranslation();
   const shown = useSharedValue(picked ? 1 : 0);
@@ -314,8 +321,8 @@ function GroundOption({
     >
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px rounded-[17px] border-[1.5px] border-[#d5d8dd]"
-        style={fade}
+        className="absolute -inset-px rounded-[17px] border-[1.5px]"
+        style={[{ borderColor: strongPick ? colors.ink : "#d5d8dd" }, fade]}
       />
       <View className="flex-row items-center justify-between gap-6">
         <Text className="shrink text-subtitle font-medium" numberOfLines={1}>
@@ -331,7 +338,7 @@ function GroundOption({
       ) : bookable ? (
         <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text>
       ) : null}
-      {bookable ? (
+      {bookable && onSeeTimes ? (
         // On every card: grey, and lime once it's the picked one, the lime laid over the grey and
         // faded in. Pressed on a card that isn't picked, it picks it too.
         <View className="mt-auto pt-3">
@@ -396,21 +403,125 @@ function PageDots({ count, current }: { count: number; current: number }) {
   );
 }
 
-// The grounds a search's matches leave out, for the layout to mark.
-const unavailableOf = (venue: PublicVenue, matches: ReadonlySet<string> | null) =>
-  matches
-    ? new Set(venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id))
-    : undefined;
+// The ground picked to begin with: the first open one that fits the search (if there was one), or
+// the first open one, or the first.
+export function firstPick(
+  grounds: PublicGround[],
+  matches: ReadonlySet<string> | null = null,
+): string | null {
+  const open = grounds.filter((ground) => ground.status === "ACTIVE");
+  return (
+    open.find((ground) => !matches || matches.has(ground.id))?.id ??
+    open[0]?.id ??
+    grounds[0]?.id ??
+    null
+  );
+}
 
 // The cards: 80% of the screen, 10 apart, so the next one peeks in.
 const CARD_SHARE = 0.8;
 const CARD_GAP = 10;
-const GUTTER = 24;
+
+// A venue's grounds as a row of cards under the page's map or heading, edge to edge, snapping each
+// card to the gutter (the last one to the other gutter), all as tall as the tallest, with dots under
+// them. The pick is the caller's: the card that settles in place picks itself, tapping a card picks
+// it, and a pick from outside (a tap on the layout) brings its card into place.
+export function GroundCards({
+  grounds,
+  currency,
+  pickedId,
+  onPick,
+  matches = null,
+  onSeeTimes,
+  strongPick = false,
+  gutter,
+}: {
+  grounds: PublicGround[];
+  currency: string;
+  pickedId: string | null;
+  onPick: (groundId: string) => void;
+  // Opened from a search: the grounds that fit it (the rest are greyed out). Null: no search.
+  matches?: ReadonlySet<string> | null;
+  // Each card's See times (the venue page); none on the layout screen.
+  onSeeTimes?: (groundId: string) => void;
+  strongPick?: boolean;
+  // The page's side padding, which the row runs into.
+  gutter: number;
+}) {
+  const { width: screen } = useWindowDimensions();
+  const card = Math.round(screen * CARD_SHARE);
+  const step = card + CARD_GAP;
+  // Where the row stops for each card: its left edge on the gutter, except at the end, where the
+  // last card's right edge meets the gutter on the other side.
+  const count = grounds.length;
+  const end = Math.max(0, 2 * gutter + count * card + (count - 1) * CARD_GAP - screen);
+  const stops = grounds.map((_, index) => Math.min(index * step, end));
+  const pickedIndex = Math.max(
+    0,
+    grounds.findIndex((ground) => ground.id === pickedId),
+  );
+  const row = useRef<ScrollViewInstance>(null);
+  // Where the row is (or is heading), so a pick only scrolls when its card isn't already in place.
+  // At the end several cards share a stop, and picking one of those leaves the row where it is.
+  const at = useRef(stops[pickedIndex] ?? 0);
+  useEffect(() => {
+    const stop = stops[pickedIndex] ?? 0;
+    if (stop === at.current) return;
+    at.current = stop;
+    row.current?.scrollTo({ x: stop, animated: true });
+    // Only when the pick moves; the stops follow the grounds and the screen.
+  }, [pickedIndex]);
+
+  // The card whose stop is nearest; at the end, where several may share it, the last of them.
+  const settle = (x: number) => {
+    let index = 0;
+    stops.forEach((stop, i) => {
+      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
+    });
+    const ground = grounds[index];
+    if (!ground) return;
+    at.current = stops[index] ?? 0;
+    onPick(ground.id);
+  };
+
+  return (
+    <>
+      <ScrollView
+        ref={row}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToOffsets={[...new Set(stops)]}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        contentOffset={{ x: stops[pickedIndex] ?? 0, y: 0 }}
+        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
+        style={{ marginHorizontal: -gutter }}
+        contentContainerStyle={{ gap: CARD_GAP, paddingHorizontal: gutter }}
+      >
+        {grounds.map((ground) => (
+          <GroundOption
+            key={ground.id}
+            ground={ground}
+            width={card}
+            currency={currency}
+            picked={ground.id === pickedId}
+            unavailable={matches !== null && !matches.has(ground.id)}
+            strongPick={strongPick}
+            onPick={() => onPick(ground.id)}
+            onSeeTimes={onSeeTimes ? () => onSeeTimes(ground.id) : undefined}
+          />
+        ))}
+      </ScrollView>
+      <PageDots count={count} current={pickedIndex} />
+    </>
+  );
+}
 
 export function GroundsSection({
   venue,
   onLayout,
   onSeeTimes,
+  onViewLayout,
   onPick,
   matches = null,
   note,
@@ -419,110 +530,52 @@ export function GroundsSection({
   onLayout: (event: LayoutChangeEvent) => void;
   // A ground's See times: its free hours (app/venue/[slug]/times.tsx).
   onSeeTimes: (groundId: string) => void;
+  // View layout, at the end of the heading when the venue has drawn one: the map on its own screen
+  // (app/venue/[slug]/layout.tsx).
+  onViewLayout: () => void;
   // Which ground is picked now, for the Book button to open.
   onPick?: (groundId: string) => void;
-  // Opened from a search: the grounds that fit it (the rest are greyed out, on the cards and the
-  // layout), and what they were matched against, under the heading. Null: no search.
+  // Opened from a search: the grounds that fit it (the rest are greyed out), and what they were
+  // matched against, under the heading. Null: no search.
   matches?: ReadonlySet<string> | null;
   note?: string;
 }) {
   const { t } = useTranslation();
-  const { width: screen } = useWindowDimensions();
-  const card = Math.round(screen * CARD_SHARE);
-  const step = card + CARD_GAP;
-  // Where the row stops for each card: its left edge on the page's gutter, except at the end,
-  // where the last card's right edge meets the gutter on the other side.
-  const count = venue.grounds.length;
-  const end = Math.max(0, 2 * GUTTER + count * card + (count - 1) * CARD_GAP - screen);
-  const stops = venue.grounds.map((_, index) => Math.min(index * step, end));
-  const firstOpen = (fits: (id: string) => boolean) =>
-    venue.grounds.findIndex((ground) => ground.status === "ACTIVE" && fits(ground.id));
-  const first = Math.max(
-    0,
-    firstOpen(() => true),
-  );
-  const [pickedId, setPickedId] = useState<string | null>(venue.grounds[first]?.id ?? null);
-  const row = useRef<ScrollViewInstance>(null);
-  const currency = venue.marketplace.currency;
-
-  // The card that settles in place is the picked one, so the map follows the swipe; tapping a
-  // card brings it into place.
-  // The card whose stop is nearest; at the end, where several may share it, the last of them.
-  const settle = (x: number) => {
-    let index = 0;
-    stops.forEach((stop, i) => {
-      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
-    });
-    const ground = venue.grounds[index];
-    if (ground) {
-      setPickedId(ground.id);
-      onPick?.(ground.id);
-    }
-  };
-  const bringIn = (index: number) => {
-    row.current?.scrollTo({ x: stops[index] ?? 0, animated: true });
-    const ground = venue.grounds[index];
-    if (ground) {
-      setPickedId(ground.id);
-      onPick?.(ground.id);
-    }
+  const [pickedId, setPickedId] = useState(() => firstPick(venue.grounds));
+  const pick = (groundId: string) => {
+    setPickedId(groundId);
+    onPick?.(groundId);
   };
   // Once the search's matches are known: the first ground that fits comes into place, unless the
   // picked one already does.
   useEffect(() => {
     if (!matches || (pickedId && matches.has(pickedId))) return;
-    const index = firstOpen((id) => matches.has(id));
-    if (index >= 0) bringIn(index);
+    const fitting = venue.grounds.find(
+      (ground) => ground.status === "ACTIVE" && matches.has(ground.id),
+    );
+    if (fitting) pick(fitting.id);
     // Only when the matches arrive, not on every pick.
   }, [matches]);
 
   return (
-    <Section title={t("screens.venue.grounds.title")} note={note} onLayout={onLayout}>
-      {venue.layout ? (
-        <VenueLayout
-          layout={venue.layout}
-          grounds={venue.grounds}
-          amenities={venue.amenities}
-          selectedId={pickedId}
-          unavailableIds={unavailableOf(venue, matches)}
-        />
-      ) : null}
-      {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
-          All as tall as the tallest. */}
-      <ScrollView
-        ref={row}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToOffsets={[...new Set(stops)]}
-        decelerationRate="fast"
-        disableIntervalMomentum
-        contentOffset={{ x: stops[first] ?? 0, y: 0 }}
-        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
-        className="-mx-6"
-        contentContainerStyle={{
-          gap: CARD_GAP,
-          paddingHorizontal: GUTTER,
-        }}
-      >
-        {venue.grounds.map((ground, index) => (
-          <GroundOption
-            key={ground.id}
-            ground={ground}
-            width={card}
-            currency={currency}
-            picked={ground.id === pickedId}
-            unavailable={matches !== null && !matches.has(ground.id)}
-            onPick={() => bringIn(index)}
-            onSeeTimes={() => onSeeTimes(ground.id)}
-          />
-        ))}
-      </ScrollView>
-      <PageDots
-        count={venue.grounds.length}
-        current={Math.max(
-          0,
-          venue.grounds.findIndex((ground) => ground.id === pickedId),
-        )}
+    <Section
+      title={t("screens.venue.grounds.title")}
+      note={note}
+      onLayout={onLayout}
+      action={
+        venue.layout ? (
+          <Link label={t("screens.venue.grounds.viewLayout")} onPress={onViewLayout} />
+        ) : undefined
+      }
+    >
+      <GroundCards
+        grounds={venue.grounds}
+        currency={venue.marketplace.currency}
+        pickedId={pickedId}
+        onPick={pick}
+        matches={matches}
+        onSeeTimes={onSeeTimes}
+        gutter={24}
       />
     </Section>
   );
@@ -681,7 +734,7 @@ export function ReviewsSection({
 }
 
 // Opens the phone's maps app with directions to the venue.
-const openDirections = (latitude: number, longitude: number, name: string) => {
+export const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
   void Linking.openURL(
     Platform.OS === "ios"
@@ -689,6 +742,43 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
       : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
   );
 };
+
+// A still map of the venue with its pin: no panning or zooming, a picture of where it is.
+export function VenueMap({
+  coordinates,
+  height,
+  radius,
+}: {
+  coordinates: { latitude: number; longitude: number };
+  height: number;
+  radius: number;
+}) {
+  return (
+    <View
+      className="overflow-hidden bg-[#eef0f2]"
+      style={{ height, borderRadius: radius }}
+      pointerEvents="none"
+    >
+      <MapView
+        // Google Maps on both platforms, as in the staff app (the key is built in for both).
+        provider={PROVIDER_GOOGLE}
+        style={{ flex: 1 }}
+        initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
+        scrollEnabled={false}
+        zoomEnabled={false}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        toolbarEnabled={false}
+      >
+        {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map doesn't
+            keep re-rendering it. */}
+        <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
+          <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
+        </Marker>
+      </MapView>
+    </View>
+  );
+}
 
 // The map and address. No phone: players get the venue's number with a booking there.
 export function WhereSection({
@@ -704,27 +794,7 @@ export function WhereSection({
   const { coordinates, address, area } = venue.location;
   return (
     <Section title={t("screens.venue.where")} onLayout={onLayout}>
-      {coordinates ? (
-        <View className="h-[180px] overflow-hidden rounded-2xl" pointerEvents="none">
-          <MapView
-            // Google Maps on both platforms, as in the staff app (the key is built in for both).
-            provider={PROVIDER_GOOGLE}
-            style={{ flex: 1 }}
-            initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            toolbarEnabled={false}
-          >
-            {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map
-                doesn't keep re-rendering it. */}
-            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
-              <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
-            </Marker>
-          </MapView>
-        </View>
-      ) : null}
+      {coordinates ? <VenueMap coordinates={coordinates} height={180} radius={16} /> : null}
       <View className="flex-row items-center justify-between gap-4">
         <View className="shrink gap-0.5">
           <Text className="text-subtitle font-medium">

@@ -10,6 +10,8 @@ export { default as IconCircleCheck } from "@tabler/icons-react-native/IconCircl
 export { default as IconClock } from "@tabler/icons-react-native/IconClock";
 export { default as IconEye } from "@tabler/icons-react-native/IconEye";
 export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
+export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
+export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 
 // The venue page: its rating, phone and map, and amenities as the API names them (amenity-icon.tsx).
@@ -62,6 +64,8 @@ export { default as IconWifi } from "@tabler/icons-react-native/IconWifi";
 
 // The venue page's highlights: confirmation, cancellation and payment.
 export { default as IconBolt } from "@tabler/icons-react-native/IconBolt";
+export { default as IconBell } from "@tabler/icons-react-native/IconBell";
+export { default as IconCalendarPlus } from "@tabler/icons-react-native/IconCalendarPlus";
 export { default as IconCalendarX } from "@tabler/icons-react-native/IconCalendarX";
 export { default as IconShare } from "@tabler/icons-react-native/IconShare";
 export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
@@ -87,3 +91,5 @@ export { default as IconExternalLink } from "@tabler/icons-react-native/IconExte
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
 export { default as IconInfoCircle } from "@tabler/icons-react-native/IconInfoCircle";
+export { default as IconQrcode } from "@tabler/icons-react-native/IconQrcode";
+export { default as IconDirections } from "@tabler/icons-react-native/IconDirections";

@@ -2,7 +2,7 @@ import type { components } from "@hagz/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import i18n from "@/i18next/i18next";
 import { api } from "./api";
-import { hudMessage, send } from "./api-errors";
+import { send } from "./api-errors";
 import { intlLocale } from "./language";
 import { currencyName } from "./money";
 
@@ -31,6 +31,8 @@ export interface SearchParams extends FilterQuery {
   area?: string;
   date?: string;
   start?: string;
+  // Free times from this time on, with no ground needed at exactly then (Home's Free tonight).
+  after?: string;
   hours?: number;
   sport?: Sport;
   sort?: SearchSort;
@@ -41,7 +43,9 @@ export interface SearchParams extends FilterQuery {
 // (a governorate at the widest: never the whole country, user 2026-11-20).
 export type Where =
   | { kind: "near"; radius: number }
-  | { kind: "area"; id: string; name: string; within: string | null };
+  | { kind: "area"; id: string; name: string; within: string | null }
+  // Around a place that isn't the player (a venue that couldn't take a booking: Similar venues).
+  | { kind: "around"; latitude: number; longitude: number; radius: number; name: string };
 
 export const DEFAULT_RADIUS = 10;
 export const MAX_RADIUS = 50;
@@ -82,6 +86,8 @@ interface FilterQuery {
   amenities?: string;
   rating?: number;
   instant?: "true";
+  // Only venues with a time that came free again (Home's Just freed).
+  justFreed?: "true";
   flexible?: "true";
   loyalty?: "true";
   payment?: Payment;
@@ -261,6 +267,9 @@ export const useVenueCount = (params: SearchParams, enabled: boolean) => {
 };
 
 interface State {
+  // The day searched: the one asked for, or with none, the one the server chose (today, or
+  // tomorrow once today has nothing left).
+  date: string | null;
   cards: VenueCard[];
   total: number | null;
   currency: string;
@@ -269,10 +278,12 @@ interface State {
   loading: boolean;
   // Loading the next page, rather than the search again.
   loadingMore: boolean;
-  error: string | null;
+  // What failed, as `send` returned it (FailedMessage tells offline from the API's problem).
+  error: unknown;
 }
 
 const EMPTY: State = {
+  date: null,
   cards: [],
   total: null,
   currency: "EGP",
@@ -319,12 +330,13 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
           ...(reset ? { cards: [], total: null, cursor: null } : {}),
           loading: false,
           loadingMore: false,
-          error: hudMessage(result.error),
+          error: result.error,
         }));
         return;
       }
       const page = result.data;
       setState((previous) => ({
+        date: page.date,
         cards: reset ? page.data : [...previous.cards, ...page.data],
         total: reset ? page.total : previous.total,
         currency: page.currency,
@@ -420,25 +432,37 @@ export const useSpread = (params: SearchParams | null) => {
 };
 
 // Governorates with live venues and their areas (GET /v1/venues/coverage), read once a session.
+// With what failed (`send`'s error) and a way to try again, for a screen that can't go on without it
+// (Search with no location has nowhere else to look).
 let coverageCache: Governorate[] | null = null;
-export const useCoverage = () => {
+export const useCoverageState = () => {
   const [coverage, setCoverage] = useState<Governorate[] | null>(coverageCache);
+  const [error, setError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (coverageCache) return;
     let active = true;
+    setError(null);
     void send(
       api.GET("/v1/venues/coverage", { params: { query: { marketplace: MARKETPLACE } } }),
     ).then((result) => {
-      if (!result.ok) return;
+      if (!active) return;
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       coverageCache = result.data.data;
-      if (active) setCoverage(coverageCache);
+      setCoverage(coverageCache);
     });
     return () => {
       active = false;
     };
-  }, []);
-  return coverage;
+  }, [attempt]);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { coverage, error, retry };
 };
+
+export const useCoverage = () => useCoverageState().coverage;
 
 // The marketplace's amenities, for the Filters sheet's pills and the chips' names; read once.
 let amenitiesCache: Amenity[] | null = null;

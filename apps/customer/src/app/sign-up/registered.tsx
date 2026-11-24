@@ -10,6 +10,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { displayPhone, isolate } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // The number already has an account. Shown straight after its code is confirmed (so it reveals
 // nothing to anyone who doesn't hold the number), instead of after a name and password.
@@ -24,7 +25,7 @@ export default function AlreadyRegistered() {
 
   const forgotPassword = async () => {
     if (!token) {
-      router.push({ pathname: "/forgot-password", params: { phone } });
+      push({ pathname: "/forgot-password", params: { phone } });
       return;
     }
     setResetting(true);
@@ -35,10 +36,10 @@ export default function AlreadyRegistered() {
     if (!result.ok) {
       // Used or expired: the usual reset, from the number.
       hud.show(hudMessage(result.error));
-      router.push({ pathname: "/forgot-password", params: { phone } });
+      push({ pathname: "/forgot-password", params: { phone } });
       return;
     }
-    router.push({
+    push({
       pathname: "/forgot-password/new-password",
       params: { phone, resetToken: result.data.resetToken },
     });

@@ -1,9 +1,9 @@
-import { router, type Href } from "expo-router";
+import { type Href } from "expo-router";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { auth } from "@/lib/api";
-import { signInFrom } from "@/lib/navigation";
+import { push, signInFrom } from "@/lib/navigation";
 import { Button } from "./button";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
@@ -16,8 +16,8 @@ interface Ask {
 }
 
 // Guests browse freely; something that needs an account (booking, a favourite) asks for one in a
-// sheet over the screen, with Create account (lime: it's a big moment) and Sign in. Either one comes
-// back to `from` once they're in (lib/navigation.ts).
+// sheet over the screen, with Sign in and Create account (lime: it's a big moment) side by side.
+// Either comes back to `from` once they're in (lib/navigation.ts).
 //
 //   const { whenSignedIn, sheet } = useSignInSheet("/venue/abc");
 //   onPress={() => whenSignedIn(book, { title: "Sign in to book", body: … })}
@@ -54,22 +54,29 @@ export function useSignInSheet(from: Href) {
         next.current = null;
         if (!href) return;
         signInFrom(from);
-        router.push(href);
+        push(href);
       }}
     >
       <Text className="mb-1.5 text-heading font-semibold">{ask.title}</Text>
       <Text className="text-subtitle text-ink-2">{ask.body}</Text>
-      <View className="mt-6 gap-2.5">
-        <Button
-          label={t("common.actions.createAccount")}
-          variant="moment"
-          onPress={() => go("/sign-up")}
-        />
-        <Button
-          label={t("common.actions.signIn")}
-          variant="secondary"
-          onPress={() => go("/sign-in")}
-        />
+      {/* Side by side, half each: Sign in, then Create account at the end (the main one). */}
+      <View className="mt-6 flex-row gap-2.5">
+        <View className="flex-1">
+          <Button
+            label={t("common.actions.signIn")}
+            variant="secondary"
+            size="small"
+            onPress={() => go("/sign-in")}
+          />
+        </View>
+        <View className="flex-1">
+          <Button
+            label={t("common.actions.createAccount")}
+            variant="moment"
+            size="small"
+            onPress={() => go("/sign-up")}
+          />
+        </View>
       </View>
     </Sheet>
   ) : null;

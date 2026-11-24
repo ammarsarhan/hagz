@@ -30,3 +30,16 @@ export const getVenue = cache((slug: string, locale: Locale) =>
 // Free slots carry no words, so they're read in one language.
 export const getAvailability = (slug: string, date: string) =>
   get<VenueAvailability>(`/v1/venues/${encodeURIComponent(slug)}/availability?date=${date}`);
+
+export type SharedBooking = components["schemas"]["SharedBooking"];
+export type Game = components["schemas"]["Game"];
+
+// A booking's share link, read as a guest: what, when and where, never money or who.
+export const getSharedBooking = cache((code: string, locale: Locale) =>
+  get<SharedBooking>(`/v1/shared-bookings/${encodeURIComponent(code)}`, locale),
+);
+
+// Its open game, as a guest sees it: counts and the booker's first name, no players' names.
+export const getGame = cache((id: string, locale: Locale) =>
+  get<Game>(`/v1/games/${encodeURIComponent(id)}`, locale),
+);
