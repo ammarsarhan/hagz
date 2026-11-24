@@ -384,7 +384,7 @@ function Layout({
           {action.join ? null : (
             <a
               href={action.href}
-              className={`mt-6 flex h-12 items-center justify-center self-start rounded-full px-7 text-subtitle font-semibold lg:hidden ${button}`}
+              className={`mt-6 flex h-11 items-center justify-center self-start rounded-full px-6 text-[15px] font-semibold lg:hidden ${button}`}
             >
               {action.label}
             </a>
