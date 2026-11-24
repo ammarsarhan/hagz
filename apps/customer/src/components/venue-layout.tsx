@@ -53,8 +53,8 @@ interface Window {
 }
 
 // The part of the owner's grid worth drawing (user, 2026-11-24: venues whose grounds sit in a
-// corner of a wide grid came out tiny): the box round every tile, a cell of walkway round it,
-// inside the grid. The screen fits this, not the grid.
+// corner of a wide grid came out tiny): the box round every tile and a cell of walkway round it.
+// The screen fits this, not the grid.
 const windowOf = (layout: Layout): Window => {
   const xs: number[] = [];
   const ys: number[] = [];
@@ -73,10 +73,12 @@ const windowOf = (layout: Layout): Window => {
   // Entrances don't widen it: one far along an empty edge would keep the empty grid. They're drawn
   // on the window's edge, one past its end at that end (still on the right side of everything).
   if (xs.length === 0) return { left: 0, top: 0, columns: layout.columns, rows: layout.rows };
-  const left = Math.max(0, Math.min(...xs) - MARGIN_CELLS);
-  const top = Math.max(0, Math.min(...ys) - MARGIN_CELLS);
-  const right = Math.min(layout.columns, Math.max(...xs) + MARGIN_CELLS);
-  const bottom = Math.min(layout.rows, Math.max(...ys) + MARGIN_CELLS);
+  // Not clamped to the grid: a tile against its edge still gets the cell of walkway, where a small
+  // ground's name goes (Tag), and the entrances sit on the drawn edge as they do anyway.
+  const left = Math.min(...xs) - MARGIN_CELLS;
+  const top = Math.min(...ys) - MARGIN_CELLS;
+  const right = Math.max(...xs) + MARGIN_CELLS;
+  const bottom = Math.max(...ys) + MARGIN_CELLS;
   return { left, top, columns: right - left, rows: bottom - top };
 };
 
