@@ -356,6 +356,7 @@ function Ticket({ next }: { next: NextGame }) {
       range={timeRange(place.startsAt, place.endsAt, timezone)}
       place={[ground, venue].filter(Boolean).join(" · ")}
       checkInFrom={checkIn && !checkIn.checkedInAt ? timeOfDay(checkIn.opensAt, timezone) : null}
+      checkedInAt={checkIn?.checkedInAt ? timeOfDay(checkIn.checkedInAt, timezone) : null}
       onOpen={() =>
         next.kind === "booking"
           ? push({ pathname: "/bookings/[id]", params: { id: next.booking.id } })

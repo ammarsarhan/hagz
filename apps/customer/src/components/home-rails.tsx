@@ -14,7 +14,7 @@ import { reachable } from "@/lib/api";
 import { nextDateFor, type PlayedVenue, type SavedVenue } from "@/lib/home";
 import { intlLocale } from "@/lib/language";
 import { Bone } from "./bone";
-import { IconQrcode, IconStarFilled } from "./icons";
+import { IconCircleCheckFilled, IconQrcode, IconStarFilled } from "./icons";
 import { Cover, CoverBadge, openVenue, placeText, Rating } from "./search-cards";
 import { SpotsRow } from "./spots-row";
 import { Text } from "./text";
@@ -42,9 +42,7 @@ export const whenDay = (iso: string, timezone: string) => {
   const tomorrow = localDateOf(new Date(Date.now() + 86_400_000).toISOString(), timezone);
   const date = localDateOf(iso, timezone);
   if (date === today)
-    return hourAt(iso, timezone) >= EVENING
-      ? i18n.t("formats.tonight")
-      : i18n.t("formats.today");
+    return hourAt(iso, timezone) >= EVENING ? i18n.t("formats.tonight") : i18n.t("formats.today");
   if (date === tomorrow) return i18n.t("formats.tomorrow");
   return dayLabel(date);
 };
@@ -375,6 +373,7 @@ export function NextGameTicket({
   range,
   place,
   checkInFrom,
+  checkedInAt,
   onOpen,
   onCode,
 }: {
@@ -382,6 +381,8 @@ export function NextGameTicket({
   range: string;
   place: string;
   checkInFrom: string | null;
+  // Checked in already (its time): the stub says so, in place of the code (user, 2026-11-24).
+  checkedInAt: string | null;
   onOpen: () => void;
   onCode: (() => void) | null;
 }) {
@@ -407,6 +408,14 @@ export function NextGameTicket({
           <View className="absolute -right-[9px] size-[18px] rounded-full bg-white" />
         </View>
         <View className="min-h-[60px] flex-row items-center justify-between gap-3 px-[18px] py-3">
+          {checkedInAt ? (
+            <View className="shrink flex-row items-center gap-2">
+              <IconCircleCheckFilled size={20} color={colors.lime} />
+              <Text className="shrink text-label leading-5 font-medium text-white">
+                {t("screens.home.checkedInAt", { time: checkedInAt })}
+              </Text>
+            </View>
+          ) : null}
           <Text className="shrink text-label leading-5 text-white/60">
             {checkInFrom ? t("screens.home.checkInFrom", { time: checkInFrom }) : ""}
           </Text>

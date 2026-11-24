@@ -209,6 +209,7 @@ const en = {
         search: "Search",
         nextGame: "Your next game",
         checkInFrom: "Check in from {{time}}",
+        checkedInAt: "Checked in at {{time}}",
         myCode: "My code",
         seeAll: "See all",
         seeAllOf: "See all: {{title}}",

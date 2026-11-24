@@ -224,6 +224,7 @@ const ar: ArabicTranslations = {
         search: "بحث",
         nextGame: "مباراتك القادمة",
         checkInFrom: "سجّل حضورك من {{time}}",
+        checkedInAt: "تم تسجيل حضورك {{time}}",
         myCode: "رمزي",
         seeAll: "عرض الكل",
         seeAllOf: "عرض الكل: {{title}}",
