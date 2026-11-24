@@ -13,6 +13,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { isolate, maskedPhone, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Reset, step 2: the WhatsApp code, checked as soon as all six digits are in, before the new
 // password is asked for.
@@ -48,7 +49,7 @@ export default function ResetCode() {
       }
       return;
     }
-    router.push({
+    push({
       pathname: "/forgot-password/new-password",
       params: { phone, resetToken: result.data.resetToken },
     });

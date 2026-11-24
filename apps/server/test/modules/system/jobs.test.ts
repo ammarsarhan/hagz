@@ -68,6 +68,7 @@ describe("GET /admin/jobs", () => {
       "slot-maintenance",
       "venue-photo-sweeper",
       "customer-avatar-sweeper",
+      "booking-expiry",
     ]);
     for (const queue of status.queues) {
       expect(queue).toMatchObject({ waiting: 0, active: 0, failed: 0, oldestWaitingAt: null });

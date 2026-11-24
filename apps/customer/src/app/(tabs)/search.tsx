@@ -1,25 +1,8 @@
-import type { Icon } from "@tabler/icons-react-native";
-import * as Haptics from "expo-haptics";
+import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-  memo,
-  useCallback,
-  useMemo,
-  useDeferredValue,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useMemo, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
   type DerivedValue,
   FadeIn,
@@ -30,21 +13,18 @@ import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
-  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
+import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { LightsOutArt } from "@/components/lights-out-art";
-import {
-  IconAdjustmentsHorizontal,
-  IconX,
-  IconArrowsSort,
-  IconMap,
-  IconSearch,
-} from "@/components/icons";
+import { FittedFailure } from "@/components/page-state";
+import { IconAdjustmentsHorizontal, IconArrowsSort, IconMap, IconSearch } from "@/components/icons";
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
 import { SearchWhen } from "@/components/search-when";
+import { Bone } from "@/components/bone";
+import { FilterChip as Chip } from "@/components/filter-chip";
 import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { SPORT_ICONS } from "@/components/sport-icons";
@@ -65,9 +45,10 @@ import {
   MAX_RADIUS,
   dayText,
   hourLabel,
+  localDate,
   sizeName,
   sportName,
-  useCoverage,
+  useCoverageState,
   useVenueSearch,
   whenText,
   type SearchParams,
@@ -89,9 +70,6 @@ import {
 // a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
 // until the new ones arrive and new ones fade in, and the list and the map cross-fade.
 
-// The least time a pull to refresh holds the list down, however quickly the search answers.
-const HOLD_MS = 800;
-
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
 // Tennis after basketball: padel and tennis share a ball, so they aren't side by side (user,
@@ -106,58 +84,6 @@ const shadow = {
   shadowOffset: { width: 0, height: 4 },
   elevation: 4,
 } as const;
-
-// A chip in the row under the bar (Figma B2, 133:2): picked, its black (with white words) fades in
-// over the white one; a sport leads with its ball, and an applied filter carries an × that takes it
-// off. Memoised with an id and one
-// stable handler, so a tap re-renders only the chips that change.
-const Chip = memo(function Chip({
-  id,
-  label,
-  on,
-  removable = false,
-  icon,
-  ball: Ball,
-  onSelect,
-}: {
-  id: string;
-  label: string;
-  on: boolean;
-  removable?: boolean;
-  icon?: ReactNode;
-  // A sport's ball before its name, ink on white and white on black.
-  ball?: Icon;
-  onSelect: (id: string) => void;
-}) {
-  const { t } = useTranslation();
-  const shown = useSharedValue(on ? 1 : 0);
-  useEffect(() => {
-    shown.value = withTiming(on ? 1 : 0, { duration: 180 });
-  }, [on, shown]);
-  const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      accessibilityLabel={removable ? t("screens.search.remove", { label }) : label}
-      onPress={() => onSelect(id)}
-      className={`h-10 flex-row items-center gap-1.5 rounded-full border bg-white px-4 ${icon ? "border-ink" : "border-border"}`}
-    >
-      {icon}
-      {Ball ? <Ball size={16} color={colors.ink} strokeWidth={2} /> : null}
-      <Text className="text-body font-medium">{label}</Text>
-      {removable ? <IconX size={14} color={colors.ink} strokeWidth={2.25} /> : null}
-      <Animated.View
-        pointerEvents="none"
-        className="absolute -inset-px flex-row items-center justify-center gap-1.5 rounded-full bg-ink"
-        style={fill}
-      >
-        {Ball ? <Ball size={16} color={colors.white} strokeWidth={2} /> : null}
-        <Text className="text-body font-medium text-white">{label}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-});
 
 // The order the list is in ("Nearest", "Cheapest"…): the words cross-fade when it changes, and a
 // tap opens Filters, where it's picked.
@@ -193,9 +119,12 @@ function SearchPill({
   onWhen,
   badge,
   docked,
+  loading,
 }: {
   where: string;
   when: string;
+  // Still working out where the player is: bones in place of the two lines.
+  loading: boolean;
   // The bar opens where (then when); its round button opens Filters, with how many are on.
   onPress: () => void;
   onFilter: () => void;
@@ -226,17 +155,31 @@ function SearchPill({
       >
         <IconSearch size={20} color={colors.ink} strokeWidth={2} />
         <View className="flex-1 justify-center self-stretch overflow-hidden">
-          <Animated.View style={full}>
-            <Text className="text-subtitle font-semibold">{where}</Text>
-            <Pressable accessibilityRole="button" hitSlop={6} onPress={onWhen}>
-              <Text className="text-label text-ink-2">{when}</Text>
-            </Pressable>
-          </Animated.View>
-          <Animated.View className="absolute inset-0 justify-center" style={compact}>
-            <Text className="text-body font-semibold" numberOfLines={1}>
-              {where} <Text className="text-body text-ink-2">· {when}</Text>
-            </Text>
-          </Animated.View>
+          {loading ? (
+            <>
+              <Animated.View className="gap-1.5" style={full}>
+                <Bone className="h-4 w-28 rounded-md" />
+                <Bone className="h-3 w-40 rounded-md" />
+              </Animated.View>
+              <Animated.View className="absolute inset-0 justify-center" style={compact}>
+                <Bone className="h-3.5 w-44 rounded-md" />
+              </Animated.View>
+            </>
+          ) : (
+            <>
+              <Animated.View style={full}>
+                <Text className="text-subtitle font-semibold">{where}</Text>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={onWhen}>
+                  <Text className="text-label text-ink-2">{when}</Text>
+                </Pressable>
+              </Animated.View>
+              <Animated.View className="absolute inset-0 justify-center" style={compact}>
+                <Text className="text-body font-semibold" numberOfLines={1}>
+                  {where} <Text className="text-body text-ink-2">· {when}</Text>
+                </Text>
+              </Animated.View>
+            </>
+          )}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -272,7 +215,7 @@ export default function SearchTab() {
   // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
   // an hour to start. "Near me" without a position looks in the governorate with the most venues.
   const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near", radius: DEFAULT_RADIUS });
-  const coverage = useCoverage();
+  const { coverage, error: coverageError, retry: retryCoverage } = useCoverageState();
   const fallback = coverage?.[0];
   const where: Where | null =
     whereChoice.kind === "near" && phone === null
@@ -280,12 +223,69 @@ export default function SearchTab() {
         ? { kind: "area", id: fallback.id, name: fallback.name ?? "", within: null }
         : null
       : whereChoice;
+  // No location and no governorates to fall back on (they didn't load): nowhere to look, so the
+  // same scene as a failed search, and Try again reads them again.
+  const nowhere = where === null && coverageError !== null;
   const [when, setWhen] = useState<When>(ANY_TIME);
   const [editing, setEditing] = useState<"where" | "when" | "filters" | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const amenities = useAmenities();
-  const here = where?.kind === "near" ? phone : null;
-  const radius = where?.kind === "near" ? where.radius : null;
+  const here =
+    where?.kind === "near"
+      ? phone
+      : where?.kind === "around"
+        ? { latitude: where.latitude, longitude: where.longitude }
+        : null;
+  const radius = where?.kind === "near" || where?.kind === "around" ? where.radius : null;
+
+  // Opened with a search already set (Similar venues, from a booking the venue couldn't take):
+  // around that venue, the same sport and size, the same day, hour and length. Applied once per
+  // link, keyed by its `at`; the player can change any of it after.
+  const preset = useLocalSearchParams<{
+    at?: string;
+    near?: string;
+    latitude?: string;
+    longitude?: string;
+    sport?: Sport;
+    size?: GroundSize;
+    date?: string;
+    start?: string;
+    hours?: string;
+    // Home's See all: where Home looks (an area), the rail's order and its filter.
+    area?: string;
+    areaName?: string;
+    sort?: SearchSort;
+    instant?: string;
+    priceMax?: string;
+  }>();
+  const presetApplied = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!preset.at || presetApplied.current === preset.at) return;
+    presetApplied.current = preset.at;
+    if (preset.latitude && preset.longitude)
+      setWhereChoice({
+        kind: "around",
+        latitude: Number(preset.latitude),
+        longitude: Number(preset.longitude),
+        radius: DEFAULT_RADIUS,
+        name: preset.near ?? "",
+      });
+    if (preset.area)
+      setWhereChoice({ kind: "area", id: preset.area, name: preset.areaName ?? "", within: null });
+    setSport(preset.sport);
+    setSortChoice(preset.sort);
+    setFilters({
+      ...NO_FILTERS,
+      size: preset.size,
+      instant: preset.instant === "true",
+      ...(preset.priceMax ? { priceMax: Number(preset.priceMax) } : {}),
+    });
+    setWhen({
+      date: preset.date ?? null,
+      start: preset.start ?? null,
+      hours: Number(preset.hours ?? 1),
+    });
+  }, [preset]);
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
   // the tap never waits on the list.
@@ -310,10 +310,6 @@ export default function SearchTab() {
     transform: [{ translateY: Math.max(dockAt, pillStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
-  const pulling = useSharedValue(0);
-  const pullStyle = useAnimatedStyle(() => ({
-    opacity: Math.max(pulling.value, interpolate(-scrollY.value, [10, 60], [0, 1], "clamp")),
-  }));
 
   // Best match unless the player picks another order; nearest needs a point.
   const sort: SearchSort =
@@ -345,22 +341,20 @@ export default function SearchTab() {
     phone !== undefined && where !== null,
   );
 
-  // A pull to refresh: the list locks down with the spinner showing, Instagram's way, until the
-  // search it started comes back, and for at least HOLD_MS (a quick answer would otherwise snap it
-  // straight back up, user 2026-11-20).
-  const [pulled, setPulled] = useState(false);
-  const pulledAt = useRef(0);
+  // No day picked, and the server searched tomorrow (today has nothing left): take that day, so the
+  // bar says Tomorrow, the When sheet has it picked, and a venue opens on it.
   useEffect(() => {
-    if (!pulled || search.loading) return;
-    const timer = setTimeout(
-      () => setPulled(false),
-      Math.max(0, HOLD_MS - (Date.now() - pulledAt.current)),
-    );
-    return () => clearTimeout(timer);
-  }, [pulled, search.loading]);
-  useEffect(() => {
-    pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
-  }, [pulled, pulling]);
+    if (when.date === null && search.date && search.date !== localDate(search.timezone))
+      setWhen((now) => (now.date === null ? { ...now, date: search.date } : now));
+  }, [when.date, search.date, search.timezone]);
+
+  // Pulled down from the top: the search again, the spinner held until it's back.
+  // Nowhere to look (the governorates didn't load): a pull reads them again, as Try again does.
+  const pull = usePullToRefresh({
+    scrollY,
+    busy: search.loading,
+    onRefresh: nowhere ? retryCoverage : search.refresh,
+  });
 
   const total = search.total;
   const summary =
@@ -369,8 +363,20 @@ export default function SearchTab() {
       : // The count found: the search bar already says where and when (user, 2026-11-20).
         t("screens.search.found", { count: total });
 
-  const whereLabel = here ? t("screens.search.nearMe") : where?.kind === "area" ? where.name : " ";
+  const whereLabel =
+    where?.kind === "around"
+      ? t("screens.search.near", { place: where.name })
+      : here
+        ? t("screens.search.nearMe")
+        : where?.kind === "area"
+          ? where.name
+          : nowhere
+            ? t("screens.search.nearMe")
+            : " ";
   const whenLabel = whenText(when, search.timezone);
+  // Where isn't known yet: the phone's still finding itself, or the fallback area hasn't come.
+  // Nowhere to look (offline, no location) isn't still finding: the bar says what was asked.
+  const locating = phone === undefined || (where === null && !nowhere);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
   const openFilters = () => setEditing("filters");
@@ -473,6 +479,7 @@ export default function SearchTab() {
       <StatusBar style="dark" />
       <SearchMap
         cards={search.cards}
+        sort={sort}
         currency={search.currency}
         timezone={search.timezone}
         params={venueParams}
@@ -497,6 +504,7 @@ export default function SearchTab() {
           onWhen={openWhen}
           badge={applied.length}
           docked={null}
+          loading={locating}
         />
       </View>
     </View>
@@ -513,15 +521,21 @@ export default function SearchTab() {
     [currency, timezone, venueParams],
   );
 
-  const empty = search.loading ? (
+  // Couldn't search (offline, or the API's few words), or nowhere to look: Unplugged, its words and
+  // Try again, fitted to the room left above the tab bar (user, 2026-11-24): nothing to scroll down
+  // to, but the list still pulls to refresh.
+  const failure = nowhere ? coverageError : search.error;
+  const failed = (error: unknown, retry: () => void) => (
+    <FittedFailure error={error} onRetry={retry} />
+  );
+  const empty = nowhere ? (
+    failed(coverageError, retryCoverage)
+  ) : search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
     </View>
   ) : search.error ? (
-    <View className="items-start gap-4 pt-10">
-      <Text className="text-subtitle text-ink-2">{search.error}</Text>
-      <Button label={t("common.actions.tryAgain")} size="small" onPress={search.refresh} />
-    </View>
+    failed(search.error, search.refresh)
   ) : (
     // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
     <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
@@ -617,44 +631,18 @@ export default function SearchTab() {
           ) : undefined
         }
         contentContainerStyle={{
+          // Grows to the screen, so a failed search's scene takes exactly what's left of it.
+          flexGrow: 1,
           paddingHorizontal: 24,
           paddingTop: insets.top + 16,
-          paddingBottom: 96,
+          paddingBottom: failure ? 24 : 96,
         }}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
-        // Pulled down from the top: the search again, the spinner held until it's back.
-        refreshControl={
-          <RefreshControl
-            refreshing={pulled}
-            onRefresh={() => {
-              // A tap in the hand the moment the pull catches, as Instagram's does.
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              pulledAt.current = Date.now();
-              setPulled(true);
-              search.refresh();
-            }}
-            // The system's spinner can't be made smaller, so it's hidden and ours (below) shows.
-            tintColor="transparent"
-            colors={["transparent"]}
-            progressBackgroundColor="transparent"
-            progressViewOffset={insets.top}
-          />
-        }
+        refreshControl={pull.control}
       />
 
-      {/* The pull's spinner: small, fading in as the list is pulled down, held while it reloads. */}
-      <Animated.View
-        pointerEvents="none"
-        className="absolute right-0 left-0 items-center"
-        style={[{ top: insets.top + 14 }, pullStyle]}
-      >
-        <ActivityIndicator
-          size="small"
-          color={colors.ink}
-          style={{ transform: [{ scale: 0.95 }] }}
-        />
-      </Animated.View>
+      {pull.spinner}
 
       {/* The header the bar docks in: white, fading in as the bar arrives. */}
       <Animated.View
@@ -671,6 +659,7 @@ export default function SearchTab() {
           onWhen={openWhen}
           badge={applied.length}
           docked={docked}
+          loading={locating}
         />
       </Animated.View>
 

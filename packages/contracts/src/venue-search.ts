@@ -19,8 +19,11 @@ export const NEXT_TIMES = 4;
 // until there are real reviews (Phase 7); best match weighs them instead.
 export const MIN_REVIEWS = 5;
 
+// Most booked "this week": bookings made in the last this many days.
+export const POPULAR_DAYS = 7;
+
 export const VenueSearchSort = z
-  .enum(["BEST_MATCH", "DISTANCE", "RATING", "PRICE", "SOONEST"])
+  .enum(["BEST_MATCH", "DISTANCE", "RATING", "PRICE", "SOONEST", "POPULAR", "NEWEST"])
   .meta({
     id: "VenueSearchSort",
     description:
@@ -32,7 +35,9 @@ export const VenueSearchSort = z
       `at least ${MIN_REVIEWS} reviews, then those with fewer (best rated first), then the ` +
       "unrated. " +
       "`PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free " +
-      "start first.",
+      `start first. \`POPULAR\`: the most bookings made in the last ${POPULAR_DAYS} days first, ` +
+      "leaving out venues with none. " +
+      "`NEWEST`: the venues that went live most recently first.",
   });
 
 // A free time is "just freed" when its slot came free again (a booking cancelled, a regular's
@@ -47,7 +52,7 @@ export const PaymentFilter = z.enum(["CASH", "ONLINE"]).meta({
 });
 
 // A comma-separated list of an enum's values, as one query parameter ("A,B").
-const listOf = (values: readonly string[], description: string) =>
+export const listOf = (values: readonly string[], description: string) =>
   z
     .string()
     .refine((text) => text.split(",").every((part) => values.includes(part)), {
@@ -141,6 +146,16 @@ const searchQueryFields = {
       description: "A start time on that date (HH:mm). Left out: any time that day.",
       example: "21:00",
     }),
+  after: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional()
+    .meta({
+      description:
+        "Free times from this time that day on (HH:mm), with no ground needed at exactly then " +
+        "(Home's Free tonight). Ignored with `start`.",
+      example: "19:00",
+    }),
   hours: z.coerce
     .number()
     .int()
@@ -172,6 +187,10 @@ export const VenueSearchQuery = placed(
   z.object({
     ...searchQueryFields,
     sort: VenueSearchSort.optional(),
+    justFreed: flag(
+      "Only venues with a free time that came free again recently and starts soon (see " +
+        "`JUST_FREED`), among the times searched.",
+    ),
     cursor: z
       .string()
       .max(200)

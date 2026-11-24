@@ -15,6 +15,15 @@ Agreed on 2026-10-29:
 - **No commission** on a regular's own reservations. Hagz earns when it re-sells a slot a regular released.
 - **Changing a regular's time or ground** (decided on 2026-10-30): its future `UNCONFIRMED` reservations are released and re-created at the new time, following the top-up rules (a week that's already taken is skipped, and staff are told). `CONFIRMED` ones stay, and staff use Move on them if needed. These releases have their own event type (`REGULAR_CHANGED`), so they don't count against the regular's reliability or the recovered-revenue figures. The customer is told the new time once.
 
+Agreed on 2026-11-22 (PR 4.5):
+
+- **A closed hour:** that week is skipped like a taken one, and the regular carries on by itself once the hour reopens.
+- **Missed deadlines:** never paused automatically; they show in the reliability figures only.
+- **Pausing or ending** releases the regular's future `UNCONFIRMED` reservations at once (`REGULAR_CHANGED`, not counted against reliability). `CONFIRMED` weeks stay. Resuming reserves again from the next free week.
+- **Overlapping regulars are allowed**, with a **priority** that staff set by reordering the regulars that overlap. Lower goes first; a new regular joins at the end. Priority only decides who gets a week when it's first reserved. A week already reserved stays with that regular. If they release it, the next one in priority gets it straight away, as long as its deadline hasn't passed.
+- **Creating a regular whose first weeks are taken** still creates it. The answer lists the weeks it skipped.
+- **Prices:** each week copies the slot prices. There's no special weekly price; any deal is given at the counter.
+
 ## How it works
 
 **1. The regular.** Staff with `bookings: manage` create a regular from a `VenueCustomer`, so walk-ins and phone customers work as well as app users:
@@ -148,8 +157,3 @@ Staff see every reservation's state in the calendar, and who still hasn't answer
   - **`ReminderToken`:** the single-use link in a regular's WhatsApp reminder, or copied by staff. `bookingId`, `tokenHash` (unique, SHA-256 like other tokens), `expiresAt` (the reservation's deadline), `usedAt?`, `createdAt`. Confirming or releasing through it sets `usedAt`; a used or expired token answers "this reminder has expired".
   - `Customer.venueOffers`, the offers opt-in, off by default.
   - Offers sent need no model: they're `Notification` rows.
-
-## Open
-
-- **A regular at a closed hour.** If the venue's schedule later closes that hour, the regular's future weeks can't be reserved. Pause the regular and tell staff, or keep skipping week by week?
-- **A regular who keeps letting deadlines pass.** Whether to pause them automatically after several misses.

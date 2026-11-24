@@ -1,4 +1,3 @@
-import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +8,7 @@ import {
   FlatList,
   Pressable,
   ScrollView,
+  Share,
   useWindowDimensions,
   View,
   type LayoutChangeEvent,
@@ -29,14 +29,9 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import {
-  IconChevronLeft,
-  IconCircleCheckFilled,
-  IconHeart,
-  IconHeartFilled,
-  IconShare,
-} from "@/components/icons";
+import { IconChevronLeft, IconHeart, IconHeartFilled, IconShare } from "@/components/icons";
 import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
+import { PageState } from "@/components/page-state";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
@@ -52,7 +47,7 @@ import {
   WhereSection,
 } from "@/components/venue-sections";
 import { api, reachable } from "@/lib/api";
-import { hudMessage, problem, send } from "@/lib/api-errors";
+import { problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useDistanceTo } from "@/lib/distance";
 import {
@@ -65,6 +60,7 @@ import { isRTL, language } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { fromPerHour } from "@/lib/money";
 import { cheapestHour, nextDate, paymentShort, type PublicVenue } from "@/lib/venue";
+import { push } from "@/lib/navigation";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
 // bar, then the venue and every section a player checks before booking, with Book pinned to the
@@ -90,7 +86,7 @@ type Tab = "grounds" | "booking" | "amenities" | "reviews" | "map";
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
-  | { state: "failed"; message: string }
+  | { state: "failed"; error: unknown }
   | { state: "ready"; venue: PublicVenue };
 
 export default function VenuePage() {
@@ -111,7 +107,7 @@ export default function VenuePage() {
       if (!active) return;
       if (venue.ok) setLoaded({ state: "ready", venue: venue.data });
       else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") setLoaded({ state: "missing" });
-      else setLoaded({ state: "failed", message: hudMessage(venue.error) });
+      else setLoaded({ state: "failed", error: venue.error });
     })();
     return () => {
       active = false;
@@ -119,19 +115,22 @@ export default function VenuePage() {
   }, [slug, attempt]);
 
   if (loaded.state === "ready") return <VenueView venue={loaded.venue} filter={filter} />;
-  return (
-    <Waiting
-      loaded={loaded}
-      onRetry={() => {
-        setLoaded({ state: "loading" });
-        setAttempt((n) => n + 1);
-      }}
-    />
-  );
+  if (loaded.state === "failed") {
+    return (
+      <PageState
+        error={loaded.error}
+        onRetry={() => {
+          setLoaded({ state: "loading" });
+          setAttempt((n) => n + 1);
+        }}
+      />
+    );
+  }
+  return <Waiting missing={loaded.state === "missing"} />;
 }
 
-// Loading, a venue that isn't public (or never was), or one that couldn't be read.
-function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
+// Loading, or a venue that isn't public (or never was). One that couldn't be read is PageState's.
+function Waiting({ missing }: { missing: boolean }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
@@ -143,29 +142,14 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
       <View className="h-14 justify-center">
         <BackButton progress={null} />
       </View>
-      {loaded.state === "loading" ? (
+      {!missing ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.ink} />
         </View>
       ) : (
         <View className="flex-1 justify-center gap-2 px-1 pb-24">
-          <Text className="text-heading font-semibold">
-            {loaded.state === "missing"
-              ? t("screens.venue.missingTitle")
-              : t("screens.venue.failedTitle")}
-          </Text>
-          <Text className="text-subtitle text-ink-2">
-            {loaded.state === "missing"
-              ? t("screens.venue.missingBody")
-              : loaded.state === "failed"
-                ? loaded.message
-                : ""}
-          </Text>
-          {loaded.state === "failed" ? (
-            <View className="mt-4 items-start">
-              <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
-            </View>
-          ) : null}
+          <Text className="text-heading font-semibold">{t("screens.venue.missingTitle")}</Text>
+          <Text className="text-subtitle text-ink-2">{t("screens.venue.missingBody")}</Text>
         </View>
       )}
     </View>
@@ -530,15 +514,31 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
     venue.grounds.find((ground) => ground.status === "ACTIVE")?.id ?? venue.grounds[0]?.id,
   );
   // See times opens on the search's day, with its start and length picked when there was one.
+  const searchParams = {
+    ...(searched ? { date: searched.date } : {}),
+    ...(filter?.start ? { start: filter.start, hours: String(filter.hours) } : {}),
+  };
   const openTimes = (groundId: string | undefined) => {
     if (!groundId) return;
-    router.push({
+    push({
       pathname: "/venue/[slug]/times",
+      params: { slug: venue.slug, ground: groundId, ...searchParams },
+    });
+  };
+  // The layout on its own screen, which opens See times the same way, fades the grounds the search
+  // left out, and has what was searched for as its subtitle.
+  const openLayout = () => {
+    const matches = searched?.matches;
+    const unavailable = matches
+      ? venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id)
+      : [];
+    push({
+      pathname: "/venue/[slug]/layout",
       params: {
         slug: venue.slug,
-        ground: groundId,
-        ...(searched ? { date: searched.date } : {}),
-        ...(filter?.start ? { start: filter.start, hours: String(filter.hours) } : {}),
+        ...searchParams,
+        ...(searched ? { note: searched.note } : {}),
+        ...(unavailable.length > 0 ? { unavailable: unavailable.join(",") } : {}),
       },
     });
   };
@@ -574,6 +574,7 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
           venue={venue}
           onLayout={recordOffset("grounds")}
           onSeeTimes={openTimes}
+          onViewLayout={openLayout}
           onPick={(groundId) => {
             pickedGround.current = groundId;
           }}
@@ -623,14 +624,15 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
                 icon={IconShare}
                 label={t("screens.venue.share")}
                 progress={barProgress}
-                onPress={() => {
-                  // Done, not a problem: a check in place of the HUD's alert.
-                  void Clipboard.setStringAsync(link).then(() =>
-                    hud.show(t("screens.venue.copied"), {
-                      leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
+                // The system's share sheet: send it in a chat, copy it, post it.
+                onPress={() =>
+                  void Share.share({
+                    message: t("screens.venue.shareMessage", {
+                      venue: venue.name ?? t("screens.venue.fallbackName"),
+                      link,
                     }),
-                  );
-                }}
+                  })
+                }
               />
             ) : null}
             {/* Saving (PR 3.4): a guest is asked to sign in first, as everywhere a choice needs an
@@ -657,8 +659,9 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
       {sheet}
 
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
-        style={{ paddingBottom: insets.bottom + 8 }}
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white pt-3.5"
+        // Book closer to the edge than the price is (user, 2026-11-22); start and end, for Arabic.
+        style={{ paddingStart: 24, paddingEnd: 16, paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
         <View className="shrink gap-0.5">

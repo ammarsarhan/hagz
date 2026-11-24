@@ -134,7 +134,9 @@ export function SearchWhen({
             on={day === date}
             onPress={() =>
               setDraft((previous) => {
-                const next = { ...previous, date: day === today ? null : day };
+                // Today picked is today by name: only no day at all moves on to tomorrow late in
+                // the evening (the search, server side).
+                const next = { ...previous, date: day };
                 // A run that's passed on the new day goes back to any time.
                 const picked = runOf(previous);
                 return day === today && picked && picked.from <= nowHour

@@ -28,6 +28,9 @@ const TABS: Record<Tab, Icon> = {
   account: IconUserCircle,
 };
 const isTab = (name: string): name is Tab => name in TABS;
+// One stroke for every tab icon, thinner than Tabler's default so the ticket's long parallel edges
+// don't read heavy (user, 2026-11-23): the open tab a little heavier.
+const STROKE = { on: 1.7, off: 1.36 } as const;
 
 export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();
@@ -63,7 +66,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             <Glyph
               size={24}
               color={focused ? colors.ink : colors.ink3}
-              strokeWidth={focused ? 2 : 1.6}
+              strokeWidth={focused ? STROKE.on : STROKE.off}
             />
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-ink" : "font-medium text-ink-3"}`}

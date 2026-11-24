@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View, type ViewStyle } from "react-native";
@@ -14,6 +14,7 @@ import { groundsText, sportsText, type VenueCard } from "@/lib/search";
 import { timeOfDay } from "@/lib/venue";
 import { IconStarFilled } from "./icons";
 import { Text } from "./text";
+import { push } from "@/lib/navigation";
 
 // A venue in Search's results (Figma "C3 · Tabs & Search"): the list's card (option 1, 96:2) and
 // the map's card (option 3, 98:2), both with the venue's next free start times as chips (Fresha's
@@ -22,11 +23,19 @@ import { Text } from "./text";
 // The venue page, with what the search asked of its grounds (lib/ground-filter.ts), so the ones that
 // don't match are greyed out there.
 type Params = Record<string, string>;
-const openVenue = (card: VenueCard, params: Params) =>
-  router.push({ pathname: "/venue/[slug]", params: { ...params, slug: card.slug } });
+export const openVenue = (card: VenueCard, params: Params) =>
+  push({ pathname: "/venue/[slug]", params: { ...params, slug: card.slug } });
 
-function Rating({ card }: { card: VenueCard }) {
+export function Rating({ card, compact = false }: { card: VenueCard; compact?: boolean }) {
   if (card.rating.average === null) return null;
+  // A rail's card: "★ 4.8", smaller, without the count.
+  if (compact)
+    return (
+      <View className="flex-row items-center gap-0.5">
+        <IconStarFilled size={12} color={colors.ink} />
+        <Text className="text-label leading-5 font-medium">{card.rating.average.toFixed(1)}</Text>
+      </View>
+    );
   return (
     <View className="flex-row items-center gap-1">
       <IconStarFilled size={14} color={colors.ink} />
@@ -37,7 +46,7 @@ function Rating({ card }: { card: VenueCard }) {
 }
 
 // "Degla, Maadi · 2.4 km".
-const placeText = (card: VenueCard) =>
+export const placeText = (card: VenueCard) =>
   [card.area, card.distance === null ? null : formatDistance(card.distance)]
     .filter(Boolean)
     .join(" · ");
@@ -96,7 +105,7 @@ export function TimeChips({
 }
 
 // Sized with a style: expo-image's Image isn't styled by class names.
-function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
+export function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
   const { t } = useTranslation();
   const look = { ...style, backgroundColor: "#c4c8cf", overflow: "hidden" as const };
   return card.cover ? (
@@ -148,7 +157,7 @@ export const badgeOf = (card: VenueCard): { label: string; moment: boolean } | n
 };
 
 // On the cover's top right: white, or lime for the one big moment (a free booking ready).
-function CoverBadge({ badge }: { badge: { label: string; moment: boolean } }) {
+export function CoverBadge({ badge }: { badge: { label: string; moment: boolean } }) {
   return (
     <View
       className={`h-7 justify-center rounded-full px-3 ${badge.moment ? "bg-primary" : "bg-white"}`}

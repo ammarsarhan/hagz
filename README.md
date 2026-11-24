@@ -9,7 +9,7 @@ Pitch booking platform: two Expo apps, a Hono API + BullMQ worker, and a thin Ne
 | `apps/server` | Hono API (`src/app.ts`) and BullMQ worker (`src/worker.ts`), one codebase, Prisma + Postgres |
 | `apps/customer` | Expo app for players |
 | `apps/dashboard` | Expo app for pitch owners and staff |
-| `apps/web` | Next.js: static pages, `/booking/[token]` (public), `/venue/[slug]` (public), `/admin` (admins only) |
+| `apps/web` | Next.js: static pages, `/booking/[code]` (public, a booking's share link), `/venue/[slug]` (public), `/admin` (admins only) |
 | `packages/contracts` | Request and response schemas (plain zod), shared by the API and the apps |
 | `tooling/tsconfig` | Shared TypeScript config |
 | `tooling/eslint` | Shared ESLint config (type-aware `typescript-eslint`) |

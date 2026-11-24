@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "ListingStatus" AS ENUM ('OPEN', 'CLOSED', 'CANCELLED');
+CREATE TYPE "ListingStatus" AS ENUM ('WAITING', 'OPEN', 'CLOSED', 'CANCELLED');
 
 -- CreateEnum
 CREATE TYPE "ListingPlayerStatus" AS ENUM ('JOINED', 'LEFT', 'REMOVED');
@@ -18,9 +18,6 @@ CREATE TABLE "BookingListing" (
     "joinFee" INTEGER NOT NULL,
     "communityId" UUID,
     "publicAt" TIMESTAMPTZ,
-    "arrivedCount" SMALLINT,
-    "arrivedAt" TIMESTAMPTZ,
-    "arrivedById" UUID,
     "closedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
@@ -34,8 +31,11 @@ CREATE TABLE "ListingPlayer" (
     "customerId" UUID NOT NULL,
     "status" "ListingPlayerStatus" NOT NULL DEFAULT 'JOINED',
     "joinedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "joins" INTEGER NOT NULL DEFAULT 1,
     "leftAt" TIMESTAMPTZ,
-    "noShowReportedAt" TIMESTAMPTZ,
+    "checkedInAt" TIMESTAMPTZ,
+    "checkedInById" UUID,
+    "checkedInManually" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "ListingPlayer_pkey" PRIMARY KEY ("listingId","customerId")
 );
@@ -65,7 +65,7 @@ ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_bookingId_venueId_fk
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_arrivedById_fkey" FOREIGN KEY ("arrivedById") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_checkedInById_fkey" FOREIGN KEY ("checkedInById") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "BookingListing"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -82,15 +82,14 @@ ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_listingId_venueId_fkey" FO
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_players_check" CHECK ("neededPlayers" >= 1 AND "playerCount" BETWEEN 0 AND "neededPlayers" AND "sharePrice" >= 0 AND "joinFee" >= 0);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status = 'OPEN') = ("closedAt" IS NULL));
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status IN ('WAITING', 'OPEN')) = ("closedAt" IS NULL));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- A community game can open to everyone at publicAt; a public game has no publicAt.
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_public_check" CHECK ("publicAt" IS NULL OR "communityId" IS NOT NULL);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
--- The venue records how many came, never more than joined; null means everyone expected came.
-ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_arrived_check" CHECK (num_nonnulls("arrivedCount", "arrivedAt", "arrivedById") IN (0, 3) AND ("arrivedCount" IS NULL OR "arrivedCount" BETWEEN 0 AND "playerCount"));
+ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_status_check" CHECK ((status = 'JOINED') = ("leftAt" IS NULL) AND ("checkedInAt" IS NULL OR status = 'JOINED') AND (("checkedInAt" IS NULL) = ("checkedInById" IS NULL)) AND (NOT "checkedInManually" OR "checkedInAt" IS NOT NULL));
 
--- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_status_check" CHECK ((status = 'JOINED') = ("leftAt" IS NULL) AND ("noShowReportedAt" IS NULL OR status = 'JOINED'));
+-- AddCheck (hand-added): joined at least once.
+ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_joins_check" CHECK ("joins" >= 1);

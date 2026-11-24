@@ -1,7 +1,7 @@
 import type { components } from "@hagz/api";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Keyboard, Pressable, View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
 import { useHud } from "@/components/hud";
@@ -48,6 +48,7 @@ export default function SignIn() {
     if (!result.ok) {
       const failure = problem(result.error)?.code;
       if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
+        Keyboard.dismiss();
         router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
       } else if (failure === "INVALID_CREDENTIALS" || failure === "RATE_LIMITED") {
         setError(fieldMessage(result.error));
@@ -166,6 +167,7 @@ function TwoFactorSheet({
         setError(fieldMessage(result.error));
       } else if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
         onClose();
+        Keyboard.dismiss();
         router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
       } else {
         onClose();
