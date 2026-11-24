@@ -7,8 +7,9 @@ import { AppError } from "@/platform/errors/app-error";
 // count. Only what the player did in the app counts: staff entries and a regular's weekly
 // reservations are the venue's own arrangements.
 //
-// Each check locks the player's account row first, inside the transaction that adds the booking,
-// game or player, so two requests racing for the last place queue and the second sees the first.
+// Each check takes a lock on the player first, inside the transaction that adds the booking, game
+// or player, so two requests racing for the last place queue and the second sees the first. A
+// transaction advisory lock, not their Customer row: that table is identity's (table ownership).
 
 // Not frozen only so tests about something else can lift them (test/support/bookings.ts).
 export const LIMITS = { payAtVenue: 2, joined: 2, hosted: 2 };
@@ -19,7 +20,7 @@ const limitReached = (code: string, detail: string, limit: number) =>
   new AppError({ code, status: 409, detail, extensions: { limit } });
 
 const lockAccount = (tx: Tx, customerId: string) =>
-  tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid FOR UPDATE`;
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`player-limits:${customerId}`}, 0))`;
 
 // Before a booking paid at the venue: fewer than two still to play.
 export const checkPayAtVenue = async (tx: Tx, customerId: string, now: Date) => {
