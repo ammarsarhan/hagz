@@ -48,7 +48,7 @@ import {
   localDate,
   sizeName,
   sportName,
-  useCoverage,
+  useCoverageState,
   useVenueSearch,
   whenText,
   type SearchParams,
@@ -257,7 +257,7 @@ export default function SearchTab() {
   // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
   // an hour to start. "Near me" without a position looks in the governorate with the most venues.
   const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near", radius: DEFAULT_RADIUS });
-  const coverage = useCoverage();
+  const { coverage, error: coverageError, retry: retryCoverage } = useCoverageState();
   const fallback = coverage?.[0];
   const where: Where | null =
     whereChoice.kind === "near" && phone === null
@@ -265,6 +265,9 @@ export default function SearchTab() {
         ? { kind: "area", id: fallback.id, name: fallback.name ?? "", within: null }
         : null
       : whereChoice;
+  // No location and no governorates to fall back on (they didn't load): nowhere to look, so the
+  // same scene as a failed search, and Try again reads them again.
+  const nowhere = where === null && coverageError !== null;
   const [when, setWhen] = useState<When>(ANY_TIME);
   const [editing, setEditing] = useState<"where" | "when" | "filters" | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -404,10 +407,13 @@ export default function SearchTab() {
         ? t("screens.search.nearMe")
         : where?.kind === "area"
           ? where.name
-          : " ";
+          : nowhere
+            ? t("screens.search.nearMe")
+            : " ";
   const whenLabel = whenText(when, search.timezone);
   // Where isn't known yet: the phone's still finding itself, or the fallback area hasn't come.
-  const locating = phone === undefined || where === null;
+  // Nowhere to look (offline, no location) isn't still finding: the bar says what was asked.
+  const locating = phone === undefined || (where === null && !nowhere);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
   const openFilters = () => setEditing("filters");
@@ -552,7 +558,10 @@ export default function SearchTab() {
     [currency, timezone, venueParams],
   );
 
-  const empty = search.loading ? (
+  const failure = nowhere ? coverageError : search.error;
+  const empty = nowhere ? (
+    <Failed error={coverageError} onRetry={retryCoverage} />
+  ) : search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
     </View>
@@ -660,7 +669,7 @@ export default function SearchTab() {
           paddingBottom: 96,
         }}
         // Failed: the scene fits the screen exactly, so nothing scrolls (Try again reloads).
-        scrollEnabled={!search.error}
+        scrollEnabled={!failure}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
         refreshControl={pull.control}

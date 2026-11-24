@@ -432,25 +432,37 @@ export const useSpread = (params: SearchParams | null) => {
 };
 
 // Governorates with live venues and their areas (GET /v1/venues/coverage), read once a session.
+// With what failed (`send`'s error) and a way to try again, for a screen that can't go on without it
+// (Search with no location has nowhere else to look).
 let coverageCache: Governorate[] | null = null;
-export const useCoverage = () => {
+export const useCoverageState = () => {
   const [coverage, setCoverage] = useState<Governorate[] | null>(coverageCache);
+  const [error, setError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (coverageCache) return;
     let active = true;
+    setError(null);
     void send(
       api.GET("/v1/venues/coverage", { params: { query: { marketplace: MARKETPLACE } } }),
     ).then((result) => {
-      if (!result.ok) return;
+      if (!active) return;
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       coverageCache = result.data.data;
-      if (active) setCoverage(coverageCache);
+      setCoverage(coverageCache);
     });
     return () => {
       active = false;
     };
-  }, []);
-  return coverage;
+  }, [attempt]);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return { coverage, error, retry };
 };
+
+export const useCoverage = () => useCoverageState().coverage;
 
 // The marketplace's amenities, for the Filters sheet's pills and the chips' names; read once.
 let amenitiesCache: Amenity[] | null = null;
