@@ -343,7 +343,7 @@ const en = {
         },
         support: "Message the Hagz team on WhatsApp.",
         photo: {
-          title: "Profile photo",
+          title: "Avatar",
           change: "Change your photo",
           library: "Choose from library",
           camera: "Take a photo",

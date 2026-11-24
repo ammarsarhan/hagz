@@ -397,7 +397,7 @@ function PhotoSheet({
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden} closeButton={false}>
       {/* A small title over the choices, so the sheet says what it's for (user, 2026-11-24). */}
-      <Text accessibilityRole="header" className="mb-1 text-body font-semibold">
+      <Text accessibilityRole="header" className="mb-1 text-center text-body font-semibold">
         {t("screens.account.photo.title")}
       </Text>
       <View>
