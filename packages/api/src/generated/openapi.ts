@@ -18996,6 +18996,8 @@ export interface components {
             paymentMode: components["schemas"]["PaymentMode"];
             /** @description `DEPOSIT`: the share paid online. */
             deposit: number | null;
+            /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
+            paymentWindow: number | null;
         };
         /**
          * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.

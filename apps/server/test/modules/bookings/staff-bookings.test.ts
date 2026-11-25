@@ -106,9 +106,14 @@ describe("the calendar", () => {
     ]);
   });
 
-  it("says how each booking is paid, for the requests list", async () => {
+  it("says how each booking is paid and how long approving gives to pay, for the requests list", async () => {
     const { venue, ground, hours } = await aGround({
-      settings: { autoConfirm: false, paymentMode: "DEPOSIT", depositPercent: 25 },
+      settings: {
+        autoConfirm: false,
+        paymentMode: "DEPOSIT",
+        depositPercent: 25,
+        paymentWindow: 20,
+      },
     });
     const owner = await staffAt(venue.id);
     const { token } = await signedIn();
@@ -116,7 +121,7 @@ describe("the calendar", () => {
 
     const res = await asStaff(owner.id, "GET", `/venues/${venue.id}/bookings/pending`);
     expect(StaffBookingList.parse(await res.json()).data).toMatchObject([
-      { total: 80_000, paymentMode: "DEPOSIT", deposit: 20_000 },
+      { total: 80_000, paymentMode: "DEPOSIT", deposit: 20_000, paymentWindow: 20 },
     ]);
   });
 

@@ -45,6 +45,10 @@ export const StaffBooking = AdminBooking.extend({
     .meta({ description: "An open game: how many players to expect besides the booker." }),
   paymentMode: PaymentMode,
   deposit: z.int().nullable().meta({ description: "`DEPOSIT`: the share paid online." }),
+  paymentWindow: z.int().nullable().meta({
+    description:
+      "`PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise.",
+  }),
 }).meta({ id: "StaffBooking" });
 
 export const StaffBookingList = z
