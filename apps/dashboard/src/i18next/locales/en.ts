@@ -101,6 +101,8 @@ const en = {
         openGame: "Open game",
         joinFee: "Each joined player pays you a {{amount}} joining fee.",
         paidInFullGame: "Paid in full: open games are paid before they list.",
+        request: { title: "Booking request", by: "Answer by {{time}}" },
+        weekly: { title: "Weekly game", by: "Confirm by {{time}}", confirm: "Confirm" },
         outcome: {
           played: "Played",
           noShow: "No show",

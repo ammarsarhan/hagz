@@ -113,6 +113,8 @@ const ar: ArabicTranslations = {
         openGame: "مباراة مفتوحة",
         joinFee: "كل لاعب منضم يدفع لك رسوم انضمام {{amount}}.",
         paidInFullGame: "مدفوع بالكامل: المباريات المفتوحة تُدفع قبل عرضها.",
+        request: { title: "طلب حجز", by: "الرد قبل {{time}}" },
+        weekly: { title: "مباراة أسبوعية", by: "التأكيد قبل {{time}}", confirm: "تأكيد" },
         outcome: {
           played: "لُعبت",
           noShow: "لم يحضر",

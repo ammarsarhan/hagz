@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
+import { RequestBar, WeeklyBar } from "@/components/answer-bars";
 import { cancelledMoney, cancelledSteps } from "@/components/booking-cancelled";
 import { nextSteps, showsNext } from "@/components/booking-next";
 import { CheckInSection } from "@/components/check-in-section";
@@ -32,8 +33,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
-// menu.
+// Still to come on this page: the Scan a code bar, History and the ⋯ menu.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 
@@ -192,8 +192,22 @@ function Page({
   return (
     <Screen
       footer={
-        canManage && marksOutcome(booking, now) ? (
+        !canManage ? undefined : marksOutcome(booking, now) ? (
           <OutcomeBar booking={booking} venueId={venueId} until={markUntil} onChanged={refetch} />
+        ) : booking.status === "PENDING" && booking.expiresAt ? (
+          <RequestBar
+            booking={booking}
+            venueId={venueId}
+            now={now}
+            deadline={moment(booking.expiresAt)}
+          />
+        ) : booking.status === "UNCONFIRMED" && booking.expiresAt ? (
+          <WeeklyBar
+            booking={booking}
+            venueId={venueId}
+            deadline={moment(booking.expiresAt)}
+            onChanged={refetch}
+          />
         ) : undefined
       }
     >
