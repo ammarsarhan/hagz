@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 import type { components } from "@hagz/api";
+import { CheckInSection } from "@/components/check-in-section";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
@@ -25,7 +26,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: check-in, the open game, what happens next, cancelled bookings'
+// Still to come on this page: the open game, what happens next, cancelled bookings'
 // money, the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
 // menu.
 
@@ -82,10 +83,27 @@ export default function BookingPage() {
   });
   useRefreshWhenShown(REFRESHED);
   if (!booking.data) return <SetupLoading query={booking} />;
-  return <Page booking={booking.data} />;
+  return (
+    <Page
+      booking={booking.data}
+      venueId={venueId}
+      canManage={venue?.permissions.bookings === "manage"}
+      refetch={booking.refetch}
+    />
+  );
 }
 
-function Page({ booking }: { booking: Booking }) {
+function Page({
+  booking,
+  venueId,
+  canManage,
+  refetch,
+}: {
+  booking: Booking;
+  venueId: string;
+  canManage: boolean;
+  refetch: () => Promise<unknown>;
+}) {
   const { t } = useTranslation();
   const hud = useHud();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
@@ -174,6 +192,20 @@ function Page({ booking }: { booking: Booking }) {
                 onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`)}
               />
             </View>
+          </Section>
+        ) : null}
+
+        {booking.checkIn ? (
+          <Section>
+            <CheckInSection
+              venueId={venueId}
+              bookingId={booking.id}
+              checkIn={booking.checkIn}
+              timezone={timezone}
+              now={now}
+              canManage={canManage}
+              onChanged={refetch}
+            />
           </Section>
         ) : null}
 
