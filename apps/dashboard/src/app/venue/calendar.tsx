@@ -8,6 +8,7 @@ import Animated, {
   interpolate,
   runOnJS,
   useAnimatedReaction,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -19,7 +20,7 @@ import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
-import { IconChevronRight, IconInbox, IconPlus } from "@/components/icons";
+import { IconArrowUp, IconChevronRight, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
@@ -323,6 +324,37 @@ export default function VenueCalendar() {
   }));
   useHudAnchor(tabBar + (floating ? FAB + FAB_GAP : 0));
 
+  // Today, once the now line has gone up under the header, a black "↑ Now" pill comes in by the +
+  // and scrolls back to it. Where the line sits: the rows' place in the page and its place in them.
+  const page = useAnimatedRef<Animated.ScrollView>();
+  const listY = useSharedValue(0);
+  const nowY = useSharedValue(-1);
+  const [pastNow, setPastNow] = useState(false);
+  const nowPill = useSharedValue(0);
+  useAnimatedReaction(
+    () =>
+      nowY.value >= 0 &&
+      listY.value + nowY.value - scrollY.value < stripDock + STRIP + dotRoom.value + 10,
+    (past, before) => {
+      if (past === before) return;
+      nowPill.value = withTiming(past ? 1 : 0, { duration: 180 });
+      runOnJS(setPastNow)(past);
+    },
+  );
+  const nowPillStyle = useAnimatedStyle(() => ({
+    opacity: nowPill.value,
+    transform: [{ translateY: interpolate(nowPill.value, [0, 1], [8, 0]) }],
+  }));
+  const backToNow = () =>
+    page.current?.scrollTo({
+      // The line a little under the docked header.
+      y: Math.max(0, listY.value + nowY.value - (stripDock + STRIP + dotRoom.value + 10) - 96),
+      animated: true,
+    });
+  const placeNow = (y: number) => {
+    nowY.value = y;
+  };
+
   const [refreshing, setRefreshing] = useState(false);
   const pull = usePullToRefresh({
     scrollY,
@@ -339,6 +371,9 @@ export default function VenueCalendar() {
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
   const showNow = day === today;
+  useEffect(() => {
+    if (!showNow || loading || dayFailure) nowY.value = -1;
+  }, [showNow, loading, dayFailure, nowY]);
   const nowAt = showNow ? nowIndex(rows, now) : -1;
   const groups = useMemo(() => hourGroups(rows, timezone), [rows, timezone]);
   // Before the first hour still to start.
@@ -355,6 +390,7 @@ export default function VenueCalendar() {
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <StatusBar style="dark" />
       <Animated.ScrollView
+        ref={page}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -414,7 +450,12 @@ export default function VenueCalendar() {
 
         <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
 
-        <View className="gap-4 pt-5">
+        <View
+          className="gap-4 pt-5"
+          onLayout={(event) => {
+            listY.value = event.nativeEvent.layout.y;
+          }}
+        >
           {dayFailure ? (
             <View className="items-center pt-6">
               <OfflineArt scale={0.8} />
@@ -443,7 +484,7 @@ export default function VenueCalendar() {
             // All grounds: under hour headings, the now line between the hours begun and to come.
             groups.flatMap((group, index) => [
               ...(index === nowGroup
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
                 : []),
               <Animated.View
                 key={`${shown}:${group.hour}`}
@@ -471,13 +512,13 @@ export default function VenueCalendar() {
                 </View>
               </Animated.View>,
               ...(index === groups.length - 1 && nowGroup === groups.length
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
                 : []),
             ])
           ) : (
             rows.flatMap((row, index) => [
               ...(index === nowAt
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
                 : []),
               <Animated.View key={`${shown}:${row.key}`} entering={staggered(index)}>
                 <Row
@@ -489,7 +530,7 @@ export default function VenueCalendar() {
                 />
               </Animated.View>,
               ...(index === rows.length - 1 && nowAt === rows.length
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
                 : []),
             ])
           )}
@@ -505,6 +546,25 @@ export default function VenueCalendar() {
       </Animated.ScrollView>
 
       {pull.spinner}
+
+      {/* Level with the +: centred on its 56 pt. */}
+      <Animated.View
+        pointerEvents={pastNow ? "box-none" : "none"}
+        className="absolute right-0 left-0 items-center"
+        style={[{ bottom: FAB_GAP + (FAB - 40) / 2 }, nowPillStyle]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.calendar.backToNow")}
+          onPress={backToNow}
+          className="h-10 flex-row items-center gap-1.5 rounded-full bg-ink px-4 active:opacity-80"
+        >
+          <IconArrowUp size={16} color={colors.white} strokeWidth={2} />
+          <Text className="text-label font-medium text-white">
+            {t("screens.calendar.backToNow")}
+          </Text>
+        </Pressable>
+      </Animated.View>
 
       <Animated.View
         pointerEvents={floating ? "auto" : "none"}
@@ -795,11 +855,24 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 // The grey "Now · 6:40 pm" and its line, between the rows that started and the ones to come.
-function NowLine({ at, timezone }: { at: number; timezone: string }) {
+function NowLine({
+  at,
+  timezone,
+  onPlace,
+}: {
+  at: number;
+  timezone: string;
+  // Where it sits among the rows, for the "↑ Now" pill.
+  onPlace: (y: number) => void;
+}) {
   const { t } = useTranslation();
   return (
     // As tall as its words (they were cut off at the line's 2 pt), pulled into the gaps around it.
-    <View className="h-[15px] flex-row items-center gap-2.5" style={{ marginVertical: -6 }}>
+    <View
+      className="h-[15px] flex-row items-center gap-2.5"
+      style={{ marginVertical: -6 }}
+      onLayout={(event) => onPlace(event.nativeEvent.layout.y)}
+    >
       <Text className="text-[12px] leading-[15px] font-semibold text-ink-3">
         {t("screens.calendar.now", { time: sentenceTime(at, timezone, t) })}
       </Text>
@@ -829,9 +902,7 @@ function NextDay({
       >
         <Text className="flex-1 text-body font-medium">{label}</Text>
         {count === null ? null : (
-          <Text className="text-label text-ink-2">
-            {t("screens.calendar.nextDay", { count })}
-          </Text>
+          <Text className="text-label text-ink-2">{t("screens.calendar.nextDay", { count })}</Text>
         )}
         <IconChevronRight
           size={16}

@@ -107,6 +107,7 @@ const en = {
         free: "Free",
         // Free grounds at different prices: "425 – 625 EGP".
         priceRange: "{{from}} – {{to}}",
+        backToNow: "Now",
         answer: "Answer",
         confirm: "Confirm",
         // The end of the day: the next day and how many bookings it has.

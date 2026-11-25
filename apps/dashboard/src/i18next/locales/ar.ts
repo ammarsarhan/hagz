@@ -116,6 +116,7 @@ const ar: ArabicTranslations = {
         closed: "مغلق من قبلك",
         free: "متاح",
         priceRange: "{{from}} – {{to}}",
+        backToNow: "الآن",
         answer: "رد",
         confirm: "تأكيد",
         nextDay_zero: "لا توجد حجوزات",
