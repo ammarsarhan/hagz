@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
+import { nextSteps, showsNext } from "@/components/booking-next";
 import { CheckInSection } from "@/components/check-in-section";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -13,6 +14,7 @@ import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
+import { StepRail } from "@/components/step-rail";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
@@ -28,8 +30,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: what happens next, cancelled bookings'
-// money, the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
+// Still to come on this page: cancelled bookings' money, the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
 // menu.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
@@ -145,6 +146,26 @@ function Page({
   const left = booking.total - booking.paid;
   const phone = booking.customer.phone;
 
+  // What happens next, from who approved it and when it was paid (its history).
+  const upcoming = showsNext(booking, now);
+  const history = useQuery({
+    queryKey: [...bookingKey(venueId, booking.id), "history"],
+    queryFn: async () => {
+      const result = await send(
+        api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}/history", {
+          params: { path: { venueId, bookingId: booking.id }, query: { limit: 50 } },
+        }),
+      );
+      if (!result.ok) throw result.error;
+      return result.data.data;
+    },
+    enabled: upcoming,
+  });
+  const steps =
+    upcoming && history.data
+      ? nextSteps({ booking, history: history.data, now, t, moment, money, name: firstName })
+      : [];
+
   return (
     <Screen>
       {/* Pinned while the page scrolls under it, the code coming up beside back once its own label
@@ -201,6 +222,12 @@ function Page({
                 onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`)}
               />
             </View>
+          </Section>
+        ) : null}
+
+        {steps.length > 1 ? (
+          <Section title={t("screens.booking.next.title")}>
+            <StepRail steps={steps} />
           </Section>
         ) : null}
 
