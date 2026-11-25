@@ -43,7 +43,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 
-// The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day's month and the day itself over the strip: a week
+// The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
 // the day's bookings and closed times as rows in time order, with a grey line where now is.
 // Requests live behind the inbox button, its red count hidden at none.
@@ -68,9 +68,10 @@ const FAB_GAP = 16;
 // strip, and the strip's height: weekday letter, day disc and dot.
 const TOP = 13;
 const TITLE_TO_STRIP = 15;
-// The picked day, small, over the strip (it docks with it): its line and the gap under it.
-const DATE_LABEL = 20 + 10;
-const STRIP = DATE_LABEL + 16 + 4 + 36 + 6 + 5;
+const STRIP = 16 + 4 + 36 + 6 + 5;
+// Docked, the title shrinks from 28 to 15 over the strip, with this much room above the strip.
+const DOCKED_SCALE = 15 / 28;
+const DOCKED_TITLE = 30;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 
@@ -226,20 +227,45 @@ export default function VenueCalendar() {
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
+  // The strip docks under the title, which docks above it: the day, 28 pt in its place in the page,
+  // rides up and shrinks to 15 pt as the page scrolls, reaching the header as the strip does.
+  const stripDock = dockAt + DOCKED_TITLE;
+  const titleStart = top + 3;
   const stripStart = useSharedValue(top + 40 + TITLE_TO_STRIP);
   const stripStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: Math.max(dockAt, stripStart.value - scrollY.value) }],
+    transform: [{ translateY: Math.max(stripDock, stripStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(stripStart.value - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
+    opacity: interpolate(
+      stripStart.value - scrollY.value,
+      [stripDock + 24, stripDock],
+      [0, 1],
+      "clamp",
+    ),
   }));
+  const titleStyle = useAnimatedStyle(() => {
+    // Pulled down past the top, it follows the page down.
+    if (scrollY.value < 0) return { transform: [{ translateY: titleStart - scrollY.value }] };
+    const docking = interpolate(
+      scrollY.value,
+      [0, Math.max(1, stripStart.value - stripDock)],
+      [0, 1],
+      "clamp",
+    );
+    return {
+      transform: [
+        { translateY: interpolate(docking, [0, 1], [titleStart, dockAt]) },
+        { scale: interpolate(docking, [0, 1], [1, DOCKED_SCALE]) },
+      ],
+    };
+  });
 
   // Once the title's + has scrolled away, a blue one floats in the bottom corner, fading in as the
   // strip docks and out as it leaves. The HUD sits above it while it shows.
   const [floating, setFloating] = useState(false);
   const fab = useSharedValue(0);
   useAnimatedReaction(
-    () => stripStart.value - scrollY.value <= dockAt,
+    () => stripStart.value - scrollY.value <= stripDock,
     (docked, before) => {
       if (docked === before) return;
       fab.value = withTiming(docked ? 1 : 0, { duration: 180 });
@@ -280,12 +306,8 @@ export default function VenueCalendar() {
         contentContainerStyle={{ paddingTop: top, paddingHorizontal: 20, paddingBottom: 24 }}
       >
         <View className="flex-row items-center">
-          <Text
-            accessibilityRole="header"
-            className="flex-1 text-title font-semibold tracking-[-0.4px]"
-          >
-            {monthTitle(day, today, t)}
-          </Text>
+          {/* The title's place: the day floats over it (below), so it can dock. */}
+          <View className="flex-1" />
           <RoundButton
             label={
               requests > 0
@@ -399,10 +421,18 @@ export default function VenueCalendar() {
       <Animated.View
         pointerEvents="none"
         className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
-        style={[{ height: dockAt + STRIP + 10 }, headerStyle]}
+        style={[{ height: stripDock + STRIP + 10 }, headerStyle]}
       />
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0"
+        style={[{ start: 20, transformOrigin: isRTL ? "right top" : "left top" }, titleStyle]}
+      >
+        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+          {dayLabel(day, t)}
+        </Text>
+      </Animated.View>
       <Animated.View className="absolute top-0 right-0 left-0" style={stripStyle}>
-        <Text className="mb-2.5 px-5 text-body leading-5 font-semibold">{dayLabel(day, t)}</Text>
         <WeekStrip
           start={weekStart}
           picked={day}
@@ -608,13 +638,13 @@ function Day({
       <View
         className={`mt-1 size-9 items-center justify-center rounded-full ${today ? "bg-chip" : ""}`}
       >
-        <Text className="text-[17px] leading-5 text-ink">{day}</Text>
+        <Text className="text-[15px] leading-5 text-ink">{day}</Text>
         <Animated.View
           pointerEvents="none"
           className="absolute inset-0 items-center justify-center rounded-full bg-ink"
           style={discStyle}
         >
-          <Text className="text-[17px] leading-5 font-semibold text-white">{day}</Text>
+          <Text className="text-[15px] leading-5 font-semibold text-white">{day}</Text>
         </Animated.View>
       </View>
       <View className={`mt-1.5 size-[5px] rounded-full ${dot ? "bg-ink" : ""}`} />
@@ -667,17 +697,7 @@ function NowLine({ at, timezone }: { at: number; timezone: string }) {
 
 type T = ReturnType<typeof useTranslation>["t"];
 
-// The title: the picked day's month, "November", with the year when it isn't this one's.
-const monthTitle = (date: string, today: string, t: T) => {
-  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "long" }).format(
-    new Date(`${date}T12:00:00Z`),
-  );
-  return date.slice(0, 4) === today.slice(0, 4)
-    ? month
-    : t("screens.calendar.monthYear", { month, year: date.slice(0, 4) });
-};
-
-// The day itself over the strip: "Wednesday 25th".
+// The title: the picked day, "Wednesday 25th".
 const dayLabel = (date: string, t: T) => {
   const at = new Date(`${date}T12:00:00Z`);
   const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" }).format(
@@ -804,7 +824,17 @@ const priced = (minor: number, currency: string) =>
 
 const standing = (row: CalendarRow, timezone: string, currency: string, t: T): string[] => {
   if (row.kind === "closed") return [];
-  if (row.kind === "free") return row.ended ? [] : [priced(row.price, currency)];
+  if (row.kind === "free")
+    return row.ended
+      ? []
+      : [
+          row.price.from === row.price.to
+            ? priced(row.price.from, currency)
+            : t("screens.calendar.priceRange", {
+                from: formatAmount(row.price.from, decimalsOf(currency)),
+                to: priced(row.price.to, currency),
+              }),
+        ];
   const { booking } = row;
   const price = priced(booking.total, booking.currency);
   if (booking.status === "COMPLETED") return [t("screens.calendar.played")];
