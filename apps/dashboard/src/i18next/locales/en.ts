@@ -77,8 +77,8 @@ const en = {
     screens: {
       calendar: {
         title: "Calendar",
-        date: "{{month}} {{day}}",
-        dateYear: "{{month}} {{day}}, {{year}}",
+        monthYear: "{{month}} {{year}}",
+        day: "{{weekday}} {{day}}",
         requests: "Booking requests",
         requestsWaiting_one: "{{count}} booking request",
         requestsWaiting_other: "{{count}} booking requests",

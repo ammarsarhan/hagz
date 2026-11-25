@@ -43,7 +43,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 
-// The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked date: a week
+// The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day's month and the day itself over the strip: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
 // the day's bookings and closed times as rows in time order, with a grey line where now is.
 // Requests live behind the inbox button, its red count hidden at none.
@@ -68,7 +68,7 @@ const FAB_GAP = 16;
 // strip, and the strip's height: weekday letter, day disc and dot.
 const TOP = 13;
 const TITLE_TO_STRIP = 15;
-// The picked date again, small, over the strip (it docks with it): its line and the gap under it.
+// The picked day, small, over the strip (it docks with it): its line and the gap under it.
 const DATE_LABEL = 20 + 10;
 const STRIP = DATE_LABEL + 16 + 4 + 36 + 6 + 5;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
@@ -284,7 +284,7 @@ export default function VenueCalendar() {
             accessibilityRole="header"
             className="flex-1 text-title font-semibold tracking-[-0.4px]"
           >
-            {dateTitle(day, today, t)}
+            {monthTitle(day, today, t)}
           </Text>
           <RoundButton
             label={
@@ -402,9 +402,7 @@ export default function VenueCalendar() {
         style={[{ height: dockAt + STRIP + 10 }, headerStyle]}
       />
       <Animated.View className="absolute top-0 right-0 left-0" style={stripStyle}>
-        <Text className="mb-2.5 px-5 text-body leading-5 font-semibold">
-          {dateTitle(day, today, t)}
-        </Text>
+        <Text className="mb-2.5 px-5 text-body leading-5 font-semibold">{dayLabel(day, t)}</Text>
         <WeekStrip
           start={weekStart}
           picked={day}
@@ -669,15 +667,24 @@ function NowLine({ at, timezone }: { at: number; timezone: string }) {
 
 type T = ReturnType<typeof useTranslation>["t"];
 
-// The picked day as the title: "November 25th", with the year when it isn't this one.
-const dateTitle = (date: string, today: string, t: T) => {
-  const at = new Date(`${date}T12:00:00Z`);
-  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "long" }).format(at);
-  const day = at.getUTCDate();
-  const values = { month, day: isRTL ? String(day) : ordinal(day), year: date.slice(0, 4) };
+// The title: the picked day's month, "November", with the year when it isn't this one's.
+const monthTitle = (date: string, today: string, t: T) => {
+  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "long" }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
   return date.slice(0, 4) === today.slice(0, 4)
-    ? t("screens.calendar.date", values)
-    : t("screens.calendar.dateYear", values);
+    ? month
+    : t("screens.calendar.monthYear", { month, year: date.slice(0, 4) });
+};
+
+// The day itself over the strip: "Wednesday 25th".
+const dayLabel = (date: string, t: T) => {
+  const at = new Date(`${date}T12:00:00Z`);
+  const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" }).format(
+    at,
+  );
+  const day = at.getUTCDate();
+  return t("screens.calendar.day", { weekday, day: isRTL ? String(day) : ordinal(day) });
 };
 
 const period = (pm: boolean, t: T) => t(pm ? "screens.calendar.pm" : "screens.calendar.am");
