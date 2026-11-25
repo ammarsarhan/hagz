@@ -483,7 +483,7 @@ export default function VenueCalendar() {
                   className={`-mx-2 self-start rounded-lg px-2 py-0.5 ${index === nowGroup ? NOW_TINT : ""}`}
                 >
                   <Text
-                    className={`text-body leading-5 font-semibold ${group.rows.every(isOver) ? "text-ink-3" : ""}`}
+                    className={`text-body leading-5 font-semibold ${index === nowGroup ? NOW_TEXT : group.rows.every(isOver) ? "text-ink-3" : ""}`}
                   >
                     {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
                   </Text>
@@ -862,8 +862,9 @@ const sentenceTime = (at: string | number, timezone: string, t: T) => {
   return t("screens.calendar.time", { time, period: period(pm, t) });
 };
 
-// The time we're at.
+// The time we're at: baby blue, its words in the brand blue.
 const NOW_TINT = "bg-[#dce5ff]";
+const NOW_TEXT = "text-primary";
 
 // The bar beside a row: its look says where the booking stands (lib/calendar.ts, RowKind). A free
 // hour's is dashed, as everywhere in the staff app for what isn't there yet.
@@ -934,13 +935,18 @@ function Row({
         // Pulled out by its padding, so the hours line up with the other rows' either way.
         <View className={`-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1 ${current ? NOW_TINT : ""}`}>
           <Text
-            className={`text-body leading-5 ${ended ? "text-ink-3" : "font-semibold"}`}
+            className={`text-body leading-5 ${current ? `font-semibold ${NOW_TEXT}` : ended ? "text-ink-3" : "font-semibold"}`}
             numberOfLines={1}
           >
             {hourLabel(row.startsAt, timezone, t)}
           </Text>
-          <Text className="text-[11px] leading-[13px] text-ink-3">{t("screens.calendar.to")}</Text>
-          <Text className="text-caption leading-[17px] text-ink-3" numberOfLines={1}>
+          <Text className={`text-[11px] leading-[13px] ${current ? NOW_TEXT : "text-ink-3"}`}>
+            {t("screens.calendar.to")}
+          </Text>
+          <Text
+            className={`text-caption leading-[17px] ${current ? NOW_TEXT : "text-ink-3"}`}
+            numberOfLines={1}
+          >
             {hourLabel(row.endsAt, timezone, t)}
           </Text>
         </View>
