@@ -317,7 +317,8 @@ function GroundOption({
       accessibilityState={{ selected: picked }}
       onPress={onPick}
       className="gap-0.5 rounded-2xl border border-border px-4 py-4"
-      style={{ width, opacity: unavailable ? 0.45 : 1 }}
+      // Its own direction: the row it sits in is always left to right (GroundCards).
+      style={{ width, opacity: unavailable ? 0.45 : 1, direction: isRTL ? "rtl" : "ltr" }}
     >
       <Animated.View
         pointerEvents="none"
@@ -424,7 +425,7 @@ const CARD_GAP = 10;
 
 // A venue's grounds as a row of cards under the page's map or heading, edge to edge, snapping each
 // card to the gutter (the last one to the other gutter), all as tall as the tallest, with dots under
-// them. The pick is the caller's: the card that settles in place picks itself, tapping a card picks
+// them. In Arabic the row runs right to left, the first card on the right. The pick is the caller's: the card that settles in place picks itself, tapping a card picks
 // it, and a pick from outside (a tap on the layout) brings its card into place.
 export function GroundCards({
   grounds,
@@ -455,7 +456,13 @@ export function GroundCards({
   // last card's right edge meets the gutter on the other side.
   const count = grounds.length;
   const end = Math.max(0, 2 * gutter + count * card + (count - 1) * CARD_GAP - screen);
-  const stops = grounds.map((_, index) => Math.min(index * step, end));
+  // The row itself is always laid out left to right, so its offsets mean the same on iOS and Android
+  // (a right-to-left horizontal ScrollView measures them differently on each). In Arabic the cards
+  // go in reversed and each stop is mirrored: the first card's right edge on the right gutter.
+  const stops = grounds.map((_, index) => {
+    const stop = Math.min(index * step, end);
+    return isRTL ? end - stop : stop;
+  });
   const pickedIndex = Math.max(
     0,
     grounds.findIndex((ground) => ground.id === pickedId),
@@ -495,10 +502,10 @@ export function GroundCards({
         disableIntervalMomentum
         contentOffset={{ x: stops[pickedIndex] ?? 0, y: 0 }}
         onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
-        style={{ marginHorizontal: -gutter }}
+        style={{ marginHorizontal: -gutter, direction: "ltr" }}
         contentContainerStyle={{ gap: CARD_GAP, paddingHorizontal: gutter }}
       >
-        {grounds.map((ground) => (
+        {(isRTL ? [...grounds].reverse() : grounds).map((ground) => (
           <GroundOption
             key={ground.id}
             ground={ground}

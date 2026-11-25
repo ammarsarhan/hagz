@@ -18,6 +18,7 @@ export { default as IconExternalLink } from "@tabler/icons-react-native/IconExte
 export { default as IconEye } from "@tabler/icons-react-native/IconEye";
 export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
+export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 export { default as IconBuildingStadium } from "@tabler/icons-react-native/IconBuildingStadium";
