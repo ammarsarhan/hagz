@@ -225,27 +225,10 @@ export const hourGroups = (rows: readonly CalendarRow[], timezone: string) => {
     if (last && last.hour === hour) last.rows.push(row);
     else groups.push({ hour, rows: [row] });
   }
-  // Bookings and closed times above the free hours, as the hour's bar fills from the top (user).
+  // Bookings and closed times above the free hours (user).
   for (const group of groups)
     group.rows.sort((a, b) => Number(a.kind === "free") - Number(b.kind === "free"));
   return groups;
-};
-
-// How an hour's grounds stand, for its bar: how many are taken (booked or closed) at any point in
-// it, a booking that began earlier included, and how many of the rest are open.
-export const occupancyIn = (hour: number, rows: readonly CalendarRow[]) => {
-  const end = hour + 3_600_000;
-  const overlaps = (row: CalendarRow) =>
-    Date.parse(row.startsAt) < end && Date.parse(row.endsAt) > hour;
-  const taken = new Set<string>();
-  const open = new Set<string>();
-  for (const row of rows) {
-    if (!overlaps(row)) continue;
-    if (row.kind === "free") for (const id of row.groundIds) open.add(id);
-    else taken.add(row.groundId);
-  }
-  for (const id of taken) open.delete(id);
-  return { taken: taken.size, open: open.size };
 };
 
 // Where the now line goes in a day's rows: before the first that starts after now (the length when
