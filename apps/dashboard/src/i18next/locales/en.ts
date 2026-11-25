@@ -94,6 +94,8 @@ const en = {
         // Under an hour heading, a row that isn't exactly that hour.
         till: "till {{time}}",
         span: "{{from}} – {{to}}",
+        // A game's hours when both ends share am or pm: "10 – 11 pm".
+        spanShared: "{{from}} – {{to}} {{period}}",
         played: "Played",
         noShow: "No show",
         app: "App",

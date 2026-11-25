@@ -34,7 +34,6 @@ import { hudMessage, send } from "@/lib/api-errors";
 import {
   addDays,
   bookingDays,
-  clockOf,
   dayRows,
   hourGroups,
   localDateOf,
@@ -44,12 +43,14 @@ import {
   type CalendarRow,
   type StaffBooking,
 } from "@/lib/calendar";
+import { bookingRequests } from "@/lib/booking-requests";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { intlLocale, isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
+import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
@@ -179,19 +180,7 @@ export default function VenueCalendar() {
     refetchInterval: REFRESH_EVERY,
     placeholderData: sameVenue(venueId),
   });
-  const pending = useQuery({
-    queryKey: calendarKey(venueId, "bookings", "pending"),
-    queryFn: async () =>
-      (
-        await fetched(
-          api.GET("/v1/staff/venues/{venueId}/bookings/pending", {
-            params: { path: { venueId } },
-          }),
-        )
-      ).data,
-    enabled: canSeeBookings,
-    refetchInterval: REFRESH_EVERY,
-  });
+  const pending = useQuery(bookingRequests(venueId, canSeeBookings));
 
   const answeredZone = slots.data?.timezone ?? bookings.data?.[0]?.timezone;
   useEffect(() => {
@@ -886,30 +875,6 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 type T = ReturnType<typeof useTranslation>["t"];
-
-// The title: the picked day, short (user): "Wed 25 Nov", the way the customer app writes a day.
-const dayLabel = (date: string, t: T) => {
-  const at = new Date(`${date}T12:00:00Z`);
-  const part = (options: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", ...options })
-      .format(at)
-      .replace(/[.,]/g, "");
-  return t("screens.calendar.day", {
-    weekday: part({ weekday: "short" }),
-    day: at.getUTCDate(),
-    month: part({ month: "short" }),
-  });
-};
-
-const period = (pm: boolean, t: T) => t(pm ? "screens.calendar.pm" : "screens.calendar.am");
-const hourLabel = (at: string, timezone: string, t: T) => {
-  const { time, pm } = clockOf(at, timezone);
-  return t("screens.calendar.hour", { time, period: period(pm, t) });
-};
-const sentenceTime = (at: string | number, timezone: string, t: T) => {
-  const { time, pm } = clockOf(at, timezone);
-  return t("screens.calendar.time", { time, period: period(pm, t) });
-};
 
 // The time we're at: baby blue, its words in the brand blue and a point smaller than elsewhere (user:
 // in a cell they read bigger), on the same line heights so nothing moves.

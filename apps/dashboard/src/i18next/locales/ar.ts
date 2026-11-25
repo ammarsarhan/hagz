@@ -104,6 +104,7 @@ const ar: ArabicTranslations = {
         to: "-",
         till: "حتى {{time}}",
         span: "{{from}} – {{to}}",
+        spanShared: "{{from}} – {{to}} {{period}}",
         played: "تم اللعب",
         noShow: "لم يحضر",
         app: "التطبيق",
