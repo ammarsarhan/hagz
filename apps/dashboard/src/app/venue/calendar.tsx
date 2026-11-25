@@ -662,7 +662,8 @@ export default function VenueCalendar() {
           today={today}
           dots={dots}
           onPick={setPicked}
-          onWeek={(start) => setPicked(addDays(start, weekdayOf(day)))}
+          // Forward lands on the week's first day, back on its last: the days nearest where you were.
+          onWeek={(start) => setPicked(start > weekStart ? start : addDays(start, 6))}
         />
       </Animated.View>
     </View>
