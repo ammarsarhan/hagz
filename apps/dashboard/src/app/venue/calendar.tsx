@@ -20,7 +20,7 @@ import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
-import { IconArrowUp, IconChevronRight, IconInbox, IconPlus } from "@/components/icons";
+import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
@@ -33,7 +33,6 @@ import {
   dayRows,
   hourGroups,
   localDateOf,
-  nowIndex,
   weekdayOf,
   weekOf,
   weekStartOf,
@@ -227,22 +226,6 @@ export default function VenueCalendar() {
     () => bookingDays([...(bookings.data ?? []), ...around, ...(pending.data ?? [])], timezone),
     [bookings.data, around, pending.data, timezone],
   );
-  // The next day, for the line at the end of this one, and its bookings on the ground picked (it may
-  // fall in next week, read already for the strip's dots).
-  const nextDay = addDays(day, 1);
-  const nextDayBookings = useMemo(
-    () =>
-      dayRows({
-        date: nextDay,
-        timezone,
-        bookings: [...(bookings.data ?? []), ...around],
-        slots: [],
-        groundOrder: [],
-        groundId,
-        now,
-      }).filter((row) => row.kind !== "free" && row.kind !== "closed").length,
-    [nextDay, timezone, bookings.data, around, groundId, now],
-  );
   const requests = pending.data?.length ?? 0;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
@@ -324,8 +307,9 @@ export default function VenueCalendar() {
   }));
   useHudAnchor(tabBar + (floating ? FAB + FAB_GAP : 0));
 
-  // Today, once the now line has gone up under the header, a black "↑ Now" pill comes in by the +
-  // and scrolls back to it. Where the line sits: the rows' place in the page and its place in them.
+  // Today, once the hour we're in (its time in baby blue) has gone up under the header, a black
+  // "↑ Now" pill comes in by the + and scrolls back to it. Where it sits: the rows' place in the page
+  // and its place in them.
   const page = useAnimatedRef<Animated.ScrollView>();
   const listY = useSharedValue(0);
   const nowY = useSharedValue(-1);
@@ -347,13 +331,10 @@ export default function VenueCalendar() {
   }));
   const backToNow = () =>
     page.current?.scrollTo({
-      // The line a little under the docked header.
+      // The hour a little under the docked header.
       y: Math.max(0, listY.value + nowY.value - (stripDock + STRIP + dotRoom.value + 10) - 96),
       animated: true,
     });
-  const placeNow = (y: number) => {
-    nowY.value = y;
-  };
 
   const [refreshing, setRefreshing] = useState(false);
   const pull = usePullToRefresh({
@@ -374,15 +355,21 @@ export default function VenueCalendar() {
   useEffect(() => {
     if (!showNow || loading || dayFailure) nowY.value = -1;
   }, [showNow, loading, dayFailure, nowY]);
-  const nowAt = showNow ? nowIndex(rows, now) : -1;
   const groups = useMemo(() => hourGroups(rows, timezone), [rows, timezone]);
-  // Before the first hour still to start.
+  // The time we're at, in baby blue: on All grounds the hour's heading, on a ground the first row
+  // under way.
   const nowGroup = showNow
-    ? (() => {
-        const at = groups.findIndex((group) => group.hour > now);
-        return at === -1 ? groups.length : at;
-      })()
+    ? groups.findIndex((group) => group.hour <= now && now < group.hour + HOUR)
     : -1;
+  const nowRow = showNow
+    ? rows.findIndex((row) => Date.parse(row.startsAt) <= now && now < Date.parse(row.endsAt))
+    : -1;
+  const placedNow = (y: number) => {
+    nowY.value = y;
+  };
+  useEffect(() => {
+    if ((groundId === null ? nowGroup : nowRow) === -1) nowY.value = -1;
+  }, [groundId, nowGroup, nowRow, nowY]);
   const groundsOf = (row: CalendarRow) =>
     row.kind === "free" ? row.groundIds.map(groundName).join(", ") : groundName(row.groundId);
 
@@ -481,21 +468,26 @@ export default function VenueCalendar() {
           ) : loading ? (
             Array.from({ length: 8 }, (_, index) => <RowBone key={index} />)
           ) : groundId === null ? (
-            // All grounds: under hour headings, the now line between the hours begun and to come.
-            groups.flatMap((group, index) => [
-              ...(index === nowGroup
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
-                : []),
+            // All grounds: under hour headings.
+            groups.map((group, index) => (
               <Animated.View
                 key={`${shown}:${group.hour}`}
                 entering={staggered(index)}
                 className="gap-2"
+                onLayout={
+                  index === nowGroup ? (event) => placedNow(event.nativeEvent.layout.y) : undefined
+                }
               >
-                <Text
-                  className={`text-body leading-5 font-semibold ${group.rows.every(isOver) ? "text-ink-3" : ""}`}
+                {/* Pulled out by its padding, so the words line up with the rows either way. */}
+                <View
+                  className={`-mx-2 self-start rounded-lg px-2 py-0.5 ${index === nowGroup ? NOW_TINT : ""}`}
                 >
-                  {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
-                </Text>
+                  <Text
+                    className={`text-body leading-5 font-semibold ${group.rows.every(isOver) ? "text-ink-3" : ""}`}
+                  >
+                    {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
+                  </Text>
+                </View>
                 {/* Back to back, 2 pt apart: each row's bar an equal piece of one bar for the hour. */}
                 <View className="gap-0.5">
                   {group.rows.map((row) => (
@@ -510,37 +502,27 @@ export default function VenueCalendar() {
                     />
                   ))}
                 </View>
-              </Animated.View>,
-              ...(index === groups.length - 1 && nowGroup === groups.length
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
-                : []),
-            ])
+              </Animated.View>
+            ))
           ) : (
-            rows.flatMap((row, index) => [
-              ...(index === nowAt
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
-                : []),
-              <Animated.View key={`${shown}:${row.key}`} entering={staggered(index)}>
+            rows.map((row, index) => (
+              <Animated.View
+                key={`${shown}:${row.key}`}
+                entering={staggered(index)}
+                onLayout={
+                  index === nowRow ? (event) => placedNow(event.nativeEvent.layout.y) : undefined
+                }
+              >
                 <Row
                   row={row}
                   timezone={timezone}
                   ground={groundsOf(row)}
                   currency={slots.data?.currency ?? "EGP"}
+                  current={index === nowRow}
                   onPress={comingNext}
                 />
-              </Animated.View>,
-              ...(index === rows.length - 1 && nowAt === rows.length
-                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} onPlace={placeNow} />]
-                : []),
-            ])
-          )}
-          {dayFailure || loading ? null : (
-            <NextDay
-              key={`${shown}:next`}
-              label={dayLabel(nextDay, t)}
-              count={canSeeBookings ? nextDayBookings : null}
-              onPress={() => setPicked(nextDay)}
-            />
+              </Animated.View>
+            ))
           )}
         </View>
       </Animated.ScrollView>
@@ -854,66 +836,6 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-// The grey "Now · 6:40 pm" and its line, between the rows that started and the ones to come.
-function NowLine({
-  at,
-  timezone,
-  onPlace,
-}: {
-  at: number;
-  timezone: string;
-  // Where it sits among the rows, for the "↑ Now" pill.
-  onPlace: (y: number) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    // As tall as its words (they were cut off at the line's 2 pt), pulled into the gaps around it.
-    <View
-      className="h-[15px] flex-row items-center gap-2.5"
-      style={{ marginVertical: -6 }}
-      onLayout={(event) => onPlace(event.nativeEvent.layout.y)}
-    >
-      <Text className="text-[12px] leading-[15px] font-semibold text-ink-3">
-        {t("screens.calendar.now", { time: sentenceTime(at, timezone, t) })}
-      </Text>
-      <View className="h-[1.5px] flex-1 bg-ink-3" />
-    </View>
-  );
-}
-
-// The end of the day: a line, then the next day and how many bookings it has, which picks it.
-// Without bookings access, just the day.
-function NextDay({
-  label,
-  count,
-  onPress,
-}: {
-  label: string;
-  count: number | null;
-  onPress: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <View className="mt-2 border-t border-border">
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        className="h-14 flex-row items-center active:opacity-70"
-      >
-        <Text className="flex-1 text-body font-medium">{label}</Text>
-        {count === null ? null : (
-          <Text className="text-label text-ink-2">{t("screens.calendar.nextDay", { count })}</Text>
-        )}
-        <IconChevronRight
-          size={16}
-          color={colors.ink3}
-          style={{ marginStart: 4, transform: isRTL ? [{ scaleX: -1 }] : undefined }}
-        />
-      </Pressable>
-    </View>
-  );
-}
-
 type T = ReturnType<typeof useTranslation>["t"];
 
 // The title: the picked day, short (user): "Wed 25 Nov", the way the customer app writes a day.
@@ -940,6 +862,9 @@ const sentenceTime = (at: string | number, timezone: string, t: T) => {
   return t("screens.calendar.time", { time, period: period(pm, t) });
 };
 
+// The time we're at.
+const NOW_TINT = "bg-[#dce5ff]";
+
 // The bar beside a row: its look says where the booking stands (lib/calendar.ts, RowKind). A free
 // hour's is dashed, as everywhere in the staff app for what isn't there yet.
 const BAR: Record<CalendarRow["kind"], string> = {
@@ -964,6 +889,7 @@ function Row({
   timezone,
   ground,
   currency,
+  current = false,
   onPress,
 }: {
   row: CalendarRow;
@@ -974,6 +900,8 @@ function Row({
   timezone: string;
   ground: string;
   currency: string;
+  // The row under way now: its hours column in baby blue.
+  current?: boolean;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
@@ -1003,7 +931,8 @@ function Row({
       className="min-h-16 flex-row items-center active:opacity-70"
     >
       {hour === undefined ? (
-        <View className="w-14">
+        // Pulled out by its padding, so the hours line up with the other rows' either way.
+        <View className={`-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1 ${current ? NOW_TINT : ""}`}>
           <Text
             className={`text-body leading-5 ${ended ? "text-ink-3" : "font-semibold"}`}
             numberOfLines={1}
@@ -1059,7 +988,7 @@ const timingIn = (row: CalendarRow, hour: number, timezone: string, t: T) => {
 function RowBone() {
   return (
     <View className="h-16 flex-row items-center">
-      <View className="w-14 gap-1.5">
+      <View className="me-1 w-14 gap-1.5">
         <Bone className="h-3.5 w-9 rounded" />
         <Bone className="h-2 w-3 rounded" />
         <Bone className="h-3 w-7 rounded" />

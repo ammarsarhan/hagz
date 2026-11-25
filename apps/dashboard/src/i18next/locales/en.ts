@@ -94,7 +94,6 @@ const en = {
         // Under an hour heading, a row that isn't exactly that hour.
         till: "till {{time}}",
         span: "{{from}} – {{to}}",
-        now: "Now · {{time}}",
         played: "Played",
         noShow: "No show",
         app: "App",
@@ -110,10 +109,6 @@ const en = {
         backToNow: "Now",
         answer: "Answer",
         confirm: "Confirm",
-        // The end of the day: the next day and how many bookings it has.
-        nextDay_zero: "No bookings",
-        nextDay_one: "{{count}} booking",
-        nextDay_other: "{{count}} bookings",
         offlineTitle: "You’re offline",
         offlineBody: "Check your Wi-Fi or mobile data, then try again.",
         failedTitle: "Couldn’t load the day",

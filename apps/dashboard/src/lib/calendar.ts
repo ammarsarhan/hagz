@@ -231,13 +231,6 @@ export const hourGroups = (rows: readonly CalendarRow[], timezone: string) => {
   return groups;
 };
 
-// Where the now line goes in a day's rows: before the first that starts after now (the length when
-// none does). Rows already under way stay above it.
-export const nowIndex = (rows: readonly CalendarRow[], now: number) => {
-  const at = rows.findIndex((row) => Date.parse(row.startsAt) > now);
-  return at === -1 ? rows.length : at;
-};
-
 // The days with bookings on them, requests included, for the dots under the week strip.
 export const bookingDays = (bookings: readonly StaffBooking[], timezone: string) =>
   new Set(bookings.map((booking) => localDateOf(booking.startsAt, timezone)));
