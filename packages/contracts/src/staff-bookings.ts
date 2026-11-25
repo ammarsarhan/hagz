@@ -4,6 +4,7 @@ import { BookingStatus } from "./bookings";
 import { GroundSize, GroundSport } from "./grounds";
 import { StaffCheckIn } from "./check-in";
 import { StaffGame } from "./listings";
+import { PaymentMode } from "./venue-edit";
 
 // A venue's bookings for its staff (Phase 4): the calendar and the approvals queue (PR 4.4),
 // approving, declining and marking how a game went (PR 4.2), and holds, moves and swaps (PR 4.8,
@@ -42,6 +43,8 @@ export const StaffBooking = AdminBooking.extend({
     .object({ players: z.int() })
     .nullable()
     .meta({ description: "An open game: how many players to expect besides the booker." }),
+  paymentMode: PaymentMode,
+  deposit: z.int().nullable().meta({ description: "`DEPOSIT`: the share paid online." }),
 }).meta({ id: "StaffBooking" });
 
 export const StaffBookingList = z

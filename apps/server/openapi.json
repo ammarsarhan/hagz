@@ -6137,6 +6137,16 @@
               "players"
             ],
             "description": "An open game: how many players to expect besides the booker."
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`DEPOSIT`: the share paid online."
           }
         },
         "required": [
@@ -6156,7 +6166,9 @@
           "expiresAt",
           "hold",
           "regular",
-          "openGame"
+          "openGame",
+          "paymentMode",
+          "deposit"
         ]
       },
       "BookingSource": {

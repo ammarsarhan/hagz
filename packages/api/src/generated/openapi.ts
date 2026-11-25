@@ -18993,6 +18993,9 @@ export interface components {
             openGame: {
                 players: number;
             } | null;
+            paymentMode: components["schemas"]["PaymentMode"];
+            /** @description `DEPOSIT`: the share paid online. */
+            deposit: number | null;
         };
         /**
          * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.

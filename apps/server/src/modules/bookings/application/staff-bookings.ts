@@ -7,6 +7,7 @@ import type {
   StaffBookingsQuery,
 } from "@hagz/contracts";
 import { StaffBookingDetail } from "@hagz/contracts";
+import type { PaymentMode } from "@/generated/prisma/enums";
 import type { VenueAccess } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
@@ -37,6 +38,8 @@ export const staffSelect = {
   ...summarySelect,
   expiresAt: true,
   regularId: true,
+  paymentMode: true,
+  depositAmount: true,
   listing: { select: { status: true, playerCount: true } },
 } as const;
 const select = staffSelect;
@@ -50,6 +53,8 @@ export const presentStaff = (
   row: Parameters<typeof presentSummary>[0] & {
     expiresAt: Date | null;
     regularId: string | null;
+    paymentMode: PaymentMode;
+    depositAmount: number | null;
     listing: { status: string; playerCount: number } | null;
   },
 ) => ({
@@ -61,6 +66,8 @@ export const presentStaff = (
     row.listing?.status === "OPEN" && row.listing.playerCount > 0
       ? { players: row.listing.playerCount }
       : null,
+  paymentMode: row.paymentMode,
+  deposit: row.depositAmount,
 });
 
 // Bookings overlapping the venue-local days [date, date + span), by start time then ground.
