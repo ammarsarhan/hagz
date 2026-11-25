@@ -276,7 +276,8 @@ export default function VenueCalendar() {
         <View
           style={{ height: STRIP, marginTop: TITLE_TO_STRIP }}
           onLayout={(event) => {
-            stripStart.value = top + event.nativeEvent.layout.y;
+            // Measured in the page, whose top padding it already includes.
+            stripStart.value = event.nativeEvent.layout.y;
           }}
         />
 
