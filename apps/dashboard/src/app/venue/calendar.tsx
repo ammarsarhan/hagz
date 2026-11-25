@@ -436,26 +436,29 @@ export default function VenueCalendar() {
           }}
         />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -20, marginTop: 10 }}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-        >
-          <Chip
-            label={t("screens.calendar.allGrounds")}
-            on={groundId === null}
-            onPress={() => setGroundId(null)}
-          />
-          {grounds.map((ground) => (
+        {/* Picking a ground only means something with more than one. */}
+        {grounds.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginHorizontal: -20, marginTop: 10 }}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+          >
             <Chip
-              key={ground.id}
-              label={ground.name ?? ""}
-              on={groundId === ground.id}
-              onPress={() => setGroundId(ground.id)}
+              label={t("screens.calendar.allGrounds")}
+              on={groundId === null}
+              onPress={() => setGroundId(null)}
             />
-          ))}
-        </ScrollView>
+            {grounds.map((ground) => (
+              <Chip
+                key={ground.id}
+                label={ground.name ?? ""}
+                on={groundId === ground.id}
+                onPress={() => setGroundId(ground.id)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
 
         <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
 
