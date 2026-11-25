@@ -619,15 +619,31 @@ function Day({
   );
 }
 
+// A ground filter. Picking it fades its ink fill and white words in over the outlined one, as the
+// strip's days do.
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const picked = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    picked.value = withTiming(on ? 1 : 0, { duration: 200 });
+  }, [on, picked]);
+  const fillStyle = useAnimatedStyle(() => ({ opacity: picked.value }));
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className={`h-[34px] justify-center rounded-full px-4 ${on ? "bg-ink" : "border border-border"}`}
+      className="h-[34px] justify-center rounded-full border border-border px-4"
     >
-      <Text className={`text-label font-medium ${on ? "text-white" : "text-ink"}`}>{label}</Text>
+      <Text className="text-label font-medium text-ink">{label}</Text>
+      {/* Over the border too: an absolute child is placed inside it. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute items-center justify-center rounded-full bg-ink"
+        style={[{ top: -1, bottom: -1, start: -1, end: -1 }, fillStyle]}
+      >
+        <Text className="text-label font-medium text-white">{label}</Text>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -725,6 +741,7 @@ function Row({
         >
           {hourLabel(row.startsAt, timezone, t)}
         </Text>
+        <Text className="text-[11px] leading-[13px] text-ink-3">{t("screens.calendar.to")}</Text>
         <Text className="text-caption leading-[17px] text-ink-3" numberOfLines={1}>
           {hourLabel(row.endsAt, timezone, t)}
         </Text>
@@ -756,6 +773,7 @@ function RowBone() {
     <View className="h-14 flex-row items-center">
       <View className="w-14 gap-1.5">
         <Bone className="h-3.5 w-9 rounded" />
+        <Bone className="h-2 w-3 rounded" />
         <Bone className="h-3 w-7 rounded" />
       </View>
       <Bone className="h-14 w-1.5 rounded-[3px]" />

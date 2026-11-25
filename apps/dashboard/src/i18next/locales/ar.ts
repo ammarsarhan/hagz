@@ -102,6 +102,7 @@ const ar: ArabicTranslations = {
         am: "ص",
         pm: "م",
         time: "{{time}} {{period}}",
+        to: "إلى",
         now: "الآن · {{time}}",
         played: "تم اللعب",
         noShow: "لم يحضر",
