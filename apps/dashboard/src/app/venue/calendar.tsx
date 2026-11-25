@@ -70,7 +70,10 @@ const FAB_GAP = 16;
 // day disc and dot.
 const TOP = 13;
 const TITLE_TO_STRIP = 15;
-const STRIP = 16 + 4 + 36 + 6 + 5;
+// The strip without its dots (weekday letter and day disc), and the room the dots' row adds under
+// it, with a little gap, while the week on show has any. It opens and closes as weeks change.
+const STRIP = 16 + 4 + 36;
+const DOT_ROOM = 6 + 5 + 4;
 // The title is 24 in the page and shrinks to 17 docked over the strip (user: 28 to 15 was too
 // abrupt), with this much room above the strip.
 const DOCKED_SCALE = 17 / 24;
@@ -248,7 +251,16 @@ export default function VenueCalendar() {
   // The title's 30 pt line, centred in the 40 pt row beside the round buttons.
   const titleStart = top + 5;
   const stripStart = useSharedValue(top + 40 + TITLE_TO_STRIP);
+  const weekHasDots = weekOf(weekStart).some((date) => dots.has(date));
+  const dotRoom = useSharedValue(weekHasDots ? DOT_ROOM : 0);
+  useEffect(() => {
+    dotRoom.value = withTiming(weekHasDots ? DOT_ROOM : 0, { duration: 220 });
+  }, [weekHasDots, dotRoom]);
+  const slotStyle = useAnimatedStyle(() => ({ height: STRIP + dotRoom.value }));
+  const headerHeight = useAnimatedStyle(() => ({ height: stripDock + STRIP + dotRoom.value + 10 }));
   const stripStyle = useAnimatedStyle(() => ({
+    // Cut to the room it has, so a hidden dots' row doesn't cover the chips under it.
+    height: STRIP + dotRoom.value,
     transform: [{ translateY: Math.max(stripDock, stripStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({
@@ -344,8 +356,8 @@ export default function VenueCalendar() {
         </View>
 
         {/* The strip's slot: the strip floats over it (below), so it can dock. */}
-        <View
-          style={{ height: STRIP, marginTop: TITLE_TO_STRIP }}
+        <Animated.View
+          style={[{ marginTop: TITLE_TO_STRIP }, slotStyle]}
           onLayout={(event) => {
             // Measured in the page, whose top padding it already includes.
             stripStart.value = event.nativeEvent.layout.y;
@@ -456,7 +468,7 @@ export default function VenueCalendar() {
       <Animated.View
         pointerEvents="none"
         className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
-        style={[{ height: stripDock + STRIP + 10 }, headerStyle]}
+        style={[headerHeight, headerStyle]}
       />
       <Animated.View
         pointerEvents="none"
@@ -467,7 +479,7 @@ export default function VenueCalendar() {
           {dayLabel(day, t)}
         </Text>
       </Animated.View>
-      <Animated.View className="absolute top-0 right-0 left-0" style={stripStyle}>
+      <Animated.View className="absolute top-0 right-0 left-0 overflow-hidden" style={stripStyle}>
         <WeekStrip
           start={weekStart}
           picked={day}
