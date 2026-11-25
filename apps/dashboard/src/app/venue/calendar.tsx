@@ -4,8 +4,12 @@ import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import Animated, {
+  Easing,
   FadeInDown,
   interpolate,
+  Keyframe,
+  LayoutAnimationConfig,
+  LinearTransition,
   runOnJS,
   useAnimatedReaction,
   useAnimatedRef,
@@ -63,6 +67,14 @@ const staggered = (index: number) =>
   FadeInDown.delay(Math.min(index, 12) * 35)
     .duration(260)
     .withInitialValues({ transform: [{ translateY: 12 }] });
+
+// The + coming back when a day gone by gives way to today or one to come: it fades in growing to
+// its size, and the inbox button beside it slides over to make room. Not on first showing the tab.
+const PLUS_IN = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.6 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
+}).duration(220);
+const MAKE_ROOM = LinearTransition.duration(220);
 
 // The floating + button, and its gap above the tab bar.
 const FAB = 56;
@@ -395,25 +407,28 @@ export default function VenueCalendar() {
         <View className="flex-row items-center">
           {/* The title's place: the day floats over it (below), so it can dock. */}
           <View className="flex-1" />
-          <RoundButton
-            label={
-              requests > 0
-                ? t("screens.calendar.requestsWaiting", { count: requests })
-                : t("screens.calendar.requests")
-            }
-            onPress={comingNext}
-            badge={requests}
-          >
-            <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
-          </RoundButton>
-          {pastDay ? null : (
-            <>
-              <View className="w-2" />
-              <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
-                <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
-              </RoundButton>
-            </>
-          )}
+          <Animated.View layout={MAKE_ROOM}>
+            <RoundButton
+              label={
+                requests > 0
+                  ? t("screens.calendar.requestsWaiting", { count: requests })
+                  : t("screens.calendar.requests")
+              }
+              onPress={comingNext}
+              badge={requests}
+            >
+              <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
+            </RoundButton>
+          </Animated.View>
+          <LayoutAnimationConfig skipEntering>
+            {pastDay ? null : (
+              <Animated.View entering={PLUS_IN} className="ms-2">
+                <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
+                  <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
+                </RoundButton>
+              </Animated.View>
+            )}
+          </LayoutAnimationConfig>
         </View>
 
         {/* The strip's slot: the strip floats over it (below), so it can dock. */}
@@ -576,31 +591,35 @@ export default function VenueCalendar() {
         </Pressable>
       </Animated.View>
 
-      {pastDay ? null : (
-        <Animated.View
-          pointerEvents={floating ? "auto" : "none"}
-          className="absolute"
-          style={[{ end: 20, bottom: FAB_GAP }, fabStyle]}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.calendar.add")}
-            onPress={comingNext}
-            className="items-center justify-center rounded-full bg-primary active:opacity-80"
-            style={{
-              width: FAB,
-              height: FAB,
-              shadowColor: colors.ink,
-              shadowOpacity: 0.18,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            }}
+      <LayoutAnimationConfig skipEntering>
+        {pastDay ? null : (
+          <Animated.View
+            pointerEvents={floating ? "auto" : "none"}
+            className="absolute"
+            style={[{ end: 20, bottom: FAB_GAP }, fabStyle]}
           >
-            <IconPlus size={26} color={colors.onPrimary} strokeWidth={2} />
-          </Pressable>
-        </Animated.View>
-      )}
+            <Animated.View entering={PLUS_IN}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("screens.calendar.add")}
+                onPress={comingNext}
+                className="items-center justify-center rounded-full bg-primary active:opacity-80"
+                style={{
+                  width: FAB,
+                  height: FAB,
+                  shadowColor: colors.ink,
+                  shadowOpacity: 0.18,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                }}
+              >
+                <IconPlus size={26} color={colors.onPrimary} strokeWidth={2} />
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
+        )}
+      </LayoutAnimationConfig>
 
       {/* The header the strip docks in: white, fading in as it arrives. */}
       <Animated.View
