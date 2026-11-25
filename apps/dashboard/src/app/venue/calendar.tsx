@@ -31,6 +31,7 @@ import {
   clockOf,
   dayRows,
   hourGroups,
+  occupancyIn,
   localDateOf,
   nowIndex,
   weekdayOf,
@@ -439,17 +440,22 @@ export default function VenueCalendar() {
                 >
                   {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
                 </Text>
-                {group.rows.map((row) => (
-                  <Row
-                    key={row.key}
-                    row={row}
-                    hour={group.hour}
-                    timezone={timezone}
-                    ground={groundsOf(row)}
-                    currency={slots.data?.currency ?? "EGP"}
-                    onPress={comingNext}
-                  />
-                ))}
+                <View className="flex-row">
+                  <HourBar {...occupancyIn(group.hour, rows)} over={group.rows.every(isOver)} />
+                  <View className="ms-3.5 flex-1 gap-2">
+                    {group.rows.map((row) => (
+                      <Row
+                        key={row.key}
+                        row={row}
+                        hour={group.hour}
+                        timezone={timezone}
+                        ground={groundsOf(row)}
+                        currency={slots.data?.currency ?? "EGP"}
+                        onPress={comingNext}
+                      />
+                    ))}
+                  </View>
+                </View>
               </Animated.View>,
               ...(index === groups.length - 1 && nowGroup === groups.length
                 ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
@@ -834,8 +840,9 @@ function Row({
   onPress,
 }: {
   row: CalendarRow;
-  // Under an hour heading (All grounds): no hours column; the row says its times only when it
-  // isn't exactly that hour ("till 12am", "9:30pm – 11pm").
+  // Under an hour heading (All grounds): no hours column and no bar of its own (the hour's bar
+  // stands beside the lot); the row says its times only when it isn't exactly that hour ("till
+  // 12am", "9:30pm – 11pm").
   hour?: number;
   timezone: string;
   ground: string;
@@ -882,10 +889,12 @@ function Row({
           </Text>
         </View>
       ) : null}
-      <View
-        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
-      />
-      <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
+      {hour === undefined ? (
+        <View
+          className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
+        />
+      ) : null}
+      <View className={`${hour === undefined ? "ms-3.5 " : ""}flex-1 ${wrapped ? "py-3" : "py-1"}`}>
         <Text
           className={`text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
           numberOfLines={1}
@@ -903,6 +912,28 @@ function Row({
         <Text className="ms-3 text-body leading-5 font-medium underline">{action}</Text>
       ) : null}
     </Pressable>
+  );
+}
+
+// An hour's bar on All grounds, beside its rows: solid blue for the share of the grounds taken in
+// that hour, from the top, and dashed for the share still open (user: one of three pitches booked
+// fills a third). Grey once the hour is over.
+function HourBar({ taken, open, over }: { taken: number; open: number; over: boolean }) {
+  return (
+    <View className="w-1.5 gap-0.5 self-stretch">
+      {taken > 0 ? (
+        <View
+          className={`rounded-[3px] ${over ? "bg-chip" : "bg-primary"}`}
+          style={{ flex: taken }}
+        />
+      ) : null}
+      {open > 0 ? (
+        <View
+          className={`rounded-[3px] border border-dashed bg-white ${over ? "border-border" : "border-ink-3"}`}
+          style={{ flex: open }}
+        />
+      ) : null}
+    </View>
   );
 }
 
