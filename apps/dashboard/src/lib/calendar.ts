@@ -207,6 +207,19 @@ export const nowIndex = (rows: readonly CalendarRow[], now: number) => {
   return at === -1 ? rows.length : at;
 };
 
-// The days with a booking request still to answer, for the dots under the week strip.
-export const requestDays = (pending: readonly StaffBooking[], timezone: string) =>
-  new Set(pending.map((booking) => localDateOf(booking.startsAt, timezone)));
+// The days with bookings on them, requests included, for the dots under the week strip.
+export const bookingDays = (bookings: readonly StaffBooking[], timezone: string) =>
+  new Set(bookings.map((booking) => localDateOf(booking.startsAt, timezone)));
+
+// The weekday a date falls on, 0 for Sunday.
+export const weekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
+
+// "1st", "2nd", "3rd", "11th", "22nd".
+export const ordinal = (day: number) => {
+  const tens = day % 100;
+  const suffix =
+    tens >= 11 && tens <= 13
+      ? "th"
+      : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[day % 10] ?? "th");
+  return `${day}${suffix}`;
+};
