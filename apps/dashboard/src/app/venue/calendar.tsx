@@ -483,7 +483,7 @@ export default function VenueCalendar() {
                   className={`-mx-2 self-start rounded-lg px-2 py-0.5 ${index === nowGroup ? NOW_TINT : ""}`}
                 >
                   <Text
-                    className={`text-body leading-5 font-semibold ${index === nowGroup ? NOW_TEXT : group.rows.every(isOver) ? "text-ink-3" : ""}`}
+                    className={`leading-5 font-semibold ${index === nowGroup ? `text-label ${NOW_TEXT}` : `text-body ${group.rows.every(isOver) ? "text-ink-3" : ""}`}`}
                   >
                     {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
                   </Text>
@@ -862,7 +862,8 @@ const sentenceTime = (at: string | number, timezone: string, t: T) => {
   return t("screens.calendar.time", { time, period: period(pm, t) });
 };
 
-// The time we're at: baby blue, its words in the brand blue.
+// The time we're at: baby blue, its words in the brand blue and a point smaller than elsewhere (user:
+// in a cell they read bigger), on the same line heights so nothing moves.
 const NOW_TINT = "bg-[#dce5ff]";
 const NOW_TEXT = "text-primary";
 
@@ -935,16 +936,18 @@ function Row({
         // Pulled out by its padding, so the hours line up with the other rows' either way.
         <View className={`-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1 ${current ? NOW_TINT : ""}`}>
           <Text
-            className={`text-body leading-5 ${current ? `font-semibold ${NOW_TEXT}` : ended ? "text-ink-3" : "font-semibold"}`}
+            className={`leading-5 ${current ? `text-label font-semibold ${NOW_TEXT}` : `text-body ${ended ? "text-ink-3" : "font-semibold"}`}`}
             numberOfLines={1}
           >
             {hourLabel(row.startsAt, timezone, t)}
           </Text>
-          <Text className={`text-[11px] leading-[13px] ${current ? NOW_TEXT : "text-ink-3"}`}>
+          <Text
+            className={`leading-[13px] ${current ? `text-[10px] ${NOW_TEXT}` : "text-[11px] text-ink-3"}`}
+          >
             {t("screens.calendar.to")}
           </Text>
           <Text
-            className={`text-caption leading-[17px] ${current ? NOW_TEXT : "text-ink-3"}`}
+            className={`leading-[17px] ${current ? `text-[12px] ${NOW_TEXT}` : "text-caption text-ink-3"}`}
             numberOfLines={1}
           >
             {hourLabel(row.endsAt, timezone, t)}
