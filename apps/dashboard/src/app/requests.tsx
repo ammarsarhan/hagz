@@ -1,22 +1,22 @@
 import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 import { GroupHeading } from "@/components/group-heading";
-import { useHud } from "@/components/hud";
+import { RequestSheet, type Answer } from "@/components/request-sheets";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { bookingRequests } from "@/lib/booking-requests";
-import { addDays, localDateOf, type StaffBooking } from "@/lib/calendar";
+import { localDateOf, type StaffBooking } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
-import { dayLabel, hoursSpan, sentenceTime } from "@/lib/when";
+import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 
 // Booking requests (Figma D7 round 3, 538:2), from the Calendar's inbox button: the app bookings
 // waiting for the venue's answer, grouped by the game's day ("Today", "Tomorrow", "Thu 26 Nov"),
@@ -43,7 +43,6 @@ export default function BookingRequests() {
 
 function Requests({ requests }: { requests: StaffBooking[] }) {
   const { t } = useTranslation();
-  const hud = useHud();
   // The minute, so a request past its deadline leaves and Today becomes tomorrow's Today.
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
 
@@ -62,12 +61,14 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
       }));
   }, [requests, now]);
 
-  const comingNext = () => hud.show(t("common.comingNext"));
-  const heading = (day: string, timezone: string) => {
-    const today = localDateOf(now, timezone);
-    if (day === today) return t("screens.requests.today");
-    if (day === addDays(today, 1)) return t("screens.requests.tomorrow");
-    return dayLabel(day, t);
+  // The request being answered, kept while its sheet slides away.
+  const [answering, setAnswering] = useState<{ request: StaffBooking; answer: Answer } | null>(
+    null,
+  );
+  const [open, setOpen] = useState(false);
+  const answer = (request: StaffBooking, kind: Answer) => {
+    setAnswering({ request, answer: kind });
+    setOpen(true);
   };
 
   return (
@@ -88,19 +89,32 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
         ) : (
           days.map(({ day, rows }, index) => (
             <View key={day} className={index === 0 ? "" : "mt-7"}>
-              <GroupHeading>{heading(day, rows[0]?.timezone ?? "Africa/Cairo")}</GroupHeading>
+              <GroupHeading>
+                {relativeDay(day, now, rows[0]?.timezone ?? "Africa/Cairo", t)}
+              </GroupHeading>
               {rows.map((request) => (
                 <Request
                   key={request.id}
                   request={request}
-                  onApprove={comingNext}
-                  onDecline={comingNext}
+                  onApprove={() => answer(request, "approve")}
+                  onDecline={() => answer(request, "decline")}
                 />
               ))}
             </View>
           ))
         )}
       </ScrollView>
+      {answering ? (
+        <RequestSheet
+          key={answering.request.id}
+          request={answering.request}
+          answer={answering.answer}
+          visible={open}
+          now={now}
+          onClose={() => setOpen(false)}
+          onHidden={() => setAnswering(null)}
+        />
+      ) : null}
     </Screen>
   );
 }

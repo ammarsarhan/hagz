@@ -90,6 +90,24 @@ const en = {
         MANUAL: "{{price}} · Paid at the venue",
         approve: "Approve",
         decline: "Decline",
+        // The answer sheets. A player by their first name: "Ahmed".
+        approveTitle: "Approve {{name}}’s booking?",
+        // "Today, 10 – 11 pm on Pitch 1 · 600 EGP".
+        approveWhat: "{{day}}, {{hours}} on {{ground}} · {{price}}",
+        youApprove: "You approve",
+        now: "Now",
+        paysDeposit: "{{name}} pays the {{amount}} deposit",
+        pays: "{{name}} pays {{amount}}",
+        minutes: "{{count}} min",
+        notPaid: "Not paid in time",
+        letGo: "Let go",
+        approveBooking: "Approve booking",
+        declineTitle: "Decline {{name}}’s booking?",
+        declineWhat:
+          "{{day}}, {{hours}} on {{ground}}. {{name}} is told, and the time is free to book again.",
+        reason: "Reason (optional)",
+        reasonHint: "Shown to {{name}}",
+        declineBooking: "Decline booking",
         none: "No booking requests right now.",
       },
       calendar: {

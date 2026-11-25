@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { clockOf } from "./calendar";
+import { addDays, clockOf, localDateOf } from "./calendar";
 import { intlLocale } from "./language";
 
 // How the staff app writes a day and a time at the venue's clock, shared by the Calendar and the
@@ -49,4 +49,12 @@ export const hoursSpan = (from: string, to: string, timezone: string, t: TFuncti
         from: sentenceTime(from, timezone, t),
         to: sentenceTime(to, timezone, t),
       });
+};
+
+// A game's day from where we are: "Today", "Tomorrow", or "Thu 26 Nov".
+export const relativeDay = (date: string, now: number, timezone: string, t: TFunction) => {
+  const today = localDateOf(now, timezone);
+  if (date === today) return t("screens.requests.today");
+  if (date === addDays(today, 1)) return t("screens.requests.tomorrow");
+  return dayLabel(date, t);
 };
