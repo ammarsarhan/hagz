@@ -5,17 +5,18 @@ import type { components } from "@hagz/api";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
 import { sentenceTime } from "@/lib/when";
 import { GroupHeading } from "./group-heading";
 import { useHud } from "./hud";
-import { IconCheck } from "./icons";
+import { IconArrowBackUp, IconCheck } from "./icons";
 import { Text } from "./text";
 
 // A booking's check-in (Figma D8 535:2 and 530:2, D17 642:380): who's here, out of everyone
 // expected (the booker, then joined players), and when check-in is open. Someone in has an ink disc
 // with a check and says when and how ("6:52 pm, with the code", "ticked in by name"); someone not
 // yet has their initial in a ring and, while it's open and staff may, an underlined "Check in" that
-// ticks them in by name. Once it has closed with nobody in, it just says so.
+// ticks them in by name; someone in gets a small round undo button instead, for a mistaken tick. Once it has closed with nobody in, it just says so.
 
 type CheckIn = NonNullable<components["schemas"]["StaffBookingDetail"]["checkIn"]>;
 type Person = CheckIn["people"][number];
@@ -51,6 +52,18 @@ export function CheckInSection({
       api.POST("/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins", {
         params: { path: { venueId, bookingId } },
         body: { customerId: person.customerId },
+      }),
+    );
+    if (!result.ok) hud.show(hudMessage(result.error));
+    await onChanged();
+    setTicking(null);
+  };
+
+  const undo = async (person: Person) => {
+    setTicking(person.customerId);
+    const result = await send(
+      api.DELETE("/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins/{customerId}", {
+        params: { path: { venueId, bookingId, customerId: person.customerId } },
       }),
     );
     if (!result.ok) hud.show(hudMessage(result.error));
@@ -95,6 +108,7 @@ export function CheckInSection({
                 person={person}
                 timezone={timezone}
                 onTick={open && canManage ? () => void tick(person) : undefined}
+                onUndo={open && canManage ? () => void undo(person) : undefined}
                 ticking={ticking === person.customerId}
               />
             ))}
@@ -109,11 +123,13 @@ function Row({
   person,
   timezone,
   onTick,
+  onUndo,
   ticking,
 }: {
   person: Person;
   timezone: string;
   onTick?: () => void;
+  onUndo?: () => void;
   ticking: boolean;
 }) {
   const { t } = useTranslation();
@@ -143,22 +159,36 @@ function Row({
         <Text className="text-subtitle">{person.firstName}</Text>
         <Text className="text-label text-ink-2">{how ? `${role} · ${how}` : role}</Text>
       </View>
-      {!person.checkedInAt && onTick ? (
-        ticking ? (
-          <ActivityIndicator color={colors.ink3} />
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.booking.checkIn.tickLabel", { name: person.firstName })}
-            onPress={onTick}
-            hitSlop={8}
-            className="ms-3 active:opacity-70"
-          >
-            <Text className="text-body font-medium underline">
-              {t("screens.booking.checkIn.tick")}
-            </Text>
-          </Pressable>
-        )
+      {ticking ? (
+        <ActivityIndicator style={{ marginStart: 12 }} color={colors.ink3} />
+      ) : !person.checkedInAt && onTick ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.booking.checkIn.tickLabel", { name: person.firstName })}
+          onPress={onTick}
+          hitSlop={8}
+          className="ms-3 active:opacity-70"
+        >
+          <Text className="text-body font-medium underline">
+            {t("screens.booking.checkIn.tick")}
+          </Text>
+        </Pressable>
+      ) : person.checkedInAt && onUndo ? (
+        // A small grey circle, quieter than Check in: undoing is the rare case.
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.booking.checkIn.undoLabel", { name: person.firstName })}
+          onPress={onUndo}
+          hitSlop={8}
+          className="ms-3 size-8 items-center justify-center rounded-full bg-chip active:opacity-70"
+        >
+          <IconArrowBackUp
+            size={16}
+            color={colors.ink}
+            strokeWidth={2}
+            style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+          />
+        </Pressable>
       ) : null}
     </View>
   );

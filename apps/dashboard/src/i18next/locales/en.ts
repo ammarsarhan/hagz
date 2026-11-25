@@ -95,6 +95,7 @@ const en = {
           byName: "{{time}}, ticked in by name",
           tick: "Check in",
           tickLabel: "Check {{name}} in",
+          undoLabel: "Undo {{name}}’s check-in",
         },
         price: "Price",
         chargeAmenity: "{{name}}",

@@ -107,6 +107,7 @@ const ar: ArabicTranslations = {
           byName: "{{time}}، سُجّل بالاسم",
           tick: "تسجيل الحضور",
           tickLabel: "تسجيل حضور {{name}}",
+          undoLabel: "إلغاء تسجيل حضور {{name}}",
         },
         price: "السعر",
         chargeAmenity: "{{name}}",
