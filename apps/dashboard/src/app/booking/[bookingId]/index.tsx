@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
 import { RequestBar, WeeklyBar } from "@/components/answer-bars";
-import { BookingMenu } from "@/components/booking-menu";
+import { BookingMenu, type MenuAction } from "@/components/booking-menu";
 import { cancelledMoney, cancelledSteps } from "@/components/booking-cancelled";
 import { nextSteps, showsNext } from "@/components/booking-next";
 import { CheckInSection } from "@/components/check-in-section";
@@ -153,8 +153,8 @@ function Page({
   const compact = useCompactTitle();
   // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
   const [menu, setMenu] = useState(false);
-  // What was picked, said once the sheet has slid away (move and swap come next).
-  const picked = useRef(false);
+  // What was picked, done once the sheet has slid away: Move opens its screen (swap comes next).
+  const picked = useRef<MenuAction | null>(null);
   const movable =
     canManage &&
     ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"].includes(booking.status) &&
@@ -414,11 +414,12 @@ function Page({
         visible={menu}
         onClose={() => setMenu(false)}
         onHidden={() => {
-          if (picked.current) comingNext();
-          picked.current = false;
+          if (picked.current === "move") router.push(`/booking/${booking.id}/move`);
+          else if (picked.current) comingNext();
+          picked.current = null;
         }}
-        onPick={() => {
-          picked.current = true;
+        onPick={(action) => {
+          picked.current = action;
           setMenu(false);
         }}
       />
