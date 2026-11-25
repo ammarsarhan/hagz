@@ -20,6 +20,7 @@ import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
+import { QuietDayArt } from "@/components/quiet-day-art";
 import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
@@ -370,6 +371,12 @@ export default function VenueCalendar() {
   useEffect(() => {
     if ((groundId === null ? nowGroup : nowRow) === -1) nowY.value = -1;
   }, [groundId, nowGroup, nowRow, nowY]);
+  // A day gone by with nothing booked (on the ground picked) shows the Quiet day scene instead of
+  // its spent free hours, with a way back to today. Without bookings access there's no telling.
+  const quietDay =
+    canSeeBookings &&
+    day < today &&
+    rows.every((row) => row.kind === "free" || row.kind === "closed");
   const groundsOf = (row: CalendarRow) =>
     row.kind === "free" ? row.groundIds.map(groundName).join(", ") : groundName(row.groundId);
 
@@ -467,6 +474,30 @@ export default function VenueCalendar() {
             </View>
           ) : loading ? (
             Array.from({ length: 8 }, (_, index) => <RowBone key={index} />)
+          ) : quietDay ? (
+            <Animated.View
+              key={`${shown}:quiet`}
+              entering={staggered(0)}
+              className="items-center pt-6"
+            >
+              <QuietDayArt scale={0.8} />
+              <Text
+                accessibilityRole="header"
+                className="mt-3 mb-2 text-center text-heading font-semibold"
+              >
+                {t("screens.calendar.quietTitle")}
+              </Text>
+              <Text className="text-center text-body text-ink-2">
+                {t("screens.calendar.quietBody", { day: dayLabel(day, t) })}
+              </Text>
+              <View className="mt-6 self-stretch">
+                <Button
+                  label={t("screens.calendar.goToToday")}
+                  variant="secondary"
+                  onPress={() => setPicked(null)}
+                />
+              </View>
+            </Animated.View>
           ) : groundId === null ? (
             // All grounds: under hour headings.
             groups.map((group, index) => (

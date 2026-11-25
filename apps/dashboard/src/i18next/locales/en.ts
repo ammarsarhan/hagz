@@ -109,6 +109,10 @@ const en = {
         backToNow: "Now",
         answer: "Answer",
         confirm: "Confirm",
+        // A day gone by with nothing booked.
+        quietTitle: "No bookings",
+        quietBody: "Nothing was booked for {{day}}.",
+        goToToday: "Go to today",
         offlineTitle: "You’re offline",
         offlineBody: "Check your Wi-Fi or mobile data, then try again.",
         failedTitle: "Couldn’t load the day",
