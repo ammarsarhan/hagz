@@ -127,7 +127,11 @@ export function Sheet({
               style={scrollable ? { flexShrink: 1 } : undefined}
             >
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
-              <View className="h-10 flex-row items-center justify-end">
+              {/* A scrollable sheet keeps room under this row, so the list scrolls away beneath a gap
+                  rather than straight under the title. */}
+              <View
+                className={`h-10 flex-row items-center justify-end ${scrollable ? "mb-4" : ""}`}
+              >
                 {header ? (
                   <View pointerEvents="none" className="absolute inset-x-12 items-center">
                     {header}
