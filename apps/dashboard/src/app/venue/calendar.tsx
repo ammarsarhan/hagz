@@ -68,7 +68,9 @@ const FAB_GAP = 16;
 // strip, and the strip's height: weekday letter, day disc and dot.
 const TOP = 13;
 const TITLE_TO_STRIP = 15;
-const STRIP = 16 + 4 + 36 + 6 + 5;
+// The picked date again, small, over the strip (it docks with it): its line and the gap under it.
+const DATE_LABEL = 20 + 10;
+const STRIP = DATE_LABEL + 16 + 4 + 36 + 6 + 5;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 
@@ -400,6 +402,9 @@ export default function VenueCalendar() {
         style={[{ height: dockAt + STRIP + 10 }, headerStyle]}
       />
       <Animated.View className="absolute top-0 right-0 left-0" style={stripStyle}>
+        <Text className="mb-2.5 px-5 text-body leading-5 font-semibold">
+          {dateTitle(day, today, t)}
+        </Text>
         <WeekStrip
           start={weekStart}
           picked={day}

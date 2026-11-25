@@ -90,8 +90,8 @@ const en = {
         pm: "pm",
         // In sentences: "6:55 pm".
         time: "{{time}} {{period}}",
-        // Between a row's start and end hours.
-        to: "to",
+        // Between a row's start and end hours (user: "-", not "to").
+        to: "-",
         now: "Now · {{time}}",
         played: "Played",
         noShow: "No show",
