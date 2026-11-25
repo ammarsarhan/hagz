@@ -1,5 +1,6 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -354,6 +355,11 @@ export default function VenueCalendar() {
   });
 
   const comingNext = () => hud.show(t("common.comingNext"));
+  // A booking opens its page; free and closed times wait for their own screens.
+  const openRow = (row: CalendarRow) => {
+    if (row.kind === "free" || row.kind === "closed") comingNext();
+    else router.push(`/booking/${row.booking.id}`);
+  };
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
   const showNow = day === today;
@@ -531,7 +537,7 @@ export default function VenueCalendar() {
                       timezone={timezone}
                       ground={groundsOf(row)}
                       currency={slots.data?.currency ?? "EGP"}
-                      onPress={comingNext}
+                      onPress={() => openRow(row)}
                     />
                   ))}
                 </View>
@@ -552,7 +558,7 @@ export default function VenueCalendar() {
                   ground={groundsOf(row)}
                   currency={slots.data?.currency ?? "EGP"}
                   current={index === nowRow}
-                  onPress={comingNext}
+                  onPress={() => openRow(row)}
                 />
               </Animated.View>
             ))
@@ -875,7 +881,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-type T = ReturnType<typeof useTranslation>["t"];
+type T = TFunction;
 
 // The time we're at: baby blue, its words in the brand blue and a point smaller than elsewhere (user:
 // in a cell they read bigger), on the same line heights so nothing moves.
