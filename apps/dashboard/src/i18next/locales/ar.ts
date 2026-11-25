@@ -120,7 +120,6 @@ const ar: ArabicTranslations = {
         confirm: "تأكيد",
         quietTitle: "لا توجد حجوزات",
         quietBody: "لم يُحجز شيء يوم {{day}}.",
-        goToToday: "اذهب إلى اليوم",
         offlineTitle: "أنت غير متصل",
         offlineBody: "تحقق من الواي فاي أو بيانات الهاتف، ثم حاول مرة أخرى.",
         failedTitle: "تعذر تحميل اليوم",

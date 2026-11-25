@@ -306,7 +306,9 @@ export default function VenueCalendar() {
     opacity: fab.value,
     transform: [{ scale: interpolate(fab.value, [0, 1], [0.85, 1]) }],
   }));
-  useHudAnchor(tabBar + (floating ? FAB + FAB_GAP : 0));
+  // Nothing can be added to a day gone by: no + by the title or floating on one (user).
+  const pastDay = day < today;
+  useHudAnchor(tabBar + (floating && !pastDay ? FAB + FAB_GAP : 0));
 
   // Today, once the hour we're in (its time in baby blue) has gone up under the header, a black
   // "↑ Now" pill comes in by the + and scrolls back to it. Where it sits: the rows' place in the page
@@ -372,11 +374,9 @@ export default function VenueCalendar() {
     if ((groundId === null ? nowGroup : nowRow) === -1) nowY.value = -1;
   }, [groundId, nowGroup, nowRow, nowY]);
   // A day gone by with nothing booked (on the ground picked) shows the Quiet day scene instead of
-  // its spent free hours, with a way back to today. Without bookings access there's no telling.
+  // its spent free hours. Without bookings access there's no telling.
   const quietDay =
-    canSeeBookings &&
-    day < today &&
-    rows.every((row) => row.kind === "free" || row.kind === "closed");
+    canSeeBookings && pastDay && rows.every((row) => row.kind === "free" || row.kind === "closed");
   const groundsOf = (row: CalendarRow) =>
     row.kind === "free" ? row.groundIds.map(groundName).join(", ") : groundName(row.groundId);
 
@@ -406,10 +406,14 @@ export default function VenueCalendar() {
           >
             <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
           </RoundButton>
-          <View className="w-2" />
-          <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
-            <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
-          </RoundButton>
+          {pastDay ? null : (
+            <>
+              <View className="w-2" />
+              <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
+                <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
+              </RoundButton>
+            </>
+          )}
         </View>
 
         {/* The strip's slot: the strip floats over it (below), so it can dock. */}
@@ -490,13 +494,6 @@ export default function VenueCalendar() {
               <Text className="text-center text-body text-ink-2">
                 {t("screens.calendar.quietBody", { day: dayLabel(day, t) })}
               </Text>
-              <View className="mt-6 self-stretch">
-                <Button
-                  label={t("screens.calendar.goToToday")}
-                  variant="secondary"
-                  onPress={() => setPicked(null)}
-                />
-              </View>
             </Animated.View>
           ) : groundId === null ? (
             // All grounds: under hour headings.
@@ -579,29 +576,31 @@ export default function VenueCalendar() {
         </Pressable>
       </Animated.View>
 
-      <Animated.View
-        pointerEvents={floating ? "auto" : "none"}
-        className="absolute"
-        style={[{ end: 20, bottom: FAB_GAP }, fabStyle]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("screens.calendar.add")}
-          onPress={comingNext}
-          className="items-center justify-center rounded-full bg-primary active:opacity-80"
-          style={{
-            width: FAB,
-            height: FAB,
-            shadowColor: colors.ink,
-            shadowOpacity: 0.18,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 6,
-          }}
+      {pastDay ? null : (
+        <Animated.View
+          pointerEvents={floating ? "auto" : "none"}
+          className="absolute"
+          style={[{ end: 20, bottom: FAB_GAP }, fabStyle]}
         >
-          <IconPlus size={26} color={colors.onPrimary} strokeWidth={2} />
-        </Pressable>
-      </Animated.View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("screens.calendar.add")}
+            onPress={comingNext}
+            className="items-center justify-center rounded-full bg-primary active:opacity-80"
+            style={{
+              width: FAB,
+              height: FAB,
+              shadowColor: colors.ink,
+              shadowOpacity: 0.18,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+            }}
+          >
+            <IconPlus size={26} color={colors.onPrimary} strokeWidth={2} />
+          </Pressable>
+        </Animated.View>
+      )}
 
       {/* The header the strip docks in: white, fading in as it arrives. */}
       <Animated.View
