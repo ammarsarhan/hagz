@@ -1,18 +1,26 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  RefreshControl,
   ScrollView,
   useWindowDimensions,
   View,
 } from "react-native";
-import { useHud } from "@/components/hud";
+import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHud, useHudAnchor } from "@/components/hud";
 import { IconInbox, IconPlus } from "@/components/icons";
-import { Screen } from "@/components/screen";
+import { usePullToRefresh } from "@/components/pull-to-refresh";
+import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -47,6 +55,12 @@ import { useNow } from "@/lib/use-now";
 // the tab comes back into view and every minute while it's open.
 
 const REFRESH_EVERY = 60_000;
+// From the status bar to the title row (the customer app's tabs put their title 16 below it; the
+// row is 40 for the round buttons, so 13 puts the title's 34 in the same place), the gap to the
+// strip, and the strip's height: weekday letter, day disc and dot.
+const TOP = 13;
+const TITLE_TO_STRIP = 15;
+const STRIP = 16 + 4 + 36 + 6 + 5;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 
@@ -188,117 +202,157 @@ export default function VenueCalendar() {
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
   const loading = canSeeBookings && bookings.data === undefined && !bookings.isError;
+  // It scrolls the way the customer app's Bookings and Search do: the title at the top of the page,
+  // the week strip riding up with it until it docks under the status bar, a white header fading in
+  // behind it, and pull to refresh holding a small spinner at the top.
+  const insets = useSafeAreaInsets();
+  useHudAnchor(useTabBarHeight());
+  const top = insets.top + TOP;
+  const dockAt = insets.top + 6;
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const stripStart = useSharedValue(top + 40 + TITLE_TO_STRIP);
+  const stripStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockAt, stripStart.value - scrollY.value) }],
+  }));
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(stripStart.value - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
+  }));
+
   const [refreshing, setRefreshing] = useState(false);
-  const refresh = async () => {
-    setRefreshing(true);
-    await Promise.all([bookings.refetch(), slots.refetch(), pending.refetch()]);
-    setRefreshing(false);
-  };
+  const pull = usePullToRefresh({
+    scrollY,
+    busy: refreshing,
+    onRefresh: () => {
+      setRefreshing(true);
+      void Promise.all([bookings.refetch(), slots.refetch(), pending.refetch()]).finally(() =>
+        setRefreshing(false),
+      );
+    },
+  });
 
   const comingNext = () => hud.show(t("common.comingNext"));
   const showNow = day === today;
   const nowAt = showNow ? nowIndex(rows, now) : -1;
 
   return (
-    <Screen tabbed>
-      <View className="flex-row items-center pt-[42px]">
-        <Text
-          accessibilityRole="header"
-          className="flex-1 text-title font-semibold tracking-[-0.4px]"
-        >
-          {dateTitle(day, today, t)}
-        </Text>
-        <RoundButton
-          label={
-            requests > 0
-              ? t("screens.calendar.requestsWaiting", { count: requests })
-              : t("screens.calendar.requests")
-          }
-          onPress={comingNext}
-          badge={requests}
-        >
-          <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
-        </RoundButton>
-        <View className="w-2" />
-        <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
-          <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
-        </RoundButton>
-      </View>
-
-      <WeekStrip
-        start={weekStart}
-        picked={day}
-        today={today}
-        dots={dots}
-        onPick={setPicked}
-        onWeek={(start) => setPicked(addDays(start, weekdayOf(day)))}
-      />
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        // ScrollView shrinks by default, and the list under it took its height: the chips were cut.
-        style={{ marginHorizontal: -20, marginTop: 17, flexGrow: 0, flexShrink: 0 }}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-      >
-        <Chip
-          label={t("screens.calendar.allGrounds")}
-          on={groundId === null}
-          onPress={() => setGroundId(null)}
-        />
-        {grounds.map((ground) => (
-          <Chip
-            key={ground.id}
-            label={ground.name ?? ""}
-            on={groundId === ground.id}
-            onPress={() => setGroundId(ground.id)}
-          />
-        ))}
-      </ScrollView>
-
-      <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
-
-      <ScrollView
-        style={{ marginHorizontal: -20, flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: 20,
-          paddingBottom: 24,
-          gap: 20,
-        }}
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+      <StatusBar style="dark" />
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        refreshControl={pull.control}
+        contentContainerStyle={{ paddingTop: top, paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        {loading ? (
-          <ActivityIndicator color={colors.ink3} className="mt-6" />
-        ) : rows.length === 0 && canSeeBookings && bookings.data ? (
-          <>
-            {showNow ? <NowLine at={now} timezone={timezone} /> : null}
-            <Text className="text-body text-ink-3">{t("screens.calendar.empty")}</Text>
-          </>
-        ) : (
-          rows.flatMap((row, index) => [
-            ...(index === nowAt ? [<NowLine key="now" at={now} timezone={timezone} />] : []),
-            <Row
-              key={row.key}
-              row={row}
-              timezone={timezone}
-              ground={
-                row.kind === "free"
-                  ? row.groundIds.map(groundName).join(", ")
-                  : groundName(row.groundId)
-              }
-              currency={slots.data?.currency ?? "EGP"}
-              onPress={comingNext}
-            />,
-            ...(index === rows.length - 1 && nowAt === rows.length
-              ? [<NowLine key="now" at={now} timezone={timezone} />]
-              : []),
-          ])
-        )}
-      </ScrollView>
-    </Screen>
+        <View className="flex-row items-center">
+          <Text
+            accessibilityRole="header"
+            className="flex-1 text-title font-semibold tracking-[-0.4px]"
+          >
+            {dateTitle(day, today, t)}
+          </Text>
+          <RoundButton
+            label={
+              requests > 0
+                ? t("screens.calendar.requestsWaiting", { count: requests })
+                : t("screens.calendar.requests")
+            }
+            onPress={comingNext}
+            badge={requests}
+          >
+            <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
+          </RoundButton>
+          <View className="w-2" />
+          <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
+            <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
+          </RoundButton>
+        </View>
+
+        {/* The strip's slot: the strip floats over it (below), so it can dock. */}
+        <View
+          style={{ height: STRIP, marginTop: TITLE_TO_STRIP }}
+          onLayout={(event) => {
+            stripStart.value = top + event.nativeEvent.layout.y;
+          }}
+        />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -20, marginTop: 17 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+        >
+          <Chip
+            label={t("screens.calendar.allGrounds")}
+            on={groundId === null}
+            onPress={() => setGroundId(null)}
+          />
+          {grounds.map((ground) => (
+            <Chip
+              key={ground.id}
+              label={ground.name ?? ""}
+              on={groundId === ground.id}
+              onPress={() => setGroundId(ground.id)}
+            />
+          ))}
+        </ScrollView>
+
+        <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
+
+        <View className="gap-5 pt-5">
+          {loading ? (
+            <ActivityIndicator color={colors.ink3} className="mt-6" />
+          ) : rows.length === 0 && canSeeBookings && bookings.data ? (
+            <>
+              {showNow ? <NowLine at={now} timezone={timezone} /> : null}
+              <Text className="text-body text-ink-3">{t("screens.calendar.empty")}</Text>
+            </>
+          ) : (
+            rows.flatMap((row, index) => [
+              ...(index === nowAt ? [<NowLine key="now" at={now} timezone={timezone} />] : []),
+              <Row
+                key={row.key}
+                row={row}
+                timezone={timezone}
+                ground={
+                  row.kind === "free"
+                    ? row.groundIds.map(groundName).join(", ")
+                    : groundName(row.groundId)
+                }
+                currency={slots.data?.currency ?? "EGP"}
+                onPress={comingNext}
+              />,
+              ...(index === rows.length - 1 && nowAt === rows.length
+                ? [<NowLine key="now" at={now} timezone={timezone} />]
+                : []),
+            ])
+          )}
+        </View>
+      </Animated.ScrollView>
+
+      {pull.spinner}
+
+      {/* The header the strip docks in: white, fading in as it arrives. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + STRIP + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-0 left-0" style={stripStyle}>
+        <WeekStrip
+          start={weekStart}
+          picked={day}
+          today={today}
+          dots={dots}
+          onPick={setPicked}
+          onWeek={(start) => setPicked(addDays(start, weekdayOf(day)))}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -397,7 +451,7 @@ function WeekStrip({
         shown.current = index;
         if (week && week !== start) onWeek(week);
       }}
-      style={{ marginHorizontal: -20, marginTop: 15, flexGrow: 0, flexShrink: 0, direction: "ltr" }}
+      style={{ flexGrow: 0, direction: "ltr" }}
       renderItem={({ item: week }) => (
         <Week
           start={week}
