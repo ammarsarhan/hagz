@@ -1,6 +1,6 @@
 import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
@@ -21,6 +21,7 @@ import { StepRail } from "@/components/step-rail";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
+import { bookingRequests } from "@/lib/booking-requests";
 import { localDateOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
@@ -36,6 +37,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // Still to come on this page: the Scan a code bar and the ⋯ menu.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
+type Event = components["schemas"]["BookingHistoryEvent"];
 
 const HOUR = 3_600_000;
 
@@ -89,13 +91,42 @@ export default function BookingPage() {
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const booking = useQuery(bookingQuery(venueId, bookingId));
+  const canManage = venue?.permissions.bookings === "manage";
+  // What the page reads besides the booking, read before it shows, so nothing arrives after and
+  // moves it: the history behind what happens next or a cancellation, and, for a request, the
+  // requests list its bar opens the answer sheets from. Either failing just leaves its part out.
+  const data = booking.data;
+  const history = useQuery({
+    queryKey: [...bookingKey(venueId, bookingId), "history"],
+    queryFn: async () => {
+      const result = await send(
+        api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}/history", {
+          params: { path: { venueId, bookingId }, query: { limit: 50 } },
+        }),
+      );
+      if (!result.ok) throw result.error;
+      return result.data.data;
+    },
+    enabled: data !== undefined && (showsNext(data, Date.now()) || data.status === "CANCELLED"),
+  });
+  const requests = useQuery({
+    ...bookingRequests(venueId),
+    enabled: canManage && data?.status === "PENDING",
+  });
   useRefreshWhenShown(REFRESHED);
-  if (!booking.data) return <SetupLoading query={booking} />;
+  // Only before the page first shows: once it's up, a part read later (the history, after
+  // approving it) comes in where it goes rather than the page going back to loading.
+  const shown = useRef(false);
+  if (!data) return <SetupLoading query={booking} />;
+  if (!shown.current && history.isLoading) return <SetupLoading query={history} />;
+  if (!shown.current && requests.isLoading) return <SetupLoading query={requests} />;
+  shown.current = true;
   return (
     <Page
-      booking={booking.data}
+      booking={data}
+      history={history.data ?? []}
       venueId={venueId}
-      canManage={venue?.permissions.bookings === "manage"}
+      canManage={canManage}
       refetch={booking.refetch}
     />
   );
@@ -103,11 +134,13 @@ export default function BookingPage() {
 
 function Page({
   booking,
+  history,
   venueId,
   canManage,
   refetch,
 }: {
   booking: Booking;
+  history: Event[];
   venueId: string;
   canManage: boolean;
   refetch: () => Promise<unknown>;
@@ -162,35 +195,20 @@ function Page({
   // (its history).
   const upcoming = showsNext(booking, now);
   const cancelled = booking.status === "CANCELLED" ? booking.cancelled : null;
-  const history = useQuery({
-    queryKey: [...bookingKey(venueId, booking.id), "history"],
-    queryFn: async () => {
-      const result = await send(
-        api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}/history", {
-          params: { path: { venueId, bookingId: booking.id }, query: { limit: 50 } },
-        }),
-      );
-      if (!result.ok) throw result.error;
-      return result.data.data;
-    },
-    enabled: upcoming || cancelled !== null,
-  });
-  const steps =
-    upcoming && history.data
-      ? nextSteps({ booking, history: history.data, now, t, moment, money, name: firstName })
-      : [];
-  const story =
-    cancelled && history.data
-      ? cancelledSteps({
-          booking,
-          cancelled,
-          history: history.data,
-          t,
-          moment,
-          money,
-          name: firstName,
-        })
-      : [];
+  const steps = upcoming
+    ? nextSteps({ booking, history, now, t, moment, money, name: firstName })
+    : [];
+  const story = cancelled
+    ? cancelledSteps({
+        booking,
+        cancelled,
+        history,
+        t,
+        moment,
+        money,
+        name: firstName,
+      })
+    : [];
 
   return (
     <Screen
