@@ -203,6 +203,31 @@ export const dayRows = ({
   );
 };
 
+// The start of the venue-local hour a moment falls in, in milliseconds.
+export const hourStartOf = (at: string, timezone: string) => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(at));
+  const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const time = Date.parse(at);
+  return time - (value("minute") * 60 + value("second")) * 1000 - (time % 1000);
+};
+
+// All grounds' rows under the hour each starts in (user: hour headings, so a three-hour booking
+// and the hours free beside it don't read as rows out of order). Rows come in sorted by start.
+export const hourGroups = (rows: readonly CalendarRow[], timezone: string) => {
+  const groups: { hour: number; rows: CalendarRow[] }[] = [];
+  for (const row of rows) {
+    const hour = hourStartOf(row.startsAt, timezone);
+    const last = groups.at(-1);
+    if (last && last.hour === hour) last.rows.push(row);
+    else groups.push({ hour, rows: [row] });
+  }
+  return groups;
+};
+
 // Where the now line goes in a day's rows: before the first that starts after now (the length when
 // none does). Rows already under way stay above it.
 export const nowIndex = (rows: readonly CalendarRow[], now: number) => {
