@@ -800,9 +800,10 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      // 56 at least inside 4 pt of padding top and bottom. When the grounds run onto another line
-      // (three lines in all), the row grows and its padding with it, to 12 (user).
-      className={`min-h-16 flex-row items-center active:opacity-70 ${wrapped ? "py-3" : "py-1"}`}
+      // 64 at least, the bar its full height. The padding is inside, around the words: 4 pt, or 12
+      // when the grounds run onto another line (three lines in all), so the row and its bar grow
+      // with them (user: padding, not a gap between rows).
+      className="min-h-16 flex-row items-center active:opacity-70"
     >
       <View className="w-14">
         <Text
@@ -819,7 +820,7 @@ function Row({
       <View
         className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
       />
-      <View className="ms-3.5 flex-1">
+      <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
         <Text
           className={`text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
           numberOfLines={1}
@@ -843,13 +844,13 @@ function Row({
 // A row while the day loads: the same 64 pt, so nothing jumps when the real ones arrive.
 function RowBone() {
   return (
-    <View className="h-16 flex-row items-center py-1">
+    <View className="h-16 flex-row items-center">
       <View className="w-14 gap-1.5">
         <Bone className="h-3.5 w-9 rounded" />
         <Bone className="h-2 w-3 rounded" />
         <Bone className="h-3 w-7 rounded" />
       </View>
-      <Bone className="h-14 w-1.5 rounded-[3px]" />
+      <Bone className="h-16 w-1.5 rounded-[3px]" />
       <View className="ms-3.5 flex-1 gap-2">
         <Bone className="h-4 w-32 rounded" />
         <Bone className="h-3.5 w-48 rounded" />
