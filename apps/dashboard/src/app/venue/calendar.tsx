@@ -201,6 +201,7 @@ export default function VenueCalendar() {
       <WeekStrip
         start={weekStart}
         picked={day}
+        today={today}
         dots={dots}
         onPick={setPicked}
         onWeek={(weeks) => setPicked(addDays(day, weeks * 7))}
@@ -255,7 +256,12 @@ export default function VenueCalendar() {
               key={row.key}
               row={row}
               timezone={timezone}
-              ground={groundName(row.groundId)}
+              ground={
+                row.kind === "free"
+                  ? row.groundIds.map(groundName).join(", ")
+                  : groundName(row.groundId)
+              }
+              currency={slots.data?.currency ?? "EGP"}
               onPress={comingNext}
             />,
             ...(index === rows.length - 1 && nowAt === rows.length
@@ -303,17 +309,19 @@ function RoundButton({
   );
 }
 
-// S to S, the picked day in an ink disc and a dot under each day with a request to answer. A swipe
+// S to S, the picked day in an ink disc, today in a grey one when it isn't picked, and a dot under each day with a request to answer. A swipe
 // goes a week back or on; in Arabic the strip runs right to left, so the swipe does too.
 function WeekStrip({
   start,
   picked,
+  today,
   dots,
   onPick,
   onWeek,
 }: {
   start: string;
   picked: string;
+  today: string;
   dots: ReadonlySet<string>;
   onPick: (date: string) => void;
   onWeek: (weeks: number) => void;
@@ -354,7 +362,7 @@ function WeekStrip({
             >
               <Text className="text-[12px] leading-4 text-ink-3">{letter.format(at)}</Text>
               <View
-                className={`mt-1 size-9 items-center justify-center rounded-full ${on ? "bg-ink" : ""}`}
+                className={`mt-1 size-9 items-center justify-center rounded-full ${on ? "bg-ink" : date === today ? "bg-chip" : ""}`}
               >
                 <Text
                   className={`text-[17px] leading-5 ${on ? "font-semibold text-white" : "text-ink"}`}
@@ -411,8 +419,10 @@ const sentenceTime = (at: string | number, timezone: string, t: T) => {
   return t("screens.calendar.time", { time, period: period(pm, t) });
 };
 
-// The bar beside a row: its look says where the booking stands (lib/calendar.ts, RowKind).
+// The bar beside a row: its look says where the booking stands (lib/calendar.ts, RowKind). A free
+// hour's is dashed, as everywhere in the staff app for what isn't there yet.
 const BAR: Record<CalendarRow["kind"], string> = {
+  free: "border border-dashed border-ink-3 bg-white",
   ended: "bg-chip",
   closed: "bg-chip",
   confirmed: "bg-primary",
@@ -428,16 +438,23 @@ function Row({
   row,
   timezone,
   ground,
+  currency,
   onPress,
 }: {
   row: CalendarRow;
   timezone: string;
   ground: string;
+  currency: string;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const ended = row.kind === "ended";
-  const title = row.kind === "closed" ? t("screens.calendar.closed") : row.booking.customer.name;
+  const ended = row.kind === "ended" || (row.kind === "free" && row.ended);
+  const title =
+    row.kind === "closed"
+      ? t("screens.calendar.closed")
+      : row.kind === "free"
+        ? t("screens.calendar.free")
+        : row.booking.customer.name;
   const action =
     row.kind === "request"
       ? t("screens.calendar.answer")
@@ -462,7 +479,9 @@ function Row({
           {hourLabel(row.endsAt, timezone, t)}
         </Text>
       </View>
-      <View className={`h-10 w-1.5 rounded-[3px] ${BAR[row.kind]}`} />
+      <View
+        className={`h-10 w-1.5 rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
+      />
       <View className="ms-3.5 flex-1 self-start" style={{ marginTop: -2 }}>
         <Text
           className={`text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
@@ -471,7 +490,7 @@ function Row({
           {title}
         </Text>
         <Text className="text-label leading-[19px] text-ink-2" numberOfLines={1}>
-          {[ground, ...standing(row, timezone, t)].filter(Boolean).join(" · ")}
+          {[ground, ...standing(row, timezone, currency, t)].filter(Boolean).join(" · ")}
         </Text>
       </View>
       {action ? (
@@ -481,12 +500,16 @@ function Row({
   );
 }
 
-// What follows the ground on a row's second line: "Played", "Held till 6:55 pm", "Weekly · 600
+// What follows the ground on a row's second line: "600 EGP" for a free hour still to come, "Played", "Held till 6:55 pm", "Weekly · 600
 // EGP", "App · 600 EGP", "Walk-in · 1,200 EGP".
-const standing = (row: CalendarRow, timezone: string, t: T): string[] => {
+const priced = (minor: number, currency: string) =>
+  `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
+
+const standing = (row: CalendarRow, timezone: string, currency: string, t: T): string[] => {
   if (row.kind === "closed") return [];
+  if (row.kind === "free") return row.ended ? [] : [priced(row.price, currency)];
   const { booking } = row;
-  const price = `${formatAmount(booking.total, decimalsOf(booking.currency))} ${booking.currency}`;
+  const price = priced(booking.total, booking.currency);
   if (booking.status === "COMPLETED") return [t("screens.calendar.played")];
   if (booking.status === "NO_SHOW") return [t("screens.calendar.noShow")];
   if (row.kind === "ended") return [t("screens.calendar.played")];
