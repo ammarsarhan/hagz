@@ -36,6 +36,7 @@ const customerNotFound = () =>
 export const staffSelect = {
   ...summarySelect,
   expiresAt: true,
+  regularId: true,
   listing: { select: { status: true, playerCount: true } },
 } as const;
 const select = staffSelect;
@@ -48,12 +49,14 @@ export const isHold = (booking: { status: string; creatorId: string | null }) =>
 export const presentStaff = (
   row: Parameters<typeof presentSummary>[0] & {
     expiresAt: Date | null;
+    regularId: string | null;
     listing: { status: string; playerCount: number } | null;
   },
 ) => ({
   ...presentSummary(row),
   expiresAt: row.expiresAt?.toISOString() ?? null,
   hold: isHold(row),
+  regular: row.regularId !== null,
   openGame:
     row.listing?.status === "OPEN" && row.listing.playerCount > 0
       ? { players: row.listing.playerCount }

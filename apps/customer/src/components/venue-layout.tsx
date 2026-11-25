@@ -308,7 +308,13 @@ export function VenueLayout({
   });
 
   return (
-    <View onLayout={(event) => setRoom(event.nativeEvent.layout.width)}>
+    // Left to right in Arabic too: the drawing isn't mirrored, so the buttons, icons and entrance
+    // tags laid over it with `left` mustn't be either (in a right-to-left app React Native swaps
+    // `left` for the right edge, which put each ground's button over another ground).
+    <View
+      style={{ direction: "ltr" }}
+      onLayout={(event) => setRoom(event.nativeEvent.layout.width)}
+    >
       <View
         className="self-center rounded-[6px] bg-[#f6f7f8] p-3"
         style={room > 0 ? { width: width + around } : { alignSelf: "stretch" }}

@@ -89,7 +89,9 @@ describe("regulars", () => {
     expect(made.reservations.map((booking) => booking.startsAt)).toEqual(
       starts.map((start) => start.toISOString()),
     );
-    expect(made.reservations.every((booking) => booking.status === "UNCONFIRMED")).toBe(true);
+    expect(
+      made.reservations.every((booking) => booking.status === "UNCONFIRMED" && booking.regular),
+    ).toBe(true);
     const first = await prisma.booking.findFirstOrThrow({
       where: { regularId: made.id, startsAt: starts[0] },
       include: { slots: true },

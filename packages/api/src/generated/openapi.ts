@@ -18987,6 +18987,8 @@ export interface components {
             expiresAt: string | null;
             /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
             hold: boolean;
+            /** @description One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed). */
+            regular: boolean;
             /** @description An open game: how many players to expect besides the booker. */
             openGame: {
                 players: number;

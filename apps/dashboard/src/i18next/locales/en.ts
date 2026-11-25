@@ -75,6 +75,38 @@ const en = {
       },
     },
     screens: {
+      calendar: {
+        title: "Calendar",
+        monthYear: "{{month}} {{year}}",
+        day: "{{weekday}} {{day}}",
+        requests: "Booking requests",
+        requestsWaiting_one: "{{count}} booking request",
+        requestsWaiting_other: "{{count}} booking requests",
+        add: "New booking or hold",
+        allGrounds: "All grounds",
+        // The hour column: "4pm", "10:30pm".
+        hour: "{{time}}{{period}}",
+        am: "am",
+        pm: "pm",
+        // In sentences: "6:55 pm".
+        time: "{{time}} {{period}}",
+        // Between a row's start and end hours (user: "-", not "to").
+        to: "-",
+        now: "Now · {{time}}",
+        played: "Played",
+        noShow: "No show",
+        app: "App",
+        walkIn: "Walk-in",
+        weekly: "Weekly",
+        openGame: "Open game, {{count}} coming",
+        heldTill: "Held till {{time}}",
+        payingTill: "Paying till {{time}}",
+        closed: "Closed by you",
+        free: "Free",
+        answer: "Answer",
+        confirm: "Confirm",
+        empty: "Nothing booked on this day.",
+      },
       account: {
         open: "Your account",
         security: "Security",
