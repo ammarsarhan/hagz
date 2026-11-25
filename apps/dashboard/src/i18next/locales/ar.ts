@@ -91,7 +91,7 @@ const ar: ArabicTranslations = {
     screens: {
       calendar: {
         title: "التقويم",
-        day: "{{weekday}} {{day}}",
+        day: "{{weekday}} {{day}} {{month}}",
         requests: "طلبات الحجز",
         requestsWaiting_one: "طلب حجز واحد",
         requestsWaiting_other: "{{count}} طلبات حجز",

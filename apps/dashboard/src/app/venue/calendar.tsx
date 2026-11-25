@@ -32,7 +32,6 @@ import {
   dayRows,
   localDateOf,
   nowIndex,
-  ordinal,
   weekdayOf,
   weekOf,
   weekStartOf,
@@ -729,14 +728,18 @@ function NowLine({ at, timezone }: { at: number; timezone: string }) {
 
 type T = ReturnType<typeof useTranslation>["t"];
 
-// The title: the picked day, "Wednesday 25th".
+// The title: the picked day, short (user): "Wed 25 Nov", the way the customer app writes a day.
 const dayLabel = (date: string, t: T) => {
   const at = new Date(`${date}T12:00:00Z`);
-  const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" }).format(
-    at,
-  );
-  const day = at.getUTCDate();
-  return t("screens.calendar.day", { weekday, day: isRTL ? String(day) : ordinal(day) });
+  const part = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", ...options })
+      .format(at)
+      .replace(/[.,]/g, "");
+  return t("screens.calendar.day", {
+    weekday: part({ weekday: "short" }),
+    day: at.getUTCDate(),
+    month: part({ month: "short" }),
+  });
 };
 
 const period = (pm: boolean, t: T) => t(pm ? "screens.calendar.pm" : "screens.calendar.am");
