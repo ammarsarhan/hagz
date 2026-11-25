@@ -416,7 +416,9 @@ export default function VenueCalendar() {
         refreshControl={pull.control}
         contentContainerStyle={{ paddingTop: top, paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        <View className="flex-row items-center">
+        {/* As tall as its round buttons even with neither showing (a past day at a venue that
+            confirms at once), so the floating day still has its place. */}
+        <View className="h-10 flex-row items-center">
           {/* The title's place: the day floats over it (below), so it can dock. */}
           <View className="flex-1" />
           {showsInbox ? (
