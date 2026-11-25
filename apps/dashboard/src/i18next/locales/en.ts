@@ -91,6 +91,9 @@ const en = {
         time: "{{time}} {{period}}",
         // Between a row's start and end hours (user: "-", not "to").
         to: "-",
+        // Under an hour heading, a row that isn't exactly that hour.
+        till: "till {{time}}",
+        span: "{{from}} – {{to}}",
         now: "Now · {{time}}",
         played: "Played",
         noShow: "No show",

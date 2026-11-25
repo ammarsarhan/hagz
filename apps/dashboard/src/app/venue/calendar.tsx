@@ -30,6 +30,7 @@ import {
   bookingDays,
   clockOf,
   dayRows,
+  hourGroups,
   localDateOf,
   nowIndex,
   weekdayOf,
@@ -323,6 +324,16 @@ export default function VenueCalendar() {
   const shown = `${day}:${groundId ?? "all"}`;
   const showNow = day === today;
   const nowAt = showNow ? nowIndex(rows, now) : -1;
+  const groups = useMemo(() => hourGroups(rows, timezone), [rows, timezone]);
+  // Before the first hour still to start.
+  const nowGroup = showNow
+    ? (() => {
+        const at = groups.findIndex((group) => group.hour > now);
+        return at === -1 ? groups.length : at;
+      })()
+    : -1;
+  const groundsOf = (row: CalendarRow) =>
+    row.kind === "free" ? row.groundIds.map(groundName).join(", ") : groundName(row.groundId);
 
   return (
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
@@ -412,6 +423,38 @@ export default function VenueCalendar() {
             </View>
           ) : loading ? (
             Array.from({ length: 8 }, (_, index) => <RowBone key={index} />)
+          ) : groundId === null ? (
+            // All grounds: under hour headings, the now line between the hours begun and to come.
+            groups.flatMap((group, index) => [
+              ...(index === nowGroup
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                : []),
+              <Animated.View
+                key={`${shown}:${group.hour}`}
+                entering={staggered(index)}
+                className="gap-2"
+              >
+                <Text
+                  className={`text-body leading-5 font-semibold ${group.rows.every(isOver) ? "text-ink-3" : ""}`}
+                >
+                  {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
+                </Text>
+                {group.rows.map((row) => (
+                  <Row
+                    key={row.key}
+                    row={row}
+                    hour={group.hour}
+                    timezone={timezone}
+                    ground={groundsOf(row)}
+                    currency={slots.data?.currency ?? "EGP"}
+                    onPress={comingNext}
+                  />
+                ))}
+              </Animated.View>,
+              ...(index === groups.length - 1 && nowGroup === groups.length
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
+                : []),
+            ])
           ) : (
             rows.flatMap((row, index) => [
               ...(index === nowAt
@@ -421,11 +464,7 @@ export default function VenueCalendar() {
                 <Row
                   row={row}
                   timezone={timezone}
-                  ground={
-                    row.kind === "free"
-                      ? row.groundIds.map(groundName).join(", ")
-                      : groundName(row.groundId)
-                  }
+                  ground={groundsOf(row)}
                   currency={slots.data?.currency ?? "EGP"}
                   onPress={comingNext}
                 />
@@ -783,14 +822,21 @@ const BAR: Record<CalendarRow["kind"], string> = {
 
 // One booking or closed stretch: its hours, the bar, who it's for and how it stands, and the one
 // thing to do about it when there is one (answer a request, confirm a weekly game).
+// Over: played, gone by, or a free hour that has passed.
+const isOver = (row: CalendarRow) => row.kind === "ended" || (row.kind === "free" && row.ended);
+
 function Row({
   row,
+  hour,
   timezone,
   ground,
   currency,
   onPress,
 }: {
   row: CalendarRow;
+  // Under an hour heading (All grounds): no hours column; the row says its times only when it
+  // isn't exactly that hour ("till 12am", "9:30pm – 11pm").
+  hour?: number;
   timezone: string;
   ground: string;
   currency: string;
@@ -798,7 +844,8 @@ function Row({
 }) {
   const { t } = useTranslation();
   const [wrapped, setWrapped] = useState(false);
-  const ended = row.kind === "ended" || (row.kind === "free" && row.ended);
+  const ended = isOver(row);
+  const timing = hour === undefined ? null : timingIn(row, hour, timezone, t);
   const title =
     row.kind === "closed"
       ? t("screens.calendar.closed")
@@ -821,18 +868,20 @@ function Row({
       // with them (user: padding, not a gap between rows).
       className="min-h-16 flex-row items-center active:opacity-70"
     >
-      <View className="w-14">
-        <Text
-          className={`text-body leading-5 ${ended ? "text-ink-3" : "font-semibold"}`}
-          numberOfLines={1}
-        >
-          {hourLabel(row.startsAt, timezone, t)}
-        </Text>
-        <Text className="text-[11px] leading-[13px] text-ink-3">{t("screens.calendar.to")}</Text>
-        <Text className="text-caption leading-[17px] text-ink-3" numberOfLines={1}>
-          {hourLabel(row.endsAt, timezone, t)}
-        </Text>
-      </View>
+      {hour === undefined ? (
+        <View className="w-14">
+          <Text
+            className={`text-body leading-5 ${ended ? "text-ink-3" : "font-semibold"}`}
+            numberOfLines={1}
+          >
+            {hourLabel(row.startsAt, timezone, t)}
+          </Text>
+          <Text className="text-[11px] leading-[13px] text-ink-3">{t("screens.calendar.to")}</Text>
+          <Text className="text-caption leading-[17px] text-ink-3" numberOfLines={1}>
+            {hourLabel(row.endsAt, timezone, t)}
+          </Text>
+        </View>
+      ) : null}
       <View
         className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
       />
@@ -847,7 +896,7 @@ function Row({
           className="text-label leading-[19px] text-ink-2"
           onTextLayout={(event) => setWrapped(event.nativeEvent.lines.length > 1)}
         >
-          {[ground, ...standing(row, timezone, currency, t)].filter(Boolean).join(" · ")}
+          {[ground, timing, ...standing(row, timezone, currency, t)].filter(Boolean).join(" · ")}
         </Text>
       </View>
       {action ? (
@@ -856,6 +905,21 @@ function Row({
     </Pressable>
   );
 }
+
+// Under an hour heading: nothing when the row is that hour exactly, "till 12am" when it starts on
+// it and runs longer or shorter, "9:30pm – 11pm" when it starts inside it.
+const HOUR = 3_600_000;
+const timingIn = (row: CalendarRow, hour: number, timezone: string, t: T) => {
+  const start = Date.parse(row.startsAt);
+  const end = Date.parse(row.endsAt);
+  if (start === hour && end - start === HOUR) return null;
+  if (start === hour)
+    return t("screens.calendar.till", { time: sentenceTime(row.endsAt, timezone, t) });
+  return t("screens.calendar.span", {
+    from: sentenceTime(row.startsAt, timezone, t),
+    to: sentenceTime(row.endsAt, timezone, t),
+  });
+};
 
 // A row while the day loads: the same 64 pt, so nothing jumps when the real ones arrive.
 function RowBone() {
