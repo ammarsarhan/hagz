@@ -1,13 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
-import { colors } from "@/lib/colors";
+import { BarButton, BottomBar } from "./bottom-bar";
 import { useHud } from "./hud";
-import { Text } from "./text";
 
 // How an ended game went, pinned at the bottom (Figma D8 530:2, D17 642:380; user, 2026-11-25: a
 // bar, not a toggle mid-page): what it's marked as on the left with until when it can change, and
@@ -56,33 +54,15 @@ export function OutcomeBar({
   };
 
   return (
-    <View>
-      <View className="-mx-5 -mt-3 mb-3 h-px bg-border" />
-      <View className="flex-row items-center">
-        <View className="flex-1">
-          <Text className="text-subtitle">
-            {t(played ? "screens.booking.outcome.played" : "screens.booking.outcome.noShow")}
-          </Text>
-          <Text className="text-caption text-ink-2">
-            {t("screens.booking.outcome.until", { time: until })}
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ busy: sending }}
-          disabled={sending}
-          onPress={() => void flip()}
-          className="ms-3 h-12 min-w-28 items-center justify-center rounded-full border border-border bg-white px-5 active:opacity-70"
-        >
-          {sending ? (
-            <ActivityIndicator color={colors.ink3} />
-          ) : (
-            <Text className="text-body font-medium">
-              {t(played ? "screens.booking.outcome.noShow" : "screens.booking.outcome.played")}
-            </Text>
-          )}
-        </Pressable>
-      </View>
-    </View>
+    <BottomBar
+      title={t(played ? "screens.booking.outcome.played" : "screens.booking.outcome.noShow")}
+      detail={t("screens.booking.outcome.until", { time: until })}
+    >
+      <BarButton
+        label={t(played ? "screens.booking.outcome.noShow" : "screens.booking.outcome.played")}
+        busy={sending}
+        onPress={() => void flip()}
+      />
+    </BottomBar>
   );
 }
