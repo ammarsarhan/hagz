@@ -109,6 +109,10 @@ const en = {
         priceRange: "{{from}} – {{to}}",
         answer: "Answer",
         confirm: "Confirm",
+        // The end of the day: the next day and how many bookings it has.
+        nextDay_zero: "No bookings",
+        nextDay_one: "{{count}} booking",
+        nextDay_other: "{{count}} bookings",
         offlineTitle: "You’re offline",
         offlineBody: "Check your Wi-Fi or mobile data, then try again.",
         failedTitle: "Couldn’t load the day",

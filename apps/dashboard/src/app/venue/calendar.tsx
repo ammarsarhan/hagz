@@ -19,7 +19,7 @@ import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
-import { IconInbox, IconPlus } from "@/components/icons";
+import { IconChevronRight, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
@@ -225,6 +225,22 @@ export default function VenueCalendar() {
   const dots = useMemo(
     () => bookingDays([...(bookings.data ?? []), ...around, ...(pending.data ?? [])], timezone),
     [bookings.data, around, pending.data, timezone],
+  );
+  // The next day, for the line at the end of this one, and its bookings on the ground picked (it may
+  // fall in next week, read already for the strip's dots).
+  const nextDay = addDays(day, 1);
+  const nextDayBookings = useMemo(
+    () =>
+      dayRows({
+        date: nextDay,
+        timezone,
+        bookings: [...(bookings.data ?? []), ...around],
+        slots: [],
+        groundOrder: [],
+        groundId,
+        now,
+      }).filter((row) => row.kind !== "free" && row.kind !== "closed").length,
+    [nextDay, timezone, bookings.data, around, groundId, now],
   );
   const requests = pending.data?.length ?? 0;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
@@ -476,6 +492,14 @@ export default function VenueCalendar() {
                 ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
                 : []),
             ])
+          )}
+          {dayFailure || loading ? null : (
+            <NextDay
+              key={`${shown}:next`}
+              label={dayLabel(nextDay, t)}
+              count={canSeeBookings ? nextDayBookings : null}
+              onPress={() => setPicked(nextDay)}
+            />
           )}
         </View>
       </Animated.ScrollView>
@@ -780,6 +804,41 @@ function NowLine({ at, timezone }: { at: number; timezone: string }) {
         {t("screens.calendar.now", { time: sentenceTime(at, timezone, t) })}
       </Text>
       <View className="h-[1.5px] flex-1 bg-ink-3" />
+    </View>
+  );
+}
+
+// The end of the day: a line, then the next day and how many bookings it has, which picks it.
+// Without bookings access, just the day.
+function NextDay({
+  label,
+  count,
+  onPress,
+}: {
+  label: string;
+  count: number | null;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View className="mt-2 border-t border-border">
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        className="h-14 flex-row items-center active:opacity-70"
+      >
+        <Text className="flex-1 text-body font-medium">{label}</Text>
+        {count === null ? null : (
+          <Text className="text-label text-ink-2">
+            {t("screens.calendar.nextDay", { count })}
+          </Text>
+        )}
+        <IconChevronRight
+          size={16}
+          color={colors.ink3}
+          style={{ marginStart: 4, transform: isRTL ? [{ scaleX: -1 }] : undefined }}
+        />
+      </Pressable>
     </View>
   );
 }
