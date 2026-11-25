@@ -61,6 +61,7 @@ describe("the calendar", () => {
       status: "PENDING",
       source: "APP",
       hold: false,
+      regular: false,
       customer: { phone: "+201001234567" },
       ground: { id: ground.id, name: "Pitch 1" },
     });

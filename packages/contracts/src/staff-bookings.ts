@@ -35,6 +35,9 @@ export const StaffBooking = AdminBooking.extend({
   hold: z.boolean().meta({
     description: "A staff hold: `HELD` slots kept for someone deciding, with no payment due.",
   }),
+  regular: z.boolean().meta({
+    description: "One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed).",
+  }),
   openGame: z
     .object({ players: z.int() })
     .nullable()
