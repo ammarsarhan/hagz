@@ -8,6 +8,7 @@ import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from "reac
 import Animated, {
   Easing,
   FadeIn,
+  FadeOut,
   FadeInDown,
   interpolate,
   Keyframe,
@@ -80,8 +81,10 @@ const PLUS_IN = new Keyframe({
   100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
 }).duration(220);
 const MAKE_ROOM = LinearTransition.duration(220);
-// The inbox, appearing once a venue's settings say it approves bookings (switching to one).
+// The inbox, appearing once a venue's settings say it approves bookings (switching to one), and
+// going the same way to one that confirms at once.
 const INBOX_IN = FadeIn.duration(220);
+const INBOX_OUT = FadeOut.duration(220);
 
 // The floating + button, and its gap above the tab bar.
 const FAB = 56;
@@ -417,7 +420,7 @@ export default function VenueCalendar() {
           {/* The title's place: the day floats over it (below), so it can dock. */}
           <View className="flex-1" />
           {showsInbox ? (
-            <Animated.View entering={INBOX_IN} layout={MAKE_ROOM}>
+            <Animated.View entering={INBOX_IN} exiting={INBOX_OUT} layout={MAKE_ROOM}>
               <RoundButton
                 label={
                   requests > 0
