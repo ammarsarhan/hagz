@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   ScrollView,
@@ -12,11 +11,15 @@ import {
 } from "react-native";
 import Animated, {
   interpolate,
+  runOnJS,
+  useAnimatedReaction,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Bone } from "@/components/bone";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
@@ -55,6 +58,9 @@ import { useNow } from "@/lib/use-now";
 // the tab comes back into view and every minute while it's open.
 
 const REFRESH_EVERY = 60_000;
+// The floating + button, and its gap above the tab bar.
+const FAB = 56;
+const FAB_GAP = 16;
 // From the status bar to the title row (the customer app's tabs put their title 16 below it; the
 // row is 40 for the round buttons, so 13 puts the title's 34 in the same place), the gap to the
 // strip, and the strip's height: weekday letter, day disc and dot.
@@ -201,12 +207,15 @@ export default function VenueCalendar() {
   const requests = pending.data?.length ?? 0;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
-  const loading = canSeeBookings && bookings.data === undefined && !bookings.isError;
+  // Until the week's bookings and its free hours are both in.
+  const loading =
+    (canSeeBookings && bookings.data === undefined && !bookings.isError) ||
+    (canSeeSchedule && slots.data === undefined && !slots.isError);
   // It scrolls the way the customer app's Bookings and Search do: the title at the top of the page,
   // the week strip riding up with it until it docks under the status bar, a white header fading in
   // behind it, and pull to refresh holding a small spinner at the top.
   const insets = useSafeAreaInsets();
-  useHudAnchor(useTabBarHeight());
+  const tabBar = useTabBarHeight();
   const top = insets.top + TOP;
   const dockAt = insets.top + 6;
   const scrollY = useSharedValue(0);
@@ -220,6 +229,24 @@ export default function VenueCalendar() {
   const headerStyle = useAnimatedStyle(() => ({
     opacity: interpolate(stripStart.value - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
   }));
+
+  // Once the title's + has scrolled away, a blue one floats in the bottom corner, fading in as the
+  // strip docks and out as it leaves. The HUD sits above it while it shows.
+  const [floating, setFloating] = useState(false);
+  const fab = useSharedValue(0);
+  useAnimatedReaction(
+    () => stripStart.value - scrollY.value <= dockAt,
+    (docked, before) => {
+      if (docked === before) return;
+      fab.value = withTiming(docked ? 1 : 0, { duration: 180 });
+      runOnJS(setFloating)(docked);
+    },
+  );
+  const fabStyle = useAnimatedStyle(() => ({
+    opacity: fab.value,
+    transform: [{ scale: interpolate(fab.value, [0, 1], [0.85, 1]) }],
+  }));
+  useHudAnchor(tabBar + (floating ? FAB + FAB_GAP : 0));
 
   const [refreshing, setRefreshing] = useState(false);
   const pull = usePullToRefresh({
@@ -304,9 +331,9 @@ export default function VenueCalendar() {
 
         <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
 
-        <View className="gap-5 pt-5">
+        <View className="gap-4 pt-5">
           {loading ? (
-            <ActivityIndicator color={colors.ink3} className="mt-6" />
+            Array.from({ length: 8 }, (_, index) => <RowBone key={index} />)
           ) : rows.length === 0 && canSeeBookings && bookings.data ? (
             <>
               {showNow ? <NowLine at={now} timezone={timezone} /> : null}
@@ -336,6 +363,30 @@ export default function VenueCalendar() {
       </Animated.ScrollView>
 
       {pull.spinner}
+
+      <Animated.View
+        pointerEvents={floating ? "auto" : "none"}
+        className="absolute"
+        style={[{ end: 20, bottom: FAB_GAP }, fabStyle]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.calendar.add")}
+          onPress={comingNext}
+          className="items-center justify-center rounded-full bg-primary active:opacity-80"
+          style={{
+            width: FAB,
+            height: FAB,
+            shadowColor: colors.ink,
+            shadowOpacity: 0.18,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          }}
+        >
+          <IconPlus size={26} color={colors.onPrimary} strokeWidth={2} />
+        </Pressable>
+      </Animated.View>
 
       {/* The header the strip docks in: white, fading in as it arrives. */}
       <Animated.View
@@ -453,6 +504,8 @@ function WeekStrip({
         if (week && week !== start) onWeek(week);
       }}
       style={{ flexGrow: 0, direction: "ltr" }}
+      // A FlatList only redraws its pages when its data changes: these change on their own.
+      extraData={[picked, today, dots]}
       renderItem={({ item: week }) => (
         <Week
           start={week}
@@ -618,9 +671,9 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="h-10 flex-row items-center active:opacity-70"
+      className="h-14 flex-row items-center active:opacity-70"
     >
-      <View className="w-14 self-start">
+      <View className="w-14">
         <Text
           className={`text-body leading-5 ${ended ? "text-ink-3" : "font-semibold"}`}
           numberOfLines={1}
@@ -632,9 +685,9 @@ function Row({
         </Text>
       </View>
       <View
-        className={`h-10 w-1.5 rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
+        className={`h-14 w-1.5 rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
       />
-      <View className="ms-3.5 flex-1 self-start" style={{ marginTop: -2 }}>
+      <View className="ms-3.5 flex-1">
         <Text
           className={`text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
           numberOfLines={1}
@@ -649,6 +702,23 @@ function Row({
         <Text className="ms-3 text-body leading-5 font-medium underline">{action}</Text>
       ) : null}
     </Pressable>
+  );
+}
+
+// A row while the day loads: the same 56 pt, so nothing jumps when the real ones arrive.
+function RowBone() {
+  return (
+    <View className="h-14 flex-row items-center">
+      <View className="w-14 gap-1.5">
+        <Bone className="h-3.5 w-9 rounded" />
+        <Bone className="h-3 w-7 rounded" />
+      </View>
+      <Bone className="h-14 w-1.5 rounded-[3px]" />
+      <View className="ms-3.5 flex-1 gap-2">
+        <Bone className="h-4 w-32 rounded" />
+        <Bone className="h-3.5 w-48 rounded" />
+      </View>
+    </View>
   );
 }
 
