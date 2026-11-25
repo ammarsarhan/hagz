@@ -1,6 +1,7 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import Animated, {
@@ -403,7 +404,7 @@ export default function VenueCalendar() {
                   ? t("screens.calendar.requestsWaiting", { count: requests })
                   : t("screens.calendar.requests")
               }
-              onPress={comingNext}
+              onPress={() => router.push("/requests")}
               badge={requests}
             >
               <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
