@@ -75,6 +75,8 @@ export function VenueSwitcher({
         after.current = null;
       }}
       closeLabel={t("components.venueSwitcher.close")}
+      // Ten venues outgrow the screen (user): at 75% the list scrolls.
+      scrollable
       header={
         <Text accessibilityRole="header" className="text-subtitle font-semibold">
           {t("components.venueSwitcher.title")}
