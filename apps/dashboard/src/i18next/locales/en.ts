@@ -75,6 +75,23 @@ const en = {
       },
     },
     screens: {
+      requests: {
+        title: "Booking requests",
+        subtitle: "Bookings you approve yourself. One you don’t answer in time is let go.",
+        today: "Today",
+        tomorrow: "Tomorrow",
+        // The answer's deadline: "By 9 pm".
+        by: "By {{time}}",
+        // "Pitch 1 · 5-a-side".
+        ground: "{{ground}} · {{kind}}",
+        // How it's paid, after the price.
+        DEPOSIT: "{{price}} · {{deposit}} deposit online",
+        PLATFORM: "{{price}} · Paid online",
+        MANUAL: "{{price}} · Paid at the venue",
+        approve: "Approve",
+        decline: "Decline",
+        none: "No booking requests right now.",
+      },
       calendar: {
         title: "Calendar",
         day: "{{weekday}} {{day}} {{month}}",

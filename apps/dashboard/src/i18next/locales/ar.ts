@@ -89,6 +89,20 @@ const ar: ArabicTranslations = {
       },
     },
     screens: {
+      requests: {
+        title: "طلبات الحجز",
+        subtitle: "حجوزات توافق عليها بنفسك. الطلب الذي لا ترد عليه في الوقت يُلغى.",
+        today: "اليوم",
+        tomorrow: "غدًا",
+        by: "قبل {{time}}",
+        ground: "{{ground}} · {{kind}}",
+        DEPOSIT: "{{price}} · عربون {{deposit}} أونلاين",
+        PLATFORM: "{{price}} · مدفوع أونلاين",
+        MANUAL: "{{price}} · الدفع في الملعب",
+        approve: "موافقة",
+        decline: "رفض",
+        none: "لا توجد طلبات حجز الآن.",
+      },
       calendar: {
         title: "التقويم",
         day: "{{weekday}} {{day}} {{month}}",
