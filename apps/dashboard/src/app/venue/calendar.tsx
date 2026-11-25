@@ -55,7 +55,7 @@ import { useNow } from "@/lib/use-now";
 // the tab comes back into view and every minute while it's open.
 
 const REFRESH_EVERY = 60_000;
-// A day's rows come in one after another when it's picked, each a beat behind the one above; past
+// A day's rows come in one after another when it or a ground is picked, each a beat behind the one above; past
 // the first dozen (well below the fold) they all come in together.
 const staggered = (index: number) =>
   FadeInDown.delay(Math.min(index, 12) * 35)
@@ -305,6 +305,8 @@ export default function VenueCalendar() {
   });
 
   const comingNext = () => hud.show(t("common.comingNext"));
+  // What's on show: a new day or ground remounts the rows, so they come in one after another again.
+  const shown = `${day}:${groundId ?? "all"}`;
   const showNow = day === today;
   const nowAt = showNow ? nowIndex(rows, now) : -1;
 
@@ -351,7 +353,7 @@ export default function VenueCalendar() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -20, marginTop: 17 }}
+          style={{ marginHorizontal: -20, marginTop: 10 }}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
         >
           <Chip
@@ -399,9 +401,9 @@ export default function VenueCalendar() {
           ) : (
             rows.flatMap((row, index) => [
               ...(index === nowAt
-                ? [<NowLine key={`${day}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
                 : []),
-              <Animated.View key={`${day}:${row.key}`} entering={staggered(index)}>
+              <Animated.View key={`${shown}:${row.key}`} entering={staggered(index)}>
                 <Row
                   row={row}
                   timezone={timezone}
@@ -415,7 +417,7 @@ export default function VenueCalendar() {
                 />
               </Animated.View>,
               ...(index === rows.length - 1 && nowAt === rows.length
-                ? [<NowLine key={`${day}:now`} at={now} timezone={timezone} />]
+                ? [<NowLine key={`${shown}:now`} at={now} timezone={timezone} />]
                 : []),
             ])
           )}
