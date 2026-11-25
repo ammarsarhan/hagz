@@ -781,6 +781,7 @@ function Row({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const [wrapped, setWrapped] = useState(false);
   const ended = row.kind === "ended" || (row.kind === "free" && row.ended);
   const title =
     row.kind === "closed"
@@ -799,9 +800,9 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      // 56 at least inside 4 pt of padding top and bottom, taller when the grounds run onto
-      // another line.
-      className="min-h-16 flex-row items-center py-1 active:opacity-70"
+      // 56 at least inside 4 pt of padding top and bottom. When the grounds run onto another line
+      // (three lines in all), the row grows and its padding with it, to 12 (user).
+      className={`min-h-16 flex-row items-center active:opacity-70 ${wrapped ? "py-3" : "py-1"}`}
     >
       <View className="w-14">
         <Text
@@ -825,7 +826,10 @@ function Row({
         >
           {title}
         </Text>
-        <Text className="text-label leading-[19px] text-ink-2">
+        <Text
+          className="text-label leading-[19px] text-ink-2"
+          onTextLayout={(event) => setWrapped(event.nativeEvent.lines.length > 1)}
+        >
           {[ground, ...standing(row, timezone, currency, t)].filter(Boolean).join(" · ")}
         </Text>
       </View>
