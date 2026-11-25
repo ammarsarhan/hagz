@@ -6,6 +6,8 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,6 +23,8 @@ import { CloseButton } from "./nav";
 // it's really gone (on iOS, when the Modal says it's dismissed), which is when to unmount it or to
 // present something else. Unmounting straight away skips the slide.
 const DURATION = 220;
+// A `scrollable` sheet stops growing at this share of the screen.
+const MAX_SHARE = 0.75;
 
 interface SheetProps {
   visible: boolean;
@@ -32,11 +36,27 @@ interface SheetProps {
   // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
   // its own under it.
   header?: ReactNode;
+  // A long list (the venue switcher): the panel stops at 75% of the screen and what's under the
+  // close row scrolls, only when it's more than fits. Shorter, it neither scrolls nor bounces.
+  scrollable?: boolean;
   children: ReactNode;
 }
 
-export function Sheet({ visible, onClose, onHidden, closeLabel, header, children }: SheetProps) {
+export function Sheet({
+  visible,
+  onClose,
+  onHidden,
+  closeLabel,
+  header,
+  scrollable = false,
+  children,
+}: SheetProps) {
   const insets = useSafeAreaInsets();
+  const { height: screen } = useWindowDimensions();
+  // Whether the content is taller than the room it's given.
+  const [room, setRoom] = useState(0);
+  const [content, setContent] = useState(0);
+  const overflows = content > room + 1;
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
   const [mounted, setMounted] = useState(visible);
@@ -88,13 +108,24 @@ export function Sheet({ visible, onClose, onHidden, closeLabel, header, children
             style={{
               paddingBottom: insets.bottom + 12,
               direction: isRTL ? "rtl" : "ltr",
+              ...(scrollable && { maxHeight: screen * MAX_SHARE }),
               transform: [
-                { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) },
+                // Down by the whole screen, so even a tall panel slides all the way out.
+                {
+                  translateY: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [screen, 0],
+                  }),
+                },
               ],
             }}
           >
             {/* Tapping the panel outside a field or button closes the keyboard. */}
-            <Pressable accessible={false} onPress={Keyboard.dismiss}>
+            <Pressable
+              accessible={false}
+              onPress={Keyboard.dismiss}
+              style={scrollable ? { flexShrink: 1 } : undefined}
+            >
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
               <View className="h-10 flex-row items-center justify-end">
                 {header ? (
@@ -104,7 +135,20 @@ export function Sheet({ visible, onClose, onHidden, closeLabel, header, children
                 ) : null}
                 <CloseButton label={closeLabel} onPress={onClose} />
               </View>
-              {children}
+              {scrollable ? (
+                <ScrollView
+                  style={{ flexShrink: 1 }}
+                  scrollEnabled={overflows}
+                  bounces={overflows}
+                  showsVerticalScrollIndicator={overflows}
+                  onLayout={(event) => setRoom(event.nativeEvent.layout.height)}
+                  onContentSizeChange={(_, height) => setContent(height)}
+                >
+                  {children}
+                </ScrollView>
+              ) : (
+                children
+              )}
             </Pressable>
           </Animated.View>
         </KeyboardAvoidingView>
