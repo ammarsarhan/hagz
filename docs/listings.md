@@ -43,7 +43,7 @@ Agreed on 2026-11-19.
 
 - **The booker has prepaid the whole booking**, so the venue is never short, whoever turns up.
 - **The share** is the booking's total divided by the ground's player count, rounded up to a whole currency unit. It's copied onto the listing when it opens. Example: 600 EGP on a 5-a-side pitch (10 players) is 60 EGP each. The booker's own spot and any spots left unfilled stay paid for by the booker.
-- **The joining fee** is 10% of the share, rounded to a whole unit: 6 EGP in the example. The rate is `Marketplace.joinFeeRate` (basis points, 1000 by default), copied onto the listing.
+- **The joining fee** is 10% of the share, rounded to a whole unit, and never less than the marketplace's minimum (5 EGP in Egypt; user, 2026-11-25): 6 EGP in the example, 5 EGP on a 40 EGP share. The rate is `Marketplace.joinFeeRate` (basis points, 1000 by default) and the minimum `Marketplace.joinFeeMinimum` (minor units); the fee is copied onto the listing. A rate of 0 turns the fee off, minimum and all.
 - **At the venue,** the joined player pays the booker their share (60 EGP) and pays the venue the joining fee (6 EGP). The game page and the join button show both amounts and who each one is paid to.
 - **The venue sees what to expect:** the booking is flagged "Open game: n players", with their names and the fee each one owes.
 - **Players check in at the venue** (changed 2026-11-22, replacing staff's arrived count and the booker's no-show reports). The booker of any app booking and each joined player show a QR code in the app, and staff scan it from 15 minutes before kick-off until 30 minutes after. The code changes every 30 seconds and each one works for 60, so a screenshot sent to a friend soon stops working. If someone's phone died, staff can tick them in by name (marked as manual), and they can undo a mistake while check-in is open. A player who leaves or is removed before kick-off is no longer checked in. Staff-entered and regular bookings have no check-in, because those players may not use the app.
@@ -77,6 +77,7 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
 - **Joining, leaving and changing `neededPlayers` lock the `BookingListing` row**, then check that `playerCount` stays at or under `neededPlayers`. Two players can't both take the last spot, the booker can't lower the number below what's joined, and the booking itself is never locked by people joining.
 - **If the booking is cancelled,** its transaction also sets the game to `CANCELLED`.
 - **`Marketplace.joinFeeRate`:** basis points, default 1000 (10%).
+- **`Marketplace.joinFeeMinimum`:** minor units, default 0; Egypt 500 (5 EGP).
 - **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId` (with `venueId`, so the fee lands on the game's own venue), for the checked-in count (or every joined player, when none was checked in) × `joinFee`. Written when the booking completes, and taken from the venue's balance (6.3).
 - **`Booking.checkedInAt?`, `checkedInById?` and `checkedInManually`,** for the booker's check-in on any app booking.
 - **`Customer.nearbyGames`:** the "Games near me" opt-in, off by default (used in Phase 7).
