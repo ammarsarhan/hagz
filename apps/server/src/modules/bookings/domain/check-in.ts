@@ -1,10 +1,12 @@
 // Checking in at the venue (2026-11-22, user): from 15 minutes before kick-off until 30 minutes after.
-// Pure: the window, and what the check-ins mean for a game.
+// Pure: the window, and what the check-ins mean for a game. The window's minutes are in contracts,
+// shared with the staff app.
+
+import { CHECK_IN_CLOSES_AFTER_MINUTES, CHECK_IN_OPENS_BEFORE_MINUTES } from "@hagz/contracts";
+
+export { CHECK_IN_CLOSES_AFTER_MINUTES, CHECK_IN_OPENS_BEFORE_MINUTES };
 
 const MINUTE_MS = 60_000;
-
-export const CHECK_IN_OPENS_BEFORE_MINUTES = 15;
-export const CHECK_IN_CLOSES_AFTER_MINUTES = 30;
 // A QR code works this long; the app fetches a new one at half of it.
 export const CODE_SECONDS = 60;
 export const REFRESH_SECONDS = 30;
