@@ -2,9 +2,11 @@ import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
 import { CheckInSection } from "@/components/check-in-section";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
@@ -108,6 +110,7 @@ function Page({
   const hud = useHud();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const comingNext = () => hud.show(t("common.comingNext"));
+  const compact = useCompactTitle();
   const { timezone, ground, currency } = booking;
   const money = (minor: number) =>
     `${minor < 0 ? "−" : ""}${formatAmount(Math.abs(minor), decimalsOf(currency))} ${currency}`;
@@ -144,20 +147,26 @@ function Page({
 
   return (
     <Screen>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
-      >
-        <NavBar
-          start={
-            <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
-          }
-          end={
-            <RoundButton icon={IconDots} label={t("screens.booking.more")} onPress={comingNext} />
-          }
-        />
-        <Text className="text-caption font-medium tracking-[0.4px]">{`#${booking.code}`}</Text>
+      {/* Pinned while the page scrolls under it, the code coming up beside back once its own label
+          has gone under (the setup screens' compact title). */}
+      <NavBar
+        flush
+        start={
+          <CompactTitle
+            button={
+              <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+            }
+            title={`#${booking.code}`}
+            style={compact.style}
+          />
+        }
+        end={<RoundButton icon={IconDots} label={t("screens.booking.more")} onPress={comingNext} />}
+      />
+      <FadingScroll scrollY={compact.scrollY}>
+        <Text
+          className="text-caption font-medium tracking-[0.4px]"
+          onLayout={compact.onTitleLayout}
+        >{`#${booking.code}`}</Text>
         <Text
           accessibilityRole="header"
           className="mt-1 text-title font-semibold tracking-[-0.4px]"
@@ -267,7 +276,7 @@ function Page({
             <Text className="text-body font-medium underline">{t("screens.booking.history")}</Text>
           </Pressable>
         </Section>
-      </ScrollView>
+      </FadingScroll>
     </Screen>
   );
 }
