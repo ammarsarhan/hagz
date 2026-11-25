@@ -33,7 +33,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: the Scan a code bar, History and the ⋯ menu.
+// Still to come on this page: the Scan a code bar and the ⋯ menu.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 
@@ -69,23 +69,26 @@ const REFRESHED: QueryFilters[] = [
   },
 ];
 
+// The booking, read by its page and its History.
+export const bookingQuery = (venueId: string, bookingId: string) => ({
+  queryKey: bookingKey(venueId, bookingId),
+  queryFn: async () => {
+    const result = await send(
+      api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}", {
+        params: { path: { venueId, bookingId } },
+      }),
+    );
+    if (!result.ok) throw result.error;
+    return result.data;
+  },
+  enabled: venueId !== "" && bookingId !== "",
+});
+
 export default function BookingPage() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
-  const booking = useQuery({
-    queryKey: bookingKey(venueId, bookingId),
-    queryFn: async () => {
-      const result = await send(
-        api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}", {
-          params: { path: { venueId, bookingId } },
-        }),
-      );
-      if (!result.ok) throw result.error;
-      return result.data;
-    },
-    enabled: venueId !== "" && bookingId !== "",
-  });
+  const booking = useQuery(bookingQuery(venueId, bookingId));
   useRefreshWhenShown(REFRESHED);
   if (!booking.data) return <SetupLoading query={booking} />;
   return (
@@ -358,7 +361,7 @@ function Page({
           />
           <Pressable
             accessibilityRole="button"
-            onPress={comingNext}
+            onPress={() => router.push(`/booking/${booking.id}/history`)}
             hitSlop={8}
             className="mt-3 self-start active:opacity-70"
           >

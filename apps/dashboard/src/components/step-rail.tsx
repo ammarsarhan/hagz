@@ -32,7 +32,7 @@ export function StepRail({ steps }: { steps: Step[] }) {
         const maybe = step.state === "maybe";
         return (
           <View
-            key={step.label}
+            key={index}
             className="flex-row items-start"
             style={{ paddingBottom: last ? 0 : GAP }}
           >
