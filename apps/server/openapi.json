@@ -6119,6 +6119,10 @@
             "type": "boolean",
             "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
           },
+          "regular": {
+            "type": "boolean",
+            "description": "One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed)."
+          },
           "openGame": {
             "type": [
               "object",
@@ -6151,6 +6155,7 @@
           "createdAt",
           "expiresAt",
           "hold",
+          "regular",
           "openGame"
         ]
       },

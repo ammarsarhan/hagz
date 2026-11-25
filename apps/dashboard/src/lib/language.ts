@@ -7,3 +7,6 @@ export type Language = "ar" | "en";
 export const language: Language = getLocales()[0]?.languageCode === "ar" ? "ar" : "en";
 
 export const isRTL = language === "ar";
+
+// For Intl's dates and times: Arabic month and day names with Western digits (decided 2026-10-30).
+export const intlLocale = isRTL ? "ar-EG-u-nu-latn" : "en-GB";

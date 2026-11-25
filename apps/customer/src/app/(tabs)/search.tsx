@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   type DerivedValue,
   FadeIn,
@@ -28,6 +28,7 @@ import { FilterChip as Chip } from "@/components/filter-chip";
 import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { SPORT_ICONS } from "@/components/sport-icons";
+import { RowScroll } from "@/components/row-scroll";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
@@ -408,9 +409,7 @@ export default function SearchTab() {
   );
   const chips = (
     <View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
+      <RowScroll
         style={{ marginHorizontal: -24 }}
         contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
       >
@@ -456,7 +455,7 @@ export default function SearchTab() {
             onSelect={onChip}
           />
         ))}
-      </ScrollView>
+      </RowScroll>
     </View>
   );
 

@@ -23,6 +23,8 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 // tap, and the venue recedes behind it (see the venue layout).
 const ROW = 49;
 const HAIRLINE = 1;
+// The icons' line weight, the customer app's: a little heavier on the tab in view.
+const STROKE = { on: 1.7, off: 1.36 } as const;
 
 const TABS = {
   index: { icon: IconHome, label: "home" },
@@ -104,7 +106,7 @@ export function TabBar({
             <Icon
               size={24}
               color={focused ? colors.primary : colors.ink3}
-              strokeWidth={focused ? 1.85 : 1.6}
+              strokeWidth={focused ? STROKE.on : STROKE.off}
             />
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-primary" : "font-medium text-ink-3"}`}

@@ -3,7 +3,7 @@ import { useFocusEffect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
@@ -30,6 +30,7 @@ import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { Segment } from "@/components/segment";
 import { SPORT_ICONS } from "@/components/sport-icons";
 import { SpotsRow } from "@/components/spots-row";
+import { RowScroll } from "@/components/row-scroll";
 import { Text } from "@/components/text";
 import i18n from "@/i18next/i18next";
 import { api, auth } from "@/lib/api";
@@ -271,12 +272,7 @@ function Games({
         }}
       />
       {discover ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mt-3.5"
-          contentContainerClassName="gap-2 px-6"
-        >
+        <RowScroll className="mt-3.5" contentContainerClassName="gap-2 px-6">
           <FilterChip
             id="filters"
             label={
@@ -319,7 +315,7 @@ function Games({
               onSelect={onChip}
             />
           ))}
-        </ScrollView>
+        </RowScroll>
       ) : null}
     </View>
   );
