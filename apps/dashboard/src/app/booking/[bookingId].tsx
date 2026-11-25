@@ -13,6 +13,7 @@ import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
+import { marksOutcome, MARK_WINDOW_MS, OutcomeBar } from "@/components/outcome-bar";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
 import { StepRail } from "@/components/step-rail";
@@ -144,6 +145,13 @@ function Page({
         : ""
       : t(CHARGE_KEYS[charge.type], { name: charge.amenity?.name ?? "" });
 
+  // The mark can change until a day after the game ends: "7 pm tomorrow".
+  const markAt = new Date(Date.parse(booking.endsAt) + MARK_WINDOW_MS).toISOString();
+  const markUntil =
+    localDateOf(markAt, timezone) === localDateOf(now + 86_400_000, timezone)
+      ? t("screens.booking.tomorrowAt", { time: sentenceTime(markAt, timezone, t) })
+      : moment(markAt);
+
   const left = booking.total - booking.paid;
   const phone = booking.customer.phone;
 
@@ -182,7 +190,13 @@ function Page({
       : [];
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        canManage && marksOutcome(booking, now) ? (
+          <OutcomeBar booking={booking} venueId={venueId} until={markUntil} onChanged={refetch} />
+        ) : undefined
+      }
+    >
       {/* Pinned while the page scrolls under it, the code coming up beside back once its own label
           has gone under (the setup screens' compact title). */}
       <NavBar
@@ -294,7 +308,11 @@ function Page({
                 {left > 0 ? (
                   <Line label={t("screens.booking.leftHere")} value={money(left)} />
                 ) : null}
-                {booking.game && left <= 0 ? (
+                {booking.status === "NO_SHOW" ? (
+                  <Text className="mt-1 text-caption text-ink-2">
+                    {t("screens.booking.noShowKeeps")}
+                  </Text>
+                ) : booking.game && left <= 0 ? (
                   <Text className="mt-1 text-caption text-ink-2">
                     {t("screens.booking.paidInFullGame")}
                   </Text>

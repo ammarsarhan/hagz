@@ -113,6 +113,12 @@ const ar: ArabicTranslations = {
         openGame: "مباراة مفتوحة",
         joinFee: "كل لاعب منضم يدفع لك رسوم انضمام {{amount}}.",
         paidInFullGame: "مدفوع بالكامل: المباريات المفتوحة تُدفع قبل عرضها.",
+        outcome: {
+          played: "لُعبت",
+          noShow: "لم يحضر",
+          until: "يمكن التغيير حتى {{time}}",
+        },
+        noShowKeeps: "عند عدم الحضور يبقى المدفوع؛ لا يُرد شيء.",
         cancelled: {
           title: "أُلغي",
           byPlayer: "{{name}} ألغى من التطبيق",
@@ -170,6 +176,7 @@ const ar: ArabicTranslations = {
         inApp: "في التطبيق، {{when}}",
         byStaff: "بواسطة {{name}}، {{when}}",
         dayTime: "{{day}}، {{time}}",
+        tomorrowAt: "غدًا {{time}}",
         cancellation: "الإلغاء",
         history: "السجل",
       },

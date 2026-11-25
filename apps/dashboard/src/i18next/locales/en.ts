@@ -101,6 +101,12 @@ const en = {
         openGame: "Open game",
         joinFee: "Each joined player pays you a {{amount}} joining fee.",
         paidInFullGame: "Paid in full: open games are paid before they list.",
+        outcome: {
+          played: "Played",
+          noShow: "No show",
+          until: "Change until {{time}}",
+        },
+        noShowKeeps: "A no show keeps what was paid; nothing is refunded.",
         cancelled: {
           title: "Cancelled",
           byPlayer: "{{name}} cancelled in the app",
@@ -156,6 +162,7 @@ const en = {
         byStaff: "By {{name}}, {{when}}",
         // A moment not today: "Tue 24 Nov, 2:14 pm".
         dayTime: "{{day}}, {{time}}",
+        tomorrowAt: "{{time}} tomorrow",
         cancellation: "Cancellation",
         history: "History",
       },
