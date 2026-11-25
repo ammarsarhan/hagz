@@ -10,6 +10,8 @@ export { default as IconMapPin } from "@tabler/icons-react-native/IconMapPin";
 export { default as IconSearch } from "@tabler/icons-react-native/IconSearch";
 export { default as IconClock } from "@tabler/icons-react-native/IconClock";
 export { default as IconCopy } from "@tabler/icons-react-native/IconCopy";
+// A booking's phone row: call.
+export { default as IconPhone } from "@tabler/icons-react-native/IconPhone";
 export { default as IconBrandWhatsapp } from "@tabler/icons-react-native/IconBrandWhatsapp";
 export { default as IconChevronDown } from "@tabler/icons-react-native/IconChevronDown";
 export { default as IconChevronLeft } from "@tabler/icons-react-native/IconChevronLeft";

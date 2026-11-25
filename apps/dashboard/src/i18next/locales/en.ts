@@ -75,6 +75,34 @@ const en = {
       },
     },
     screens: {
+      booking: {
+        more: "More",
+        // "Today, 7 – 9 pm · Pitch 1 · 5-a-side".
+        when: "{{day}}, {{hours}} · {{ground}} · {{kind}}",
+        phone: "Phone",
+        call: "Call {{name}}",
+        whatsapp: "WhatsApp {{name}}",
+        price: "Price",
+        chargeAmenity: "{{name}}",
+        chargeServiceFee: "Service fee",
+        chargeDiscount: "Discount",
+        chargeReward: "Loyalty reward",
+        chargeAdjustment: "Price change",
+        total: "Total",
+        paidSoFar: "Paid so far",
+        nothingYet: "Nothing yet",
+        paidOnline: "Paid online",
+        leftHere: "Left to pay here",
+        details: "Booking",
+        booked: "Booked",
+        // How and when it was made: "In the app, Tue 24 Nov, 2:14 pm", "By Mona, 6:09 pm".
+        inApp: "In the app, {{when}}",
+        byStaff: "By {{name}}, {{when}}",
+        // A moment not today: "Tue 24 Nov, 2:14 pm".
+        dayTime: "{{day}}, {{time}}",
+        cancellation: "Cancellation",
+        history: "History",
+      },
       requests: {
         title: "Booking requests",
         subtitle: "Bookings you approve yourself. One you don’t answer in time is let go.",
