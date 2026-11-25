@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
   interpolate,
   Keyframe,
@@ -79,6 +80,8 @@ const PLUS_IN = new Keyframe({
   100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
 }).duration(220);
 const MAKE_ROOM = LinearTransition.duration(220);
+// The inbox, appearing once a venue's settings say it approves bookings (switching to one).
+const INBOX_IN = FadeIn.duration(220);
 
 // The floating + button, and its gap above the tab bar.
 const FAB = 56;
@@ -414,7 +417,7 @@ export default function VenueCalendar() {
           {/* The title's place: the day floats over it (below), so it can dock. */}
           <View className="flex-1" />
           {showsInbox ? (
-            <Animated.View layout={MAKE_ROOM}>
+            <Animated.View entering={INBOX_IN} layout={MAKE_ROOM}>
               <RoundButton
                 label={
                   requests > 0
