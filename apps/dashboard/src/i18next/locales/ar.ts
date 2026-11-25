@@ -152,6 +152,13 @@ const ar: ArabicTranslations = {
         openGame: "مباراة مفتوحة",
         joinFee: "كل لاعب منضم يدفع لك رسوم انضمام {{amount}}.",
         paidInFullGame: "مدفوع بالكامل: المباريات المفتوحة تُدفع قبل عرضها.",
+        menu: {
+          title: "حجز {{name}}",
+          move: "نقل",
+          moveBody: "إلى وقت متاح",
+          swap: "تبديل",
+          swapBody: "مع حجز آخر",
+        },
         request: { title: "طلب حجز", by: "الرد قبل {{time}}" },
         weekly: { title: "مباراة أسبوعية", by: "التأكيد قبل {{time}}", confirm: "تأكيد" },
         outcome: {
@@ -218,6 +225,7 @@ const ar: ArabicTranslations = {
         byStaff: "بواسطة {{name}}، {{when}}",
         dayTime: "{{day}}، {{time}}",
         tomorrowAt: "غدًا {{time}}",
+        menuWhen: "{{day}}، {{hours}} · {{ground}}",
         cancellation: "الإلغاء",
         history: "السجل",
       },

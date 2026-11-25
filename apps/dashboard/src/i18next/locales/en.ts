@@ -140,6 +140,13 @@ const en = {
         openGame: "Open game",
         joinFee: "Each joined player pays you a {{amount}} joining fee.",
         paidInFullGame: "Paid in full: open games are paid before they list.",
+        menu: {
+          title: "{{name}}'s booking",
+          move: "Move",
+          moveBody: "To a free time",
+          swap: "Swap",
+          swapBody: "With another booking",
+        },
         request: { title: "Booking request", by: "Answer by {{time}}" },
         weekly: { title: "Weekly game", by: "Confirm by {{time}}", confirm: "Confirm" },
         outcome: {
@@ -204,6 +211,8 @@ const en = {
         // A moment not today: "Tue 24 Nov, 2:14 pm".
         dayTime: "{{day}}, {{time}}",
         tomorrowAt: "{{time}} tomorrow",
+        // "Today, 7 – 8 pm · Pitch 3".
+        menuWhen: "{{day}}, {{hours}} · {{ground}}",
         cancellation: "Cancellation",
         history: "History",
       },

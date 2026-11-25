@@ -1,10 +1,11 @@
 import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
 import { RequestBar, WeeklyBar } from "@/components/answer-bars";
+import { BookingMenu } from "@/components/booking-menu";
 import { cancelledMoney, cancelledSteps } from "@/components/booking-cancelled";
 import { nextSteps, showsNext } from "@/components/booking-next";
 import { CheckInSection } from "@/components/check-in-section";
@@ -150,6 +151,14 @@ function Page({
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const comingNext = () => hud.show(t("common.comingNext"));
   const compact = useCompactTitle();
+  // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
+  const [menu, setMenu] = useState(false);
+  // What was picked, said once the sheet has slid away (move and swap come next).
+  const picked = useRef(false);
+  const movable =
+    canManage &&
+    ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"].includes(booking.status) &&
+    now < Date.parse(booking.startsAt);
   const { timezone, ground, currency } = booking;
   const money = (minor: number) =>
     `${minor < 0 ? "−" : ""}${formatAmount(Math.abs(minor), decimalsOf(currency))} ${currency}`;
@@ -245,7 +254,15 @@ function Page({
             style={compact.style}
           />
         }
-        end={<RoundButton icon={IconDots} label={t("screens.booking.more")} onPress={comingNext} />}
+        end={
+          movable ? (
+            <RoundButton
+              icon={IconDots}
+              label={t("screens.booking.more")}
+              onPress={() => setMenu(true)}
+            />
+          ) : undefined
+        }
       />
       <FadingScroll scrollY={compact.scrollY}>
         <Text
@@ -387,6 +404,24 @@ function Page({
           </Pressable>
         </Section>
       </FadingScroll>
+      <BookingMenu
+        name={firstName}
+        when={t("screens.booking.menuWhen", {
+          day: relativeDay(localDateOf(booking.startsAt, timezone), now, timezone, t),
+          hours: hoursSpan(booking.startsAt, booking.endsAt, timezone, t),
+          ground: ground.name ?? "",
+        })}
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onHidden={() => {
+          if (picked.current) comingNext();
+          picked.current = false;
+        }}
+        onPick={() => {
+          picked.current = true;
+          setMenu(false);
+        }}
+      />
     </Screen>
   );
 }
