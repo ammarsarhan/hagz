@@ -796,8 +796,9 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      // 56 at least, taller when the grounds run onto another line.
-      className="min-h-14 flex-row items-center active:opacity-70"
+      // 56 at least inside 4 pt of padding top and bottom, taller when the grounds run onto
+      // another line.
+      className="min-h-16 flex-row items-center py-1 active:opacity-70"
     >
       <View className="w-14">
         <Text
@@ -832,10 +833,10 @@ function Row({
   );
 }
 
-// A row while the day loads: the same 56 pt, so nothing jumps when the real ones arrive.
+// A row while the day loads: the same 64 pt, so nothing jumps when the real ones arrive.
 function RowBone() {
   return (
-    <View className="h-14 flex-row items-center">
+    <View className="h-16 flex-row items-center py-1">
       <View className="w-14 gap-1.5">
         <Bone className="h-3.5 w-9 rounded" />
         <Bone className="h-2 w-3 rounded" />
