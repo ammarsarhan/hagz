@@ -46,6 +46,7 @@ import {
   type StaffBooking,
 } from "@/lib/calendar";
 import { bookingRequests } from "@/lib/booking-requests";
+import { queries } from "@/lib/queries";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { intlLocale, isRTL } from "@/lib/language";
@@ -183,6 +184,12 @@ export default function VenueCalendar() {
     placeholderData: sameVenue(venueId),
   });
   const pending = useQuery(bookingRequests(venueId, canSeeBookings));
+  // Whether players are confirmed at once (the venue's settings, for those who may see them).
+  const detail = useQuery({
+    ...queries.venue(venueId),
+    enabled: venueId !== "" && venue?.permissions.venue !== "none",
+  });
+  const autoConfirm = detail.data?.settings.autoConfirm;
 
   const answeredZone = slots.data?.timezone ?? bookings.data?.[0]?.timezone;
   useEffect(() => {
@@ -231,6 +238,9 @@ export default function VenueCalendar() {
     [bookings.data, around, pending.data, timezone],
   );
   const requests = pending.data?.length ?? 0;
+  // The inbox is for venues that approve bookings themselves; one that confirms at once still shows
+  // it while a request waits (made before the switch).
+  const showsInbox = requests > 0 || autoConfirm === false;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
   // Until this week's bookings and its free hours are both in. A read still showing the week before
@@ -403,19 +413,21 @@ export default function VenueCalendar() {
         <View className="flex-row items-center">
           {/* The title's place: the day floats over it (below), so it can dock. */}
           <View className="flex-1" />
-          <Animated.View layout={MAKE_ROOM}>
-            <RoundButton
-              label={
-                requests > 0
-                  ? t("screens.calendar.requestsWaiting", { count: requests })
-                  : t("screens.calendar.requests")
-              }
-              onPress={() => router.push("/requests")}
-              badge={requests}
-            >
-              <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
-            </RoundButton>
-          </Animated.View>
+          {showsInbox ? (
+            <Animated.View layout={MAKE_ROOM}>
+              <RoundButton
+                label={
+                  requests > 0
+                    ? t("screens.calendar.requestsWaiting", { count: requests })
+                    : t("screens.calendar.requests")
+                }
+                onPress={() => router.push("/requests")}
+                badge={requests}
+              >
+                <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
+              </RoundButton>
+            </Animated.View>
+          ) : null}
           <LayoutAnimationConfig skipEntering>
             {pastDay ? null : (
               <Animated.View entering={PLUS_IN} className="ms-2">
