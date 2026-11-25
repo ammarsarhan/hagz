@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
+import { cancelledMoney, cancelledSteps } from "@/components/booking-cancelled";
 import { nextSteps, showsNext } from "@/components/booking-next";
 import { CheckInSection } from "@/components/check-in-section";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
@@ -30,7 +31,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: cancelled bookings' money, the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
+// Still to come on this page: the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
 // menu.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
@@ -146,8 +147,10 @@ function Page({
   const left = booking.total - booking.paid;
   const phone = booking.customer.phone;
 
-  // What happens next, from who approved it and when it was paid (its history).
+  // What happens next, from who approved it and when it was paid; or, cancelled, who cancelled it
+  // (its history).
   const upcoming = showsNext(booking, now);
+  const cancelled = booking.status === "CANCELLED" ? booking.cancelled : null;
   const history = useQuery({
     queryKey: [...bookingKey(venueId, booking.id), "history"],
     queryFn: async () => {
@@ -159,11 +162,23 @@ function Page({
       if (!result.ok) throw result.error;
       return result.data.data;
     },
-    enabled: upcoming,
+    enabled: upcoming || cancelled !== null,
   });
   const steps =
     upcoming && history.data
       ? nextSteps({ booking, history: history.data, now, t, moment, money, name: firstName })
+      : [];
+  const story =
+    cancelled && history.data
+      ? cancelledSteps({
+          booking,
+          cancelled,
+          history: history.data,
+          t,
+          moment,
+          money,
+          name: firstName,
+        })
       : [];
 
   return (
@@ -231,6 +246,12 @@ function Page({
           </Section>
         ) : null}
 
+        {cancelled ? (
+          <Section title={t("screens.booking.cancelled.title")}>
+            <StepRail steps={story} />
+          </Section>
+        ) : null}
+
         {booking.checkIn ? (
           <Section>
             <CheckInSection
@@ -253,26 +274,35 @@ function Page({
           </Section>
         ) : null}
 
-        <Section title={t("screens.booking.price")}>
-          {booking.charges.map((charge, index) => (
-            <Line key={index} label={chargeLabel(charge)} value={money(charge.amount)} />
-          ))}
-          <View className="my-2.5 h-px bg-border" />
-          <Line label={t("screens.booking.total")} value={money(booking.total)} strong />
-          {booking.paid === 0 ? (
-            <Line label={t("screens.booking.paidSoFar")} value={t("screens.booking.nothingYet")} />
-          ) : (
-            <>
-              <Line label={t("screens.booking.paidOnline")} value={money(booking.paid)} />
-              {left > 0 ? <Line label={t("screens.booking.leftHere")} value={money(left)} /> : null}
-              {booking.game && left <= 0 ? (
-                <Text className="mt-1 text-caption text-ink-2">
-                  {t("screens.booking.paidInFullGame")}
-                </Text>
-              ) : null}
-            </>
-          )}
-        </Section>
+        {cancelled ? (
+          <CancelledMoney booking={booking} cancelled={cancelled} money={money} name={firstName} />
+        ) : (
+          <Section title={t("screens.booking.price")}>
+            {booking.charges.map((charge, index) => (
+              <Line key={index} label={chargeLabel(charge)} value={money(charge.amount)} />
+            ))}
+            <View className="my-2.5 h-px bg-border" />
+            <Line label={t("screens.booking.total")} value={money(booking.total)} strong />
+            {booking.paid === 0 ? (
+              <Line
+                label={t("screens.booking.paidSoFar")}
+                value={t("screens.booking.nothingYet")}
+              />
+            ) : (
+              <>
+                <Line label={t("screens.booking.paidOnline")} value={money(booking.paid)} />
+                {left > 0 ? (
+                  <Line label={t("screens.booking.leftHere")} value={money(left)} />
+                ) : null}
+                {booking.game && left <= 0 ? (
+                  <Text className="mt-1 text-caption text-ink-2">
+                    {t("screens.booking.paidInFullGame")}
+                  </Text>
+                ) : null}
+              </>
+            )}
+          </Section>
+        )}
 
         <Section title={t("screens.booking.details")}>
           <Line
@@ -313,6 +343,54 @@ const spaced = (phone: string) => {
   const match = /^\+20(\d{3})(\d{3})(\d+)$/.exec(phone);
   return match ? `+20 ${match[1]} ${match[2]} ${match[3]}` : phone;
 };
+
+// A cancelled booking's money: paid, back to the player, Hagz's service fee when it keeps it, and
+// the venue's, with the policy's share when the player cancelled.
+function CancelledMoney({
+  booking,
+  cancelled,
+  money,
+  name,
+}: {
+  booking: Booking;
+  cancelled: NonNullable<Booking["cancelled"]>;
+  money: (minor: number) => string;
+  name: string;
+}) {
+  const { t } = useTranslation();
+  const { paid, back, fee, yours } = cancelledMoney(booking, cancelled);
+  const notice = Math.max(
+    0,
+    Math.floor((Date.parse(booking.startsAt) - Date.parse(cancelled.at)) / HOUR),
+  );
+  return (
+    <Section title={t("screens.booking.cancelled.money")}>
+      <Line
+        label={t("screens.booking.cancelled.paid")}
+        value={paid > 0 ? money(paid) : t("screens.booking.cancelled.nothing")}
+      />
+      {back > 0 ? (
+        <Line label={t("screens.booking.cancelled.back", { name })} value={money(back)} />
+      ) : null}
+      {fee > 0 ? (
+        <Line label={t("screens.booking.cancelled.serviceFee")} value={money(fee)} />
+      ) : null}
+      <View className="my-2.5 h-px bg-border" />
+      <Line label={t("screens.booking.cancelled.yours")} value={money(yours)} strong />
+      {cancelled.initiator === "CUSTOMER" ? (
+        <Text className="mt-1 text-caption text-ink-2">
+          {t("screens.booking.cancelled.policy", {
+            policy: t(
+              `screens.setup.settings.cancellation.policies.${booking.cancellation.policy}.title`,
+            ),
+            percent: cancelled.refundPercent,
+            count: notice,
+          })}
+        </Text>
+      ) : null}
+    </Section>
+  );
+}
 
 // A part of the page under a hairline, with its heading when it has one.
 function Section({ title, children }: { title?: string; children: ReactNode }) {
