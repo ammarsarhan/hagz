@@ -26,7 +26,7 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: the open game, what happens next, cancelled bookings'
+// Still to come on this page: what happens next, cancelled bookings'
 // money, the bottom bars (Scan a code, Played / No show, a request's answers), History and the ⋯
 // menu.
 
@@ -209,6 +209,14 @@ function Page({
           </Section>
         ) : null}
 
+        {booking.game ? (
+          <Section title={t("screens.booking.openGame")}>
+            <Text className="text-body text-ink-2">
+              {t("screens.booking.joinFee", { amount: money(booking.game.joinFee) })}
+            </Text>
+          </Section>
+        ) : null}
+
         <Section title={t("screens.booking.price")}>
           {booking.charges.map((charge, index) => (
             <Line key={index} label={chargeLabel(charge)} value={money(charge.amount)} />
@@ -221,6 +229,11 @@ function Page({
             <>
               <Line label={t("screens.booking.paidOnline")} value={money(booking.paid)} />
               {left > 0 ? <Line label={t("screens.booking.leftHere")} value={money(left)} /> : null}
+              {booking.game && left <= 0 ? (
+                <Text className="mt-1 text-caption text-ink-2">
+                  {t("screens.booking.paidInFullGame")}
+                </Text>
+              ) : null}
             </>
           )}
         </Section>
