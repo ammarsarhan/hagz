@@ -130,7 +130,7 @@ export function RequestSheet({
                     : t("screens.requests.pays", { name, amount: money(request.total) }),
                 when: t("screens.requests.minutes", { count: request.paymentWindow ?? 0 }),
                 state: "next",
-                strong: true,
+                bold: "when",
               },
               {
                 label: t("screens.requests.notPaid"),

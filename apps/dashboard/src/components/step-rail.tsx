@@ -3,50 +3,75 @@ import { colors } from "@/lib/colors";
 import { Text } from "./text";
 
 // "What happens next" (user, 2026-11-25, in place of grey info boxes): a dot per step on a thin
-// light rail, what happens on the left and when on the right. A dashed ring is the step being
-// taken now, a solid ring the next, a grey ring a branch that may not happen, and a filled dot a
-// step done.
+// light rail, what happens on the left (with an optional grey line under it) and when on the right.
+// A dashed ring is the step being taken now, a solid ring the next, a grey ring a branch that may
+// not happen, and a filled dot a step done.
 export type StepState = "now" | "next" | "maybe" | "done";
 
 export interface Step {
   label: string;
   when: string;
   state: StepState;
-  // The when in weight (the deadline that matters: "15 min").
-  strong?: boolean;
+  // A grey line under the label: who did it, how much ("Mona", "450 EGP online").
+  detail?: string;
+  // What's in weight: the step being waited on ("Ahmed pays the 300 EGP deposit"), or its time
+  // when that's what matters ("15 min").
+  bold?: "label" | "when";
 }
 
-const ROW = 32;
+// The label's line, which the dot centres on, and the room between steps.
+const LINE = 21;
+const GAP = 14;
 
 export function StepRail({ steps }: { steps: Step[] }) {
   return (
     <View>
-      {steps.map((step, index) => (
-        <View key={step.label} className="flex-row items-center" style={{ height: ROW }}>
-          <View className="w-3.5 items-center self-stretch justify-center">
-            {/* The rail: from the row above's dot to the row below's, behind this one's. */}
-            <View
-              className="absolute w-px bg-border"
-              style={{
-                top: index === 0 ? ROW / 2 : 0,
-                bottom: index === steps.length - 1 ? ROW / 2 : 0,
-              }}
-            />
-            <Dot state={step.state} />
+      {steps.map((step, index) => {
+        const first = index === 0;
+        const last = index === steps.length - 1;
+        const maybe = step.state === "maybe";
+        return (
+          <View
+            key={step.label}
+            className="flex-row items-start"
+            style={{ paddingBottom: last ? 0 : GAP }}
+          >
+            <View className="w-3.5 items-center self-stretch">
+              {/* The rail into this dot and on to the next, under it. */}
+              {steps.length > 1 ? (
+                <View
+                  className="absolute w-px bg-border"
+                  style={{
+                    top: first ? LINE / 2 : 0,
+                    bottom: last ? undefined : 0,
+                    height: last ? LINE / 2 : undefined,
+                  }}
+                />
+              ) : null}
+              <View className="items-center justify-center" style={{ height: LINE }}>
+                <Dot state={step.state} />
+              </View>
+            </View>
+            <View className="ms-3 flex-1">
+              <Text
+                className={`text-body leading-[21px] ${step.bold === "label" ? "font-semibold" : ""} ${maybe ? "text-ink-3" : ""}`}
+              >
+                {step.label}
+              </Text>
+              {step.detail ? (
+                <Text className={`text-caption ${maybe ? "text-ink-3" : "text-ink-2"}`}>
+                  {step.detail}
+                </Text>
+              ) : null}
+            </View>
+            <Text
+              className={`ms-3 text-label leading-[21px] ${step.bold === "when" ? "font-semibold text-ink" : maybe ? "text-ink-3" : "text-ink-2"}`}
+            >
+              {step.when}
+            </Text>
           </View>
-          <Text
-            className={`ms-3 flex-1 text-body ${step.state === "maybe" ? "text-ink-2" : ""}`}
-            numberOfLines={1}
-          >
-            {step.label}
-          </Text>
-          <Text
-            className={`ms-3 text-body ${step.strong ? "font-semibold" : step.state === "maybe" || step.state === "now" ? "text-ink-2" : ""}`}
-          >
-            {step.when}
-          </Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
