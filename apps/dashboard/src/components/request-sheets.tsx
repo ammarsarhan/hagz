@@ -1,16 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { localDateOf, type StaffBooking } from "@/lib/calendar";
-import { colors } from "@/lib/colors";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { hoursSpan, relativeDay } from "@/lib/when";
 import { Button } from "./button";
 import { Field } from "./field";
-import { IconCheck } from "./icons";
 import { useHud } from "./hud";
 import { Sheet } from "./sheet";
 import { StepRail } from "./step-rail";
@@ -26,9 +24,9 @@ import { Text } from "./text";
 // reason shown to them.
 //
 // Either way, once answered, the venue's bookings are read again (the request leaves the list and
-// the Calendar's count, the game shows on its day) and a small HUD says so, behind an ink check. A
-// failure (one let go meanwhile, say) goes to the HUD instead and the requests are read again too.
-// Either waits until the sheet has slid away, so it doesn't flash inside it.
+// the Calendar's count, the game shows on its day), with no message: the change shows where it was
+// answered (user). A failure (one let go meanwhile, say) goes to the HUD, once the sheet has slid
+// away so it doesn't flash inside it, and the requests are read again too.
 
 export type Answer = "approve" | "decline";
 
@@ -54,8 +52,8 @@ export function RequestSheet({
   const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [reason, setReason] = useState("");
-  // What to say once the sheet has gone.
-  const outcome = useRef<{ message: string; leading?: ReactNode } | null>(null);
+  // What went wrong, said once the sheet has gone.
+  const failure = useRef<string | null>(null);
 
   const { timezone, currency } = request;
   const name = firstName(request.customer.name);
@@ -84,19 +82,7 @@ export function RequestSheet({
     void queryClient.invalidateQueries({
       queryKey: ["staff", "venues", request.venue.id, "bookings"],
     });
-    outcome.current = result.ok
-      ? {
-          message: t(
-            answer === "approve" ? "screens.requests.approved" : "screens.requests.declined",
-            { name },
-          ),
-          leading: (
-            <View className="size-[22px] items-center justify-center rounded-full bg-ink">
-              <IconCheck size={14} color={colors.white} strokeWidth={3} />
-            </View>
-          ),
-        }
-      : { message: hudMessage(result.error) };
+    if (!result.ok) failure.current = hudMessage(result.error);
     onClose();
   };
 
@@ -109,9 +95,9 @@ export function RequestSheet({
       visible={visible}
       onClose={onClose}
       onHidden={() => {
-        const said = outcome.current;
-        outcome.current = null;
-        if (said) hud.show(said.message, { leading: said.leading });
+        const said = failure.current;
+        failure.current = null;
+        if (said) hud.show(said);
         onHidden();
       }}
       closeLabel={t("components.shared.nav.close")}

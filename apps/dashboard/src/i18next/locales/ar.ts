@@ -117,8 +117,6 @@ const ar: ArabicTranslations = {
         reason: "السبب (اختياري)",
         reasonHint: "يظهر لـ {{name}}",
         declineBooking: "رفض الحجز",
-        approved: "تمت الموافقة على حجز {{name}}",
-        declined: "تم رفض حجز {{name}}",
         none: "لا توجد طلبات حجز الآن.",
       },
       calendar: {

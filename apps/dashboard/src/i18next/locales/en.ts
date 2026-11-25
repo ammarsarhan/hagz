@@ -108,9 +108,6 @@ const en = {
         reason: "Reason (optional)",
         reasonHint: "Shown to {{name}}",
         declineBooking: "Decline booking",
-        // Once answered, in the HUD.
-        approved: "{{name}}’s booking approved",
-        declined: "{{name}}’s booking declined",
         none: "No booking requests right now.",
       },
       calendar: {
