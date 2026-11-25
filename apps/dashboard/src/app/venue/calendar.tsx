@@ -225,10 +225,12 @@ export default function VenueCalendar() {
   const requests = pending.data?.length ?? 0;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
-  // Until the week's bookings and its free hours are both in.
-  const loading =
-    (canSeeBookings && bookings.data === undefined && !bookings.isError) ||
-    (canSeeSchedule && slots.data === undefined && !slots.isError);
+  // Until this week's bookings and its free hours are both in. A read still showing the week before
+  // (placeholderData, while the new one loads) counts as not in: the day shows once, whole, rather
+  // than its bookings first and its free hours a moment later (user).
+  const waiting = (read: { data?: unknown; isError: boolean; isPlaceholderData: boolean }) =>
+    (read.data === undefined || read.isPlaceholderData) && !read.isError;
+  const loading = (canSeeBookings && waiting(bookings)) || (canSeeSchedule && waiting(slots));
   // It scrolls the way the customer app's Bookings and Search do: the title at the top of the page,
   // the week strip riding up with it until it docks under the status bar, a white header fading in
   // behind it, and pull to refresh holding a small spinner at the top.
