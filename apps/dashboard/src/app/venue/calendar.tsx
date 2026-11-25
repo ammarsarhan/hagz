@@ -34,8 +34,7 @@ import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
 import { Chip, WeekStrip } from "@/components/week-strip";
-import { api } from "@/lib/api";
-import { hudMessage, send } from "@/lib/api-errors";
+import { hudMessage } from "@/lib/api-errors";
 import {
   addDays,
   bookingDays,
@@ -49,6 +48,7 @@ import {
   type StaffBooking,
 } from "@/lib/calendar";
 import { bookingRequests } from "@/lib/booking-requests";
+import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { queries } from "@/lib/queries";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -67,7 +67,6 @@ import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
 // players do in the app (book, cancel, pay) changes them from elsewhere, so they're read again when
 // the tab comes back into view and every minute while it's open.
 
-const REFRESH_EVERY = 60_000;
 // A day's rows come in one after another when it or a ground is picked, each a beat behind the one above; past
 // the first dozen (well below the fold) they all come in together.
 const staggered = (index: number) =>
@@ -106,34 +105,11 @@ const DOCKED_TITLE = 30;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 
-const fetched = async <T,>(request: Promise<{ data?: T; error?: unknown }>): Promise<T> => {
-  const result = await send(request);
-  if (!result.ok) throw result.error;
-  return result.data;
-};
-
-const calendarKey = (venueId: string, ...rest: string[]) => ["staff", "venues", venueId, ...rest];
-
 // While another week loads, the one before stays on screen; never another venue's, after a switch.
 const sameVenue =
   (venueId: string) =>
   <T,>(previous: T | undefined, query: { queryKey: readonly unknown[] } | undefined) =>
     query?.queryKey[2] === venueId ? previous : undefined;
-
-// A week's bookings (the days that hold slots), from its Sunday.
-const weekBookings = (venueId: string, start: string, enabled: boolean) => ({
-  queryKey: calendarKey(venueId, "bookings", start),
-  queryFn: async () =>
-    (
-      await fetched(
-        api.GET("/v1/staff/venues/{venueId}/bookings", {
-          params: { path: { venueId }, query: { date: start, span: 7 } },
-        }),
-      )
-    ).data,
-  enabled,
-  refetchInterval: REFRESH_EVERY,
-});
 
 // The weeks either side as one list. Defined once, so useQueries keeps its answer between renders
 // until a week's data changes.
@@ -179,15 +155,7 @@ export default function VenueCalendar() {
     combine: bothWeeks,
   });
   const slots = useQuery({
-    queryKey: calendarKey(venueId, "slots", weekStart),
-    queryFn: () =>
-      fetched(
-        api.GET("/v1/staff/venues/{venueId}/slots", {
-          params: { path: { venueId }, query: { date: weekStart, span: 7 } },
-        }),
-      ),
-    enabled: canSeeSchedule,
-    refetchInterval: REFRESH_EVERY,
+    ...weekSlots(venueId, weekStart, canSeeSchedule),
     placeholderData: sameVenue(venueId),
   });
   const pending = useQuery(bookingRequests(venueId, canSeeBookings));
