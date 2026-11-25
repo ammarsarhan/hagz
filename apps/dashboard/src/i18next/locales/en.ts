@@ -106,7 +106,10 @@ const en = {
         priceRange: "{{from}} – {{to}}",
         answer: "Answer",
         confirm: "Confirm",
-        empty: "Nothing booked on this day.",
+        offlineTitle: "You’re offline",
+        offlineBody: "Check your Wi-Fi or mobile data, then try again.",
+        failedTitle: "Couldn’t load the day",
+        tryAgain: "Try again",
       },
       account: {
         open: "Your account",

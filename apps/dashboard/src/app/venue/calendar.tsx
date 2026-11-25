@@ -14,8 +14,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isProblem } from "@hagz/api";
 import { Bone } from "@/components/bone";
+import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
+import { OfflineArt } from "@/components/offline-art";
 import { IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
@@ -64,13 +67,14 @@ const staggered = (index: number) =>
 const FAB = 56;
 const FAB_GAP = 16;
 // From the status bar to the title row (the customer app's tabs put their title 16 below it; the
-// row is 40 for the round buttons, so 13 puts the title's 34 in the same place), the gap to the
-// strip, and the strip's height: weekday letter, day disc and dot.
+// row is 40 for the round buttons), the gap to the strip, and the strip's height: weekday letter,
+// day disc and dot.
 const TOP = 13;
 const TITLE_TO_STRIP = 15;
 const STRIP = 16 + 4 + 36 + 6 + 5;
-// Docked, the title shrinks from 28 to 15 over the strip, with this much room above the strip.
-const DOCKED_SCALE = 15 / 28;
+// The title is 24 in the page and shrinks to 17 docked over the strip (user: 28 to 15 was too
+// abrupt), with this much room above the strip.
+const DOCKED_SCALE = 17 / 24;
 const DOCKED_TITLE = 30;
 // The venue's timezone until the first answer says it; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
@@ -178,10 +182,20 @@ export default function VenueCalendar() {
     if (answeredZone) setTimezone(answeredZone);
   }, [answeredZone]);
 
+  // The day can't be shown without its bookings and slots: the Unplugged scene and Try again take
+  // its place. Anything else that fails (a refresh with the day already on screen, the requests)
+  // says so in the HUD.
+  const dayFailure =
+    (bookings.isError && bookings.data === undefined && bookings.error) ||
+    (slots.isError && slots.data === undefined && slots.error) ||
+    undefined;
   const failure = [bookings, slots, pending].find((read) => read.isError)?.error;
   useEffect(() => {
-    if (failure) hud.show(hudMessage(failure));
-  }, [failure, hud]);
+    if (failure && !dayFailure) hud.show(hudMessage(failure));
+  }, [failure, dayFailure, hud]);
+  const retry = () => {
+    for (const read of [bookings, slots, pending]) if (read.isError) void read.refetch();
+  };
 
   // The grounds in the venue's order: the slots know them all; without the schedule, the ones that
   // have bookings this week.
@@ -230,7 +244,8 @@ export default function VenueCalendar() {
   // The strip docks under the title, which docks above it: the day, 28 pt in its place in the page,
   // rides up and shrinks to 15 pt as the page scrolls, reaching the header as the strip does.
   const stripDock = dockAt + DOCKED_TITLE;
-  const titleStart = top + 3;
+  // The title's 30 pt line, centred in the 40 pt row beside the round buttons.
+  const titleStart = top + 5;
   const stripStart = useSharedValue(top + 40 + TITLE_TO_STRIP);
   const stripStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: Math.max(stripDock, stripStart.value - scrollY.value) }],
@@ -358,13 +373,30 @@ export default function VenueCalendar() {
         <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
 
         <View className="gap-4 pt-5">
-          {loading ? (
+          {dayFailure ? (
+            <View className="items-center pt-6">
+              <OfflineArt scale={0.8} />
+              <Text
+                accessibilityRole="header"
+                className="mt-3 mb-2 text-center text-heading font-semibold"
+              >
+                {isProblem(dayFailure)
+                  ? t("screens.calendar.failedTitle")
+                  : t("screens.calendar.offlineTitle")}
+              </Text>
+              <Text className="text-center text-body text-ink-2">
+                {isProblem(dayFailure) ? hudMessage(dayFailure) : t("screens.calendar.offlineBody")}
+              </Text>
+              <View className="mt-6 self-stretch">
+                <Button
+                  label={t("screens.calendar.tryAgain")}
+                  variant="secondary"
+                  onPress={retry}
+                />
+              </View>
+            </View>
+          ) : loading ? (
             Array.from({ length: 8 }, (_, index) => <RowBone key={index} />)
-          ) : rows.length === 0 && canSeeBookings && bookings.data ? (
-            <>
-              {showNow ? <NowLine at={now} timezone={timezone} /> : null}
-              <Text className="text-body text-ink-3">{t("screens.calendar.empty")}</Text>
-            </>
           ) : (
             rows.flatMap((row, index) => [
               ...(index === nowAt
@@ -428,7 +460,7 @@ export default function VenueCalendar() {
         className="absolute top-0"
         style={[{ start: 20, transformOrigin: isRTL ? "right top" : "left top" }, titleStyle]}
       >
-        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+        <Text accessibilityRole="header" className="text-heading font-semibold tracking-[-0.3px]">
           {dayLabel(day, t)}
         </Text>
       </Animated.View>
@@ -764,7 +796,8 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="h-14 flex-row items-center active:opacity-70"
+      // 56 at least, taller when the grounds run onto another line.
+      className="min-h-14 flex-row items-center active:opacity-70"
     >
       <View className="w-14">
         <Text
@@ -779,7 +812,7 @@ function Row({
         </Text>
       </View>
       <View
-        className={`h-14 w-1.5 rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
+        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
       />
       <View className="ms-3.5 flex-1">
         <Text
@@ -788,7 +821,7 @@ function Row({
         >
           {title}
         </Text>
-        <Text className="text-label leading-[19px] text-ink-2" numberOfLines={1}>
+        <Text className="text-label leading-[19px] text-ink-2">
           {[ground, ...standing(row, timezone, currency, t)].filter(Boolean).join(" · ")}
         </Text>
       </View>

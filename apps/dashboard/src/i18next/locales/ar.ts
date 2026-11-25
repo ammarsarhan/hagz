@@ -116,7 +116,10 @@ const ar: ArabicTranslations = {
         priceRange: "{{from}} – {{to}}",
         answer: "رد",
         confirm: "تأكيد",
-        empty: "لا حجوزات في هذا اليوم.",
+        offlineTitle: "أنت غير متصل",
+        offlineBody: "تحقق من الواي فاي أو بيانات الهاتف، ثم حاول مرة أخرى.",
+        failedTitle: "تعذر تحميل اليوم",
+        tryAgain: "حاول مرة أخرى",
       },
       account: {
         open: "حسابك",
