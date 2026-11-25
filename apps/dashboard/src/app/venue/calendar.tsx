@@ -1,9 +1,15 @@
-import { useQuery, type QueryFilters } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from "react-native";
-import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { FadeIn } from "react-native-reanimated";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useHud } from "@/components/hud";
 import { IconInbox, IconPlus } from "@/components/icons";
 import { Screen } from "@/components/screen";
@@ -12,14 +18,17 @@ import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import {
   addDays,
+  bookingDays,
   clockOf,
   dayRows,
   localDateOf,
   nowIndex,
-  requestDays,
+  ordinal,
+  weekdayOf,
   weekOf,
   weekStartOf,
   type CalendarRow,
+  type StaffBooking,
 } from "@/lib/calendar";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -28,8 +37,8 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 
-// The Calendar tab (Figma D6 round 2, "B · The day as a list"): a week strip with the picked day in
-// an ink disc and a dot under each day with a booking request to answer, the grounds as chips, and
+// The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked date: a week
+// strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
 // the day's bookings and closed times as rows in time order, with a grey line where now is.
 // Requests live behind the inbox button, its red count hidden at none.
 //
@@ -54,6 +63,26 @@ const sameVenue =
   (venueId: string) =>
   <T,>(previous: T | undefined, query: { queryKey: readonly unknown[] } | undefined) =>
     query?.queryKey[2] === venueId ? previous : undefined;
+
+// A week's bookings (the days that hold slots), from its Sunday.
+const weekBookings = (venueId: string, start: string, enabled: boolean) => ({
+  queryKey: calendarKey(venueId, "bookings", start),
+  queryFn: async () =>
+    (
+      await fetched(
+        api.GET("/v1/staff/venues/{venueId}/bookings", {
+          params: { path: { venueId }, query: { date: start, span: 7 } },
+        }),
+      )
+    ).data,
+  enabled,
+  refetchInterval: REFRESH_EVERY,
+});
+
+// The weeks either side as one list. Defined once, so useQueries keeps its answer between renders
+// until a week's data changes.
+const bothWeeks = (results: { data?: StaffBooking[] }[]) =>
+  results.flatMap((result) => result.data ?? []);
 
 // Every read of this tab, for any venue and week.
 const REFRESHED: QueryFilters[] = [
@@ -85,18 +114,13 @@ export default function VenueCalendar() {
   const weekStart = weekStartOf(day);
 
   const bookings = useQuery({
-    queryKey: calendarKey(venueId, "bookings", weekStart),
-    queryFn: async () =>
-      (
-        await fetched(
-          api.GET("/v1/staff/venues/{venueId}/bookings", {
-            params: { path: { venueId }, query: { date: weekStart, span: 7 } },
-          }),
-        )
-      ).data,
-    enabled: canSeeBookings,
-    refetchInterval: REFRESH_EVERY,
+    ...weekBookings(venueId, weekStart, canSeeBookings),
     placeholderData: sameVenue(venueId),
+  });
+  // The weeks either side too, so a swipe lands on their dots already there.
+  const around = useQueries({
+    queries: [-7, 7].map((days) => weekBookings(venueId, addDays(weekStart, days), canSeeBookings)),
+    combine: bothWeeks,
   });
   const slots = useQuery({
     queryKey: calendarKey(venueId, "slots", weekStart),
@@ -156,7 +180,10 @@ export default function VenueCalendar() {
       }),
     [day, timezone, bookings.data, slots.data, grounds, groundId, now],
   );
-  const dots = useMemo(() => requestDays(pending.data ?? [], timezone), [pending.data, timezone]);
+  const dots = useMemo(
+    () => bookingDays([...(bookings.data ?? []), ...around, ...(pending.data ?? [])], timezone),
+    [bookings.data, around, pending.data, timezone],
+  );
   const requests = pending.data?.length ?? 0;
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
@@ -179,7 +206,7 @@ export default function VenueCalendar() {
           accessibilityRole="header"
           className="flex-1 text-title font-semibold tracking-[-0.4px]"
         >
-          {t("screens.calendar.title")}
+          {dateTitle(day, today, t)}
         </Text>
         <RoundButton
           label={
@@ -204,13 +231,14 @@ export default function VenueCalendar() {
         today={today}
         dots={dots}
         onPick={setPicked}
-        onWeek={(weeks) => setPicked(addDays(day, weeks * 7))}
+        onWeek={(start) => setPicked(addDays(start, weekdayOf(day)))}
       />
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginHorizontal: -20, marginTop: 17, flexGrow: 0 }}
+        // ScrollView shrinks by default, and the list under it took its height: the chips were cut.
+        style={{ marginHorizontal: -20, marginTop: 17, flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
       >
         <Chip
@@ -231,7 +259,7 @@ export default function VenueCalendar() {
       <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
 
       <ScrollView
-        style={{ marginHorizontal: -20 }}
+        style={{ marginHorizontal: -20, flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 20,
@@ -309,8 +337,14 @@ function RoundButton({
   );
 }
 
-// S to S, the picked day in an ink disc, today in a grey one when it isn't picked, and a dot under each day with a request to answer. A swipe
-// goes a week back or on; in Arabic the strip runs right to left, so the swipe does too.
+// How far the strip reaches either side of this week.
+const WEEKS_EACH_WAY = 52;
+
+// S to S, a week to a page, scrolled sideways like any list and settling on a week. The picked day
+// sits in an ink disc, today in a grey one when it isn't picked, and a dot marks each day with
+// bookings. Settling on another week picks the same weekday there. The list runs left to right
+// whatever the language, so its offsets mean the same on iOS and Android; in Arabic the weeks go in
+// reversed, and each week's days run right to left.
 function WeekStrip({
   start,
   picked,
@@ -324,9 +358,75 @@ function WeekStrip({
   today: string;
   dots: ReadonlySet<string>;
   onPick: (date: string) => void;
-  onWeek: (weeks: number) => void;
+  onWeek: (start: string) => void;
 }) {
-  const days = weekOf(start);
+  const { width } = useWindowDimensions();
+  const thisWeek = weekStartOf(today);
+  const weeks = useMemo(() => {
+    const all = Array.from({ length: WEEKS_EACH_WAY * 2 + 1 }, (_, i) =>
+      addDays(thisWeek, (i - WEEKS_EACH_WAY) * 7),
+    );
+    return isRTL ? all.reverse() : all;
+  }, [thisWeek]);
+  const list = useRef<FlatList<string>>(null);
+  const shown = useRef(weeks.indexOf(start));
+
+  // A week picked from outside the strip (a day far off) scrolls it there.
+  useEffect(() => {
+    const index = weeks.indexOf(start);
+    if (index === -1 || index === shown.current) return;
+    shown.current = index;
+    list.current?.scrollToIndex({ index, animated: true });
+  }, [start, weeks]);
+
+  return (
+    <FlatList
+      ref={list}
+      horizontal
+      pagingEnabled
+      data={weeks}
+      keyExtractor={(week) => week}
+      getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+      initialScrollIndex={Math.max(0, weeks.indexOf(start))}
+      initialNumToRender={3}
+      windowSize={5}
+      showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={(event) => {
+        const index = Math.round(event.nativeEvent.contentOffset.x / width);
+        const week = weeks[index];
+        shown.current = index;
+        if (week && week !== start) onWeek(week);
+      }}
+      style={{ marginHorizontal: -20, marginTop: 15, flexGrow: 0, flexShrink: 0, direction: "ltr" }}
+      renderItem={({ item: week }) => (
+        <Week
+          start={week}
+          width={width}
+          picked={picked}
+          today={today}
+          dots={dots}
+          onPick={onPick}
+        />
+      )}
+    />
+  );
+}
+
+function Week({
+  start,
+  width,
+  picked,
+  today,
+  dots,
+  onPick,
+}: {
+  start: string;
+  width: number;
+  picked: string;
+  today: string;
+  dots: ReadonlySet<string>;
+  onPick: (date: string) => void;
+}) {
   const letter = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "narrow" });
   const long = new Intl.DateTimeFormat(intlLocale, {
     timeZone: "UTC",
@@ -334,50 +434,35 @@ function WeekStrip({
     day: "numeric",
     month: "long",
   });
-  const swipe = Gesture.Race(
-    Gesture.Fling()
-      .direction(Directions.RIGHT)
-      .runOnJS(true)
-      .onEnd(() => onWeek(isRTL ? 1 : -1)),
-    Gesture.Fling()
-      .direction(Directions.LEFT)
-      .runOnJS(true)
-      .onEnd(() => onWeek(isRTL ? -1 : 1)),
-  );
-
   return (
-    <GestureDetector gesture={swipe}>
-      <Animated.View key={start} entering={FadeIn.duration(180)} className="mt-[15px] flex-row">
-        {days.map((date) => {
-          const at = new Date(`${date}T12:00:00Z`);
-          const on = date === picked;
-          return (
-            <Pressable
-              key={date}
-              accessibilityRole="button"
-              accessibilityLabel={long.format(at)}
-              accessibilityState={{ selected: on }}
-              onPress={() => onPick(date)}
-              className="flex-1 items-center"
+    <View className="flex-row px-5" style={{ width, direction: isRTL ? "rtl" : "ltr" }}>
+      {weekOf(start).map((date) => {
+        const at = new Date(`${date}T12:00:00Z`);
+        const on = date === picked;
+        return (
+          <Pressable
+            key={date}
+            accessibilityRole="button"
+            accessibilityLabel={long.format(at)}
+            accessibilityState={{ selected: on }}
+            onPress={() => onPick(date)}
+            className="flex-1 items-center"
+          >
+            <Text className="text-[12px] leading-4 text-ink-3">{letter.format(at)}</Text>
+            <View
+              className={`mt-1 size-9 items-center justify-center rounded-full ${on ? "bg-ink" : date === today ? "bg-chip" : ""}`}
             >
-              <Text className="text-[12px] leading-4 text-ink-3">{letter.format(at)}</Text>
-              <View
-                className={`mt-1 size-9 items-center justify-center rounded-full ${on ? "bg-ink" : date === today ? "bg-chip" : ""}`}
+              <Text
+                className={`text-[17px] leading-5 ${on ? "font-semibold text-white" : "text-ink"}`}
               >
-                <Text
-                  className={`text-[17px] leading-5 ${on ? "font-semibold text-white" : "text-ink"}`}
-                >
-                  {at.getUTCDate()}
-                </Text>
-              </View>
-              <View
-                className={`mt-1.5 size-[5px] rounded-full ${dots.has(date) ? "bg-ink" : ""}`}
-              />
-            </Pressable>
-          );
-        })}
-      </Animated.View>
-    </GestureDetector>
+                {at.getUTCDate()}
+              </Text>
+            </View>
+            <View className={`mt-1.5 size-[5px] rounded-full ${dots.has(date) ? "bg-ink" : ""}`} />
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -398,7 +483,8 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 function NowLine({ at, timezone }: { at: number; timezone: string }) {
   const { t } = useTranslation();
   return (
-    <View className="h-0.5 flex-row items-center gap-2.5">
+    // As tall as its words (they were cut off at the line's 2 pt), pulled into the gaps around it.
+    <View className="h-[15px] flex-row items-center gap-2.5" style={{ marginVertical: -6 }}>
       <Text className="text-[12px] leading-[15px] font-semibold text-ink-3">
         {t("screens.calendar.now", { time: sentenceTime(at, timezone, t) })}
       </Text>
@@ -408,6 +494,17 @@ function NowLine({ at, timezone }: { at: number; timezone: string }) {
 }
 
 type T = ReturnType<typeof useTranslation>["t"];
+
+// The picked day as the title: "November 25th", with the year when it isn't this one.
+const dateTitle = (date: string, today: string, t: T) => {
+  const at = new Date(`${date}T12:00:00Z`);
+  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "long" }).format(at);
+  const day = at.getUTCDate();
+  const values = { month, day: isRTL ? String(day) : ordinal(day), year: date.slice(0, 4) };
+  return date.slice(0, 4) === today.slice(0, 4)
+    ? t("screens.calendar.date", values)
+    : t("screens.calendar.dateYear", values);
+};
 
 const period = (pm: boolean, t: T) => t(pm ? "screens.calendar.pm" : "screens.calendar.am");
 const hourLabel = (at: string, timezone: string, t: T) => {
