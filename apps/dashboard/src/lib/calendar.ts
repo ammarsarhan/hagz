@@ -47,7 +47,7 @@ export type RowKind =
 
 export type CalendarRow =
   | { kind: "closed"; key: string; startsAt: string; endsAt: string; groundId: string }
-  // Open slots nobody has: one row per hour and price, naming every ground free then at it.
+  // Open slots nobody has: one row per time, naming every ground free then, and its prices' range.
   | {
       kind: "free";
       key: string;
@@ -55,7 +55,7 @@ export type CalendarRow =
       endsAt: string;
       groundId: string;
       groundIds: string[];
-      price: number;
+      price: { from: number; to: number };
       ended: boolean;
     }
   | {
@@ -111,12 +111,12 @@ const closedStretches = (slots: readonly Slot[]) => {
   return stretches;
 };
 
-// Open slots nobody holds, grounds at the same hour and price together.
+// Open slots nobody holds, every ground free at the same time in one row (user: not split by price).
 const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: number) => {
   const groups = new Map<string, Slot[]>();
   for (const slot of slots) {
     if (slot.status !== "AVAILABLE") continue;
-    const key = `${slot.startsAt}|${slot.endsAt}|${slot.price}`;
+    const key = `${slot.startsAt}|${slot.endsAt}`;
     groups.set(key, [...(groups.get(key) ?? []), slot]);
   }
   return [...groups].map(([key, group]) => {
@@ -129,7 +129,10 @@ const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: n
       endsAt: first.endsAt,
       groundId: groundIds[0] ?? first.groundId,
       groundIds,
-      price: first.price,
+      price: {
+        from: Math.min(...group.map((slot) => slot.price)),
+        to: Math.max(...group.map((slot) => slot.price)),
+      },
       ended: Date.parse(first.endsAt) <= now,
     };
   });

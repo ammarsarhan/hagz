@@ -91,7 +91,6 @@ const ar: ArabicTranslations = {
     screens: {
       calendar: {
         title: "التقويم",
-        monthYear: "{{month}} {{year}}",
         day: "{{weekday}} {{day}}",
         requests: "طلبات الحجز",
         requestsWaiting_one: "طلب حجز واحد",
@@ -114,6 +113,7 @@ const ar: ArabicTranslations = {
         payingTill: "يدفع حتى {{time}}",
         closed: "مغلق من قبلك",
         free: "متاح",
+        priceRange: "{{from}} – {{to}}",
         answer: "رد",
         confirm: "تأكيد",
         empty: "لا حجوزات في هذا اليوم.",

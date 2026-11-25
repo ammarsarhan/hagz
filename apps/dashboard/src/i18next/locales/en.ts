@@ -77,7 +77,6 @@ const en = {
     screens: {
       calendar: {
         title: "Calendar",
-        monthYear: "{{month}} {{year}}",
         day: "{{weekday}} {{day}}",
         requests: "Booking requests",
         requestsWaiting_one: "{{count}} booking request",
@@ -103,6 +102,8 @@ const en = {
         payingTill: "Paying till {{time}}",
         closed: "Closed by you",
         free: "Free",
+        // Free grounds at different prices: "425 – 625 EGP".
+        priceRange: "{{from}} – {{to}}",
         answer: "Answer",
         confirm: "Confirm",
         empty: "Nothing booked on this day.",
