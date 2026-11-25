@@ -98,6 +98,7 @@ const en = {
         heldTill: "Held till {{time}}",
         payingTill: "Paying till {{time}}",
         closed: "Closed by you",
+        free: "Free",
         answer: "Answer",
         confirm: "Confirm",
         empty: "Nothing booked on this day.",

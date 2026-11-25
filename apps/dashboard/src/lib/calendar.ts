@@ -47,6 +47,17 @@ export type RowKind =
 
 export type CalendarRow =
   | { kind: "closed"; key: string; startsAt: string; endsAt: string; groundId: string }
+  // Open slots nobody has: one row per hour and price, naming every ground free then at it.
+  | {
+      kind: "free";
+      key: string;
+      startsAt: string;
+      endsAt: string;
+      groundId: string;
+      groundIds: string[];
+      price: number;
+      ended: boolean;
+    }
   | {
       kind: Exclude<RowKind, "closed">;
       key: string;
@@ -100,7 +111,32 @@ const closedStretches = (slots: readonly Slot[]) => {
   return stretches;
 };
 
-// One day's rows, by start time then ground (in the venue's order). A row belongs to the day it
+// Open slots nobody holds, grounds at the same hour and price together.
+const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: number) => {
+  const groups = new Map<string, Slot[]>();
+  for (const slot of slots) {
+    if (slot.status !== "AVAILABLE") continue;
+    const key = `${slot.startsAt}|${slot.endsAt}|${slot.price}`;
+    groups.set(key, [...(groups.get(key) ?? []), slot]);
+  }
+  return [...groups].map(([key, group]) => {
+    const groundIds = group.map((slot) => slot.groundId).sort((a, b) => order(a) - order(b));
+    const [first] = group as [Slot, ...Slot[]];
+    return {
+      kind: "free" as const,
+      key,
+      startsAt: first.startsAt,
+      endsAt: first.endsAt,
+      groundId: groundIds[0] ?? first.groundId,
+      groundIds,
+      price: first.price,
+      ended: Date.parse(first.endsAt) <= now,
+    };
+  });
+};
+
+// One day's rows, by start time then ground (in the venue's order). Free hours fill the day between
+// bookings, so the whole day shows even with nothing booked. A row belongs to the day it
 // starts on, so a game from 11 pm to 1 am shows once, on its first day.
 export const dayRows = ({
   date,
@@ -122,6 +158,10 @@ export const dayRows = ({
   const onDay = (row: { startsAt: string; groundId: string }) =>
     localDateOf(row.startsAt, timezone) === date &&
     (groundId === null || row.groundId === groundId);
+  const order = (id: string) => {
+    const at = groundOrder.indexOf(id);
+    return at === -1 ? groundOrder.length : at;
+  };
   const rows: CalendarRow[] = [
     ...bookings
       .map((booking) => ({
@@ -142,11 +182,16 @@ export const dayRows = ({
         endsAt: stretch.endsAt,
         groundId: stretch.groundId,
       })),
+    ...freeHours(
+      slots.filter(
+        (slot) =>
+          localDateOf(slot.startsAt, timezone) === date &&
+          (groundId === null || slot.groundId === groundId),
+      ),
+      order,
+      now,
+    ),
   ];
-  const order = (id: string) => {
-    const at = groundOrder.indexOf(id);
-    return at === -1 ? groundOrder.length : at;
-  };
   return rows.sort(
     (a, b) =>
       Date.parse(a.startsAt) - Date.parse(b.startsAt) ||

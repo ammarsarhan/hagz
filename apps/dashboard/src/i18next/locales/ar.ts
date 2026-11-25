@@ -110,6 +110,7 @@ const ar: ArabicTranslations = {
         heldTill: "محجوز حتى {{time}}",
         payingTill: "يدفع حتى {{time}}",
         closed: "مغلق من قبلك",
+        free: "متاح",
         answer: "رد",
         confirm: "تأكيد",
         empty: "لا حجوزات في هذا اليوم.",
