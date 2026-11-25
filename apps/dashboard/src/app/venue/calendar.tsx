@@ -2,14 +2,9 @@ import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import Animated, {
+  FadeInDown,
   interpolate,
   runOnJS,
   useAnimatedReaction,
@@ -58,6 +53,13 @@ import { useNow } from "@/lib/use-now";
 // the tab comes back into view and every minute while it's open.
 
 const REFRESH_EVERY = 60_000;
+// A day's rows come in one after another when it's picked, each a beat behind the one above; past
+// the first dozen (well below the fold) they all come in together.
+const staggered = (index: number) =>
+  FadeInDown.delay(Math.min(index, 12) * 35)
+    .duration(260)
+    .withInitialValues({ transform: [{ translateY: 12 }] });
+
 // The floating + button, and its gap above the tab bar.
 const FAB = 56;
 const FAB_GAP = 16;
@@ -341,21 +343,24 @@ export default function VenueCalendar() {
             </>
           ) : (
             rows.flatMap((row, index) => [
-              ...(index === nowAt ? [<NowLine key="now" at={now} timezone={timezone} />] : []),
-              <Row
-                key={row.key}
-                row={row}
-                timezone={timezone}
-                ground={
-                  row.kind === "free"
-                    ? row.groundIds.map(groundName).join(", ")
-                    : groundName(row.groundId)
-                }
-                currency={slots.data?.currency ?? "EGP"}
-                onPress={comingNext}
-              />,
+              ...(index === nowAt
+                ? [<NowLine key={`${day}:now`} at={now} timezone={timezone} />]
+                : []),
+              <Animated.View key={`${day}:${row.key}`} entering={staggered(index)}>
+                <Row
+                  row={row}
+                  timezone={timezone}
+                  ground={
+                    row.kind === "free"
+                      ? row.groundIds.map(groundName).join(", ")
+                      : groundName(row.groundId)
+                  }
+                  currency={slots.data?.currency ?? "EGP"}
+                  onPress={comingNext}
+                />
+              </Animated.View>,
               ...(index === rows.length - 1 && nowAt === rows.length
-                ? [<NowLine key="now" at={now} timezone={timezone} />]
+                ? [<NowLine key={`${day}:now`} at={now} timezone={timezone} />]
                 : []),
             ])
           )}
@@ -546,31 +551,71 @@ function Week({
     <View className="flex-row px-5" style={{ width, direction: isRTL ? "rtl" : "ltr" }}>
       {weekOf(start).map((date) => {
         const at = new Date(`${date}T12:00:00Z`);
-        const on = date === picked;
         return (
-          <Pressable
+          <Day
             key={date}
-            accessibilityRole="button"
-            accessibilityLabel={long.format(at)}
-            accessibilityState={{ selected: on }}
+            day={at.getUTCDate()}
+            letter={letter.format(at)}
+            label={long.format(at)}
+            on={date === picked}
+            today={date === today}
+            dot={dots.has(date)}
             onPress={() => onPick(date)}
-            className="flex-1 items-center"
-          >
-            <Text className="text-[12px] leading-4 text-ink-3">{letter.format(at)}</Text>
-            <View
-              className={`mt-1 size-9 items-center justify-center rounded-full ${on ? "bg-ink" : date === today ? "bg-chip" : ""}`}
-            >
-              <Text
-                className={`text-[17px] leading-5 ${on ? "font-semibold text-white" : "text-ink"}`}
-              >
-                {at.getUTCDate()}
-              </Text>
-            </View>
-            <View className={`mt-1.5 size-[5px] rounded-full ${dots.has(date) ? "bg-ink" : ""}`} />
-          </Pressable>
+          />
         );
       })}
     </View>
+  );
+}
+
+// One day of the strip. Picking it fades its ink disc and white number in over the plain one (and
+// the day before it fades back out), rather than snapping.
+function Day({
+  day,
+  letter,
+  label,
+  on,
+  today,
+  dot,
+  onPress,
+}: {
+  day: number;
+  letter: string;
+  label: string;
+  on: boolean;
+  today: boolean;
+  dot: boolean;
+  onPress: () => void;
+}) {
+  const picked = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    picked.value = withTiming(on ? 1 : 0, { duration: 200 });
+  }, [on, picked]);
+  const discStyle = useAnimatedStyle(() => ({ opacity: picked.value }));
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      className="flex-1 items-center"
+    >
+      <Text className="text-[12px] leading-4 text-ink-3">{letter}</Text>
+      <View
+        className={`mt-1 size-9 items-center justify-center rounded-full ${today ? "bg-chip" : ""}`}
+      >
+        <Text className="text-[17px] leading-5 text-ink">{day}</Text>
+        <Animated.View
+          pointerEvents="none"
+          className="absolute inset-0 items-center justify-center rounded-full bg-ink"
+          style={discStyle}
+        >
+          <Text className="text-[17px] leading-5 font-semibold text-white">{day}</Text>
+        </Animated.View>
+      </View>
+      <View className={`mt-1.5 size-[5px] rounded-full ${dot ? "bg-ink" : ""}`} />
+    </Pressable>
   );
 }
 
