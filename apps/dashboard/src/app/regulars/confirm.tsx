@@ -253,7 +253,7 @@ function Fact({
   onChange,
 }: {
   label: string;
-  // The label as big as the value: First week and Last week (user, 2026-11-26).
+  // First week and Last week (user, 2026-11-26): the label a little bigger than the others.
   bigLabel?: boolean;
   value: string;
   // A grey line under the value: the number under the name (user, 2026-11-26).
@@ -264,7 +264,7 @@ function Fact({
     <View className="flex-row items-center border-b border-border pt-5 pb-4">
       <View className="flex-1">
         <Text
-          className={`font-medium text-ink-2 ${bigLabel ? "text-[16px] leading-[21px]" : "text-[14px] leading-[19px]"}`}
+          className={`font-medium text-ink-2 ${bigLabel ? "text-[15px] leading-5" : "text-[14px] leading-[19px]"}`}
         >
           {label}
         </Text>

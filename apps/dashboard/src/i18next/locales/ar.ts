@@ -211,7 +211,7 @@ const ar: ArabicTranslations = {
           perWeek: "{{price}} أسبوعيًا",
           change: "تغيير",
           for: "لـ",
-          firstWeek: "أول أسبوع",
+          firstWeek: "يبدأ في",
           lastWeek: "آخر أسبوع",
           noEnd: "بلا نهاية",
           next: "ما سيحدث بعد ذلك",

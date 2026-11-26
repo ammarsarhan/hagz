@@ -187,7 +187,7 @@ const en = {
           perWeek: "{{price}} a week",
           change: "Change",
           for: "For",
-          firstWeek: "First week",
+          firstWeek: "Starts at",
           lastWeek: "Last week",
           noEnd: "No end",
           next: "What happens next",
