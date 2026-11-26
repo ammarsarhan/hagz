@@ -317,7 +317,6 @@ function TimeGroup({
         ) : null}
         {drawn.map((regular, drawnAt) => {
           const index = ids.indexOf(regular.id);
-          const was = saved.findIndex((one) => one.id === regular.id);
           return (
             <Slot
               key={regular.id}
@@ -327,8 +326,6 @@ function TimeGroup({
               carried={carried}
               rowHeight={rowHeight}
               canReorder={canReorder}
-              place={group.length > 1 ? index + 1 : null}
-              moved={was !== index}
               divider={index < group.length - 1}
               onDragging={onDragging}
               onDrop={onOrder}
@@ -360,8 +357,6 @@ function Slot({
   carried,
   rowHeight,
   canReorder,
-  place,
-  moved,
   divider,
   onDragging,
   onDrop,
@@ -373,8 +368,6 @@ function Slot({
   carried: SharedValue<string | null>;
   rowHeight: SharedValue<number>;
   canReorder: boolean;
-  place: number | null;
-  moved: boolean;
   divider: boolean;
   onDragging: (dragging: boolean) => void;
   onDrop: (ids: string[]) => void;
@@ -473,9 +466,9 @@ function Slot({
         }}
       >
         <Animated.View style={row}>
-          <Row regular={regular} place={place} moved={moved} divider={divider} onPress={onPress} />
+          <Row regular={regular} divider={divider} onPress={onPress} />
         </Animated.View>
-        {/* Lifted: a card over the time column too, with the place it would take and a grip. */}
+        {/* Lifted: a card over the time column too, with a grip. */}
         <Animated.View
           pointerEvents="none"
           className="absolute top-0 bottom-0 flex-row items-center rounded-[16px] bg-white px-4"
@@ -504,14 +497,7 @@ function Slot({
               {regular.customer.name}
             </Text>
             <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
-              {[
-                regular.ground.name,
-                place === null
-                  ? null
-                  : t("screens.regulars.reorder.place", { count: place, ordinal: true }),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              {regular.ground.name ?? ""}
             </Text>
           </View>
           <IconGripVertical size={18} color={colors.ink3} strokeWidth={2} />
@@ -523,15 +509,10 @@ function Slot({
 
 function Row({
   regular,
-  place,
-  moved,
   divider,
   onPress,
 }: {
   regular: Regular;
-  place: number | null;
-  // A reorder not yet saved puts it somewhere new: "now 2nd".
-  moved: boolean;
   divider: boolean;
   onPress: () => void;
 }) {
@@ -539,16 +520,8 @@ function Row({
   const paused = regular.status === "PAUSED";
   const weeks = weeksDecided(regular);
   const line = [
+    // Its place in a shared time shows by where it sits, not in words (user, 2026-11-26).
     regular.ground.name,
-    place === null
-      ? null
-      : moved
-        ? t("screens.regulars.reorder.now", {
-            place: t("screens.regulars.reorder.place", { count: place, ordinal: true }),
-          })
-        : place === 1
-          ? t("screens.regulars.first")
-          : t("screens.regulars.inLine", { count: place, ordinal: true }),
     paused && regular.pausedAt
       ? t("screens.regulars.paused", { date: dateLabel(regular.pausedAt) })
       : weeks > 0
