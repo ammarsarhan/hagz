@@ -174,7 +174,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
                 hitSlop={8}
                 className="self-start active:opacity-70"
               >
-                <Text className="text-caption text-ink underline">
+                <Text className="text-caption text-ink-2 underline">
                   {t(note.trim() ? "screens.swap.editNote" : "screens.swap.addNote")}
                 </Text>
               </Pressable>
