@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import type { TFunction } from "i18next";
@@ -77,6 +77,21 @@ export default function Customers() {
     enabled: venueId !== "",
   });
 
+  // Everyone, for the subtitle, whatever is typed (one row asked for, only its total read).
+  const everyone = useQuery({
+    queryKey: ["staff", "venues", venueId, "customers", "total"],
+    queryFn: async () => {
+      const result = await send(
+        api.GET("/v1/staff/venues/{venueId}/customers", {
+          params: { path: { venueId }, query: { order: "name", limit: 1 } },
+        }),
+      );
+      if (!result.ok) throw result.error;
+      return result.data.total;
+    },
+    enabled: venueId !== "",
+  });
+
   const searching = typed !== q || (list.isFetching && !list.isFetchingNextPage);
   const sections = useMemo(() => {
     const groups: { title: string; data: Customer[] }[] = [];
@@ -109,7 +124,15 @@ export default function Customers() {
   const title = t("screens.customers.title");
   const header = (
     <View>
-      <Title small onTitleLayout={compact.onTitleLayout} subtitle={t("screens.customers.subtitle")}>
+      <Title
+        small
+        onTitleLayout={compact.onTitleLayout}
+        subtitle={
+          everyone.data === undefined
+            ? t("screens.customers.subtitle")
+            : t("screens.customers.count", { count: everyone.data })
+        }
+      >
         {title}
       </Title>
       <View className="mb-2 h-12 flex-row items-center rounded-xl bg-field px-3.5">
