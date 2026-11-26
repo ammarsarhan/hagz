@@ -38,11 +38,11 @@ const SOFT_FILL = "#f2f4ff";
 const ART = { width: 120, height: 66 };
 const RECENT = 8;
 // How long typing pauses before it's searched.
-const PAUSE_MS = 300;
+export const PAUSE_MS = 300;
 const DIGITS = 10;
 
 // "+201013372648" → "+20 101 337 2648".
-const shownPhone = (phone: string) => {
+export const shownPhone = (phone: string) => {
   const match = /^\+20(\d{3})(\d{3})(\d{4})$/.exec(phone);
   return match ? `+20 ${match[1]} ${match[2]} ${match[3]}` : phone;
 };
@@ -332,7 +332,7 @@ function Customers({
 }
 
 // Someone the venue doesn't have yet: a name and a mobile number, then hold.
-function NewCustomer({
+export function NewCustomer({
   when,
   holdMinutes,
   holding,
@@ -388,7 +388,7 @@ function NewCustomer({
 }
 
 // Nobody found: an empty row under a magnifying glass.
-function NoMatchArt() {
+export function NoMatchArt() {
   return (
     // Cropped to the drawing, so the label sits close under it.
     <Svg width={140} height={44} viewBox="0 18 140 44">
