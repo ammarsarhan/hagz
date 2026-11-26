@@ -99,9 +99,13 @@ const en = {
       },
       hold: {
         title: "Hold a time",
-        subtitle: "Pick the time, then who it's for.",
+        subtitle: "Tap a time, or hold and drag across several.",
         none: "No free times on this ground this day.",
         zoneLabel: "Hold {{hours}} on {{ground}}",
+        picked: "{{hours}} · {{ground}}",
+        hold: "Hold",
+        tooShort_one: "Games here run at least {{count}} slot",
+        tooShort_other: "Games here run at least {{count}} slots back to back",
         when: "{{day}}, {{hours}} on {{ground}}",
         who: {
           title: "Who's it for?",

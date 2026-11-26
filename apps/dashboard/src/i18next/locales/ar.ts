@@ -113,9 +113,13 @@ const ar: ArabicTranslations = {
       },
       hold: {
         title: "احجز وقتًا مؤقتًا",
-        subtitle: "اختر الوقت، ثم لمن هو.",
+        subtitle: "اضغط على وقت، أو اضغط مطولًا واسحب لاختيار عدة أوقات.",
         none: "لا توجد أوقات متاحة في هذا الملعب في هذا اليوم.",
         zoneLabel: "احجز {{hours}} مؤقتًا في {{ground}}",
+        picked: "{{hours}} · {{ground}}",
+        hold: "احجز مؤقتًا",
+        tooShort_one: "المباريات هنا مدتها خانة واحدة على الأقل",
+        tooShort_other: "المباريات هنا مدتها {{count}} خانات متتالية على الأقل",
         when: "{{day}}، {{hours}} في {{ground}}",
         who: {
           title: "لمن هذا الوقت؟",
