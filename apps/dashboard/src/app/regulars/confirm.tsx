@@ -9,6 +9,7 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { HoldFor, shownPhone, type Choice } from "@/components/hold-for";
 import { useHud } from "@/components/hud";
+import { PickSheet } from "@/components/pick-sheet";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { StepRail } from "@/components/step-rail";
@@ -17,7 +18,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
-import { weekStartOf } from "@/lib/calendar";
+import { addDays, weekStartOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale } from "@/lib/language";
@@ -54,6 +55,9 @@ type Params = {
 
 type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 const FALLBACK_WINDOW = 24;
+// How far ahead Last week reaches from the first week: a year of weeks.
+const LAST_WEEKS = 52;
+const NO_END = -1;
 
 export default function ConfirmRegular() {
   const { t } = useTranslation();
@@ -75,9 +79,23 @@ export default function ConfirmRegular() {
   const dayOfWeek = Number(params.dayOfWeek);
   const startHour = Number(params.startHour);
   const slotCount = Number(params.slotCount);
-  const dates = params.dates.split(",");
-  const free = params.free.split(",");
-  const first = dates[0] ?? "";
+  const allDates = params.dates.split(",");
+  const allFree = params.free.split(",");
+  // First week and Last week (Figma D12 719:3, 719:183): the first is one of the weeks ahead (their
+  // free or taken is known), the last any week from the first on, or no end. Only the weeks between
+  // them are reserved, as the server does it.
+  const [first, setFirst] = useState(allDates[0] ?? "");
+  const [last, setLast] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<"first" | "last" | null>(null);
+  const [openings, setOpenings] = useState(0);
+  const openSheet = (which: "first" | "last") => {
+    setOpenings((count) => count + 1);
+    setSheet(which);
+  };
+  const within = (date: string) => date >= first && (last === null || date <= last);
+  const dates = allDates.filter(within);
+  const free = allFree.filter((_, index) => within(allDates[index] ?? ""));
+  const lastDates = Array.from({ length: LAST_WEEKS }, (_, week) => addDays(first, week * 7));
   const customerId = (() => {
     const customer = JSON.parse(params.customer) as Choice["customer"];
     return "venueCustomerId" in customer ? customer.venueCustomerId : null;
@@ -143,6 +161,9 @@ export default function ConfirmRegular() {
     return t("screens.regulars.confirm.byBefore", { day: long.format(weekday), hour });
   })();
 
+  const dateLabel = (date: string) => dayMonth.format(new Date(`${date}T12:00:00Z`));
+  const weekdayName = long.format(new Date(Date.UTC(2026, 0, 4 + dayOfWeek)));
+
   const firstDate = (dates_: string[]) =>
     dates_[0] ? `${short.format(new Date(`${dates_[0]}T12:00:00Z`))} ` : "";
 
@@ -159,6 +180,7 @@ export default function ConfirmRegular() {
           startHour,
           slotCount,
           startsOn: first,
+          ...(last ? { endsOn: last } : {}),
         },
       }),
     );
@@ -204,7 +226,7 @@ export default function ConfirmRegular() {
           onTitleLayout={compact.onTitleLayout}
           subtitle={t(`${c}.subtitle`, {
             name: params.name.trim().split(/\s+/)[0] ?? params.name,
-            weekday: long.format(new Date(Date.UTC(2026, 0, 4 + dayOfWeek))),
+            weekday: weekdayName,
             hour: hourLabel(t, startHour),
           })}
         >
@@ -236,14 +258,14 @@ export default function ConfirmRegular() {
         <Fact
           label={t(`${c}.firstWeek`)}
           bigLabel
-          value={first ? dayMonth.format(new Date(`${first}T12:00:00Z`)) : ""}
-          onChange={() => hud.show(t("common.comingNext"))}
+          value={first ? dateLabel(first) : ""}
+          onChange={() => openSheet("first")}
         />
         <Fact
           label={t(`${c}.lastWeek`)}
           bigLabel
-          value={t(`${c}.noEnd`)}
-          onChange={() => hud.show(t("common.comingNext"))}
+          value={last ? dateLabel(last) : t(`${c}.noEnd`)}
+          onChange={() => openSheet("last")}
         />
 
         <GroupHeading className="mt-9 mb-5">{t(`${c}.next`)}</GroupHeading>
@@ -287,6 +309,49 @@ export default function ConfirmRegular() {
           ]}
         />
       </FadingScroll>
+
+      <PickSheet
+        key={`first-${openings}`}
+        visible={sheet === "first"}
+        title={t(`${c}.firstSheet`)}
+        body={t(`${c}.firstSheetBody`, { weekday: weekdayName })}
+        wheels={[
+          {
+            label: t(`${c}.firstSheet`),
+            items: allDates.map((date, index) => ({ value: index, label: dateLabel(date) })),
+            value: Math.max(allDates.indexOf(first), 0),
+          },
+        ]}
+        onClose={() => setSheet(null)}
+        onDone={([index]) => {
+          const picked = allDates[index ?? 0] ?? first;
+          setFirst(picked);
+          // A last week before the new first moves up to it.
+          if (last !== null && last < picked) setLast(picked);
+          setSheet(null);
+        }}
+      />
+      <PickSheet
+        key={`last-${openings}`}
+        visible={sheet === "last"}
+        title={t(`${c}.lastSheet`)}
+        body={t(`${c}.lastSheetBody`, { weekday: weekdayName })}
+        wheels={[
+          {
+            label: t(`${c}.lastSheet`),
+            items: [
+              { value: NO_END, label: t(`${c}.noEnd`) },
+              ...lastDates.map((date, index) => ({ value: index, label: dateLabel(date) })),
+            ],
+            value: last === null ? NO_END : Math.max(lastDates.indexOf(last), 0),
+          },
+        ]}
+        onClose={() => setSheet(null)}
+        onDone={([index]) => {
+          setLast(index === undefined || index === NO_END ? null : (lastDates[index] ?? null));
+          setSheet(null);
+        }}
+      />
 
       {/* Someone else: the same sheets as before, then back here with them. */}
       <HoldFor
