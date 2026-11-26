@@ -97,7 +97,7 @@ export default function VenueTab() {
       key: "customers",
       title: t(`${v}.customers`),
       body: t(`${v}.customersBody`),
-      onPress: comingNext,
+      onPress: () => router.push("/customers"),
     },
     can("customers") && {
       key: "regulars",
