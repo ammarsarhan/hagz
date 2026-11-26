@@ -151,7 +151,8 @@ export default function NewRegular() {
   const answer = weeks.find((week) => week.data)?.data;
   if (answer && answer.timezone !== timezone) setTimezone(answer.timezone);
   const currency = answer?.currency ?? "EGP";
-  const grounds = answer?.grounds ?? [];
+  // A ground being removed takes no new regulars.
+  const grounds = (answer?.grounds ?? []).filter((one) => !one.removing);
   const ground = grounds.find((one) => one.id === picked) ?? grounds[0];
   const shortest = ground?.minimumSlots ?? 1;
   const longest = ground?.maximumSlots ?? 3;

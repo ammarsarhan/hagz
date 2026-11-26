@@ -109,7 +109,8 @@ export function TimePick({
 
   const timezone = slots.data?.timezone ?? FALLBACK_TIMEZONE;
   const currency = slots.data?.currency ?? "EGP";
-  const grounds = slots.data?.grounds ?? [];
+  // A ground being removed takes no new bookings.
+  const grounds = (slots.data?.grounds ?? []).filter((ground) => !ground.removing);
   const groundId =
     grounds.find((ground) => ground.id === picked)?.id ?? grounds[0]?.id ?? picked ?? "";
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
