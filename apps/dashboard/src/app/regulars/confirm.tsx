@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,17 +17,20 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
+import { weekStartOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { datesLabel } from "@/lib/regulars";
+import { weekBookings } from "@/lib/week-queries";
 
 // A new weekly game's last look (Figma D12 656:93), after its time and who it's for: the time as a
 // dashed card (back is the way to change it; user, 2026-11-26: no Change on it), who it's for, the first and last week, and what
 // happens next on the step rail: the weeks reserved (and any taken, skipped), each week waiting for
 // a confirm by the venue's deadline, and the week going back on sale if nobody confirms. The bar
-// says who and that it's paid at the venue, with Add regular. Added, the Regulars list takes the
+// says who and that it's paid at the venue, with Add regular. A taken week that's the customer's own
+// hold or booking at that very time isn't skipped: it becomes their week (as the server does it). Added, the Regulars list takes the
 // flow's place.
 
 type Params = {
@@ -72,9 +75,49 @@ export default function ConfirmRegular() {
   const slotCount = Number(params.slotCount);
   const dates = params.dates.split(",");
   const free = params.free.split(",");
-  const reserved = dates.filter((_, index) => free[index] === "1");
-  const taken = dates.filter((_, index) => free[index] !== "1");
   const first = dates[0] ?? "";
+  const customerId = (() => {
+    const customer = JSON.parse(params.customer) as Choice["customer"];
+    return "venueCustomerId" in customer ? customer.venueCustomerId : null;
+  })();
+  // The taken weeks' bookings, read under the Calendar's own keys: any of them the customer's own,
+  // at exactly this time on this ground, joins the regular instead of being skipped.
+  const takenAt = dates.filter((_, index) => free[index] !== "1");
+  const bookingWeeks = useQueries({
+    queries: [...new Set(takenAt.map(weekStartOf))].map((start) =>
+      weekBookings(venueId, start, venueId !== "" && customerId !== null),
+    ),
+  });
+  const ownDates = new Set(
+    bookingWeeks.flatMap((week) =>
+      (week.data ?? []).flatMap((booking) => {
+        if (
+          booking.venueCustomerId !== customerId ||
+          booking.ground.id !== params.groundId ||
+          booking.regular ||
+          !(booking.status === "CONFIRMED" || (booking.status === "HELD" && booking.hold))
+        )
+          return [];
+        const at = new Date(booking.startsAt);
+        const local = new Intl.DateTimeFormat("en-CA", {
+          timeZone: booking.timezone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "numeric",
+          hourCycle: "h23",
+        }).formatToParts(at);
+        const part = (type: string) => local.find((one) => one.type === type)?.value ?? "";
+        const exact =
+          Number(part("hour")) === startHour &&
+          Date.parse(booking.endsAt) - at.getTime() === slotCount * 3_600_000;
+        return exact ? [`${part("year")}-${part("month")}-${part("day")}`] : [];
+      }),
+    ),
+  );
+  const joins = takenAt.filter((date) => ownDates.has(date));
+  const reserved = dates.filter((date, index) => free[index] === "1" || ownDates.has(date));
+  const taken = takenAt.filter((date) => !ownDates.has(date));
   const day = t(`screens.regulars.days.${String(dayOfWeek) as Weekday}`);
   const hours = `${hourLabel(t, startHour)} – ${hourLabel(t, startHour + slotCount)}`;
   const money = `${formatAmount(Number(params.price), decimalsOf(params.currency))} ${params.currency}`;
@@ -211,9 +254,20 @@ export default function ConfirmRegular() {
                 dates: `${firstDate(reserved)}${datesLabel(t, reserved)}`,
               }),
               detail:
-                taken.length > 0
-                  ? t(`${c}.skipped`, { count: taken.length, dates: datesLabel(t, taken) })
-                  : undefined,
+                [
+                  joins.length > 0
+                    ? t(`${c}.joins`, {
+                        count: joins.length,
+                        dates: datesLabel(t, joins),
+                        name: params.name.trim().split(/\s+/)[0] ?? params.name,
+                      })
+                    : null,
+                  taken.length > 0
+                    ? t(`${c}.skipped`, { count: taken.length, dates: datesLabel(t, taken) })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join("\n") || undefined,
               when: "",
               state: "now",
               bold: "label",

@@ -279,6 +279,16 @@ function describe(
           }
         : { at, label: t("screens.history.events.released"), detail: by };
     }
+    // The customer's own hold or booking taken up as a week of their new weekly game.
+    case "REGULAR_JOINED":
+      return {
+        at,
+        label: t("screens.history.events.regularJoined"),
+        detail:
+          field(event, "from") === "HELD"
+            ? t("screens.history.events.regularJoinedHold")
+            : undefined,
+      };
     case "REGULAR_CHANGED": {
       const reason = field(event, "reason");
       return {
