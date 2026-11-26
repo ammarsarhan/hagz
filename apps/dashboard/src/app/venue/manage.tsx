@@ -185,7 +185,7 @@ export default function VenueTab() {
         style={{ marginHorizontal: -20 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        <View className="mt-10 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+        <View className="mt-5 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             // The full photo through reachable() (the dev API's host as the phone sees it), filling
             // the space; no blurry preview while it loads.
