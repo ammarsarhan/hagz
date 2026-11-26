@@ -247,7 +247,7 @@ function Customers({
         q ? (
           <View className="items-center pt-6 pb-4">
             <NoMatchArt />
-            <Text className="mt-4 text-center text-body text-ink-2" style={{ maxWidth: "75%" }}>
+            <Text className="mt-3 text-center text-body text-ink-2" style={{ maxWidth: "75%" }}>
               {t("screens.hold.customers.noMatch")}
             </Text>
           </View>
@@ -343,7 +343,8 @@ function NewCustomer({
 // Nobody found: an empty row under a magnifying glass.
 function NoMatchArt() {
   return (
-    <Svg width={140} height={84} viewBox="0 0 140 84">
+    // Cropped to the drawing, so the label sits close under it.
+    <Svg width={140} height={44} viewBox="0 18 140 44">
       <Rect
         x={14.5}
         y={22.5}
