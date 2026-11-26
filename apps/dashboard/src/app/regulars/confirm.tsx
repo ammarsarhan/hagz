@@ -158,7 +158,7 @@ export default function ConfirmRegular() {
           small
           onTitleLayout={compact.onTitleLayout}
           subtitle={t(`${c}.subtitle`, {
-            name: params.name,
+            name: params.name.trim().split(/\s+/)[0] ?? params.name,
             weekday: long.format(new Date(Date.UTC(2026, 0, 4 + dayOfWeek))),
             hour: hourLabel(t, startHour),
           })}
