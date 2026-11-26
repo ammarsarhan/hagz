@@ -365,14 +365,15 @@ function WeekRow({
       accessibilityRole={onPress ? "button" : undefined}
       disabled={!onPress}
       onPress={onPress}
-      className="min-h-[52px] flex-row items-center active:opacity-60"
+      // Three lines (moved) get a taller row and bar (user, 2026-11-26).
+      className={`${moved ? "min-h-[72px]" : "min-h-[52px]"} flex-row items-center active:opacity-60`}
     >
       <View className="w-14">
         <Text className="text-[15px] leading-5 font-semibold">{weekday.format(at)}</Text>
         <Text className="text-[13px] leading-[17px] text-ink-3">{dayMonth.format(at)}</Text>
       </View>
       <View
-        className={`h-[52px] w-1.5 rounded-[3px] ${
+        className={`${moved ? "h-[72px]" : "h-[52px]"} w-1.5 rounded-[3px] ${
           bar === "confirmed"
             ? "bg-primary"
             : bar === "waiting"
