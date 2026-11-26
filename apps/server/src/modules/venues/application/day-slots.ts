@@ -86,11 +86,13 @@ export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<Venu
     currency,
     date,
     days,
-    grounds: grounds.map(({ id: groundId, name, sport, size }) => ({
+    grounds: grounds.map(({ id: groundId, name, sport, size, minimumSlots, maximumSlots }) => ({
       id: groundId,
       name,
       sport,
       size,
+      minimumSlots,
+      maximumSlots,
     })),
     slots: slots.map(presentSlot),
   };

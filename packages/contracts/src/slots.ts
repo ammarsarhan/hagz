@@ -61,6 +61,8 @@ export const VenueSlots = z
         name: z.string().nullable(),
         sport: GroundSport,
         size: GroundSize,
+        minimumSlots: z.int().meta({ description: "The shortest booking, in slots." }),
+        maximumSlots: z.int().meta({ description: "The longest booking, in slots." }),
       }),
     ),
     slots: z.array(Slot),

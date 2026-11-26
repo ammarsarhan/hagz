@@ -4,6 +4,7 @@ import { BookingStatus } from "./bookings";
 import { GroundSize, GroundSport } from "./grounds";
 import { StaffCheckIn } from "./check-in";
 import { StaffGame } from "./listings";
+import { PaymentMode } from "./venue-edit";
 
 // A venue's bookings for its staff (Phase 4): the calendar and the approvals queue (PR 4.4),
 // approving, declining and marking how a game went (PR 4.2), and holds, moves and swaps (PR 4.8,
@@ -42,6 +43,12 @@ export const StaffBooking = AdminBooking.extend({
     .object({ players: z.int() })
     .nullable()
     .meta({ description: "An open game: how many players to expect besides the booker." }),
+  paymentMode: PaymentMode,
+  deposit: z.int().nullable().meta({ description: "`DEPOSIT`: the share paid online." }),
+  paymentWindow: z.int().nullable().meta({
+    description:
+      "`PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise.",
+  }),
 }).meta({ id: "StaffBooking" });
 
 export const StaffBookingList = z
@@ -181,8 +188,16 @@ export const VenueCustomersQuery = z
     q: z.string().trim().max(100).optional().meta({
       description: "Part of the name or the phone number.",
     }),
+    order: z.enum(["name", "recent"]).default("name").meta({
+      description:
+        "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly).",
+    }),
     cursor: z.string().optional().meta({ description: "`nextCursor` from the previous page." }),
     limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .refine((query) => !(query.order === "recent" && query.cursor), {
+    message: "`recent` is one page; it takes no cursor.",
+    path: ["cursor"],
   })
   .meta({ id: "VenueCustomersQuery" });
 
@@ -204,7 +219,13 @@ export const VenueCustomer = z
   .meta({ id: "VenueCustomer" });
 
 export const VenueCustomerPage = z
-  .object({ data: z.array(VenueCustomer), nextCursor: z.string().nullable() })
+  .object({
+    data: z.array(VenueCustomer),
+    nextCursor: z.string().nullable(),
+    total: z.int().meta({
+      description: "How many customers match `q` (all of them without one), across every page.",
+    }),
+  })
   .meta({ id: "VenueCustomerPage" });
 
 export const CreateVenueCustomer = z

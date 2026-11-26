@@ -21,11 +21,20 @@ interface PhoneFieldProps {
   label?: string;
   required?: boolean;
   error?: string;
+  // Instead of the grouped example number.
+  placeholder?: string;
 }
 
 // The country code sits before the number in grey, like a unit. Phone numbers read left to right
 // in Arabic too, so the box keeps that direction.
-export function PhoneField({ value, onChangeText, label, required, error }: PhoneFieldProps) {
+export function PhoneField({
+  value,
+  onChangeText,
+  label,
+  required,
+  error,
+  placeholder = "100 000 0000",
+}: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
@@ -39,7 +48,7 @@ export function PhoneField({ value, onChangeText, label, required, error }: Phon
           className={inputClass}
           value={formatPhone(value)}
           onChangeText={(text) => onChangeText(text.replace(/\D/g, "").slice(0, MAX_DIGITS))}
-          placeholder="100 000 0000"
+          placeholder={placeholder}
           placeholderTextColor={colors.ink3}
           selectionColor={colors.primary}
           maxLength={MAX_LENGTH}
