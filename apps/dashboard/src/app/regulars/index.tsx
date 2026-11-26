@@ -8,7 +8,9 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
+  FadeOut,
   FadeOutDown,
   runOnJS,
   useAnimatedReaction,
@@ -61,6 +63,9 @@ type Group = Regular[];
 
 // How long a row is held before it lifts (the hours grid's and Select day's beat).
 const HOLD_MS = 250;
+// The last rows fade out, then the empty state fades in where they were.
+const ROWS_OUT = FadeOut.duration(180);
+const EMPTY_IN = FadeIn.duration(320).delay(140);
 // The others sliding out of the way, and the card settling into its gap.
 const SLIDE_MS = 180;
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
@@ -81,6 +86,13 @@ export default function Regulars() {
   const [saving, setSaving] = useState(false);
 
   const days = byDay(regulars.data ?? []);
+  // The empty state fades in when the last regular goes (user, 2026-11-26); opened empty, it's
+  // simply there.
+  const hadRows = useRef(false);
+  const emptiedNow = hadRows.current && days.length === 0;
+  useEffect(() => {
+    hadRows.current = days.length > 0;
+  }, [days.length]);
   const title = t("screens.regulars.title");
   // The pending order's time, as saved, while it's still there and still the same regulars.
   const pendingGroup = (() => {
@@ -197,19 +209,21 @@ export default function Regulars() {
         ) : regulars.isError ? (
           <Text className="mt-4 text-body text-ink-2">{t("screens.regulars.failed")}</Text>
         ) : days.length === 0 ? (
-          <Empty
-            art={<NoWeeklyArt scale={0.8} />}
-            title={t("screens.regulars.noneTitle")}
-            body={t("screens.regulars.none")}
-            action={
-              canAdd
-                ? { label: t("screens.regulars.add"), onPress: () => push("/regulars/new") }
-                : undefined
-            }
-          />
+          <Animated.View entering={emptiedNow ? EMPTY_IN : undefined}>
+            <Empty
+              art={<NoWeeklyArt scale={0.8} />}
+              title={t("screens.regulars.noneTitle")}
+              body={t("screens.regulars.none")}
+              action={
+                canAdd
+                  ? { label: t("screens.regulars.add"), onPress: () => push("/regulars/new") }
+                  : undefined
+              }
+            />
+          </Animated.View>
         ) : (
           days.map(({ day, groups }, index) => (
-            <View key={day} className={index === 0 ? "mt-2" : "mt-6"}>
+            <Animated.View key={day} exiting={ROWS_OUT} className={index === 0 ? "mt-2" : "mt-6"}>
               <GroupHeading>{t(`screens.regulars.days.${String(day) as Weekday}`)}</GroupHeading>
               {groups.map((group) => (
                 <TimeGroup
@@ -230,7 +244,7 @@ export default function Regulars() {
                   onOpen={(id) => push(`/regulars/${id}`)}
                 />
               ))}
-            </View>
+            </Animated.View>
           ))
         )}
       </FadingScroll>
