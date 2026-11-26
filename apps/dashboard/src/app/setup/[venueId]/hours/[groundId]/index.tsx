@@ -11,6 +11,12 @@ import type { ScrollController } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconCheck, IconCopy } from "@/components/icons";
 import { CloseButton, RoundButton } from "@/components/nav";
+import {
+  leavesSomething,
+  previewHours,
+  ScheduleChangeSheet,
+  type SchedulePreview,
+} from "@/components/schedule-change-sheet";
 import { SetupLoading } from "@/components/setup-loading";
 import { Sheet } from "@/components/sheet";
 import { StepScreen } from "@/components/step-screen";
@@ -102,6 +108,71 @@ function WeekScreen({
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  // Asked first when the new hours close any with something in them (user, 2026-11-27): the
+  // server's preview, then a sheet of what follows, then a short native alert. Copying asks the same
+  // for the grounds it copies to, once its own sheet has slid away.
+  const [warning, setWarning] = useState<{
+    copyTo: string[] | null;
+    preview: SchedulePreview;
+  } | null>(null);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const confirmed = useRef(false);
+  const copyTo = useRef<string[] | null>(null);
+
+  const warnOrRun = async (
+    groundIds: string[],
+    days: Ring,
+    run: () => Promise<void>,
+    copy: boolean,
+  ) => {
+    const preview = await previewHours(venueId, groundIds, ringToApi(days));
+    if (!preview.ok) {
+      setSaving(false);
+      return hud.show(hudMessage(preview.error));
+    }
+    if (!leavesSomething(preview.data)) return run();
+    setSaving(false);
+    confirmed.current = false;
+    setWarning({ copyTo: copy ? groundIds : null, preview: preview.data });
+    setWarningOpen(true);
+  };
+
+  const trySave = async () => {
+    setSaving(true);
+    await warnOrRun([ground.id], ring, save, false);
+  };
+
+  const copyGone = () => {
+    const ids = copyTo.current;
+    copyTo.current = null;
+    if (ids) void warnOrRun(ids, saved, () => copyHours(ids), true);
+  };
+
+  const warningGone = () => {
+    const done = warning;
+    setWarning(null);
+    if (!done || !confirmed.current) return;
+    if (done.copyTo) void copyHours(done.copyTo);
+    else void save();
+  };
+
+  const copyHours = async (ids: string[]) => {
+    const result = await send(
+      api.POST("/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy", {
+        params: { path: { venueId, groundId: ground.id } },
+        body: { groundIds: ids },
+      }),
+    );
+    if (!result.ok) return hud.show(hudMessage(result.error));
+    // The grounds copied to: their weeks and open hours; this ground's own week is unchanged.
+    void afterVenueWrite(queryClient, venueId, {
+      also: [
+        queries.grounds(venueId).queryKey,
+        ...ids.map((id) => queries.schedule(venueId, id).queryKey),
+      ],
+    });
+  };
+
   const save = async () => {
     setSaving(true);
     const result = await send(
@@ -155,7 +226,7 @@ function WeekScreen({
             label={t("screens.setup.hours.save")}
             disabled={!changed}
             loading={saving}
-            onPress={() => void save()}
+            onPress={() => void trySave()}
           />
         )
       }
@@ -176,7 +247,30 @@ function WeekScreen({
         name={name}
         others={others}
         onClose={() => setCopying(false)}
+        onCopy={(ids) => {
+          copyTo.current = ids;
+          setCopying(false);
+        }}
+        onHidden={copyGone}
       />
+      {warning ? (
+        <ScheduleChangeSheet
+          title={
+            warning.copyTo
+              ? t("screens.setup.hours.change.copyTitle", { count: warning.copyTo.length })
+              : t("screens.setup.hours.change.title", { name })
+          }
+          copying={warning.copyTo !== null}
+          preview={warning.preview}
+          visible={warningOpen}
+          onClose={() => setWarningOpen(false)}
+          onHidden={warningGone}
+          onConfirm={() => {
+            confirmed.current = true;
+            setWarningOpen(false);
+          }}
+        />
+      ) : null}
     </StepScreen>
   );
 }
@@ -270,6 +364,8 @@ function CopySheet({
   name,
   others,
   onClose,
+  onCopy,
+  onHidden,
 }: {
   visible: boolean;
   venueId: string;
@@ -277,12 +373,11 @@ function CopySheet({
   name: string;
   others: Ground[];
   onClose: () => void;
+  onCopy: (groundIds: string[]) => void;
+  onHidden: () => void;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
-  const queryClient = useQueryClient();
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [sending, setSending] = useState(false);
 
   const toggle = (id: string) => {
     const next = new Set(picked);
@@ -291,31 +386,17 @@ function CopySheet({
     setPicked(next);
   };
 
-  const copy = async () => {
-    setSending(true);
-    const result = await send(
-      api.POST("/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy", {
-        params: { path: { venueId, groundId: ground.id } },
-        body: { groundIds: [...picked] },
-      }),
-    );
-    setSending(false);
-    if (!result.ok) return hud.show(hudMessage(result.error));
-    // The grounds copied to: their weeks and open hours; this ground's own week is unchanged.
-    void afterVenueWrite(queryClient, venueId, {
-      also: [
-        queries.grounds(venueId).queryKey,
-        ...[...picked].map((id) => queries.schedule(venueId, id).queryKey),
-      ],
-    });
-    onClose();
-  };
+  // The screen copies, once this sheet has gone: it asks first when that closes busy hours.
+  const copy = () => onCopy([...picked]);
 
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
-      onHidden={() => setPicked(new Set())}
+      onHidden={() => {
+        setPicked(new Set());
+        onHidden();
+      }}
       closeLabel={t("components.shared.nav.close")}
     >
       <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
@@ -360,8 +441,7 @@ function CopySheet({
               : t("screens.setup.hours.copyTo", { count: picked.size })
           }
           disabled={picked.size === 0}
-          loading={sending}
-          onPress={() => void copy()}
+          onPress={copy}
         />
       </View>
     </Sheet>
