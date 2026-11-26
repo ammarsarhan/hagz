@@ -200,8 +200,8 @@ export default function VenueTab() {
             <PitchArt />
           )}
           {ready.length > 0 ? (
-            <View className="absolute end-3 bottom-3 rounded-full bg-black/30 px-2.5 py-1">
-              <Text className="text-caption font-medium text-white">
+            <View className="absolute end-2.5 bottom-2.5 rounded-full bg-black/30 px-2 py-0.5">
+              <Text className="text-[11px] font-medium leading-[14px] text-white">
                 {t(`${v}.photos`, { count: ready.length })}
               </Text>
             </View>
