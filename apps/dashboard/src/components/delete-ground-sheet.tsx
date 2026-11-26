@@ -10,7 +10,7 @@ import { Text } from "./text";
 type Removal = components["schemas"]["GroundRemoval"];
 
 // Deleting a ground, asked first (user, 2026-11-27): a sheet with what follows on the step rail, as
-// a regular's Pause and End: players stop seeing it, its bookings still to come go ahead and keep
+// a regular's Pause and End: players stop seeing it, its waiting requests are declined, its bookings still to come go ahead and keep
 // it on the calendar marked Deleted, its regulars end with it, then it's gone. Cancel and Delete side
 // by side under it (no bar; user, 2026-11-27); Delete asks once more, natively and briefly, before anything happens.
 export function DeleteGroundSheet({
@@ -31,7 +31,7 @@ export function DeleteGroundSheet({
 }) {
   const { t } = useTranslation();
   const d = "screens.setup.grounds.deleteSheet";
-  const { bookings, regulars } = removal;
+  const { bookings, requests, regulars } = removal;
 
   const steps: Step[] = [
     {
@@ -40,6 +40,16 @@ export function DeleteGroundSheet({
       when: "",
       state: "now",
     },
+    ...(requests > 0
+      ? [
+          {
+            label: t(`${d}.requests`, { count: requests }),
+            detail: t(`${d}.requestsBody`),
+            when: "",
+            state: "now" as const,
+          },
+        ]
+      : []),
     ...(bookings > 0
       ? [
           {

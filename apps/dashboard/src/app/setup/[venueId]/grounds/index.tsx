@@ -114,8 +114,10 @@ function GroundsList({
       exact: true,
     });
     void afterVenueWrite(queryClient, venueId);
-    // The calendar's weeks: the ground now shows as Deleted there, or is gone.
+    // The calendar's weeks: the ground now shows faint there, or is gone. Its waiting requests were
+    // declined, so they leave the inbox and the calendar.
     void queryClient.invalidateQueries({ queryKey: calendarKey(venueId, "slots") });
+    void queryClient.invalidateQueries({ queryKey: calendarKey(venueId, "bookings") });
   };
 
   const sheetGone = () => {
