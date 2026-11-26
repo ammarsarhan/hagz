@@ -7860,9 +7860,10 @@
               "WAITING",
               "CONFIRMED",
               "RELEASED",
-              "EXPIRED"
+              "MISSED",
+              "CHANGED"
             ],
-            "description": "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used."
+            "description": "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. CHANGED: the venue let it go, moved or cancelled it, or paused or ended the regular."
           },
           "code": {
             "type": "string",

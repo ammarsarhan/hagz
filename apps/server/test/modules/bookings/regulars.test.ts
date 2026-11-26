@@ -665,10 +665,38 @@ describe("confirm links", () => {
       where: { id: second?.id ?? "" },
       data: { expiresAt: new Date(Date.now() - 60_000) },
     });
-    expect((await week(await open("confirm", late.token))).state).toBe("EXPIRED");
+    expect((await week(await open("confirm", late.token))).state).toBe("MISSED");
     expect(
       (await prisma.booking.findUniqueOrThrow({ where: { id: second?.id ?? "" } })).status,
     ).toBe("UNCONFIRMED");
+    // Still missed once the sweep has let it go: nobody said "not this week".
+    await expireDueBookings();
+    expect((await week(await open("week", late.token))).state).toBe("MISSED");
+  });
+
+  it("says the venue changed the week when staff let it go or end the regular", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const [first, second] = made.reservations;
+    const one = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    const two = await tokenOf(await copy(owner.id, venue.id, second?.id ?? ""));
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${first?.id}/release`);
+    expect((await week(await open("week", one.token))).state).toBe("CHANGED");
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${made.id}/end`);
+    expect((await week(await open("week", two.token))).state).toBe("CHANGED");
+  });
+
+  it("follows a longer Confirm by set after the link was copied", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const week1 = made.reservations[0];
+    const link = await tokenOf(await copy(owner.id, venue.id, week1?.id ?? ""));
+    // The link was made to last until the old deadline, now passed; the week's own is still ahead.
+    await prisma.reminderToken.updateMany({
+      where: { bookingId: week1?.id ?? "" },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    expect((await week(await open("confirm", link.token))).state).toBe("CONFIRMED");
   });
 
   it("is only for a week still waiting, at staff's own venue, and unknown links are refused", async () => {

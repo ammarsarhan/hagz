@@ -233,8 +233,10 @@ const en = {
       `You’re playing. ${venue} is keeping your time: see you ${weekday} at ${time}.`,
     letGo: (weekday: string) =>
       `You’re not playing this week, so the time is back on sale. Your weekly game carries on next ${weekday}.`,
-    expired: (venue: string, code: string) =>
-      `This link has expired: the week was already answered, or its deadline passed. To change anything, call ${venue} and give them ${code}.`,
+    missed: (deadline: string, venue: string, code: string) =>
+      `Too late to answer: nobody confirmed by ${deadline}, so the time went back on sale. To play anyway, call ${venue} and give them ${code}.`,
+    changed: (venue: string, code: string) =>
+      `${venue} changed this week, so this link doesn’t work any more. For anything about it, call them and give them ${code}.`,
     playingButton: "I’m playing",
     notThisWeek: "Not this week",
     failed: "That didn’t go through. Try again.",
@@ -493,8 +495,10 @@ const ar: Words = {
       `ستلعب. ${venue} يحتفظ بموعدك: نراك يوم ${weekday} الساعة ${time}.`,
     letGo: (weekday) =>
       `لن تلعب هذا الأسبوع، فعاد الموعد متاحًا للحجز. موعدك الأسبوعي مستمر يوم ${weekday} القادم.`,
-    expired: (venue, code) =>
-      `انتهت صلاحية هذا الرابط: تم الرد على هذا الأسبوع، أو فات موعد الرد. لأي تغيير، اتصل بـ${venue} وأعطهم الرمز ${code}.`,
+    missed: (deadline, venue, code) =>
+      `فات وقت الرد: لم يؤكد أحد قبل ${deadline}، فعاد الموعد متاحًا للحجز. إن أردت اللعب، اتصل بـ${venue} وأعطهم الرمز ${code}.`,
+    changed: (venue, code) =>
+      `غيّر ${venue} هذا الأسبوع، فلم يعد هذا الرابط يعمل. لأي استفسار، اتصل بهم وأعطهم الرمز ${code}.`,
     playingButton: "سألعب",
     notThisWeek: "ليس هذا الأسبوع",
     failed: "لم يتم ذلك. حاول مرة أخرى.",

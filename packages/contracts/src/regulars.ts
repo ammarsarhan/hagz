@@ -185,9 +185,9 @@ export const ReminderTokenBody = z
 
 export const ReminderWeek = z
   .object({
-    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "EXPIRED"]).meta({
+    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "MISSED", "CHANGED"]).meta({
       description:
-        "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used.",
+        "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. CHANGED: the venue let it go, moved or cancelled it, or paused or ended the regular.",
     }),
     code: z.string().meta({
       description: "The week's booking code, for the regular to quote to the venue.",

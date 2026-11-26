@@ -10,8 +10,8 @@ import { StoreBadges } from "../store-badges";
 import { intlTag, pathIn, wordsFor, type Locale } from "../words";
 
 // A regular's confirm link, /regular and /ar/regular (Figma W5, 391:2): the week a venue asked
-// about, and I'm playing / Not this week while it waits; then what was answered, or that the link
-// has expired. The booking's code sits on top, for the regular to quote when they call the venue.
+// about, and I'm playing / Not this week while it waits; then what became of it: playing, let go
+// by them, missed (nobody confirmed in time), or changed by the venue. The booking's code sits on top, for the regular to quote when they call the venue.
 // The token rides in the fragment (never sent to the server with the page, nor logged), so the page
 // reads the week in the browser, through this site's /v1.
 
@@ -155,7 +155,8 @@ export function RegularPage({ locale }: { locale: Locale }) {
     WAITING: words.regular.waiting(week.name, weekday, deadline, venue, code),
     CONFIRMED: words.regular.playing(venue, weekday, start),
     RELEASED: words.regular.letGo(weekday),
-    EXPIRED: words.regular.expired(venue, code),
+    MISSED: words.regular.missed(deadline, venue, code),
+    CHANGED: words.regular.changed(venue, code),
   }[week.state];
   const venuePage = pathIn(locale, links("").venue(week.venue.slug));
 

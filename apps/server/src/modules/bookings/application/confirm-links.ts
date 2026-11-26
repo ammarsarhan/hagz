@@ -8,6 +8,7 @@ import { transaction } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { webLinks } from "@/platform/http/links";
 import { consume } from "@/platform/rate-limit/rate-limit";
+import { BOOKING_EVENTS } from "../domain/events";
 import { venueBookingNotFound } from "./booking-rows";
 import { confirmIn, releaseIn } from "./reservations";
 import { topUpVenue } from "./regulars";
@@ -100,6 +101,13 @@ const weekSelect = {
     },
   },
   ground: { select: { sport: true, size: true, ...names } },
+  // How it was let go, if it was: by the regular, by its deadline, or by the venue.
+  events: {
+    where: { type: { in: [BOOKING_EVENTS.RELEASED, BOOKING_EVENTS.REGULAR_CHANGED] as string[] } },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { type: true, data: true },
+  },
 } as const;
 
 const findToken = (token: string) =>
@@ -110,17 +118,29 @@ const findToken = (token: string) =>
 
 type Found = NonNullable<Awaited<ReturnType<typeof findToken>>>;
 
+// The page says what became of the week, and who decided it (user, 2026-11-26): a week let go reads
+// "not this week" only when the regular said so. A link follows the week's own deadline, so a longer
+// Confirm by set after it was copied keeps it working.
 const stateOf = (found: Found, now: Date): ReminderWeek["state"] => {
   const { booking } = found;
   if (booking.status === "CONFIRMED" || booking.status === "COMPLETED") return "CONFIRMED";
-  if (booking.status === "RELEASED") return "RELEASED";
-  const open =
-    booking.status === "UNCONFIRMED" &&
-    !found.usedAt &&
-    found.expiresAt > now &&
-    booking.expiresAt !== null &&
-    booking.expiresAt > now;
-  return open ? "WAITING" : "EXPIRED";
+  if (booking.status === "RELEASED") {
+    const event = booking.events[0];
+    const by =
+      event?.type === BOOKING_EVENTS.RELEASED &&
+      event.data !== null &&
+      typeof event.data === "object" &&
+      "by" in event.data
+        ? event.data.by
+        : null;
+    if (by === "CUSTOMER") return "RELEASED";
+    if (by === "DEADLINE") return "MISSED";
+    return "CHANGED";
+  }
+  if (booking.status !== "UNCONFIRMED" || found.usedAt) return "CHANGED";
+  // Past its deadline, before the minute's sweep lets it go.
+  if (booking.expiresAt === null || booking.expiresAt <= now) return "MISSED";
+  return "WAITING";
 };
 
 const viewOf = (found: Found, language: Language, now: Date): ReminderWeek => {

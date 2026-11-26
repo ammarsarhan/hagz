@@ -19840,10 +19840,10 @@ export interface components {
         };
         ReminderWeek: {
             /**
-             * @description WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used.
+             * @description WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. CHANGED: the venue let it go, moved or cancelled it, or paused or ended the regular.
              * @enum {string}
              */
-            state: "WAITING" | "CONFIRMED" | "RELEASED" | "EXPIRED";
+            state: "WAITING" | "CONFIRMED" | "RELEASED" | "MISSED" | "CHANGED";
             /**
              * @description The week's booking code, for the regular to quote to the venue.
              * @example K7Q2P9M4
