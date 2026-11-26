@@ -167,20 +167,21 @@ export default function ConfirmRegular() {
         </Title>
 
         {/* The time picked, with the way back to change it. */}
-        <View className="flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-3.5 py-2.5">
+        <View className="flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-4 py-4">
           <View className="flex-1">
             <Text className="text-[16px] leading-[21px] font-medium">
               {t(`${c}.time`, { day, hours })}
             </Text>
             {/* The ground on a line of its own, under the time (user, 2026-11-26). */}
-            <Text className="text-[15px] leading-5">{params.ground}</Text>
-            <Text className="text-[13px] leading-[17px] text-ink-2">
+            <Text className="mt-0.5 text-[15px] leading-5">{params.ground}</Text>
+            <Text className="mt-1 text-[13px] leading-[17px] text-ink-2">
               {[t(`${c}.perWeek`, { price: money }), params.kind].filter(Boolean).join(" · ")}
             </Text>
           </View>
           <Change onPress={() => router.back()} />
         </View>
 
+        <View className="h-2" />
         <Fact
           label={t(`${c}.for`)}
           value={params.name}
@@ -198,8 +199,9 @@ export default function ConfirmRegular() {
           onChange={() => hud.show(t("common.comingNext"))}
         />
 
-        <GroupHeading className="mt-6 mb-4">{t(`${c}.next`)}</GroupHeading>
+        <GroupHeading className="mt-9 mb-5">{t(`${c}.next`)}</GroupHeading>
         <StepRail
+          gap={22}
           steps={[
             {
               label: t(`${c}.reserved`, {
@@ -254,10 +256,10 @@ function Fact({
   onChange: () => void;
 }) {
   return (
-    <View className="flex-row items-end border-b border-border pt-4 pb-2">
+    <View className="flex-row items-end border-b border-border pt-5 pb-4">
       <View className="flex-1">
         <Text className="text-[14px] leading-[19px] font-medium text-ink-2">{label}</Text>
-        <Text className="mt-1 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
+        <Text className="mt-1.5 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
           {value}
         </Text>
         {detail ? (
