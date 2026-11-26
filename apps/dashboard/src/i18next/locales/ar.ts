@@ -137,6 +137,8 @@ const ar: ArabicTranslations = {
           holdReleased: "أُلغي الحجز المؤقت",
           moved: "نُقل إلى وقت آخر",
           swapped: "بُدّل",
+          movedTo: "نُقل إلى {{hours}}، {{ground}}",
+          swappedTo: "بُدّل إلى {{hours}}، {{ground}}",
           moveAccepted: "{{name}} قبل النقل",
           moveRejected: "{{name}} رفض النقل",
           refundedAll: "رُدّ المبلغ كاملًا",

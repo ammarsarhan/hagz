@@ -123,6 +123,8 @@ const en = {
           holdReleased: "Hold let go",
           moved: "Moved to another time",
           swapped: "Swapped",
+          movedTo: "Moved to {{hours}}, {{ground}}",
+          swappedTo: "Swapped to {{hours}}, {{ground}}",
           moveAccepted: "{{name}} kept the move",
           moveRejected: "{{name}} turned down the move",
           refundedAll: "Refunded in full",

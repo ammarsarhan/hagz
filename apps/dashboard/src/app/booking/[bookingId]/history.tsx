@@ -17,19 +17,45 @@ import { send } from "@/lib/api-errors";
 import { localDateOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { useNow } from "@/lib/use-now";
-import { relativeDay, sentenceTime } from "@/lib/when";
+import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingKey, bookingQuery } from "./index";
 
 // A booking's history (Figma D17 642:469): every change, who made it and when, oldest first, under
 // its day. Each is a filled dot on the rail: what happened, then who (and anything they said) in
 // grey, and its time. The booking's events come from its history, a page at a time, read to the
-// end; check-ins aren't events, so they're added from the booking's own check-in.
+// end, and so do those of every booking it was moved or swapped from (a move makes a new booking,
+// linked back by movedFrom), so the history starts where the booking did. Check-ins aren't events,
+// so they're added from the booking's own check-in.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 type Event = components["schemas"]["BookingHistoryEvent"];
 
-// A booking rarely has more than a handful; this caps the pages read.
+// A booking rarely has more than a handful of events, or moves; these cap what's read.
 const MAX_PAGES = 10;
+const MAX_LINKS = 10;
+
+interface Link {
+  booking: Booking;
+  events: Event[];
+}
+
+// One booking's events, every page.
+const historyOf = async (venueId: string, bookingId: string) => {
+  const all: Event[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await send(
+      api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}/history", {
+        params: { path: { venueId, bookingId }, query: { limit: 100, cursor } },
+      }),
+    );
+    if (!result.ok) throw result.error;
+    all.push(...result.data.data);
+    if (!result.data.nextCursor) return all;
+    cursor = result.data.nextCursor;
+  }
+  return all;
+};
 
 interface Entry {
   at: string;
@@ -47,32 +73,40 @@ export default function BookingHistory() {
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const compact = useCompactTitle();
   const booking = useQuery(bookingQuery(venueId, bookingId));
-  const events = useQuery({
-    queryKey: [...bookingKey(venueId, bookingId), "history", "all"],
+  // The booking and every one it was moved or swapped from, newest first, each with its events.
+  const chain = useQuery({
+    queryKey: [...bookingKey(venueId, bookingId), "history", "chain"],
     queryFn: async () => {
-      const all: Event[] = [];
-      let cursor: string | undefined;
-      for (let page = 0; page < MAX_PAGES; page++) {
-        const result = await send(
-          api.GET("/v1/staff/venues/{venueId}/bookings/{bookingId}/history", {
-            params: { path: { venueId, bookingId }, query: { limit: 100, cursor } },
-          }),
-        );
-        if (!result.ok) throw result.error;
-        all.push(...result.data.data);
-        if (!result.data.nextCursor) break;
-        cursor = result.data.nextCursor;
+      const links: Link[] = [];
+      let id: string | null = bookingId;
+      while (id && links.length < MAX_LINKS) {
+        const [detail, events]: [Booking, Event[]] = await Promise.all([
+          bookingQuery(venueId, id).queryFn(),
+          historyOf(venueId, id),
+        ]);
+        links.push({ booking: detail, events });
+        id = detail.movedFrom?.bookingId ?? null;
       }
-      return all;
+      return links;
     },
     enabled: venueId !== "" && bookingId !== "",
   });
 
   if (!booking.data) return <SetupLoading query={booking} />;
-  if (!events.data) return <SetupLoading query={events} />;
+  if (!chain.data) return <SetupLoading query={chain} />;
   const { timezone } = booking.data;
   const entries = [
-    ...events.data.map((event) => describe(event, booking.data, t)),
+    ...chain.data.flatMap((link, index) =>
+      link.events.flatMap((event) => {
+        // The booking it was moved to, for "Moved to 8 – 9 pm, Pitch 3"; and whether the one it
+        // came from is shown too, so its own "Moved here" would say the same thing twice.
+        const entry = describe(event, link.booking, t, {
+          next: chain.data[index - 1]?.booking,
+          fromShown: index + 1 < chain.data.length,
+        });
+        return entry ? [entry] : [];
+      }),
+    ),
     ...checkIns(booking.data, t),
   ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
@@ -143,12 +177,18 @@ const field = (event: Event, key: string): unknown =>
     : undefined;
 
 // What one event says, in words (the events in the API's domain/events.ts).
-function describe(event: Event, booking: Booking, t: TFunction): Entry {
+function describe(
+  event: Event,
+  booking: Booking,
+  t: TFunction,
+  { next, fromShown }: { next?: Booking; fromShown: boolean },
+): Entry | null {
   const at = event.createdAt;
   const by = who(event, t);
   const player = firstName(booking.customer.name);
   switch (event.type) {
     case "CREATED": {
+      if (field(event, "from") && fromShown) return null;
       const status = field(event, "status");
       const label = field(event, "from")
         ? t("screens.history.events.movedHere")
@@ -204,11 +244,21 @@ function describe(event: Event, booking: Booking, t: TFunction): Entry {
     case "RESCHEDULED":
       return {
         at,
-        label: t(
-          field(event, "type") === "SWAP"
-            ? "screens.history.events.swapped"
-            : "screens.history.events.moved",
-        ),
+        label: next
+          ? t(
+              field(event, "type") === "SWAP"
+                ? "screens.history.events.swappedTo"
+                : "screens.history.events.movedTo",
+              {
+                hours: hoursSpan(next.startsAt, next.endsAt, next.timezone, t),
+                ground: next.ground.name ?? "",
+              },
+            )
+          : t(
+              field(event, "type") === "SWAP"
+                ? "screens.history.events.swapped"
+                : "screens.history.events.moved",
+            ),
         detail: by,
       };
     case "MOVE_ACCEPTED":
