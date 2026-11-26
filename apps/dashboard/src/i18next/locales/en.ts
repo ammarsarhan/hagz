@@ -169,6 +169,14 @@ const en = {
         confirmed_one: "confirmed {{confirmed}} of {{count}} week",
         confirmed_other: "confirmed {{confirmed}} of {{count}} weeks",
         paused: "paused since {{date}}",
+        new: {
+          title: "New weekly game",
+          subtitle_one: "Pick the day and time. {{count}} week is reserved ahead.",
+          subtitle_other: "Pick the day and time. {{count}} weeks are reserved ahead.",
+          dates: "{{day}} · {{dates}}",
+          none: "No free times on this ground that day.",
+          weekly: "{{ground}} · weekly",
+        },
       },
       venueTab: {
         title: "Venue",

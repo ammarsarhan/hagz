@@ -191,6 +191,16 @@ const ar: ArabicTranslations = {
         confirmed_few: "أكّد {{confirmed}} من {{count}} أسابيع",
         confirmed_other: "أكّد {{confirmed}} من {{count}} أسبوعًا",
         paused: "متوقف منذ {{date}}",
+        new: {
+          title: "مباراة أسبوعية جديدة",
+          subtitle_one: "اختر اليوم والوقت. يُحجز أسبوع واحد مقدمًا.",
+          subtitle_two: "اختر اليوم والوقت. يُحجز أسبوعان مقدمًا.",
+          subtitle_few: "اختر اليوم والوقت. تُحجز {{count}} أسابيع مقدمًا.",
+          subtitle_other: "اختر اليوم والوقت. يُحجز {{count}} أسبوعًا مقدمًا.",
+          dates: "{{day}} · {{dates}}",
+          none: "لا توجد أوقات متاحة في هذا الملعب في هذا اليوم.",
+          weekly: "{{ground}} · أسبوعيًا",
+        },
       },
       venueTab: {
         title: "الملعب",

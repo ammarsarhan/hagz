@@ -64,7 +64,11 @@ export default function Regulars() {
         }
         end={
           canAdd ? (
-            <RoundButton icon={IconPlus} label={t("screens.regulars.add")} onPress={comingNext} />
+            <RoundButton
+              icon={IconPlus}
+              label={t("screens.regulars.add")}
+              onPress={() => router.push("/regulars/new")}
+            />
           ) : undefined
         }
       />
@@ -89,7 +93,11 @@ export default function Regulars() {
             art={<NoWeeklyArt scale={0.8} />}
             title={t("screens.regulars.noneTitle")}
             body={t("screens.regulars.none")}
-            action={canAdd ? { label: t("screens.regulars.add"), onPress: comingNext } : undefined}
+            action={
+              canAdd
+                ? { label: t("screens.regulars.add"), onPress: () => router.push("/regulars/new") }
+                : undefined
+            }
           />
         ) : (
           days.map(({ day, groups }, index) => (
