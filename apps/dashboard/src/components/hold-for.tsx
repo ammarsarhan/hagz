@@ -61,6 +61,7 @@ export function HoldFor({
   onClose,
   onHeld,
   onChoose,
+  onWhoToCall,
 }: {
   venueId: string;
   // The time being held; null while none is picked.
@@ -73,13 +74,16 @@ export function HoldFor({
   // A new booking (D10): only who it's for is asked, nothing is held; given once the sheet has
   // slid away.
   onChoose?: (choice: Choice) => void;
+  // A new booking: "Who to call about this time" under the two paths, opened once the sheet has
+  // slid away.
+  onWhoToCall?: () => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
   // The sheet showing, and the one to show once it has slid away.
   const [step, setStep] = useState<Step | null>(null);
-  const following = useRef<Step | "done" | null>(null);
+  const following = useRef<Step | "done" | "call" | null>(null);
   const held = useRef<Held | null>(null);
   const chosen = useRef<Choice | null>(null);
   const [holding, setHolding] = useState<string | null>(null);
@@ -88,14 +92,15 @@ export function HoldFor({
     if (target) setStep("who");
   }, [target]);
 
-  const go = (next: Step | "done" | null) => {
+  const go = (next: Step | "done" | "call" | null) => {
     following.current = next;
     setStep(null);
   };
   const hidden = () => {
     const next = following.current;
     following.current = null;
-    if (next === "done") {
+    if (next === "call") onWhoToCall?.();
+    else if (next === "done") {
       const booking = held.current;
       const choice = chosen.current;
       held.current = null;
@@ -159,6 +164,16 @@ export function HoldFor({
             onPress={() => go("new")}
           />
         </View>
+        {onWhoToCall ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => go("call")}
+            hitSlop={8}
+            className="mt-4 mb-2 self-start active:opacity-70"
+          >
+            <Text className="text-body font-medium underline">{t("screens.book.whoToCall")}</Text>
+          </Pressable>
+        ) : null}
       </Sheet>
 
       <Customers

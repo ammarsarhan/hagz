@@ -24,6 +24,7 @@ import { hoursSpan, relativeDay } from "@/lib/when";
 // then shows the booking in its day to add.
 
 type Params = {
+  slotId: string;
   groundId: string;
   startsAt: string;
   endsAt: string;
@@ -139,6 +140,21 @@ export default function BookingDetails() {
         when={when}
         holdMinutes={null}
         onClose={() => setAsking(null)}
+        onWhoToCall={() => {
+          setAsking(null);
+          router.push({
+            pathname: "/book/who-to-call",
+            params: {
+              slotId: params.slotId,
+              startsAt: params.startsAt,
+              endsAt: params.endsAt,
+              ground: params.ground,
+              timezone,
+              currency,
+              price: String(Number.isFinite(total) ? total : slotsPrice),
+            },
+          });
+        }}
         onChoose={(choice) => {
           setAsking(null);
           router.push({

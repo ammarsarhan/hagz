@@ -304,6 +304,8 @@ export function TimePick({
       pathname: "/book/details",
       params: {
         ...range,
+        // Its first slot, which Who to call reads around.
+        slotId: first.id,
         price: String(pickedPrice),
         currency,
         timezone,
