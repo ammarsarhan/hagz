@@ -19,7 +19,8 @@ export function BottomBar({
   detail,
   children,
 }: {
-  title: string;
+  // A string, or a node of its own (Played and No show rolling into each other).
+  title: ReactNode;
   // A string, or a node of its own (a link: "Add a note").
   detail?: ReactNode;
   children: ReactNode;
@@ -29,7 +30,7 @@ export function BottomBar({
       <View className="-mx-5 -mt-3 mb-3 h-px bg-border" />
       <View className="flex-row items-center">
         <View className="me-3 flex-1">
-          <Text className="text-subtitle">{title}</Text>
+          {typeof title === "string" ? <Text className="text-subtitle">{title}</Text> : title}
           {typeof detail === "string" ? (
             <Text className="text-caption text-ink-2">{detail}</Text>
           ) : (
