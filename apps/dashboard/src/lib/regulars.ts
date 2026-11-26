@@ -21,6 +21,21 @@ export const regularsQuery = (venueId: string) => ({
   enabled: venueId !== "",
 });
 
+// One regular, with its reservations still to come and the weeks it couldn't reserve.
+export const regularQuery = (venueId: string, regularId: string) => ({
+  queryKey: ["staff", "venues", venueId, "regulars", regularId],
+  queryFn: async () => {
+    const result = await send(
+      api.GET("/v1/staff/venues/{venueId}/regulars/{regularId}", {
+        params: { path: { venueId, regularId } },
+      }),
+    );
+    if (!result.ok) throw result.error;
+    return result.data;
+  },
+  enabled: venueId !== "" && regularId !== "",
+});
+
 // Weeks that were decided one way or another: confirmed, let go, or left to the deadline. Weeks
 // released because the regular itself changed aren't in the figures at all.
 export const weeksDecided = (regular: Regular) =>

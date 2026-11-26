@@ -20,7 +20,6 @@ import {
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
-import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel } from "@/lib/hours";
@@ -28,13 +27,15 @@ import { intlLocale } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
 import { sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
+import { regularQuery } from "@/lib/regulars";
 
 // A regular (Figma D12 655:2), from the Regulars list: who, their weekly time, ground and since
 // when; their number with Call and WhatsApp; the coming weeks as rows, each with the Calendar's bar
 // (blue confirmed, pale blue waiting with its deadline, dashed skipped because the time is taken),
 // a reservation opening its booking; then how the weeks have gone so far. ⋯ (bookings: manage)
 // opens what can be done to it (Figma 655:111): Pause and End asked first in a sheet of their own
-// (655:233); Change the time and a confirm link aren't built yet.
+// (655:233); Change the time opens Select day for the new time (656:158). A confirm link isn't
+// built yet.
 //
 // Paused (655:340): since when instead of since it began, only its confirmed weeks (nothing else is
 // reserved meanwhile), and Resume in a bar. Ended, the list no longer shows it: the page closes.
@@ -62,19 +63,7 @@ export default function RegularPage() {
   // The menu's pick, acted on once the menu has slid away: one sheet at a time.
   const picked = useRef<RegularAction | null>(null);
   const { resume, sending: resuming } = useResume(venueId, regularId);
-  const regular = useQuery({
-    queryKey: ["staff", "venues", venueId, "regulars", regularId],
-    queryFn: async () => {
-      const result = await send(
-        api.GET("/v1/staff/venues/{venueId}/regulars/{regularId}", {
-          params: { path: { venueId, regularId } },
-        }),
-      );
-      if (!result.ok) throw result.error;
-      return result.data;
-    },
-    enabled: venueId !== "",
-  });
+  const regular = useQuery(regularQuery(venueId, regularId));
 
   const back = <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />;
   const one = regular.data;
@@ -237,6 +226,8 @@ export default function RegularPage() {
           if (action === "pause" || action === "end") {
             setSheet(action);
             setSheetOpen(true);
+          } else if (action === "change") {
+            push({ pathname: "/regulars/new", params: { regularId: one.id } });
           } else if (action === "resume") void resume();
           else if (action) comingNext();
         }}
