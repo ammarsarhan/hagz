@@ -182,7 +182,7 @@ const en = {
         },
         confirm: {
           title: "Add regular",
-          subtitle: "Check it, then add it.",
+          subtitle: "{{name}} plays every {{weekday}} at {{hour}}, kept for them week after week.",
           time: "{{day}}, {{hours}}",
           perWeek: "{{price}} a week",
           change: "Change",

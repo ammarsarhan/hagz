@@ -154,7 +154,15 @@ export default function ConfirmRegular() {
         }
       />
       <FadingScroll scrollY={compact.scrollY}>
-        <Title small onTitleLayout={compact.onTitleLayout} subtitle={t(`${c}.subtitle`)}>
+        <Title
+          small
+          onTitleLayout={compact.onTitleLayout}
+          subtitle={t(`${c}.subtitle`, {
+            name: params.name,
+            weekday: long.format(new Date(Date.UTC(2026, 0, 4 + dayOfWeek))),
+            hour: hourLabel(t, startHour),
+          })}
+        >
           {title}
         </Title>
 
@@ -263,7 +271,7 @@ function Fact({
   );
 }
 
-// Grey on the facts; ink on the time card (user, 2026-11-26).
+// Grey and a touch smaller on the facts; ink on the time card (user, 2026-11-26).
 function Change({ onPress, grey = false }: { onPress: () => void; grey?: boolean }) {
   const { t } = useTranslation();
   return (
@@ -273,7 +281,9 @@ function Change({ onPress, grey = false }: { onPress: () => void; grey?: boolean
       hitSlop={8}
       className="ms-3 active:opacity-70"
     >
-      <Text className={`text-[15px] leading-5 font-medium underline ${grey ? "text-ink-2" : ""}`}>
+      <Text
+        className={`font-medium underline ${grey ? "text-[14px] leading-[19px] text-ink-2" : "text-[15px] leading-5"}`}
+      >
         {t("screens.regulars.confirm.change")}
       </Text>
     </Pressable>
