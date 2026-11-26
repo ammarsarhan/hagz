@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
@@ -8,7 +9,14 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
+import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
+import {
+  RegularMenu,
+  StateSheet,
+  useResume,
+  type RegularAction,
+} from "@/components/regular-sheets";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
@@ -24,8 +32,12 @@ import { push } from "@/lib/navigation";
 // A regular (Figma D12 655:2), from the Regulars list: who, their weekly time, ground and since
 // when; their number with Call and WhatsApp; the coming weeks as rows, each with the Calendar's bar
 // (blue confirmed, pale blue waiting with its deadline, dashed skipped because the time is taken),
-// a reservation opening its booking; then how the weeks have gone so far. The ⋯ (pause, change the
-// time, end) comes next.
+// a reservation opening its booking; then how the weeks have gone so far. ⋯ (bookings: manage)
+// opens what can be done to it (Figma 655:111): Pause and End asked first in a sheet of their own
+// (655:233); Change the time and a confirm link aren't built yet.
+//
+// Paused (655:340): since when instead of since it began, only its confirmed weeks (nothing else is
+// reserved meanwhile), and Resume in a bar. Ended, the list no longer shows it: the page closes.
 //
 // The Figma's "Last 10 weeks" dots need each past week's outcome, which the API doesn't give yet
 // (only the totals), so the totals are shown on their own under "So far".
@@ -43,6 +55,13 @@ export default function RegularPage() {
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const compact = useCompactTitle();
+  const canManage = venue?.permissions.bookings === "manage";
+  const [menu, setMenu] = useState(false);
+  const [sheet, setSheet] = useState<"pause" | "end" | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // The menu's pick, acted on once the menu has slid away: one sheet at a time.
+  const picked = useRef<RegularAction | null>(null);
+  const { resume, sending: resuming } = useResume(venueId, regularId);
   const regular = useQuery({
     queryKey: ["staff", "venues", venueId, "regulars", regularId],
     queryFn: async () => {
@@ -80,6 +99,19 @@ export default function RegularPage() {
     month: "short",
   });
   const since = dayMonth.format(new Date(`${one.startsOn}T12:00:00Z`));
+  const paused = one.status === "PAUSED";
+  // "today", or "24 Nov", in the venue's time.
+  const pausedOn = (() => {
+    if (!one.pausedAt) return "";
+    const dateOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
+    if (dateOf.format(new Date(one.pausedAt)) === dateOf.format(new Date())) return t(`${p}.today`);
+    return new Intl.DateTimeFormat(intlLocale, {
+      timeZone: timezone,
+      day: "numeric",
+      month: "short",
+    }).format(new Date(one.pausedAt));
+  })();
+  const comingNext = () => hud.show(t("common.comingNext"));
   const line = [
     t(`${p}.time`, {
       day: t(`screens.regulars.days.${String(one.dayOfWeek) as Weekday}`),
@@ -103,16 +135,27 @@ export default function RegularPage() {
   ];
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        paused && canManage ? (
+          <BottomBar title={t(`${p}.paused`)} detail={t(`${p}.pausedSince`, { date: pausedOn })}>
+            <BarButton
+              label={t(`${p}.resume`)}
+              primary
+              busy={resuming}
+              onPress={() => void resume()}
+            />
+          </BottomBar>
+        ) : undefined
+      }
+    >
       <NavBar
         flush
         start={<CompactTitle button={back} title={one.customer.name} style={compact.style} />}
         end={
-          <RoundButton
-            icon={IconDots}
-            label={t(`${p}.more`)}
-            onPress={() => hud.show(t("common.comingNext"))}
-          />
+          canManage && one.status !== "ENDED" ? (
+            <RoundButton icon={IconDots} label={t(`${p}.more`)} onPress={() => setMenu(true)} />
+          ) : undefined
         }
       />
       <FadingScroll scrollY={compact.scrollY}>
@@ -125,7 +168,9 @@ export default function RegularPage() {
         </Text>
         <Text className="mt-1.5 text-subtitle text-ink-2">{line}</Text>
         {/* Since when, on a line of its own right under (user, 2026-11-26). */}
-        <Text className="text-subtitle text-ink-2">{t(`${p}.since`, { date: since })}</Text>
+        <Text className="text-subtitle text-ink-2">
+          {paused ? t(`${p}.pausedLine`, { date: pausedOn }) : t(`${p}.since`, { date: since })}
+        </Text>
 
         {phone ? (
           <View className="mt-5 flex-row items-center border-y border-border py-5">
@@ -154,6 +199,9 @@ export default function RegularPage() {
 
         <GroupHeading className="mt-7 mb-4">{t(`${p}.coming`)}</GroupHeading>
         <ComingWeeks regular={one} timezone={timezone} />
+        {paused ? (
+          <Text className="mt-4 text-[14px] leading-[19px] text-ink-2">{t(`${p}.pausedNote`)}</Text>
+        ) : null}
 
         <View className="mt-6 h-px bg-border" />
         <GroupHeading className="mt-7 mb-3">{t(`${p}.soFar`)}</GroupHeading>
@@ -164,6 +212,40 @@ export default function RegularPage() {
           </View>
         ))}
       </FadingScroll>
+
+      <RegularMenu
+        regular={one}
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onPick={(action) => {
+          picked.current = action;
+          setMenu(false);
+        }}
+        onHidden={() => {
+          const action = picked.current;
+          picked.current = null;
+          if (action === "pause" || action === "end") {
+            setSheet(action);
+            setSheetOpen(true);
+          } else if (action === "resume") void resume();
+          else if (action) comingNext();
+        }}
+      />
+      {sheet ? (
+        <StateSheet
+          regular={one}
+          action={sheet}
+          venueId={venueId}
+          timezone={timezone}
+          visible={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onHidden={() => {
+            const ended = sheet === "end" && regular.data?.status === "ENDED";
+            setSheet(null);
+            if (ended) router.back();
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -185,10 +267,16 @@ function ComingWeeks({ regular, timezone }: { regular: Detail; timezone: string 
       date: dateOf.format(new Date(booking.startsAt)),
       booking,
     })),
-    ...regular.skippedWeeks.map((date) => ({ date, booking: null })),
+    // Paused, nothing is being reserved: no week is waiting for a free time.
+    ...(regular.status === "PAUSED" ? [] : regular.skippedWeeks).map((date) => ({
+      date,
+      booking: null,
+    })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   if (weeks.length === 0) {
+    // Paused: the page says why instead.
+    if (regular.status === "PAUSED") return null;
     return <Text className="text-body text-ink-2">{t(`${p}.noneComing`)}</Text>;
   }
   return (
