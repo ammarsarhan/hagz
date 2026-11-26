@@ -19844,13 +19844,24 @@ export interface components {
              * @enum {string}
              */
             state: "WAITING" | "CONFIRMED" | "RELEASED" | "EXPIRED";
+            /**
+             * @description The week's booking code, for the regular to quote to the venue.
+             * @example K7Q2P9M4
+             */
+            code: string;
             /** @description The regular's first name. */
             name: string;
             venue: {
                 name: string | null;
                 slug: string;
+                /** @example Maadi, Cairo */
+                area: string | null;
             };
-            ground: string | null;
+            ground: {
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
             /** Format: date-time */
             startsAt: string;
             /** Format: date-time */

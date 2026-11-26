@@ -1,6 +1,6 @@
 import type { ConfirmLink, ReminderWeek } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
-import { nameIn, type VenueAccess } from "@/modules/venues";
+import { nameIn, placeOf, type VenueAccess } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { hashToken, randomToken } from "@/platform/crypto/tokens";
 import { prisma } from "@/platform/db/prisma";
@@ -81,8 +81,11 @@ export const createConfirmLink = async (
   };
 };
 
+const names = { translations: { select: { language: true, name: true } } } as const;
+
 const weekSelect = {
   id: true,
+  code: true,
   status: true,
   startsAt: true,
   endsAt: true,
@@ -91,11 +94,12 @@ const weekSelect = {
   venue: {
     select: {
       slug: true,
-      translations: { select: { language: true, name: true } },
+      ...names,
       marketplace: { select: { timezone: true } },
+      location: { select: { ...names, parent: { select: names } } },
     },
   },
-  ground: { select: { translations: { select: { language: true, name: true } } } },
+  ground: { select: { sport: true, size: true, ...names } },
 } as const;
 
 const findToken = (token: string) =>
@@ -123,9 +127,18 @@ const viewOf = (found: Found, language: Language, now: Date): ReminderWeek => {
   const { booking } = found;
   return {
     state: stateOf(found, now),
+    code: booking.code,
     name: booking.customer.name.trim().split(/\s+/)[0] ?? booking.customer.name,
-    venue: { name: nameIn(booking.venue.translations, language), slug: booking.venue.slug },
-    ground: nameIn(booking.ground.translations, language),
+    venue: {
+      name: nameIn(booking.venue.translations, language),
+      slug: booking.venue.slug,
+      area: placeOf(booking.venue.location, language),
+    },
+    ground: {
+      name: nameIn(booking.ground.translations, language),
+      sport: booking.ground.sport,
+      size: booking.ground.size,
+    },
     startsAt: booking.startsAt.toISOString(),
     endsAt: booking.endsAt.toISOString(),
     deadline: booking.expiresAt?.toISOString() ?? null,

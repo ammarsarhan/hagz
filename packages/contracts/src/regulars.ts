@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GroundSize, GroundSport } from "./grounds";
 import { CreateHold, StaffBooking } from "./staff-bookings";
 
 // Regulars (PR 4.5, docs/regulars.md): a customer's standing weekly time at a venue. Hagz keeps an
@@ -188,9 +189,17 @@ export const ReminderWeek = z
       description:
         "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used.",
     }),
+    code: z.string().meta({
+      description: "The week's booking code, for the regular to quote to the venue.",
+      example: "K7Q2P9M4",
+    }),
     name: z.string().meta({ description: "The regular's first name." }),
-    venue: z.object({ name: z.string().nullable(), slug: z.string() }),
-    ground: z.string().nullable(),
+    venue: z.object({
+      name: z.string().nullable(),
+      slug: z.string(),
+      area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
+    }),
+    ground: z.object({ name: z.string().nullable(), sport: GroundSport, size: GroundSize }),
     startsAt: Instant,
     endsAt: Instant,
     deadline: Instant.nullable(),

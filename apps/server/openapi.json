@@ -7864,6 +7864,11 @@
             ],
             "description": "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used."
           },
+          "code": {
+            "type": "string",
+            "description": "The week's booking code, for the regular to quote to the venue.",
+            "example": "K7Q2P9M4"
+          },
           "name": {
             "type": "string",
             "description": "The regular's first name."
@@ -7879,17 +7884,41 @@
               },
               "slug": {
                 "type": "string"
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Maadi, Cairo"
               }
             },
             "required": [
               "name",
-              "slug"
+              "slug",
+              "area"
             ]
           },
           "ground": {
-            "type": [
-              "string",
-              "null"
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "name",
+              "sport",
+              "size"
             ]
           },
           "startsAt": {
@@ -7913,6 +7942,7 @@
         },
         "required": [
           "state",
+          "code",
           "name",
           "venue",
           "ground",

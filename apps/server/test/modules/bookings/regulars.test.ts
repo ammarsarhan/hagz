@@ -592,8 +592,10 @@ describe("confirm links", () => {
 
     expect(await week(await open("week", token))).toMatchObject({
       state: "WAITING",
+      code: first?.code,
       name: "Karim",
       startsAt: starts[0]?.toISOString(),
+      ground: { sport: "FOOTBALL" },
     });
     expect((await week(await open("confirm", token))).state).toBe("CONFIRMED");
     const confirmed = await prisma.booking.findUniqueOrThrow({
