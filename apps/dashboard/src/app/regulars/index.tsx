@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -412,7 +412,10 @@ function Slot({
     },
   );
 
+  // Picked up, the press under it is spent: let go without moving and the regular doesn't open.
+  const picked = useRef(false);
   const lift = () => {
+    picked.current = true;
     onDragging(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -486,7 +489,16 @@ function Slot({
         }}
       >
         <Animated.View style={row}>
-          <Row regular={regular} divider={divider} onPress={onPress} />
+          <Row
+            regular={regular}
+            divider={divider}
+            onPressIn={() => {
+              picked.current = false;
+            }}
+            onPress={() => {
+              if (!picked.current) onPress();
+            }}
+          />
         </Animated.View>
         {/* Lifted: a card over the time column too, with a grip. */}
         <Animated.View
@@ -530,10 +542,12 @@ function Slot({
 function Row({
   regular,
   divider,
+  onPressIn,
   onPress,
 }: {
   regular: Regular;
   divider: boolean;
+  onPressIn: () => void;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
@@ -553,6 +567,7 @@ function Row({
   return (
     <Pressable
       accessibilityRole="button"
+      onPressIn={onPressIn}
       onPress={onPress}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
