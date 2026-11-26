@@ -261,6 +261,16 @@ const ar: ArabicTranslations = {
           takenBody: "نحاول مجددًا كل يوم",
           button: "نقل",
         },
+        reorder: {
+          place_ordinal_one: "رقم {{count}}",
+          place_ordinal_two: "رقم {{count}}",
+          place_ordinal_few: "رقم {{count}}",
+          place_ordinal_other: "رقم {{count}}",
+          now: "الآن {{place}}",
+          who: "{{name}} {{place}}",
+          stay: "الأسابيع المحجوزة بالفعل تبقى",
+          save: "حفظ الترتيب",
+        },
         page: {
           today: "اليوم",
           paused: "متوقف مؤقتًا",

@@ -219,6 +219,16 @@ const en = {
           takenBody: "Tried again daily",
           button: "Move",
         },
+        reorder: {
+          place_ordinal_one: "{{count}}st",
+          place_ordinal_two: "{{count}}nd",
+          place_ordinal_few: "{{count}}rd",
+          place_ordinal_other: "{{count}}th",
+          now: "now {{place}}",
+          who: "{{name}} {{place}}",
+          stay: "Weeks already reserved stay",
+          save: "Save order",
+        },
         page: {
           today: "today",
           paused: "Paused",
