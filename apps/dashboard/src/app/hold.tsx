@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { DayPickHeader, HourColumn } from "@/components/day-pick";
 import { FadingScroll } from "@/components/fading-scroll";
-import { useHud } from "@/components/hud";
+import { HoldFor, type HoldTarget } from "@/components/hold-for";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -22,13 +22,15 @@ import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useNow } from "@/lib/use-now";
+import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
-import { hoursSpan } from "@/lib/when";
+import { hoursSpan, relativeDay } from "@/lib/when";
 
 // Hold a time (Figma D9 600:142, behind its sheet): the time first, then who it's for. The day
 // under the week strip and the grounds, one ground at a time like Move and Swap, from the one the
 // Calendar was on (else the first): each free time dashed in blue with its price, the bookings
-// already there faded. Opened from the Calendar's +, on the Calendar's day.
+// already there faded. Opened from the Calendar's +, on the Calendar's day. Tapping a free time
+// asks who it's for (HoldFor), then opens the held booking.
 
 const HOUR = 3_600_000;
 const SOFT_FILL = "bg-[#f2f4ff]";
@@ -37,7 +39,6 @@ const FALLBACK_TIMEZONE = "Africa/Cairo";
 
 export default function HoldTime() {
   const { t } = useTranslation();
-  const hud = useHud();
   const params = useLocalSearchParams<{ date?: string; groundId?: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -49,6 +50,9 @@ export default function HoldTime() {
   const weekStart = weekStartOf(day);
   const slots = useQuery(weekSlots(venueId, weekStart, venueId !== ""));
   const bookings = useQuery(weekBookings(venueId, weekStart, venueId !== ""));
+  const holdMinutes = useQuery(bookingSettingsQuery(venueId)).data?.staffHoldMinutes ?? null;
+  // The free time tapped, while who it's for is asked.
+  const [target, setTarget] = useState<HoldTarget | null>(null);
 
   const timezone = slots.data?.timezone ?? FALLBACK_TIMEZONE;
   const currency = slots.data?.currency ?? "EGP";
@@ -165,8 +169,13 @@ export default function HoldTime() {
                           hours: span(item.slot.startsAt, item.slot.endsAt),
                           ground: groundName(item.slot.groundId),
                         })}
-                        // Who it's for comes next (600:142's sheet).
-                        onPress={() => hud.show(t("common.comingNext"))}
+                        onPress={() =>
+                          setTarget({
+                            groundId: item.slot.groundId,
+                            startsAt: item.slot.startsAt,
+                            endsAt: item.slot.endsAt,
+                          })
+                        }
                         className={`h-12 flex-row items-center rounded-xl border border-dashed border-primary px-4 active:opacity-70 ${SOFT_FILL}`}
                       >
                         <Text className="flex-1 text-body">
@@ -185,6 +194,26 @@ export default function HoldTime() {
           </View>
         )}
       </FadingScroll>
+
+      <HoldFor
+        venueId={venueId}
+        target={target}
+        when={
+          target
+            ? t("screens.hold.when", {
+                day: relativeDay(localDateOf(target.startsAt, timezone), now, timezone, t),
+                hours: span(target.startsAt, target.endsAt),
+                ground: groundName(target.groundId),
+              })
+            : ""
+        }
+        holdMinutes={holdMinutes}
+        onClose={() => setTarget(null)}
+        onHeld={(held) => {
+          setTarget(null);
+          router.replace(`/booking/${held.id}`);
+        }}
+      />
     </Screen>
   );
 }
