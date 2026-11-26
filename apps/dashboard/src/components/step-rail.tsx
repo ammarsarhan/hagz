@@ -37,13 +37,14 @@ export function StepRail({ steps }: { steps: Step[] }) {
             style={{ paddingBottom: last ? 0 : GAP }}
           >
             <View className="w-3.5 items-center self-stretch">
-              {/* The rail into this dot and on to the next, under it. */}
+              {/* The rail into this dot and on to the next, under it: through the gap below too,
+                  which is the row's padding, outside this column, so the rail runs unbroken. */}
               {steps.length > 1 ? (
                 <View
                   className="absolute w-px bg-border"
                   style={{
                     top: first ? LINE / 2 : 0,
-                    bottom: last ? undefined : 0,
+                    bottom: last ? undefined : -GAP,
                     height: last ? LINE / 2 : undefined,
                   }}
                 />
