@@ -741,6 +741,7 @@ const en = {
       },
       calendar: {
         title: "Calendar",
+        deleted: "Deleted",
         day: "{{weekday}} {{day}} {{month}}",
         requests: "Booking requests",
         requestsWaiting_one: "{{count}} booking request",
@@ -1286,6 +1287,14 @@ const en = {
           delete: "Delete",
           deleteTitle: "Delete {{name}}?",
           deleteBody: "Players won't see it any more. Its past bookings are kept.",
+          deleteAhead_one:
+            "Its 1 booking still to come goes ahead. Until it ends, the ground stays on the calendar marked Deleted and takes no new bookings. Players won't see it any more, and its past bookings are kept.",
+          deleteAhead_other:
+            "Its {{count}} bookings still to come go ahead. Until the last one ends, the ground stays on the calendar marked Deleted and takes no new bookings. Players won't see it any more, and its past bookings are kept.",
+          deleteRegulars_one:
+            "{{names}}'s regular keeps the weeks already reserved, gets no new ones, and ends with the ground.",
+          deleteRegulars_other:
+            "The regulars of {{names}} keep the weeks already reserved, get no new ones, and end with the ground.",
           deleteConfirm: "Delete",
           cancel: "Cancel",
         },

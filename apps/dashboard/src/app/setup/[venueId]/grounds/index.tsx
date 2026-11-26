@@ -20,6 +20,8 @@ import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { afterVenueWrite, queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
+import { datesJoin } from "@/lib/regulars";
+import { calendarKey } from "@/lib/week-queries";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -58,18 +60,45 @@ function GroundsList({
     if (!rows.closeOpen()) push(`/setup/${venueId}/grounds/${ground.id}`);
   };
 
-  // Asked first: the ground is kept on the server for booking history, but there's no bringing it
-  // back from the app. It leaves the list straight away; a failure puts it back and says why.
-  const remove = (ground: Ground, row: SwipeableMethods | null) => {
+  // Asked first, with what it leaves behind (user, 2026-11-27): bookings still to come go ahead and
+  // keep it on the calendar, marked Deleted, until the last one ends; regulars on it keep the weeks
+  // they have and end with it. The ground is kept on the server for booking history, but there's
+  // no bringing it back from the app. It leaves the list straight away; a failure puts it back and
+  // says why.
+  const remove = async (ground: Ground, row: SwipeableMethods | null) => {
     const close = () => {
       row?.close();
       rows.forget();
     };
+    const preview = await send(
+      api.GET("/v1/staff/venues/{venueId}/grounds/{groundId}/removal", {
+        params: { path: { venueId, groundId: ground.id } },
+      }),
+    );
+    if (!preview.ok) {
+      hud.show(hudMessage(preview.error));
+      close();
+      return;
+    }
+    const { bookings, regulars } = preview.data;
+    const body = [
+      bookings > 0
+        ? t("screens.setup.grounds.deleteAhead", { count: bookings })
+        : t("screens.setup.grounds.deleteBody"),
+      regulars.length > 0
+        ? t("screens.setup.grounds.deleteRegulars", {
+            count: regulars.length,
+            names: datesJoin(t, regulars),
+          })
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     Alert.alert(
       t("screens.setup.grounds.deleteTitle", {
         name: ground.name ?? t("screens.setup.grounds.unnamed"),
       }),
-      t("screens.setup.grounds.deleteBody"),
+      body,
       [
         { text: t("screens.setup.grounds.cancel"), style: "cancel", onPress: close },
         {
@@ -98,6 +127,8 @@ function GroundsList({
                 exact: true,
               });
               void afterVenueWrite(queryClient, venueId);
+              // The calendar's weeks: the ground now shows as Deleted there, or is gone.
+              void queryClient.invalidateQueries({ queryKey: calendarKey(venueId, "slots") });
             })();
           },
         },
@@ -126,7 +157,7 @@ function GroundsList({
               })}
               onPress={() => tap(ground)}
               onOpen={rows.opened}
-              onDelete={(row) => remove(ground, row)}
+              onDelete={(row) => void remove(ground, row)}
             />
             <View className="mx-5 h-px bg-border" />
           </Fragment>
