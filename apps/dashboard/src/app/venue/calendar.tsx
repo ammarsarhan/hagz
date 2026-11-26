@@ -33,7 +33,7 @@ import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
-import { Chip, DashedTag, WeekStrip } from "@/components/week-strip";
+import { Chip, WeekStrip } from "@/components/week-strip";
 import { hudMessage } from "@/lib/api-errors";
 import {
   addDays,
@@ -189,7 +189,7 @@ export default function VenueCalendar() {
   };
 
   // The grounds in the venue's order: the slots know them all; without the schedule, the ones that
-  // have bookings this week. A removed ground with bookings still ahead stays, marked, until its
+  // have bookings this week. A removed ground with bookings still ahead stays, its chip faint, until its
   // last one ends (user, 2026-11-27).
   const grounds = useMemo(() => {
     if (slots.data) {
@@ -199,7 +199,6 @@ export default function VenueCalendar() {
     for (const booking of bookings.data ?? []) seen.set(booking.ground.id, booking.ground.name);
     return [...seen].map(([id, name]) => ({ id, name, removing: false }));
   }, [slots.data, bookings.data]);
-  const removed = (id: string) => grounds.find((ground) => ground.id === id)?.removing ?? false;
 
   const rows = useMemo(
     () =>
@@ -539,7 +538,6 @@ export default function VenueCalendar() {
                       hour={group.hour}
                       timezone={timezone}
                       ground={groundsOf(row)}
-                      removed={row.kind !== "free" && removed(row.groundId)}
                       currency={slots.data?.currency ?? "EGP"}
                       onPress={() => openRow(row)}
                     />
@@ -560,7 +558,6 @@ export default function VenueCalendar() {
                   row={row}
                   timezone={timezone}
                   ground={groundsOf(row)}
-                  removed={row.kind !== "free" && removed(row.groundId)}
                   currency={slots.data?.currency ?? "EGP"}
                   current={index === nowRow}
                   onPress={() => openRow(row)}
@@ -735,7 +732,6 @@ function Row({
   hour,
   timezone,
   ground,
-  removed = false,
   currency,
   current = false,
   onPress,
@@ -747,8 +743,6 @@ function Row({
   hour?: number;
   timezone: string;
   ground: string;
-  // On a ground being removed: a dashed Deleted badge after its title.
-  removed?: boolean;
   currency: string;
   // The row under way now: its hours in blue.
   current?: boolean;
@@ -806,15 +800,12 @@ function Row({
         className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
       />
       <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
-        <View className="flex-row items-center gap-2">
-          <Text
-            className={`shrink text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-          {removed ? <DashedTag label={t("screens.calendar.deleted")} /> : null}
-        </View>
+        <Text
+          className={`text-subtitle leading-[21px] font-medium ${ended ? "text-ink-2" : ""}`}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
         <Text
           className="text-label leading-[19px] text-ink-2"
           onTextLayout={(event) => setWrapped(event.nativeEvent.lines.length > 1)}

@@ -816,7 +816,6 @@ const ar: ArabicTranslations = {
       },
       calendar: {
         title: "التقويم",
-        deleted: "محذوف",
         addSheet: {
           title: "إضافة إلى التقويم",
           body: "اختر الوقت بعد ذلك",

@@ -741,7 +741,6 @@ const en = {
       },
       calendar: {
         title: "Calendar",
-        deleted: "Deleted",
         day: "{{weekday}} {{day}} {{month}}",
         requests: "Booking requests",
         requestsWaiting_one: "{{count}} booking request",

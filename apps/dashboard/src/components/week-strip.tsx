@@ -219,13 +219,3 @@ export function Chip({
     </Pressable>
   );
 }
-
-// A small dashed-outline badge: something that's going (user, 2026-11-27: a removed ground still
-// on the calendar). No colour, as every staff status (docs: no red/green/amber).
-export function DashedTag({ label }: { label: string }) {
-  return (
-    <View className="h-5 justify-center rounded-full border border-dashed border-ink-2 px-2">
-      <Text className="text-[11px] leading-[14px] font-medium text-ink-2">{label}</Text>
-    </View>
-  );
-}
