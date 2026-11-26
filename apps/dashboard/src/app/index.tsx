@@ -8,9 +8,8 @@ import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { useTranslation } from "react-i18next";
-import { getSignedInTarget } from "@/lib/navigation";
+import { getSignedInTarget, push } from "@/lib/navigation";
 import { isRTL } from "@/lib/language";
-import { push } from "@/lib/navigation";
 
 // Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
 // gently on their own until touched, with Create account and Sign in on every slide.
