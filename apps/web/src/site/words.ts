@@ -236,7 +236,7 @@ const en = {
     missed: (deadline: string, venue: string, code: string) =>
       `Too late to answer: nobody confirmed by ${deadline}, so the time went back on sale. To play anyway, call ${venue} and give them ${code}.`,
     changed: (venue: string, code: string) =>
-      `${venue} changed this week, so this link doesn’t work any more. For anything about it, call them and give them ${code}.`,
+      `${venue} changed this week’s booking time. For more information, call them and give them ${code}.`,
     playingButton: "I’m playing",
     notThisWeek: "Not this week",
     failed: "That didn’t go through. Try again.",
@@ -498,7 +498,7 @@ const ar: Words = {
     missed: (deadline, venue, code) =>
       `فات وقت الرد: لم يؤكد أحد قبل ${deadline}، فعاد الموعد متاحًا للحجز. إن أردت اللعب، اتصل بـ${venue} وأعطهم الرمز ${code}.`,
     changed: (venue, code) =>
-      `غيّر ${venue} هذا الأسبوع، فلم يعد هذا الرابط يعمل. لأي استفسار، اتصل بهم وأعطهم الرمز ${code}.`,
+      `غيّر ${venue} موعد حجز هذا الأسبوع. لمزيد من المعلومات، اتصل بهم وأعطهم الرمز ${code}.`,
     playingButton: "سألعب",
     notThisWeek: "ليس هذا الأسبوع",
     failed: "لم يتم ذلك. حاول مرة أخرى.",
