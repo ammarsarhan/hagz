@@ -2,15 +2,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, View, type LayoutChangeEvent } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  LinearTransition,
+  Easing,
+  runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from "react-native-reanimated";
 import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
@@ -243,6 +246,11 @@ const deadlineLine = (t: TFunction, hours: number) =>
 // One time on the weekday: its hours once on the left, the regulars wanting it on the right, a
 // hairline under each (indented between regulars sharing the time). Shared by two or more, a row
 // held lifts to be dragged into another place.
+//
+// As the photos grid does it (setup/[venueId]/photos.tsx): the rows are drawn in one fixed order
+// that never changes, each glided to its place in `order` on the UI thread, so nothing is redrawn
+// or remounted while a row is carried, and saving moves nothing (user, 2026-11-26: the first take,
+// reordering the list itself as it went, jumped).
 function TimeGroup({
   group,
   saved,
@@ -260,53 +268,33 @@ function TimeGroup({
   onOpen: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const [dragId, setDragId] = useState<string | null>(null);
-  const rowHeight = useRef(72);
-  // The order when the drag began, and where the dragged one started in it.
-  const start = useRef<{ ids: string[]; index: number; at: number }>({ ids: [], index: 0, at: 0 });
-  // The card's offset from the gap it would land in.
-  const lift = useSharedValue(0);
-  const card = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
+  const ids = group.map((regular) => regular.id);
+  const key = ids.join(",");
+  // The order on screen, moved by the drag before anything else hears of it.
+  const order = useSharedValue(ids);
+  const carried = useSharedValue<string | null>(null);
+  const rowHeight = useSharedValue(0);
+  // A new order from outside (saved, or the pending one dropped): taken up when nothing's carried.
+  useEffect(() => {
+    if (carried.value === null) order.value = key.split(",");
+  }, [key, order, carried]);
+
+  // The gap the carried row will land in.
+  const gap = useAnimatedStyle(() => {
+    const at = carried.value === null ? -1 : order.value.indexOf(carried.value);
+    return {
+      opacity: withTiming(at === -1 ? 0 : 1, { duration: 120 }),
+      height: rowHeight.value,
+      transform: [{ translateY: withTiming(Math.max(at, 0) * rowHeight.value, GLIDE) }],
+    };
+  });
 
   const first = group[0];
   if (!first) return null;
   // The time is greyed when nobody in it is playing for now.
   const paused = group.every((regular) => regular.status === "PAUSED");
-
-  const dragFor = (id: string) =>
-    Gesture.Pan()
-      .runOnJS(true)
-      .enabled(canReorder)
-      .activateAfterLongPress(HOLD_MS)
-      .onStart(() => {
-        const ids = group.map((regular) => regular.id);
-        const index = ids.indexOf(id);
-        start.current = { ids, index, at: index };
-        lift.value = 0;
-        setDragId(id);
-        onDragging(true);
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      })
-      .onUpdate((event) => {
-        const { ids, index, at } = start.current;
-        const to = Math.min(
-          Math.max(Math.round(index + event.translationY / rowHeight.current), 0),
-          ids.length - 1,
-        );
-        if (to !== at) {
-          const next = ids.filter((one) => one !== id);
-          next.splice(to, 0, id);
-          start.current.at = to;
-          onOrder(next);
-          void Haptics.selectionAsync();
-        }
-        lift.value = event.translationY - (to - index) * rowHeight.current;
-      })
-      .onFinalize(() => {
-        lift.value = withTiming(0, { duration: SLIDE_MS });
-        setTimeout(() => setDragId(null), SLIDE_MS);
-        onDragging(false);
-      });
+  // Drawn in one order whatever the order shown: by id.
+  const drawn = [...group].sort((a, b) => a.id.localeCompare(b.id));
 
   return (
     <View className="flex-row border-b border-border">
@@ -319,88 +307,216 @@ function TimeGroup({
         </Text>
       </View>
       <View className="flex-1">
-        {group.map((regular, index) => {
+        {group.length > 1 ? (
+          <Animated.View
+            pointerEvents="none"
+            className="absolute inset-x-0 top-0 rounded-[12px] border-[1.5px] border-dashed border-primary"
+            style={gap}
+          />
+        ) : null}
+        {drawn.map((regular, drawnAt) => {
+          const index = ids.indexOf(regular.id);
           const was = saved.findIndex((one) => one.id === regular.id);
-          const place = group.length > 1 ? index + 1 : null;
-          const lifted = regular.id === dragId;
           return (
-            <Animated.View
+            <Slot
               key={regular.id}
-              layout={lifted ? undefined : LinearTransition.duration(SLIDE_MS)}
-              style={{ zIndex: lifted ? 1 : 0 }}
-            >
-              <GestureDetector gesture={dragFor(regular.id)}>
-                <View collapsable={false}>
-                  {lifted ? (
-                    // The gap it would land in, dashed, with the card over it.
-                    <View
-                      className="rounded-[12px] border-[1.5px] border-dashed border-primary"
-                      style={{ height: rowHeight.current }}
-                    >
-                      <Animated.View
-                        className="absolute top-0 bottom-0 flex-row items-center rounded-[16px] bg-white px-4"
-                        style={[
-                          card,
-                          {
-                            left: -48,
-                            right: 0,
-                            shadowColor: "#000",
-                            shadowOpacity: 0.14,
-                            shadowRadius: 18,
-                            shadowOffset: { width: 0, height: 8 },
-                            elevation: 8,
-                          },
-                        ]}
-                      >
-                        <View className="w-[56px]">
-                          <Text className="text-[15px] leading-[20px] font-semibold">
-                            {hourLabel(t, regular.startHour)}
-                          </Text>
-                          <Text className="text-[13px] leading-[17px] text-ink-3">
-                            {hourLabel(t, regular.startHour + regular.slotCount)}
-                          </Text>
-                        </View>
-                        <View className="flex-1">
-                          <Text
-                            className="text-[16px] leading-[21px] font-medium"
-                            numberOfLines={1}
-                          >
-                            {regular.customer.name}
-                          </Text>
-                          <Text className="text-[14px] leading-[19px] text-ink-2">
-                            {[
-                              regular.ground.name,
-                              t("screens.regulars.reorder.place", {
-                                count: index + 1,
-                                ordinal: true,
-                              }),
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </Text>
-                        </View>
-                        <IconGripVertical size={18} color={colors.ink3} strokeWidth={2} />
-                      </Animated.View>
-                    </View>
-                  ) : (
-                    <Row
-                      regular={regular}
-                      place={place}
-                      moved={was !== index}
-                      divider={index < group.length - 1}
-                      onPress={() => onOpen(regular.id)}
-                      onLayout={(event) => {
-                        rowHeight.current = event.nativeEvent.layout.height;
-                      }}
-                    />
-                  )}
-                </View>
-              </GestureDetector>
-            </Animated.View>
+              regular={regular}
+              drawnAt={drawnAt}
+              order={order}
+              carried={carried}
+              rowHeight={rowHeight}
+              canReorder={canReorder}
+              place={group.length > 1 ? index + 1 : null}
+              moved={was !== index}
+              divider={index < group.length - 1}
+              onDragging={onDragging}
+              onDrop={onOrder}
+              onPress={() => onOpen(regular.id)}
+            />
           );
         })}
       </View>
     </View>
+  );
+}
+
+// How a row glides into its place.
+const GLIDE = { duration: SLIDE_MS, easing: Easing.out(Easing.cubic) };
+
+const movedTo = (ids: string[], id: string, to: number) => {
+  "worklet";
+  const next = ids.filter((one) => one !== id);
+  next.splice(to, 0, id);
+  return next;
+};
+
+// One regular in a shared time: in the list's own flow at `drawnAt`, moved by `y` to its place in
+// `order`; carried, it follows the finger as a lifted card with a grip.
+function Slot({
+  regular,
+  drawnAt,
+  order,
+  carried,
+  rowHeight,
+  canReorder,
+  place,
+  moved,
+  divider,
+  onDragging,
+  onDrop,
+  onPress,
+}: {
+  regular: Regular;
+  drawnAt: number;
+  order: SharedValue<string[]>;
+  carried: SharedValue<string | null>;
+  rowHeight: SharedValue<number>;
+  canReorder: boolean;
+  place: number | null;
+  moved: boolean;
+  divider: boolean;
+  onDragging: (dragging: boolean) => void;
+  onDrop: (ids: string[]) => void;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const id = regular.id;
+  const y = useSharedValue(0);
+  const dy = useSharedValue(0);
+  const lifted = useSharedValue(0);
+  const onTop = useSharedValue(0);
+
+  // To its place whenever the order on screen moves it; the carried one follows the finger.
+  useAnimatedReaction(
+    () => ({ at: order.value.indexOf(id), height: rowHeight.value }),
+    (now, before) => {
+      if (now.at === -1 || carried.value === id) return;
+      const target = (now.at - drawnAt) * now.height;
+      // The first time, and when the row's height is first known, straight there.
+      if (!before || before.height !== now.height) y.value = target;
+      else if (now.at !== before.at) y.value = withTiming(target, GLIDE);
+    },
+  );
+
+  const lift = () => {
+    onDragging(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+  const tick = () => void Haptics.selectionAsync();
+  const drop = (ids: string[]) => {
+    onDragging(false);
+    onDrop(ids);
+  };
+
+  const drag = Gesture.Pan()
+    .enabled(canReorder)
+    .activateAfterLongPress(HOLD_MS)
+    .onStart(() => {
+      carried.value = id;
+      onTop.value = 1;
+      lifted.value = withTiming(1, { duration: 120 });
+      runOnJS(lift)();
+    })
+    .onUpdate((event) => {
+      dy.value = event.translationY;
+      const ids = order.value;
+      const height = rowHeight.value || 1;
+      // Where the card's middle is, in places.
+      const middle = (y.value + dy.value) / height + drawnAt;
+      const to = Math.min(Math.max(Math.round(middle), 0), ids.length - 1);
+      if (to !== ids.indexOf(id)) {
+        order.value = movedTo(ids, id, to);
+        runOnJS(tick)();
+      }
+    })
+    .onEnd(() => {
+      // The drag becomes its position, then it glides into the place kept open for it.
+      y.value = y.value + dy.value;
+      dy.value = 0;
+      y.value = withTiming((order.value.indexOf(id) - drawnAt) * rowHeight.value, GLIDE, () => {
+        onTop.value = 0;
+      });
+      lifted.value = withTiming(0, GLIDE);
+      carried.value = null;
+      runOnJS(drop)(order.value.slice());
+    })
+    .onFinalize(() => {
+      // A drag that never got going (or was cancelled) just settles back.
+      if (carried.value === id) {
+        carried.value = null;
+        runOnJS(onDragging)(false);
+      }
+      dy.value = withTiming(0, GLIDE);
+      lifted.value = withTiming(0, GLIDE, () => {
+        onTop.value = 0;
+      });
+    });
+
+  const slot = useAnimatedStyle(() => ({
+    zIndex: onTop.value ? 10 : 1,
+    transform: [{ translateY: y.value + dy.value }],
+  }));
+  const row = useAnimatedStyle(() => ({ opacity: 1 - lifted.value }));
+  const card = useAnimatedStyle(() => ({
+    opacity: lifted.value,
+    transform: [{ scale: 1 + 0.02 * lifted.value }],
+    shadowOpacity: 0.14 * lifted.value,
+  }));
+
+  return (
+    <GestureDetector gesture={drag}>
+      <Animated.View
+        style={slot}
+        onLayout={(event) => {
+          if (drawnAt === 0) rowHeight.value = event.nativeEvent.layout.height;
+        }}
+      >
+        <Animated.View style={row}>
+          <Row regular={regular} place={place} moved={moved} divider={divider} onPress={onPress} />
+        </Animated.View>
+        {/* Lifted: a card over the time column too, with the place it would take and a grip. */}
+        <Animated.View
+          pointerEvents="none"
+          className="absolute top-0 bottom-0 flex-row items-center rounded-[16px] bg-white px-4"
+          style={[
+            card,
+            {
+              left: -48,
+              right: 0,
+              shadowColor: "#000",
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 8,
+            },
+          ]}
+        >
+          <View className="w-[56px]">
+            <Text className="text-[15px] leading-[20px] font-semibold">
+              {hourLabel(t, regular.startHour)}
+            </Text>
+            <Text className="text-[13px] leading-[17px] text-ink-3">
+              {hourLabel(t, regular.startHour + regular.slotCount)}
+            </Text>
+          </View>
+          <View className="flex-1">
+            <Text className="text-[16px] leading-[21px] font-medium" numberOfLines={1}>
+              {regular.customer.name}
+            </Text>
+            <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
+              {[
+                regular.ground.name,
+                place === null
+                  ? null
+                  : t("screens.regulars.reorder.place", { count: place, ordinal: true }),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </Text>
+          </View>
+          <IconGripVertical size={18} color={colors.ink3} strokeWidth={2} />
+        </Animated.View>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
@@ -410,7 +526,6 @@ function Row({
   moved,
   divider,
   onPress,
-  onLayout,
 }: {
   regular: Regular;
   place: number | null;
@@ -418,7 +533,6 @@ function Row({
   moved: boolean;
   divider: boolean;
   onPress: () => void;
-  onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const { t } = useTranslation();
   const paused = regular.status === "PAUSED";
@@ -449,7 +563,6 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      onLayout={onLayout}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
       <View className="flex-1">
@@ -459,7 +572,10 @@ function Row({
         >
           {regular.customer.name}
         </Text>
-        <Text className="mt-0.5 text-[14px] leading-[19px] text-ink-2">{line}</Text>
+        {/* One line, so a shared time's rows are all one height to glide between. */}
+        <Text className="mt-0.5 text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
+          {line}
+        </Text>
       </View>
       <IconChevronRight
         size={20}
