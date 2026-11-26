@@ -3,6 +3,15 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { components } from "@hagz/api";
 import { Button } from "@/components/button";
@@ -46,6 +55,28 @@ const NO_DOTS: ReadonlySet<string> = new Set();
 const HOUR = 3_600_000;
 const SOFT_FILL = "bg-[#f2f4ff]";
 
+// The lifted booking sways while it waits to be dropped: tilting a little either way as it rises
+// and settles, slowly, for as long as the screen is open.
+const SWAY_MS = 1600;
+
+const useFloat = () => {
+  const sway = useSharedValue(0);
+  useEffect(() => {
+    sway.value = withRepeat(
+      withTiming(1, { duration: SWAY_MS, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(sway);
+  }, [sway]);
+  return useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(sway.value, [0, 1], [0, -4]) },
+      { rotate: `${interpolate(sway.value, [0, 1], [-2, 0.5])}deg` },
+    ],
+  }));
+};
+
 export default function MoveBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
@@ -61,13 +92,15 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const compact = useCompactTitle();
+  const floatStyle = useFloat();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const { timezone, currency } = booking;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
   const name = booking.customer.name.trim().split(/\s+/)[0] ?? booking.customer.name;
 
   const [day, setDay] = useState(() => localDateOf(booking.startsAt, timezone));
-  const [groundId, setGroundId] = useState<string | null>(null);
+  // One ground at a time, starting on the booking's own (user: no All grounds here).
+  const [groundId, setGroundId] = useState(booking.ground.id);
   const weekStart = weekStartOf(day);
   const slots = useQuery(weekSlots(venueId, weekStart, venueId !== ""));
   const others = useQuery(weekBookings(venueId, weekStart, venueId !== ""));
@@ -153,7 +186,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       | { kind: "other"; key: string; startsAt: string; booking: StaffBooking }
       | { kind: "free"; key: string; startsAt: string; target: MoveTarget };
     const onDay = (at: string, ground: string) =>
-      localDateOf(at, timezone) === day && (groundId === null || ground === groundId);
+      localDateOf(at, timezone) === day && ground === groundId;
     const items: Item[] = [
       ...(onDay(booking.startsAt, booking.ground.id)
         ? [{ kind: "own" as const, key: booking.id, startsAt: booking.startsAt }]
@@ -232,11 +265,6 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
             style={{ marginHorizontal: -20, marginTop: 14 }}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           >
-            <Chip
-              label={t("screens.calendar.allGrounds")}
-              on={groundId === null}
-              onPress={() => setGroundId(null)}
-            />
             {grounds.map((ground) => (
               <Chip
                 key={ground.id}
@@ -331,9 +359,9 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         className="absolute inset-x-5"
         style={{ bottom: insets.bottom + 8 }}
       >
-        <View
+        <Animated.View
           className="flex-row items-center rounded-2xl bg-white px-4 py-3.5"
-          style={{ ...cardShadow, transform: [{ rotate: "-1.5deg" }] }}
+          style={[cardShadow, floatStyle]}
         >
           <View className="h-9 w-1 rounded-full bg-primary" />
           <View className="ms-4 flex-1">
@@ -354,7 +382,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
           >
             <Text className="text-body font-medium underline">{t("screens.move.cancel")}</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
 
       {held ? (
