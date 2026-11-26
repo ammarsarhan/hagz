@@ -1,5 +1,6 @@
 import type { PriceTier } from "@/generated/prisma/enums";
 import type { Tx } from "@/platform/db/transaction";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // Venues owns GroundSlot, so bookings claim and give back slots through these, inside the booking's
 // own transaction (docs/architecture.md, "No double bookings").
@@ -43,12 +44,23 @@ export const bookHeldSlots = (tx: Tx, bookingId: string) =>
   tx.groundSlot.updateMany({ where: { bookingId, status: "HELD" }, data: { status: "BOOKED" } });
 
 // Bookings that ended without being played (expired, cancelled, released) give their slots back.
-// freedAt lets search mark a slot "just freed" near kick-off (docs/regulars.md).
-export const releaseSlots = (tx: Tx, bookingIds: readonly string[], now: Date) =>
-  tx.groundSlot.updateMany({
-    where: { bookingId: { in: [...bookingIds] } },
+// freedAt lets search mark a slot "just freed" near kick-off (docs/regulars.md). On a ground being
+// removed, nobody can book them again, so the ones still to come go instead of showing as free hours
+// on the calendar until the ground is gone (user, 2026-11-27).
+export const releaseSlots = async (tx: Tx, bookingIds: readonly string[], now: Date) => {
+  const ids = [...bookingIds];
+  await tx.groundSlot.deleteMany({
+    where: {
+      bookingId: { in: ids },
+      endsAt: { gt: now },
+      ground: { status: { in: [...GONE_GROUNDS] } },
+    },
+  });
+  await tx.groundSlot.updateMany({
+    where: { bookingId: { in: ids } },
     data: { status: "AVAILABLE", bookingId: null, freedAt: now },
   });
+};
 
 export interface RangeSlot extends FreeSlot {
   status: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
