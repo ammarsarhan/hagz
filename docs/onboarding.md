@@ -122,11 +122,12 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 
 A deleted ground is kept for booking history: past bookings still name it. What happens to the rest depends on what's still ahead (user, 2026-11-27):
 
-- **Nothing booked ahead:** it's `DELETED` at once.
+- **Booking requests waiting on it** are declined first, as staff declining each would (a venue cancellation; nothing is paid while one waits). Bookings owns them, so venues' `removeGround` calls bookings' `declineWaitingOnGround` through a hook set in `http/router.ts`.
+- **Nothing else booked ahead:** it's `DELETED` at once.
 - **Bookings or holds still ahead:** it's `REMOVING`. They go ahead as booked, and the ground stays on staff's calendar with a dashed **Deleted** badge on its chip and its bookings. It takes no new bookings, moves, swaps or regulars (all of them need an `ACTIVE` ground) and leaves the venue, its layout, its public page, search and the pickers. Bookings on it can still be moved off it. Every five minutes a job (`removals`, with the slot checks) turns a `REMOVING` ground whose last booking has ended, moved or been cancelled into `DELETED`.
-- **Either way,** its free and blocked slots go straight away, and so does its layout tile.
+- **Either way,** its free and blocked slots go straight away, and so does its layout tile. Slots a booking gives back later (cancelled, expired, moved off) go too, rather than show as free hours nobody can book (`releaseSlots`).
 - **Regulars on it** keep the weeks already reserved and get no new ones. Once the ground is `DELETED`, the next top-up ends them.
-- **The warning first:** the staff app reads `GET …/grounds/{groundId}/removal` (how many bookings are still ahead, when the last one ends, and the first names of the regulars on it) and says what will happen before anything is deleted.
+- **The warning first:** the staff app reads `GET …/grounds/{groundId}/removal` (how many bookings are still ahead, how many requests wait, when the last booking ends, and the first names of the regulars on it). A sheet says what will happen, step by step, with Cancel and Delete; Delete asks once more in a short native alert.
 
 ## Slugs and SEO
 
