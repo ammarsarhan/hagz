@@ -24,7 +24,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { datesLabel } from "@/lib/regulars";
 
 // A new weekly game's last look (Figma D12 656:93), after its time and who it's for: the time as a
-// dashed card with Change (back to the picker), who it's for, the first and last week, and what
+// dashed card (back is the way to change it; user, 2026-11-26: no Change on it), who it's for, the first and last week, and what
 // happens next on the step rail: the weeks reserved (and any taken, skipped), each week waiting for
 // a confirm by the venue's deadline, and the week going back on sale if nobody confirms. The bar
 // says who and that it's paid at the venue, with Add regular. Added, the Regulars list takes the
@@ -166,7 +166,7 @@ export default function ConfirmRegular() {
           {title}
         </Title>
 
-        {/* The time picked, with the way back to change it. */}
+        {/* The time picked; back is the way to change it. */}
         <View className="flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-4 py-4">
           <View className="flex-1">
             <Text className="text-[16px] leading-[21px] font-medium">
@@ -178,7 +178,6 @@ export default function ConfirmRegular() {
               {[t(`${c}.perWeek`, { price: money }), params.kind].filter(Boolean).join(" · ")}
             </Text>
           </View>
-          <Change onPress={() => router.back()} />
         </View>
 
         <View className="h-2" />
@@ -282,13 +281,13 @@ function Fact({
           </Text>
         ) : null}
       </View>
-      <Change onPress={onChange} grey />
+      <Change onPress={onChange} />
     </View>
   );
 }
 
-// Grey and a touch smaller on the facts; ink on the time card (user, 2026-11-26).
-function Change({ onPress, grey = false }: { onPress: () => void; grey?: boolean }) {
+// Grey and a touch smaller (user, 2026-11-26).
+function Change({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
   return (
     <Pressable
@@ -297,9 +296,7 @@ function Change({ onPress, grey = false }: { onPress: () => void; grey?: boolean
       hitSlop={8}
       className="ms-3 active:opacity-70"
     >
-      <Text
-        className={`font-medium underline ${grey ? "text-[14px] leading-[19px] text-ink-2" : "text-[15px] leading-5"}`}
-      >
+      <Text className="text-[14px] leading-[19px] font-medium text-ink-2 underline">
         {t("screens.regulars.confirm.change")}
       </Text>
     </Pressable>
