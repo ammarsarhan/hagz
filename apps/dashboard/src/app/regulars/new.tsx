@@ -1,5 +1,5 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HoldFor } from "@/components/hold-for";
+import { MoveSheet } from "@/components/regular-sheets";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -35,7 +36,7 @@ import { colors } from "@/lib/colors";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
-import { datesLabel, regularsQuery, type Regular } from "@/lib/regulars";
+import { datesLabel, regularQuery, regularsQuery, type Regular } from "@/lib/regulars";
 import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
 import { push } from "@/lib/navigation";
@@ -50,6 +51,8 @@ import { push } from "@/lib/navigation";
 // shortest game from that hour; holding one and dragging stretches it over the free hours next to
 // it, back to back, up to the ground's longest. The pick shows solid blue, and a bar says its hours,
 // its price a week and how many of the weeks it's free; Next asks who it's for.
+//
+// With a regularId it changes that regular's time instead (Figma 656:158): see `changing`.
 
 // Until the first answer says the venue's; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
@@ -78,6 +81,12 @@ export default function NewRegular() {
   const settings = useQuery(bookingSettingsQuery(venueId)).data;
   const horizon = settings?.regularHorizon ?? FALLBACK_HORIZON;
   const regulars = useQuery(regularsQuery(venueId)).data ?? [];
+  // Changing a regular's time (its ⋯, Figma 656:158) rather than adding one: the same picker,
+  // opening on its weekday and ground, its own waiting weeks counted as free, and Next asking to
+  // move it instead of who it's for.
+  const { regularId = "" } = useLocalSearchParams<{ regularId?: string }>();
+  const changing = useQuery(regularQuery(venueId, regularId)).data;
+  const [moving, setMoving] = useState(false);
 
   const [timezone, setTimezone] = useState(FALLBACK_TIMEZONE);
   const today = localDateOf(now, timezone);
@@ -87,6 +96,18 @@ export default function NewRegular() {
   const [pick, setPickHours] = useState<{ from: number; to: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [asking, setAsking] = useState(false);
+  // Opens on the regular's own weekday and ground, once it's known.
+  const [opened, setOpened] = useState(false);
+  if (changing && !opened) {
+    setOpened(true);
+    setWeekday(changing.dayOfWeek);
+    setPicked(changing.ground.id);
+  }
+  // Its waiting weeks' bookings: their hours are its own to move into.
+  const own = (changing?.reservations ?? [])
+    .filter((booking) => booking.status === "UNCONFIRMED")
+    .map((booking) => booking.id)
+    .join(",");
 
   // The weekday's next dates, from today, one a week.
   const dates = useMemo(() => {
@@ -136,16 +157,19 @@ export default function NewRegular() {
     }
     const starts = [...new Set(byWeek.flatMap((hours) => [...hours.keys()]))].sort((a, b) => a - b);
     // Free that week: open for booking and still ahead.
+    const mine = new Set(own.split(",").filter(Boolean));
     const freeAt = (hours: Map<number, Slot>, hour: number) => {
       const slot = hours.get(hour);
-      return slot && slot.status === "AVAILABLE" && Date.parse(slot.startsAt) > now ? slot : null;
+      const open =
+        slot?.status === "AVAILABLE" || (slot?.bookingId != null && mine.has(slot.bookingId));
+      return slot && open && Date.parse(slot.startsAt) > now ? slot : null;
     };
     return starts
       .map((hour): Hour => ({ hour, weeks: byWeek.map((hours) => freeAt(hours, hour)) }))
       .filter((one) => one.weeks.some(Boolean));
     // `weeks` is read through `answers`, which changes whenever it does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groundId, loaded, answers, dates, timezone, now]);
+  }, [groundId, loaded, answers, dates, timezone, now, own]);
 
   // Free hours next to each other, so a game can run on from one into the next.
   const joined = (a: number) => run[a + 1]?.hour === (run[a]?.hour ?? -2) + 1;
@@ -278,6 +302,7 @@ export default function NewRegular() {
   const playing = regulars.filter(
     (regular) =>
       regular.status === "ACTIVE" &&
+      regular.id !== changing?.id &&
       regular.dayOfWeek === weekday &&
       regular.ground.id === ground?.id,
   );
@@ -306,7 +331,19 @@ export default function NewRegular() {
     hours: pickedSpan,
     ground: ground?.name ?? "",
   });
-  const title = t("screens.regulars.new.title");
+  const title = changing
+    ? t("screens.regulars.change.title", {
+        name: changing.customer.name.trim().split(/\s+/)[0] ?? changing.customer.name,
+      })
+    : t("screens.regulars.new.title");
+  // The pick is the time it has now: nothing to move.
+  const same =
+    changing !== undefined &&
+    chosen !== null &&
+    changing.ground.id === ground?.id &&
+    changing.dayOfWeek === weekday &&
+    changing.startHour === pickStart &&
+    changing.slotCount === pickLength;
   const letter = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "narrow" });
   const long = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" });
   // Sunday the 4th of January 2026, and the six days after it.
@@ -325,21 +362,25 @@ export default function NewRegular() {
               detail={
                 short
                   ? t("screens.hold.tooShort", { count: shortest })
-                  : freeWeeks === 0
-                    ? t("screens.regulars.new.noWeek")
-                    : t("screens.regulars.new.pickedDetail", {
-                        price: money(pickedPrice),
-                        free: freeWeeks,
-                        count: dates.length,
-                      })
+                  : same
+                    ? t("screens.regulars.change.now")
+                    : freeWeeks === 0
+                      ? t("screens.regulars.new.noWeek")
+                      : t("screens.regulars.new.pickedDetail", {
+                          price: money(pickedPrice),
+                          free: freeWeeks,
+                          count: dates.length,
+                        })
               }
             >
               <BarButton
                 label={t("screens.book.next")}
                 primary
-                incomplete={short || freeWeeks === 0}
+                incomplete={short || freeWeeks === 0 || same}
                 onPress={() => {
-                  if (!short && freeWeeks > 0) setAsking(true);
+                  if (short || freeWeeks === 0 || same) return;
+                  if (changing) setMoving(true);
+                  else setAsking(true);
                 }}
               />
             </BottomBar>
@@ -502,6 +543,27 @@ export default function NewRegular() {
           });
         }}
       />
+      {changing && chosen && ground ? (
+        <MoveSheet
+          regular={changing}
+          to={{
+            groundId: ground.id,
+            ground: ground.name ?? "",
+            dayOfWeek: weekday,
+            startHour: pickStart,
+            slotCount: pickLength,
+            price: money(pickedPrice),
+            free: dates.filter((_, week) => pickedWeeks[week]),
+            taken: dates.filter((_, week) => !pickedWeeks[week]),
+          }}
+          venueId={venueId}
+          timezone={timezone}
+          visible={moving}
+          onClose={() => setMoving(false)}
+          // Moved: back to its page, which shows the new time.
+          onMoved={() => router.back()}
+        />
+      ) : null}
     </Screen>
   );
 }
