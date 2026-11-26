@@ -1,7 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -11,6 +11,13 @@ import {
   type LayoutChangeEvent,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -51,6 +58,8 @@ const WEEKLY = "bg-[#c9d6ff]";
 
 // How long a free hour is held before dragging starts (the opening hours grid's beat).
 const HOLD_MS = 250;
+// How long a picked hour takes to fill in, and the bar to come up.
+const PICK_MS = 160;
 
 // One hour on the ground, on each of the weeks ahead (null: taken, closed or gone that week).
 interface Hour {
@@ -99,26 +108,31 @@ export default function NewRegular() {
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
 
   // The ground's free hours on the weekday, each on every week ahead.
+  // Worked out again only when an answer changes (useQueries hands back a new array every render,
+  // and a drag renders many times a second).
+  const answers = weeks.map((week) => week.dataUpdatedAt).join(",");
+  const groundId = ground?.id;
   const run = useMemo(() => {
-    if (!ground || !loaded) return [];
-    const hourOf = (at: string) =>
-      Number(
-        new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "numeric", hourCycle: "h23" })
-          .format(new Date(at))
-          .slice(0, 2),
-      );
-    // Each week's slots on the ground that day, by the hour they start.
-    const byWeek = dates.map((date) => {
-      const hours = new Map<number, Slot>();
-      for (const week of weeks) {
-        for (const slot of week.data?.slots ?? []) {
-          if (slot.groundId === ground.id && localDateOf(slot.startsAt, timezone) === date) {
-            hours.set(hourOf(slot.startsAt), slot);
-          }
-        }
-      }
-      return hours;
+    if (!groundId || !loaded) return [];
+    // One formatter each, not one a slot: they're slow to make.
+    const dayOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
+    const hourFormat = new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      hour: "numeric",
+      hourCycle: "h23",
     });
+    const wanted = new Map(dates.map((date, index) => [date, index]));
+    // Each week's slots on the ground that day, by the hour they start.
+    const byWeek = dates.map(() => new Map<number, Slot>());
+    for (const week of weeks) {
+      for (const slot of week.data?.slots ?? []) {
+        if (slot.groundId !== groundId) continue;
+        const at = new Date(slot.startsAt);
+        const index = wanted.get(dayOf.format(at));
+        if (index === undefined) continue;
+        byWeek[index]?.set(Number(hourFormat.format(at).slice(0, 2)), slot);
+      }
+    }
     const starts = [...new Set(byWeek.flatMap((hours) => [...hours.keys()]))].sort((a, b) => a - b);
     // Free that week: open for booking and still ahead.
     const freeAt = (hours: Map<number, Slot>, hour: number) => {
@@ -128,7 +142,9 @@ export default function NewRegular() {
     return starts
       .map((hour): Hour => ({ hour, weeks: byWeek.map((hours) => freeAt(hours, hour)) }))
       .filter((one) => one.weeks.some(Boolean));
-  }, [ground, loaded, weeks, dates, timezone, now]);
+    // `weeks` is read through `answers`, which changes whenever it does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groundId, loaded, answers, dates, timezone, now]);
 
   // Free hours next to each other, so a game can run on from one into the next.
   const joined = (a: number) => run[a + 1]?.hour === (run[a]?.hour ?? -2) + 1;
@@ -244,10 +260,18 @@ export default function NewRegular() {
   const gesture = Gesture.Exclusive(pan, tap);
   const placeGroup = (hour: number) => (event: LayoutChangeEvent) =>
     groupTops.current.set(hour, event.nativeEvent.layout.y);
-  const placeRow = (hour: number) => (event: LayoutChangeEvent) => {
+  // The same function every render, so a row that hasn't changed doesn't draw again.
+  const placeRow = useCallback((hour: number, event: LayoutChangeEvent) => {
     const { y, height } = event.nativeEvent.layout;
     rowPlaces.current.set(hour, { group: hour, y, height });
+  }, []);
+  const latest = useRef<(hour: number) => void>(() => undefined);
+  latest.current = (hour: number) => {
+    const index = run.findIndex((one) => one.hour === hour);
+    const next = stretch(index, index);
+    if (index >= 0 && next.to - next.from + 1 >= shortest) setPick(next);
   };
+  const tapHour = useCallback((hour: number) => latest.current(hour), []);
 
   // Regulars already playing on the ground that weekday, at the hour they start.
   const playing = regulars.filter(
@@ -291,29 +315,34 @@ export default function NewRegular() {
     <Screen
       footer={
         chosen ? (
-          <BottomBar
-            title={t("screens.hold.picked", { hours: pickedSpan, ground: ground?.name ?? "" })}
-            detail={
-              short
-                ? t("screens.hold.tooShort", { count: shortest })
-                : freeWeeks === 0
-                  ? t("screens.regulars.new.noWeek")
-                  : t("screens.regulars.new.pickedDetail", {
-                      price: money(pickedPrice),
-                      free: freeWeeks,
-                      count: dates.length,
-                    })
-            }
+          <Animated.View
+            entering={FadeInDown.duration(PICK_MS * 1.5)}
+            exiting={FadeOutDown.duration(PICK_MS)}
           >
-            <BarButton
-              label={t("screens.book.next")}
-              primary
-              incomplete={short || freeWeeks === 0}
-              onPress={() => {
-                if (!short && freeWeeks > 0) setAsking(true);
-              }}
-            />
-          </BottomBar>
+            <BottomBar
+              title={t("screens.hold.picked", { hours: pickedSpan, ground: ground?.name ?? "" })}
+              detail={
+                short
+                  ? t("screens.hold.tooShort", { count: shortest })
+                  : freeWeeks === 0
+                    ? t("screens.regulars.new.noWeek")
+                    : t("screens.regulars.new.pickedDetail", {
+                        price: money(pickedPrice),
+                        free: freeWeeks,
+                        count: dates.length,
+                      })
+              }
+            >
+              <BarButton
+                label={t("screens.book.next")}
+                primary
+                incomplete={short || freeWeeks === 0}
+                onPress={() => {
+                  if (!short && freeWeeks > 0) setAsking(true);
+                }}
+              />
+            </BottomBar>
+          </Animated.View>
         ) : undefined
       }
     >
@@ -415,21 +444,18 @@ export default function NewRegular() {
                         ) : row.free ? (
                           <FreeHour
                             key={`free-${row.hour}`}
+                            hour={row.hour}
                             label={t("screens.move.zone", {
                               ground: ground?.name ?? "",
                               price: money(row.free.weeks.find(Boolean)?.price ?? 0),
                             })}
-                            weeks={row.free.weeks.map(Boolean)}
+                            weeks={weeksKey(row.free)}
                             on={(() => {
                               const index = run.indexOf(row.free);
                               return chosen !== null && index >= chosen.from && index <= chosen.to;
                             })()}
-                            onAccessibilityTap={() => {
-                              const index = run.indexOf(row.free);
-                              const next = stretch(index, index);
-                              if (next.to - next.from + 1 >= shortest) setPick(next);
-                            }}
-                            onLayout={placeRow(row.hour)}
+                            onAccessibilityTap={tapHour}
+                            onPlace={placeRow}
                           />
                         ) : null,
                       )}
@@ -482,52 +508,76 @@ export default function NewRegular() {
 type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 
 // A free hour: dashed in blue with its ground and price, and a dot a week ahead, filled when it's
-// free that week; solid blue while picked.
-function FreeHour({
+// free that week ("1" in `weeks`). Picked, a solid blue copy fades in over it, white on blue, as the
+// Calendar's chips do. Drawn again only when what it shows changes.
+const FreeHour = memo(function FreeHour({
+  hour,
   label,
   weeks,
   on,
   onAccessibilityTap,
-  onLayout,
+  onPlace,
 }: {
+  hour: number;
   label: string;
-  weeks: boolean[];
+  weeks: string;
   on: boolean;
-  onAccessibilityTap: () => void;
-  onLayout: (event: LayoutChangeEvent) => void;
+  onAccessibilityTap: (hour: number) => void;
+  onPlace: (hour: number, event: LayoutChangeEvent) => void;
 }) {
+  const picked = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    picked.value = withTiming(on ? 1 : 0, { duration: PICK_MS });
+  }, [on, picked]);
+  const fill = useAnimatedStyle(() => ({
+    opacity: picked.value,
+    transform: [{ scale: 0.98 + picked.value * 0.02 }],
+  }));
+  const dots = (white: boolean) => (
+    <View className="flex-row gap-1.5">
+      {[...weeks].map((free, index) => (
+        <View
+          key={index}
+          className={`size-[9px] rounded-full ${
+            free === "1"
+              ? white
+                ? "bg-white"
+                : "bg-primary"
+              : white
+                ? "border border-white/60"
+                : "border border-ink-3"
+          }`}
+        />
+      ))}
+    </View>
+  );
   return (
     <View
       accessible
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: on }}
-      onAccessibilityTap={onAccessibilityTap}
-      onLayout={onLayout}
-      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] px-3.5 ${on ? "border-primary bg-primary" : `border-dashed border-primary ${SOFT_FILL}`}`}
+      onAccessibilityTap={() => onAccessibilityTap(hour)}
+      onLayout={(event) => onPlace(hour, event)}
+      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 ${SOFT_FILL}`}
     >
-      <Text className={`flex-1 text-[14px] leading-[19px] ${on ? "text-on-primary" : ""}`}>
-        {label}
-      </Text>
-      <View className="flex-row gap-1.5">
-        {weeks.map((free, index) => (
-          <View
-            key={index}
-            className={`size-[9px] rounded-full ${
-              free
-                ? on
-                  ? "bg-white"
-                  : "bg-primary"
-                : on
-                  ? "border border-white/60"
-                  : "border border-ink-3"
-            }`}
-          />
-        ))}
-      </View>
+      <Text className="flex-1 text-[14px] leading-[19px]">{label}</Text>
+      {dots(false)}
+      {/* Over the dashed border too: an absolute child is placed inside it. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-[1.5px] flex-row items-center rounded-[10px] bg-primary px-[15.5px]"
+        style={fill}
+      >
+        <Text className="flex-1 text-[14px] leading-[19px] text-on-primary">{label}</Text>
+        {dots(true)}
+      </Animated.View>
     </View>
   );
-}
+});
+
+// What a free hour's dots show, as a string, so an unchanged row compares equal.
+const weeksKey = (one: Hour) => one.weeks.map((week) => (week ? "1" : "0")).join("");
 
 // A regular already playing then: the weekly pale blue bar, who, and the ground.
 function RegularRow({ regular }: { regular: Regular }) {
