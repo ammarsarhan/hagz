@@ -225,6 +225,25 @@ const en = {
     bookingMeta: (when: string) => `A game, ${when} · Hagz`,
     notFound: "Booking not found · Hagz",
   },
+  regular: {
+    meta: "Your weekly game · Hagz",
+    waiting: (name: string, weekday: string, deadline: string, venue: string, code: string) =>
+      `${name}, are you playing this ${weekday}? Answer by ${deadline}. If you don’t, the time goes back on sale. Calling ${venue}? Give them ${code}.`,
+    playing: (venue: string, weekday: string, time: string) =>
+      `You’re playing. ${venue} is keeping your time: see you ${weekday} at ${time}.`,
+    letGo: (weekday: string) =>
+      `You’re not playing this week, so the time is back on sale. Your weekly game carries on next ${weekday}.`,
+    expired: (venue: string, code: string) =>
+      `This link has expired: the week was already answered, or its deadline passed. To change anything, call ${venue} and give them ${code}.`,
+    playingButton: "I’m playing",
+    notThisWeek: "Not this week",
+    failed: "That didn’t go through. Try again.",
+    missingTitle: "This link doesn’t work",
+    missingLine: "Ask the venue for a new one.",
+    errorTitle: "Something went wrong",
+    errorLine: "Check your connection and open the link again.",
+    noAppLine: "Get the app to see your weekly game and book times of your own.",
+  },
 };
 
 export type Words = typeof en;
@@ -465,6 +484,25 @@ const ar: Words = {
     gameMeta: (name, when) => `مباراة ${name}، ${when} · حجز`,
     bookingMeta: (when) => `مباراة، ${when} · حجز`,
     notFound: "الحجز غير موجود · حجز",
+  },
+  regular: {
+    meta: "موعدك الأسبوعي · حجز",
+    waiting: (name, weekday, deadline, venue, code) =>
+      `${name}، هل ستلعب يوم ${weekday} هذا؟ ردّ قبل ${deadline}، وإلا يعود الموعد متاحًا للحجز. إذا اتصلت بـ${venue}، أعطهم الرمز ${code}.`,
+    playing: (venue, weekday, time) =>
+      `ستلعب. ${venue} يحتفظ بموعدك: نراك يوم ${weekday} الساعة ${time}.`,
+    letGo: (weekday) =>
+      `لن تلعب هذا الأسبوع، فعاد الموعد متاحًا للحجز. موعدك الأسبوعي مستمر يوم ${weekday} القادم.`,
+    expired: (venue, code) =>
+      `انتهت صلاحية هذا الرابط: تم الرد على هذا الأسبوع، أو فات موعد الرد. لأي تغيير، اتصل بـ${venue} وأعطهم الرمز ${code}.`,
+    playingButton: "سألعب",
+    notThisWeek: "ليس هذا الأسبوع",
+    failed: "لم يتم ذلك. حاول مرة أخرى.",
+    missingTitle: "هذا الرابط لا يعمل",
+    missingLine: "اطلب من الملعب رابطًا جديدًا.",
+    errorTitle: "حدث خطأ ما",
+    errorLine: "تأكد من اتصالك وافتح الرابط مرة أخرى.",
+    noAppLine: "حمّل التطبيق لترى موعدك الأسبوعي وتحجز مواعيد أخرى.",
   },
 };
 

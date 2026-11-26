@@ -127,6 +127,8 @@ Both are delayed jobs on the queue, keyed by reservation, so each is sent at mos
 
 **Staff can copy a link, not send one.** An unconfirmed reservation has a **Copy link** action that creates a fresh `ReminderToken` link. Staff send it from their own WhatsApp; Hagz sends nothing. Tokens are stored only as a hash, so an earlier link can't be shown again, and each copy creates a new one. Every link for a reservation stops working once it's confirmed or released, so several open links can't confirm it twice. Creating links is rate-limited per reservation.
 
+**The page** is `/regular` (Arabic at `/ar/regular`, the link's language follows the customer's app language, else Arabic), Figma W5. The token rides in the fragment (`#token=…`), so it never reaches a server log or a link preview; the page reads it in the browser and calls the public `POST /v1/confirm-links/week`, `/confirm` and `/release` through the site's `/v1`. It shows the week's booking code on top, for the regular to quote when they call the venue, then I'm playing / Not this week while it waits; once answered, or past its deadline, it says so. A link that isn't one of ours, or is cut short, shows "This link doesn't work".
+
 Staff see every reservation's state in the calendar, and who still hasn't answered, so they can call the rest.
 
 ## Settings
