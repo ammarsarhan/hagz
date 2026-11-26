@@ -4,6 +4,8 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { Empty } from "@/components/empty";
+import { NoWeeklyArt } from "@/components/empty-art";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
@@ -83,9 +85,12 @@ export default function Regulars() {
         ) : regulars.isError ? (
           <Text className="mt-4 text-body text-ink-2">{t("screens.regulars.failed")}</Text>
         ) : days.length === 0 ? (
-          <Text className="mt-4 text-body text-ink-2" style={{ maxWidth: "75%" }}>
-            {t("screens.regulars.none")}
-          </Text>
+          <Empty
+            art={<NoWeeklyArt scale={0.8} />}
+            title={t("screens.regulars.noneTitle")}
+            body={t("screens.regulars.none")}
+            action={canAdd ? { label: t("screens.regulars.add"), onPress: comingNext } : undefined}
+          />
         ) : (
           days.map(({ day, groups }, index) => (
             <View key={day} className={index === 0 ? "mt-2" : "mt-6"}>

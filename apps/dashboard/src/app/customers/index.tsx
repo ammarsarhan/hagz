@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Animated, Pressable, SectionList, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { Empty } from "@/components/empty";
+import { NoCustomersArt } from "@/components/empty-art";
 import { NewCustomer, NoMatchArt, PAUSE_MS } from "@/components/hold-for";
 import { useHud } from "@/components/hud";
 import { IconChevronRight, IconPlus, IconSearch } from "@/components/icons";
@@ -165,9 +167,16 @@ export default function Customers() {
         </Text>
       </View>
     ) : (
-      <Text className="mt-4 text-body text-ink-2" style={{ maxWidth: "75%" }}>
-        {t("screens.customers.none")}
-      </Text>
+      <Empty
+        art={<NoCustomersArt scale={0.8} />}
+        title={t("screens.customers.noneTitle")}
+        body={t("screens.customers.none")}
+        action={
+          canAdd
+            ? { label: t("screens.customers.addButton"), onPress: () => setAdding(true) }
+            : undefined
+        }
+      />
     );
 
   return (
