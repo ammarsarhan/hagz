@@ -2,14 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+import { Bone } from "@/components/bone";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Text } from "@/components/text";
+import { Title } from "@/components/title";
 import { api, reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -18,7 +21,8 @@ import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): the venue's cover photo, its name and area
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): a title and subtitle, the venue's cover photo
+// (grey and pulsing while it loads), its name and area
 // centred under it, then the Account tab's headings and rows: Your venue (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
 // payments). Each row's grey line says what's there now. Rows for an area the member can't see
@@ -61,9 +65,13 @@ export default function VenueTab() {
     enabled: can("staff"),
   });
 
+  // The cover photo that has finished drawing, so the grey stand-in can go.
+  const [loadedCover, setLoadedCover] = useState<string | null>(null);
+
   if (!venue) return <Screen tabbed>{null}</Screen>;
 
   const ready = photos.data?.filter((photo) => photo.status === "READY") ?? [];
+  const photosLoading = can("venue") && photos.isPending;
   const groundCount = grounds.data?.length;
   const settings = detail.data?.settings;
   const comingNext = () => hud.show(t("common.comingNext"));
@@ -180,17 +188,28 @@ export default function VenueTab() {
         style={{ marginHorizontal: -20 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        <View className="mt-5 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+        <View className="mt-5">
+          <Title subtitle={t(`${v}.subtitle`)}>{t(`${v}.title`)}</Title>
+        </View>
+        <View className="overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
-            // The full photo through reachable() (the dev API's host as the phone sees it), filling
-            // the space; no blurry preview while it loads.
-            <Image
-              source={{ uri: reachable(ready[0].url) }}
-              contentFit="cover"
-              transition={150}
-              style={{ width: "100%", height: "100%" }}
-              accessibilityIgnoresInvertColors
-            />
+            <>
+              {/* Grey and pulsing until the photo has come, then the photo over it. */}
+              {loadedCover === ready[0].url ? null : <Bone className="absolute inset-0" />}
+              {/* The full photo through reachable() (the dev API's host as the phone sees it),
+                filling the space; no blurry preview while it loads. */}
+              <Image
+                source={{ uri: reachable(ready[0].url) }}
+                contentFit="cover"
+                transition={150}
+                onLoad={() => setLoadedCover(ready[0]?.url ?? null)}
+                style={{ width: "100%", height: "100%" }}
+                accessibilityIgnoresInvertColors
+              />
+            </>
+          ) : photosLoading ? (
+            // The photos aren't known yet: grey, not the no-photo pitch, which would flash first.
+            <Bone className="flex-1" />
           ) : (
             <PitchArt />
           )}
