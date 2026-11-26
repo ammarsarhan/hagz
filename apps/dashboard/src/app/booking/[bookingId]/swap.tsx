@@ -120,6 +120,8 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] }),
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] }),
+      // A regular's week keeps its regular: its page shows where it went.
+      queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] }),
     ]);
 
   const swap = async () => {

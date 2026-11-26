@@ -372,6 +372,7 @@ function Game({
       }),
     );
     if (!result.ok) hud.show(hudMessage(result.error));
+    void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] });
     await queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
     setConfirming(false);
   };
