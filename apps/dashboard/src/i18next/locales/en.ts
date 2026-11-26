@@ -148,7 +148,7 @@ const en = {
         confirmDays_other: "Each week waits for a confirm {{count}} days before.",
         confirmHours_one: "Each week waits for a confirm {{count}} hour before.",
         confirmHours_other: "Each week waits for a confirm {{count}} hours before.",
-        add: "New weekly game",
+        add: "Add regular",
         failed: "Couldn't load your regulars. Go back and try again.",
         noneTitle: "No weekly games yet",
         none: "Keep a time every week for a group that plays here, confirmed week by week.",

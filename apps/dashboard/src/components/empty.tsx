@@ -4,7 +4,8 @@ import { Button } from "./button";
 import { Text } from "./text";
 
 // A list with nothing in it yet: its scene, a heading and a line on what goes here, centred like
-// the Calendar's Quiet day, and the button that adds the first one (left out for someone who can't).
+// the Calendar's Quiet day, and the button that adds the first one, as wide as its label and centred (left out for someone
+// who can't).
 export function Empty({
   art,
   title,
@@ -26,7 +27,7 @@ export function Empty({
         {body}
       </Text>
       {action ? (
-        <View className="mt-6 self-stretch">
+        <View className="mt-6">
           <Button label={action.label} onPress={action.onPress} />
         </View>
       ) : null}
