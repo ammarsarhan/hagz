@@ -58,6 +58,9 @@ const SOFT_FILL = "bg-[#f2f4ff]";
 // The lifted booking sways while it waits to be dropped: tilting a little either way as it rises
 // and settles, slowly, for as long as the screen is open.
 const SWAY_MS = 1600;
+const SWAY_LIFT = 4;
+// FadingScroll's own room at the bottom, under its fade.
+const FADE = 28;
 
 const useFloat = () => {
   const sway = useSharedValue(0);
@@ -71,7 +74,7 @@ const useFloat = () => {
   }, [sway]);
   return useAnimatedStyle(() => ({
     transform: [
-      { translateY: interpolate(sway.value, [0, 1], [0, -4]) },
+      { translateY: interpolate(sway.value, [0, 1], [0, -SWAY_LIFT]) },
       { rotate: `${interpolate(sway.value, [0, 1], [-2, 0.5])}deg` },
     ],
   }));
@@ -93,6 +96,12 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const insets = useSafeAreaInsets();
   const compact = useCompactTitle();
   const floatStyle = useFloat();
+  // The lifted card sits low, partly over the home indicator's space; the day's last rows scroll
+  // clear of it. The screen already ends above that space and the scroll keeps its fade's room at
+  // the bottom, so only the rest of the card's reach (and its sway) is added.
+  const cardBottom = Math.max(insets.bottom - 12, 8);
+  const [cardHeight, setCardHeight] = useState(72);
+  const clearCard = Math.max(0, cardBottom + cardHeight + SWAY_LIFT + 8 - insets.bottom - FADE);
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const { timezone, currency } = booking;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
@@ -280,7 +289,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         {!slots.data ? (
           <ActivityIndicator className="mt-8" color={colors.ink3} />
         ) : (
-          <View className="gap-5 pt-5" style={{ paddingBottom: 96 + insets.bottom }}>
+          <View className="gap-5 pt-5" style={{ paddingBottom: clearCard }}>
             {targets.length === 0 ? (
               <Text className="text-body text-ink-2">{t("screens.move.none")}</Text>
             ) : null}
@@ -357,7 +366,8 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       <View
         pointerEvents="box-none"
         className="absolute inset-x-5"
-        style={{ bottom: Math.max(insets.bottom - 12, 8) }}
+        style={{ bottom: cardBottom }}
+        onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}
       >
         <Animated.View
           className="flex-row items-center rounded-2xl bg-white px-4 py-3.5"
