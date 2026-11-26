@@ -163,7 +163,8 @@ export default function VenueTab() {
       key: "payments",
       title: t(`${v}.payments`),
       body: settings ? payment(t, settings) : t(`${v}.paymentsBody`),
-      onPress: open("settings"),
+      // Without its cancellation policy: the Venue tab has a row of its own for that.
+      onPress: open("settings?from=venue"),
     },
   ];
 

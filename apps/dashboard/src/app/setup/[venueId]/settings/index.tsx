@@ -50,13 +50,23 @@ import { push } from "@/lib/navigation";
 // them open sheets ("How players pay", 318:2, and when booking closes), and the cancellation policy
 // has screens of its own (settings/cancellation).
 export default function SetupSettings() {
-  const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
+  const { venueId = "", from } = useLocalSearchParams<{ venueId: string; from?: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
-  return <SettingsList venueId={venueId} venue={venue.data} />;
+  return <SettingsList venueId={venueId} venue={venue.data} fromVenue={from === "venue"} />;
 }
 
-function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
+// From the Venue tab (Payments), the cancellation policy is left out: the tab has its own
+// Cancellations row (user, 2026-11-26). Setup's checklist item keeps it.
+function SettingsList({
+  venueId,
+  venue,
+  fromVenue,
+}: {
+  venueId: string;
+  venue: VenueDetail;
+  fromVenue: boolean;
+}) {
   const { t } = useTranslation();
   const compact = useCompactTitle();
   const save = useSaveSettings(venueId);
@@ -71,6 +81,10 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   const [loyaltyKey, setLoyaltyKey] = useState(0);
   const loyalty = settings.loyalty ?? DEFAULT_LOYALTY;
   const policy = settings.cancellationPolicy;
+  // Named as the Venue tab's row that opened it.
+  const title = fromVenue
+    ? t("screens.venueTab.payments")
+    : t("screens.setup.items.SETTINGS.title");
   // As on the account screen.
   const chevron = (
     <IconChevronRight
@@ -90,17 +104,19 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
             button={
               <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
             }
-            title={t("screens.setup.items.SETTINGS.title")}
+            title={title}
             style={compact.style}
           />
         }
       />
       <FadingScroll scrollY={compact.scrollY}>
         <Title
-          subtitle={t("screens.setup.settings.subtitle")}
+          subtitle={t(
+            fromVenue ? "screens.setup.settings.venueSubtitle" : "screens.setup.settings.subtitle",
+          )}
           onTitleLayout={compact.onTitleLayout}
         >
-          {t("screens.setup.items.SETTINGS.title")}
+          {title}
         </Title>
 
         <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
@@ -148,25 +164,31 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           />
         </Collapse>
 
-        <GroupHeading className="mb-1 mt-9">
-          {t("screens.setup.settings.cancellations")}
-        </GroupHeading>
-        <SettingsRow
-          title={t("screens.setup.settings.policy")}
-          // Until one is chosen, its line says it's required, after a warning sign (ink: the staff
-          // app marks what's needed by icon and weight, not colour). It's the one setting review
-          // needs.
-          body={
-            policy
-              ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
-              : t("screens.setup.settings.policyRequired")
-          }
-          bodyIcon={
-            policy ? undefined : <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
-          }
-          trailing={chevron}
-          onPress={() => push(`/setup/${venueId}/settings/cancellation`)}
-        />
+        {fromVenue ? null : (
+          <>
+            <GroupHeading className="mb-1 mt-9">
+              {t("screens.setup.settings.cancellations")}
+            </GroupHeading>
+            <SettingsRow
+              title={t("screens.setup.settings.policy")}
+              // Until one is chosen, its line says it's required, after a warning sign (ink: the staff
+              // app marks what's needed by icon and weight, not colour). It's the one setting review
+              // needs.
+              body={
+                policy
+                  ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
+                  : t("screens.setup.settings.policyRequired")
+              }
+              bodyIcon={
+                policy ? undefined : (
+                  <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
+                )
+              }
+              trailing={chevron}
+              onPress={() => push(`/setup/${venueId}/settings/cancellation`)}
+            />
+          </>
+        )}
 
         <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
         <SettingsRow

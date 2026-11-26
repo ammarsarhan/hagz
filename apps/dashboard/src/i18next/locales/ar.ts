@@ -1151,6 +1151,7 @@ const ar: ArabicTranslations = {
         },
         settings: {
           subtitle: "كيف تُؤكَّد الحجوزات وتُدفع وتُسترد. يمكنك تغيير أي منها لاحقًا.",
+          venueSubtitle: "كيف تُؤكَّد الحجوزات وتُدفع، ومكافأة الولاء.",
           bookings: "الحجوزات",
           payments: "المدفوعات",
           cancellations: "الإلغاء",

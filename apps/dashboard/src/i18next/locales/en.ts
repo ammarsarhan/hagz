@@ -1071,6 +1071,7 @@ const en = {
         },
         settings: {
           subtitle: "How bookings are confirmed, paid for and refunded. Change any of it later.",
+          venueSubtitle: "How bookings are confirmed and paid for, and the loyalty reward.",
           bookings: "Bookings",
           payments: "Payments",
           cancellations: "Cancellations",
