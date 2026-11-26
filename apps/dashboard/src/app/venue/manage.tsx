@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import type { TFunction } from "i18next";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
@@ -24,8 +24,8 @@ import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
 // The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a bar pinned above the
-// scroll naming the section scrolled to (from Details on), the venue's cover photo
-// (grey and pulsing while it loads), its name and area
+// scroll naming the section scrolled to (from Details on), the venue's photos
+// taking turns every 10 seconds (grey and pulsing while the first loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
 // payments). Each row's grey line says what's there now. Rows for an area the member can't see
@@ -33,6 +33,9 @@ import { paymentLabel } from "@/lib/settings";
 // aren't built yet say so.
 
 const COVER_HEIGHT = 180;
+// How long each photo stays before the next fades in.
+const PHOTO_MS = 10_000;
+const FADE_MS = 600;
 
 export default function VenueTab() {
   const { t } = useTranslation();
@@ -70,8 +73,6 @@ export default function VenueTab() {
 
   // The bar pinned above the scroll: each section's name once its heading goes under.
   const sections = useSectionTitle();
-  // The cover photo that has finished drawing, so the grey stand-in can go.
-  const [loadedCover, setLoadedCover] = useState<string | null>(null);
 
   if (!venue) return <Screen tabbed>{null}</Screen>;
 
@@ -197,21 +198,8 @@ export default function VenueTab() {
         <FadingScroll scrollY={sections.scrollY} topFade={0}>
           <Title>{t(`${v}.title`)}</Title>
           <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
-            {ready[0] ? (
-              <>
-                {/* Grey and pulsing until the photo has come, then the photo over it. */}
-                {loadedCover === ready[0].url ? null : <Bone className="absolute inset-0" />}
-                {/* The full photo through reachable() (the dev API's host as the phone sees it),
-                filling the space; no blurry preview while it loads. */}
-                <Image
-                  source={{ uri: reachable(ready[0].url) }}
-                  contentFit="cover"
-                  transition={150}
-                  onLoad={() => setLoadedCover(ready[0]?.url ?? null)}
-                  style={{ width: "100%", height: "100%" }}
-                  accessibilityIgnoresInvertColors
-                />
-              </>
+            {ready.length > 0 ? (
+              <CoverPhotos urls={ready.map((photo) => photo.url)} />
             ) : photosLoading ? (
               // The photos aren't known yet: grey, not the no-photo pitch, which would flash first.
               <Bone className="flex-1" />
@@ -284,5 +272,43 @@ function PitchArt() {
         <Path d="M318 48 H290 V102 H318" stroke={line} strokeWidth={1.5} fill="none" />
       </Svg>
     </View>
+  );
+}
+
+// The venue's photos in turn, the next fading in every 10 seconds while the tab is in view (and
+// back to the first after the last). Grey and pulsing until the first has come. Each is fetched
+// ahead, so the next is ready to fade to; through reachable() (the dev API's host as the phone
+// sees it), filling the space, with no blurry preview.
+function CoverPhotos({ urls }: { urls: readonly string[] }) {
+  const [index, setIndex] = useState(0);
+  const [shown, setShown] = useState(false);
+  const sources = urls.map(reachable);
+  const key = sources.join(" ");
+
+  useEffect(() => {
+    void Image.prefetch(key.split(" "));
+  }, [key]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (urls.length < 2) return;
+      const timer = setInterval(() => setIndex((at) => at + 1), PHOTO_MS);
+      return () => clearInterval(timer);
+    }, [urls.length]),
+  );
+
+  const uri = sources[index % sources.length] ?? sources[0];
+  return (
+    <>
+      {shown ? null : <Bone className="absolute inset-0" />}
+      <Image
+        source={{ uri }}
+        contentFit="cover"
+        transition={{ duration: FADE_MS, effect: "cross-dissolve" }}
+        onLoad={() => setShown(true)}
+        style={{ width: "100%", height: "100%" }}
+        accessibilityIgnoresInvertColors
+      />
+    </>
   );
 }
