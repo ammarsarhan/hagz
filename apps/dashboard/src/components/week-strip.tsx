@@ -179,17 +179,18 @@ function Day({
 }
 
 // A ground filter. Picking it fades its ink fill and white words in over the outlined one, as the
-// strip's days do. `tag`: a dashed badge after the name (a ground being removed).
+// strip's days do. `removed`: a ground being removed, dashed and fainter, with no label (user,
+// 2026-11-27).
 export function Chip({
   label,
   on,
   onPress,
-  tag,
+  removed = false,
 }: {
   label: string;
   on: boolean;
   onPress: () => void;
-  tag?: string;
+  removed?: boolean;
 }) {
   const picked = useSharedValue(on ? 1 : 0);
   useEffect(() => {
@@ -202,18 +203,18 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className="h-[34px] flex-row items-center gap-2 rounded-full border border-border px-4"
+      className={`h-[34px] justify-center rounded-full border px-4 ${removed ? "border-dashed border-ink-3" : "border-border"}`}
     >
-      <Text className="text-label font-medium text-ink">{label}</Text>
-      {tag ? <DashedTag label={tag} /> : null}
+      <Text className={`text-label font-medium ${removed ? "text-ink-3" : "text-ink"}`}>
+        {label}
+      </Text>
       {/* Over the border too: an absolute child is placed inside it. */}
       <Animated.View
         pointerEvents="none"
-        className="absolute flex-row items-center justify-center gap-2 rounded-full bg-ink"
+        className={`absolute items-center justify-center rounded-full ${removed ? "bg-ink-3" : "bg-ink"}`}
         style={[{ top: -1, bottom: -1, start: -1, end: -1 }, fillStyle]}
       >
         <Text className="text-label font-medium text-white">{label}</Text>
-        {tag ? <DashedTag label={tag} light /> : null}
       </Animated.View>
     </Pressable>
   );
@@ -221,16 +222,10 @@ export function Chip({
 
 // A small dashed-outline badge: something that's going (user, 2026-11-27: a removed ground still
 // on the calendar). No colour, as every staff status (docs: no red/green/amber).
-export function DashedTag({ label, light = false }: { label: string; light?: boolean }) {
+export function DashedTag({ label }: { label: string }) {
   return (
-    <View
-      className={`h-5 justify-center rounded-full border border-dashed px-2 ${light ? "border-white" : "border-ink-2"}`}
-    >
-      <Text
-        className={`text-[11px] leading-[14px] font-medium ${light ? "text-white" : "text-ink-2"}`}
-      >
-        {label}
-      </Text>
+    <View className="h-5 justify-center rounded-full border border-dashed border-ink-2 px-2">
+      <Text className="text-[11px] leading-[14px] font-medium text-ink-2">{label}</Text>
     </View>
   );
 }

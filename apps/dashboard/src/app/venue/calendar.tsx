@@ -454,7 +454,7 @@ export default function VenueCalendar() {
                 label={ground.name ?? ""}
                 on={groundId === ground.id}
                 onPress={() => setGroundId(ground.id)}
-                tag={ground.removing ? t("screens.calendar.deleted") : undefined}
+                removed={ground.removing}
               />
             ))}
           </ScrollView>
