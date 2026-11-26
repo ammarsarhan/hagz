@@ -118,6 +118,16 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 - A venue in `DRAFT`, `SUBMITTED`, `PROVISIONING` or `MAINTENANCE` can have no active grounds; the submit checklist asks for one separately.
 - Enforced in the API (PRs 2.4 and 2.7), not the database: the rule spans two tables and changes with the venue's status.
 
+### Deleting a ground
+
+A deleted ground is kept for booking history: past bookings still name it. What happens to the rest depends on what's still ahead (user, 2026-11-27):
+
+- **Nothing booked ahead:** it's `DELETED` at once.
+- **Bookings or holds still ahead:** it's `REMOVING`. They go ahead as booked, and the ground stays on staff's calendar with a dashed **Deleted** badge on its chip and its bookings. It takes no new bookings, moves, swaps or regulars (all of them need an `ACTIVE` ground) and leaves the venue, its layout, its public page, search and the pickers. Bookings on it can still be moved off it. Every five minutes a job (`removals`, with the slot checks) turns a `REMOVING` ground whose last booking has ended, moved or been cancelled into `DELETED`.
+- **Either way,** its free and blocked slots go straight away, and so does its layout tile.
+- **Regulars on it** keep the weeks already reserved and get no new ones. Once the ground is `DELETED`, the next top-up ends them.
+- **The warning first:** the staff app reads `GET …/grounds/{groundId}/removal` (how many bookings are still ahead, when the last one ends, and the first names of the regulars on it) and says what will happen before anything is deleted.
+
 ## Slugs and SEO
 
 - **Format:** 8 random characters, lowercase letters and digits without lookalikes (no `0`/`o`, `1`/`l`/`i`), e.g. `/venue/k7m2x9pq`. Generated at creation, retried on the rare clash with the unique index, stored in `Venue.slug`.
