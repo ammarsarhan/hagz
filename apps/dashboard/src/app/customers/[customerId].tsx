@@ -10,7 +10,6 @@ import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { Field } from "@/components/field";
-import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconCalendarPlus, IconPencil, IconPhone } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
@@ -157,7 +156,7 @@ export default function CustomerPage() {
         <Avatar name={person.name} size="page" />
         <Text
           accessibilityRole="header"
-          className="mt-4 text-title font-semibold tracking-[-0.4px]"
+          className="mt-4 text-[26px] leading-[32px] font-semibold tracking-[-0.35px]"
           onLayout={compact.onTitleLayout}
         >
           {person.name}
@@ -197,7 +196,7 @@ export default function CustomerPage() {
         {/* The team's note. */}
         <View className="border-b border-border py-6">
           <View className="flex-row items-center justify-between">
-            <GroupHeading>{t("screens.customer.note")}</GroupHeading>
+            <Heading>{t("screens.customer.note")}</Heading>
             {canEdit ? (
               <Pressable
                 accessibilityRole="button"
@@ -205,13 +204,13 @@ export default function CustomerPage() {
                 onPress={() => setSheet("note")}
                 className="active:opacity-60"
               >
-                <Text className="text-body underline">
+                <Text className="text-label underline">
                   {person.note ? t("screens.customer.edit") : t("screens.customer.addNote")}
                 </Text>
               </Pressable>
             ) : null}
           </View>
-          <Text className={`mt-2 text-subtitle ${person.note ? "" : "text-ink-2"}`}>
+          <Text className={`mt-1.5 text-body ${person.note ? "" : "text-ink-2"}`}>
             {person.note ?? t("screens.customer.noNote")}
           </Text>
         </View>
@@ -226,14 +225,14 @@ export default function CustomerPage() {
           <>
             {upcoming.length > 0 ? (
               <View className="mt-6">
-                <GroupHeading className="mb-3">{t("screens.customer.comingUp")}</GroupHeading>
+                <Heading className="mb-3">{t("screens.customer.comingUp")}</Heading>
                 {upcoming.map((booking) => (
                   <Game key={booking.id} booking={booking} venueId={venueId} upcoming />
                 ))}
               </View>
             ) : null}
             <View className="mt-6 pb-6">
-              <GroupHeading className="mb-3">{t("screens.customer.played")}</GroupHeading>
+              <Heading className="mb-3">{t("screens.customer.played")}</Heading>
               {played.length === 0 ? (
                 <Text className="text-body text-ink-2">{t("screens.customer.notPlayed")}</Text>
               ) : (
@@ -251,7 +250,7 @@ export default function CustomerPage() {
                   }}
                   className="mt-2 self-start active:opacity-60"
                 >
-                  <Text className="text-body underline">
+                  <Text className="text-label underline">
                     {t("screens.customer.seeAll", {
                       count: Math.max(person.bookingCount, played.length),
                     })}
@@ -269,7 +268,7 @@ export default function CustomerPage() {
                   {bookings.isFetchingNextPage ? (
                     <ActivityIndicator color={colors.ink3} />
                   ) : (
-                    <Text className="text-body underline">{t("screens.customer.more")}</Text>
+                    <Text className="text-label underline">{t("screens.customer.more")}</Text>
                   )}
                 </Pressable>
               ) : null}
@@ -293,6 +292,16 @@ export default function CustomerPage() {
         onClose={() => setSheet(null)}
       />
     </Screen>
+  );
+}
+
+// This page's section headings: 16 Semi Bold, a step under the app's 18 group headings, so a note
+// and a few games read as one quiet page (user, 2026-11-26).
+function Heading({ children, className = "" }: { children: string; className?: string }) {
+  return (
+    <Text accessibilityRole="header" className={`text-subtitle font-semibold ${className}`}>
+      {children}
+    </Text>
   );
 }
 
@@ -364,14 +373,14 @@ function Game({
       className="mb-4 flex-row items-stretch active:opacity-60"
     >
       <View className="w-14">
-        <Text className={`text-body font-medium ${upcoming ? "" : "text-ink-3"}`}>
+        <Text className={`text-label font-medium ${upcoming ? "" : "text-ink-3"}`}>
           {part({ weekday: "short" })}
         </Text>
         <Text className="text-caption text-ink-3">{part({ day: "numeric", month: "short" })}</Text>
       </View>
       <View className={`me-3 w-[3px] rounded-full ${upcoming ? "bg-[#c9d6ff]" : "bg-border"}`} />
       <View className="flex-1 justify-center">
-        <Text className={`text-subtitle ${upcoming ? "" : "text-ink-2"}`}>
+        <Text className={`text-body ${upcoming ? "" : "text-ink-2"}`}>
           {t("screens.customer.gameLine", {
             hours: hoursSpan(booking.startsAt, booking.endsAt, booking.timezone, t),
             ground: booking.ground.name ?? "",
@@ -390,7 +399,7 @@ function Game({
           {confirming ? (
             <ActivityIndicator color={colors.ink3} />
           ) : (
-            <Text className="text-body font-medium">{t("screens.customer.confirm")}</Text>
+            <Text className="text-label font-medium">{t("screens.customer.confirm")}</Text>
           )}
         </Pressable>
       ) : null}
