@@ -197,7 +197,12 @@ export default function RegularPage() {
           <View className="mt-5 h-px bg-border" />
         )}
 
-        <GroupHeading className="mt-7 mb-4">{t(`${p}.coming`)}</GroupHeading>
+        {/* Paused with nothing left, only the note follows: close under it. */}
+        <GroupHeading
+          className={`mt-7 ${paused && one.reservations.length === 0 ? "mb-1.5" : "mb-4"}`}
+        >
+          {t(`${p}.coming`)}
+        </GroupHeading>
         <ComingWeeks regular={one} timezone={timezone} />
         {paused ? (
           // Right under the heading when there are no weeks above it (user, 2026-11-26).
