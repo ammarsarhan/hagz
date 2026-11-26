@@ -25,7 +25,7 @@ import { paymentLabel } from "@/lib/settings";
 
 // The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a bar pinned above the
 // scroll naming the section scrolled to (from Details on), the venue's photos
-// taking turns every 3 seconds (grey and pulsing while the first loads), its name and area
+// taking turns every 5 seconds (grey and pulsing while the first loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
 // payments). Each row's grey line says what's there now. Rows for an area the member can't see
@@ -34,7 +34,7 @@ import { paymentLabel } from "@/lib/settings";
 
 const COVER_HEIGHT = 180;
 // How long each photo stays before the next fades in.
-const PHOTO_MS = 3_000;
+const PHOTO_MS = 5_000;
 const FADE_MS = 600;
 
 export default function VenueTab() {
@@ -275,7 +275,7 @@ function PitchArt() {
   );
 }
 
-// The venue's photos in turn, the next fading in every 3 seconds while the tab is in view (and
+// The venue's photos in turn, the next fading in every 5 seconds while the tab is in view (and
 // back to the first after the last). Grey and pulsing until the first has come. Each is fetched
 // ahead, so the next is ready to fade to; through reachable() (the dev API's host as the phone
 // sees it), filling the space, with no blurry preview.
