@@ -235,7 +235,7 @@ function Person({
                 >
                   <Text className="text-[10px] font-semibold text-on-primary">{letter}</Text>
                   <Text className="ms-1 text-[10px] font-medium text-on-primary">
-                    {hourOf(person.usual.hour, t)}
+                    {`– ${hourOf(person.usual.hour, t)}`}
                   </Text>
                 </View>
               ) : (
