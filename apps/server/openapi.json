@@ -5785,6 +5785,10 @@
                 "maximumSlots": {
                   "type": "integer",
                   "description": "The longest booking, in slots."
+                },
+                "removing": {
+                  "type": "boolean",
+                  "description": "Removed by staff with bookings still ahead: shown until the last one ends, closed to new bookings."
                 }
               },
               "required": [
@@ -5793,7 +5797,8 @@
                 "sport",
                 "size",
                 "minimumSlots",
-                "maximumSlots"
+                "maximumSlots",
+                "removing"
               ]
             }
           },
@@ -7068,6 +7073,35 @@
         "required": [
           "data",
           "nextCursor"
+        ]
+      },
+      "GroundRemoval": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "integer",
+            "description": "Bookings and holds still ahead on it: they go ahead, and keep it on the calendar."
+          },
+          "lastEndsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the last of them ends, and the ground goes for good; null with none."
+          },
+          "regulars": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground."
+          }
+        },
+        "required": [
+          "bookings",
+          "lastEndsAt",
+          "regulars"
         ]
       },
       "VenueRegularList": {
@@ -18874,7 +18908,7 @@
           "Venue staff"
         ],
         "summary": "Remove a ground",
-        "description": "Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.",
+        "description": "Needs `schedule: manage`. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.",
         "security": [
           {
             "staffBearer": []
@@ -22728,6 +22762,82 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/removal": {
+      "get": {
+        "tags": [
+          "Grounds"
+        ],
+        "summary": "What removing a ground leaves behind",
+        "description": "Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "groundId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What it leaves behind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroundRemoval"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or GROUND_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -12,6 +12,8 @@ import {
   updateRegular,
 } from "../application/regulars";
 import { createConfirmLink } from "../application/confirm-links";
+import { groundRemoval } from "../application/ground-removal";
+import * as removal from "./definitions/ground-removal";
 import { slotCandidates } from "../application/fill-slot";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { staffBookingDetail } from "../application/staff-bookings";
@@ -20,6 +22,9 @@ import * as route from "./definitions/regulars";
 
 // `order` is registered before `{regularId}` so it isn't read as an id.
 export const bookingsRegularRoutes = createRouter()
+  .openapi(removal.groundRemoval, async (c) =>
+    c.json(await groundRemoval(c.var.venue, c.req.valid("param").groundId), 200),
+  )
   .openapi(route.listRegulars, async (c) => c.json(await listRegulars(c.var.venue), 200))
   .openapi(route.orderRegulars, async (c) =>
     c.json(await orderRegulars(c.var.venue, c.req.valid("json")), 200),

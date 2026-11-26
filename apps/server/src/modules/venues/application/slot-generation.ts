@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
-import { fromStoredHours } from "../domain/grounds";
+import { fromStoredHours, GONE_GROUNDS } from "../domain/grounds";
 import { desiredSlots, generationWindow, type DesiredSlot } from "../domain/slots";
 
 // Slot generation (PR 2.6). Each run reconciles one whole ground: it works out the slots the ground
@@ -97,7 +97,7 @@ export const groundForGeneration = async (
   });
   if (!ground) return null;
   const eligible =
-    ground.status !== "DELETED" &&
+    !(GONE_GROUNDS as readonly string[]).includes(ground.status) &&
     (TAKING_BOOKINGS as readonly string[]).includes(ground.venue.status);
   const timezone = ground.venue.marketplace.timezone;
   const desired = eligible

@@ -24,6 +24,7 @@ import type { VenueAccess } from "./access";
 import { daySlots, presentSlot, slotSelect } from "./day-slots";
 import { groundNotFound } from "./grounds";
 import { enqueueGeneration } from "./slot-generation";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // Staff changing a venue's slots (PR 2.6), on top of what the weekly schedule generates: blocking
 // and unblocking hours, pricing slots by hand, adding slots for an occasion (Eid, Ramadan, a match
@@ -203,7 +204,7 @@ export const addSlots = async (
   try {
     return await transaction(async (tx) => {
       const ground = await tx.ground.findFirst({
-        where: { id: input.groundId, venueId: actor.venueId, status: { not: "DELETED" } },
+        where: { id: input.groundId, venueId: actor.venueId, status: { notIn: [...GONE_GROUNDS] } },
         select: { id: true, settings: { select: { scheduleVersion: true } } },
       });
       if (!ground) throw groundNotFound();

@@ -401,7 +401,7 @@ export const removeGround = createRoute({
   tags,
   summary: "Remove a ground",
   description:
-    "Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.",
+    "Needs `schedule: manage`. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams },

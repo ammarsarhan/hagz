@@ -6705,7 +6705,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a ground
-         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.
+         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.
          */
         delete: {
             parameters: {
@@ -10161,6 +10161,75 @@ export interface paths {
                     };
                 };
                 /** @description VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What removing a ground leaves behind
+         * @description Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it leaves behind */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroundRemoval"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -19168,6 +19237,8 @@ export interface components {
                 minimumSlots: number;
                 /** @description The longest booking, in slots. */
                 maximumSlots: number;
+                /** @description Removed by staff with bookings still ahead: shown until the last one ends, closed to new bookings. */
+                removing: boolean;
             }[];
             slots: components["schemas"]["Slot"][];
         };
@@ -19567,6 +19638,17 @@ export interface components {
             data: components["schemas"]["StaffBooking"][];
             /** Format: uuid */
             nextCursor: string | null;
+        };
+        GroundRemoval: {
+            /** @description Bookings and holds still ahead on it: they go ahead, and keep it on the calendar. */
+            bookings: number;
+            /**
+             * Format: date-time
+             * @description When the last of them ends, and the ground goes for good; null with none.
+             */
+            lastEndsAt: string | null;
+            /** @description First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground. */
+            regulars: string[];
         };
         VenueRegularList: {
             data: components["schemas"]["VenueRegular"][];

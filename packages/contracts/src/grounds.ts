@@ -241,3 +241,22 @@ export type ScheduleHour = z.infer<typeof ScheduleHour>;
 export type ScheduleDay = z.infer<typeof ScheduleDay>;
 export type WeekSchedule = z.infer<typeof WeekSchedule>;
 export type CopySchedule = z.infer<typeof CopySchedule>;
+
+// What removing a ground leaves behind (user, 2026-11-27), for the warning before it's removed.
+export const GroundRemoval = z
+  .object({
+    bookings: z.int().meta({
+      description:
+        "Bookings and holds still ahead on it: they go ahead, and keep it on the calendar.",
+    }),
+    lastEndsAt: z.iso.datetime().nullable().meta({
+      description: "When the last of them ends, and the ground goes for good; null with none.",
+    }),
+    regulars: z.array(z.string()).meta({
+      description:
+        "First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground.",
+    }),
+  })
+  .meta({ id: "GroundRemoval" });
+
+export type GroundRemoval = z.infer<typeof GroundRemoval>;

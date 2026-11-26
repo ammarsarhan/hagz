@@ -206,12 +206,19 @@ export const topUpVenue = async (
       const terms = await termsOf(tx, venueId);
       if (!terms.open || !terms.policy || !terms.tiers) return skipped;
       const today = localToday(now, terms.timezone);
+      // A regular whose ground is gone for good (its last booking ended) ends with it; one whose
+      // ground is being removed keeps the weeks it has and gets no more (user, 2026-11-27).
+      await tx.venueRegular.updateMany({
+        where: { venueId, endedAt: null, ground: { status: "DELETED" } },
+        data: { endedAt: now },
+      });
       const regulars = await tx.venueRegular.findMany({
         where: {
           venueId,
           pausedAt: null,
           endedAt: null,
           OR: [{ endsOn: null }, { endsOn: { gte: today } }],
+          ground: { status: { not: "REMOVING" } },
         },
         orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
         select: regularSelect,
@@ -463,7 +470,9 @@ const reliabilities = async (regularIds: readonly string[]) => {
 const listSelect = {
   ...regularSelect,
   customer: { select: { id: true, name: true, phone: true, customerId: true } },
-  ground: { select: { id: true, translations: { select: { language: true, name: true } } } },
+  ground: {
+    select: { id: true, status: true, translations: { select: { language: true, name: true } } },
+  },
 } as const satisfies Prisma.VenueRegularSelect;
 
 type ListRow = Prisma.VenueRegularGetPayload<{ select: typeof listSelect }>;
@@ -530,7 +539,8 @@ export const regularDetail = async (
     select: staffSelect,
   });
   let skippedWeeks: string[] = [];
-  if (regular.status === "ACTIVE") {
+  // A ground being removed takes no new weeks, so none are "skipped".
+  if (regular.status === "ACTIVE" && row.ground.status !== "REMOVING") {
     const weeks = weeksOf(row, terms, now);
     const blocked = await transaction((tx) => blockingWeeks(tx, id, weeks, terms.timezone));
     skippedWeeks = weeks

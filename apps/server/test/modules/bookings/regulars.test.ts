@@ -10,6 +10,7 @@ import {
 import { beforeEach, describe, expect, it } from "vitest";
 import { expireDueBookings } from "@/modules/bookings/application/expire-bookings";
 import { topUpVenue } from "@/modules/bookings/application/regulars";
+import { finishRemovals } from "@/modules/venues/application/grounds";
 import { lastWeeksOf, localToday, upcomingWeeks } from "@/modules/bookings/domain/regulars";
 import { ALL_PERMISSIONS, instantOf } from "@/modules/venues";
 import { router } from "@/http/router";
@@ -118,6 +119,77 @@ describe("regulars", () => {
       "WAITING",
     ]);
     expect(after.lastWeeks).toEqual([]);
+  });
+
+  it("keeps a removed ground with bookings ahead until its last one ends, closed to new ones", async () => {
+    const { venue, ground, owner, starts, regular } = await weeklyGround();
+    // A second ground, so this one isn't the venue's last.
+    await prisma.ground.create({
+      data: {
+        venueId: venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 1,
+        basePrice: 40_000,
+        translations: { create: { language: "EN", name: "Pitch 2" } },
+        settings: { create: { scheduleVersion: 1, minimumSlots: 1, maximumSlots: 3 } },
+      },
+    });
+    const karimGame = await create(owner.id, venue.id, regular(karim));
+    const omarGame = await create(owner.id, venue.id, regular(omar));
+    await prisma.groundSlot.create({
+      data: {
+        groundId: ground.id,
+        venueId: venue.id,
+        startsAt: new Date((starts[0]?.getTime() ?? 0) - HOUR),
+        endsAt: starts[0] ?? new Date(),
+        tier: "BASE",
+        price: 40_000,
+        scheduleVersion: 1,
+      },
+    });
+
+    const preview = await asStaff(
+      owner.id,
+      "GET",
+      `/venues/${venue.id}/grounds/${ground.id}/removal`,
+    );
+    expect(await preview.json()).toEqual({
+      bookings: 4,
+      lastEndsAt: new Date((starts[3]?.getTime() ?? 0) + 2 * HOUR).toISOString(),
+      regulars: ["Karim", "Omar"],
+    });
+
+    const removed = await asStaff(owner.id, "DELETE", `/venues/${venue.id}/grounds/${ground.id}`);
+    expect(removed.status).toBe(204);
+    const kept = await prisma.ground.findUniqueOrThrow({ where: { id: ground.id } });
+    expect(kept.status).toBe("REMOVING");
+    // Its free slot went; the reserved weeks' stay.
+    expect(await prisma.groundSlot.count({ where: { groundId: ground.id, bookingId: null } })).toBe(
+      0,
+    );
+    const day = starts[0]?.toISOString().slice(0, 10);
+    const calendar = await asStaff(owner.id, "GET", `/venues/${venue.id}/slots?date=${day}`);
+    const shown = (await calendar.json()) as { grounds: { id: string; removing: boolean }[] };
+    expect(shown.grounds.find((one) => one.id === ground.id)?.removing).toBe(true);
+    // No new regulars on it.
+    const another = await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars`, {
+      ...regular({ name: "Hany", phone: "+201005558888" }, { startHour: 22, slotCount: 1 }),
+    });
+    expect(another.status).toBe(409);
+    expect(await another.json()).toMatchObject({ code: "GROUND_UNAVAILABLE" });
+
+    expect(await finishRemovals()).toEqual({ finished: 0 });
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${karimGame.id}/end`);
+    expect(await finishRemovals()).toEqual({ finished: 1 });
+    expect((await prisma.ground.findUniqueOrThrow({ where: { id: ground.id } })).status).toBe(
+      "DELETED",
+    );
+    // The regular behind ends with the ground.
+    await topUpVenue(venue.id);
+    expect((await detail(owner.id, venue.id, omarGame.id)).status).toBe("ENDED");
   });
 
   it("never gives one customer two regulars sharing an hour on a ground", async () => {

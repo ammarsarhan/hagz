@@ -68,7 +68,16 @@ export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<Venu
            ((${date}::date + ${query.span}::int)::timestamp AT TIME ZONE ${timezone}) AS "to"`;
   if (!bounds) throw new Error("Postgres returned no day bounds.");
 
-  const grounds = await listGrounds(id, "EN");
+  // Removed grounds with bookings still ahead stay on the calendar, marked, until the last one ends.
+  const grounds = await listGrounds(id, "EN", { removing: true });
+  const removing = new Set(
+    (
+      await prisma.ground.findMany({
+        where: { venueId: id, status: "REMOVING" },
+        select: { id: true },
+      })
+    ).map((ground) => ground.id),
+  );
   const slots = days
     ? await prisma.groundSlot.findMany({
         where: {
@@ -93,6 +102,7 @@ export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<Venu
       size,
       minimumSlots,
       maximumSlots,
+      removing: removing.has(groundId),
     })),
     slots: slots.map(presentSlot),
   };

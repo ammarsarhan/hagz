@@ -7,6 +7,7 @@ import { logger } from "@/platform/logger/logger";
 import { queueConnection } from "@/platform/redis/connections";
 import { HORIZON_DAYS } from "../domain/slots";
 import { enqueueGeneration, groundForGeneration, purgePastSlots } from "./slot-generation";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // Keeping slot generation honest (PR 2.6). Checks every few minutes find grounds whose slots are
 // stale, short of the horizon or missing; the nightly audit compares every ground's slots with what
@@ -27,7 +28,10 @@ export interface SlotIssue {
 // Grounds that should have slots: not removed, at a venue taking bookings.
 const eligibleGrounds = () =>
   prisma.ground.findMany({
-    where: { status: { not: "DELETED" }, venue: { status: { in: ["LIVE", "MAINTENANCE"] } } },
+    where: {
+      status: { notIn: [...GONE_GROUNDS] },
+      venue: { status: { in: ["LIVE", "MAINTENANCE"] } },
+    },
     select: { id: true, venueId: true },
   });
 
@@ -60,7 +64,7 @@ export const checkSlots = async (clock: Clock = systemClock): Promise<SlotIssue[
     FROM "Ground" g
     JOIN "Venue" v ON v.id = g."venueId"
     JOIN "GroundSettings" gs ON gs."groundId" = g.id
-    WHERE g."status" <> 'DELETED' AND v."status" IN ('LIVE', 'MAINTENANCE')
+    WHERE g."status" NOT IN ('REMOVING', 'DELETED') AND v."status" IN ('LIVE', 'MAINTENANCE')
       AND EXISTS (SELECT 1 FROM "GroundSchedule" sc WHERE sc."groundId" = g.id)
       AND gs."updatedAt" < ${staleBefore}`;
 

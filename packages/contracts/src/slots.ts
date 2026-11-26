@@ -63,6 +63,10 @@ export const VenueSlots = z
         size: GroundSize,
         minimumSlots: z.int().meta({ description: "The shortest booking, in slots." }),
         maximumSlots: z.int().meta({ description: "The longest booking, in slots." }),
+        removing: z.boolean().meta({
+          description:
+            "Removed by staff with bookings still ahead: shown until the last one ends, closed to new bookings.",
+        }),
       }),
     ),
     slots: z.array(Slot),

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { prisma } from "@/platform/db/prisma";
 import type { Tx } from "@/platform/db/transaction";
 import { pinOf } from "./venue-edit";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // What a setup section holds, reduced to a fingerprint, so a send-back can tell whether the owner
 // changed a section it asked them to change (docs/onboarding.md, step 3). The send-back keeps each
@@ -36,7 +37,7 @@ const byLanguage = <T extends { language: string }>(rows: T[]) =>
 // Grounds still on the venue (paused ones too: pausing is an edit to Grounds), in display order.
 const grounds = (db: Db, venueId: string) =>
   db.ground.findMany({
-    where: { venueId, status: { not: "DELETED" } },
+    where: { venueId, status: { notIn: [...GONE_GROUNDS] } },
     orderBy: [{ position: "asc" }, { id: "asc" }],
     select: {
       id: true,
