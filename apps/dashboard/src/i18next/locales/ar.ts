@@ -191,8 +191,6 @@ const ar: ArabicTranslations = {
         paused: "متوقف منذ {{date}}",
       },
       venueTab: {
-        title: "الملعب",
-        subtitle: "ملعبك، ومن يلعب ويعمل فيه، وقواعده.",
         peopleHeading: "الأشخاص",
         yourVenue: "ملعبك",
         rules: "القواعد",

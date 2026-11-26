@@ -12,7 +12,6 @@ import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Text } from "@/components/text";
-import { Title } from "@/components/title";
 import { api, reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -21,7 +20,7 @@ import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): a title and subtitle, the venue's cover photo
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): the venue's cover photo
 // (grey and pulsing while it loads), its name and area
 // centred under it, then the Account tab's headings and rows: Your venue (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
@@ -188,10 +187,7 @@ export default function VenueTab() {
         style={{ marginHorizontal: -20 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        <View className="mt-5">
-          <Title subtitle={t(`${v}.subtitle`)}>{t(`${v}.title`)}</Title>
-        </View>
-        <View className="overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+        <View className="mt-5 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             <>
               {/* Grey and pulsing until the photo has come, then the photo over it. */}
