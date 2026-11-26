@@ -78,7 +78,9 @@ export const createRegular = createRoute({
     404: problemResponse(
       "VENUE_NOT_FOUND, GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.",
     ),
-    409: problemResponse("GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live."),
+    409: problemResponse(
+      "GROUND_UNAVAILABLE; REGULAR_OVERLAPS: the customer already has a regular sharing an hour of this one on this ground; or VENUE_STATUS_CONFLICT: the venue isn't live.",
+    ),
     422: problemResponse(
       "INVALID_REGULAR_DATES, or INVALID_BOOKING_TIME (with `minimumSlots` and `maximumSlots`).",
     ),
@@ -99,7 +101,7 @@ export const updateRegular = createRoute({
     200: detail,
     ...common,
     404: problemResponse(`${notFound.description} GROUND_NOT_FOUND`),
-    409: problemResponse("REGULAR_ENDED or GROUND_UNAVAILABLE"),
+    409: problemResponse("REGULAR_ENDED, GROUND_UNAVAILABLE or REGULAR_OVERLAPS"),
     422: problemResponse("INVALID_REGULAR_DATES or INVALID_BOOKING_TIME"),
   },
 });

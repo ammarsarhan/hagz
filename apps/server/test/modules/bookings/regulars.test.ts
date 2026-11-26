@@ -104,6 +104,26 @@ describe("regulars", () => {
     expect(first.slots.map((slot) => slot.status)).toEqual(["HELD", "HELD"]);
   });
 
+  it("never gives one customer two regulars sharing an hour on a ground", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const first = await create(owner.id, venue.id, regular(karim));
+    const twice = await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars`, {
+      ...regular(karim, { startHour: 21, slotCount: 1 }),
+    });
+    expect(twice.status).toBe(409);
+    expect(await twice.json()).toMatchObject({ code: "REGULAR_OVERLAPS" });
+    // Someone else waits in line behind; the hour after is Karim's to have too.
+    await create(owner.id, venue.id, regular(omar));
+    const after = await create(owner.id, venue.id, regular(karim, { startHour: 22, slotCount: 1 }));
+    const moved = await asStaff(owner.id, "PATCH", `/venues/${venue.id}/regulars/${after.id}`, {
+      startHour: 21,
+    });
+    expect(moved.status).toBe(409);
+    // Once the first has ended, its hours are free for another.
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${first.id}/end`);
+    await create(owner.id, venue.id, regular(karim, { startHour: 21, slotCount: 1 }));
+  });
+
   it("skips a week whose time is taken, and lists it", async () => {
     const { venue, ground, owner, starts, regular } = await weeklyGround();
     await prisma.groundSlot.updateMany({

@@ -10304,7 +10304,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live. */
+                /** @description GROUND_UNAVAILABLE; REGULAR_OVERLAPS: the customer already has a regular sharing an hour of this one on this ground; or VENUE_STATUS_CONFLICT: the venue isn't live. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -10521,7 +10521,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description REGULAR_ENDED or GROUND_UNAVAILABLE */
+                /** @description REGULAR_ENDED, GROUND_UNAVAILABLE or REGULAR_OVERLAPS */
                 409: {
                     headers: {
                         [name: string]: unknown;

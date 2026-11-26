@@ -550,6 +550,60 @@ const checkDates = (startsOn: Date, endsOn: Date | null, today: Date) => {
 
 const asDate = (text: string) => new Date(`${text}T00:00:00Z`);
 
+// The lock the top-up takes, taken first (before any row lock) wherever regulars are added or moved.
+const lockVenueRegulars = (tx: Tx, venueId: string) =>
+  tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(${`regulars:${venueId}`}, 0))`;
+
+const alreadyRegular = () =>
+  new AppError({
+    code: "REGULAR_OVERLAPS",
+    status: 409,
+    detail: "This customer already has a regular at this time on this ground.",
+  });
+
+// One customer, one regular at a time on a ground: none of their other regulars, paused ones too,
+// may share an hour of it on the same weekday while both run (user, 2026-11-26). Other customers
+// may: they wait in line behind. Callers hold the venue's regulars lock (lockVenueRegulars), so two
+// at once can't both pass.
+const checkNotTwice = async (
+  tx: Tx,
+  venueId: string,
+  regular: {
+    customerId: string;
+    groundId: string;
+    dayOfWeek: number;
+    startHour: number;
+    slotCount: number;
+    startsOn: Date;
+    endsOn: Date | null;
+  },
+  today: Date,
+  exceptId: string | null = null,
+) => {
+  const from = regular.startsOn > today ? regular.startsOn : today;
+  const others = await tx.venueRegular.findMany({
+    where: {
+      venueId,
+      customerId: regular.customerId,
+      groundId: regular.groundId,
+      dayOfWeek: regular.dayOfWeek,
+      endedAt: null,
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+      AND: [
+        { OR: [{ endsOn: null }, { endsOn: { gte: from } }] },
+        ...(regular.endsOn ? [{ startsOn: { lte: regular.endsOn } }] : []),
+      ],
+    },
+    select: { startHour: true, slotCount: true },
+  });
+  const overlaps = others.some(
+    (other) =>
+      other.startHour < regular.startHour + regular.slotCount &&
+      regular.startHour < other.startHour + other.slotCount,
+  );
+  if (overlaps) throw alreadyRegular();
+};
+
 export const createRegular = async (
   actor: VenueAccess,
   body: CreateRegular,
@@ -563,9 +617,23 @@ export const createRegular = async (
   const dates = checkDates(asDate(body.startsOn), body.endsOn ? asDate(body.endsOn) : null, today);
   const customer = normalized(body.customer);
   const id = await transaction(async (tx) => {
+    await lockVenueRegulars(tx, actor.venueId);
     const ground = await targetGround(tx, actor.venueId, body.groundId);
     checkLength(body.slotCount, ground.minimumSlots, ground.maximumSlots);
     const customerId = await customerFor(tx, actor.venueId, customer);
+    await checkNotTwice(
+      tx,
+      actor.venueId,
+      {
+        customerId,
+        groundId: ground.id,
+        dayOfWeek: body.dayOfWeek,
+        startHour: body.startHour,
+        slotCount: body.slotCount,
+        ...dates,
+      },
+      today,
+    );
     const last = await tx.venueRegular.aggregate({
       where: { venueId: actor.venueId },
       _max: { priority: true },
@@ -602,6 +670,7 @@ export const updateRegular = async (
   const terms = await termsOf(prisma, actor.venueId);
   const today = localToday(now, terms.timezone);
   await transaction(async (tx) => {
+    await lockVenueRegulars(tx, actor.venueId);
     const regular = await lockRegular(tx, actor.venueId, id);
     if (statusOf(regular, today) === "ENDED") throw regularEnded();
     const endsOn =
@@ -618,6 +687,21 @@ export const updateRegular = async (
       slotCount !== regular.slotCount ||
       (body.dayOfWeek ?? regular.dayOfWeek) !== regular.dayOfWeek ||
       (body.startHour ?? regular.startHour) !== regular.startHour;
+    await checkNotTwice(
+      tx,
+      actor.venueId,
+      {
+        customerId: regular.customerId,
+        groundId,
+        dayOfWeek: body.dayOfWeek ?? regular.dayOfWeek,
+        startHour: body.startHour ?? regular.startHour,
+        slotCount,
+        startsOn: regular.startsOn,
+        endsOn,
+      },
+      today,
+      regular.id,
+    );
     if (moved) {
       await releaseWeeks(tx, regular.id, "CHANGED", now);
     } else if (endsOn) {

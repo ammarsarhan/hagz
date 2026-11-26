@@ -51,6 +51,8 @@ A booking of the **customer's own** at exactly a week's time (same ground and ho
 - **Release**: staff or the regular, at any time before kick-off, even weeks ahead (Eid, exams, travel). `UNCONFIRMED` → `RELEASED`, and the slots are free at once.
 - **Nobody answers**: at the deadline, the sweeper moves it to `RELEASED` and frees the slots.
 
+**One customer, one regular at a time on a ground.** A customer can't have two regulars that share an hour on the same ground and weekday while both run, paused ones included (`REGULAR_OVERLAPS`, user 2026-11-26); once one ends, its hours are free for another. Other customers can overlap: they wait in line behind.
+
 A week goes to the next regular in line **only while its confirmation deadline is still ahead**; after that it goes straight back on sale (user, 2026-11-26). So a week nobody answered is never handed on: by its deadline, kick-off is only `confirmationWindow` away, the next regular would have no time to confirm (and isn't told until reminders exist in Phase 7), and the week was shown to them as taken all along, so a public sale is likelier to fill it (Search marks it "just freed"). This is deliberate, not a missing hand-off: `upcomingWeeks` never reserves a week whose deadline has passed. Revisit once reminders can offer a short last-minute window.
 
 A confirmed reservation is then an ordinary booking: it can be cancelled, completed or marked as a no-show. Hagz took no money, so a cancellation refunds nothing; it only frees the slots and counts against the regular's reliability.
