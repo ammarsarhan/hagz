@@ -75,6 +75,10 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const [holding, setHolding] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const holdId = useRef<string | null>(null);
+  // Every hold this screen has put on a time, kept after it's let go: the day is drawn as if they
+  // weren't there, so a picked time doesn't turn into a booking behind the sheet, and cancelling
+  // doesn't redraw it back (user, 2026-11-26).
+  const [ownHolds, setOwnHolds] = useState<string[]>([]);
 
   const refresh = () =>
     Promise.all([
@@ -132,6 +136,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       return;
     }
     holdId.current = result.data.id;
+    setOwnHolds((ids) => [...ids, result.data.id]);
     setHeld({ target, hold: result.data });
     setAsking(true);
   };
@@ -141,9 +146,17 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const targets = useMemo(
     () =>
       slots.data
-        ? moveTargets({ booking, slots: slots.data.slots, date: day, timezone, now, groundId })
+        ? moveTargets({
+            booking,
+            slots: slots.data.slots,
+            date: day,
+            timezone,
+            now,
+            groundId,
+            ownHolds,
+          })
         : [],
-    [slots.data, booking, day, timezone, now, groundId],
+    [slots.data, booking, day, timezone, now, groundId, ownHolds],
   );
   // The day's hours: the booking's own time, the others' bookings faded, and the free times it fits.
   const hours = useMemo(() => {
@@ -158,7 +171,12 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         ? [{ kind: "own" as const, key: booking.id, startsAt: booking.startsAt }]
         : []),
       ...(others.data ?? [])
-        .filter((other) => other.id !== booking.id && onDay(other.startsAt, other.ground.id))
+        .filter(
+          (other) =>
+            other.id !== booking.id &&
+            !ownHolds.includes(other.id) &&
+            onDay(other.startsAt, other.ground.id),
+        )
         .map((other) => ({
           kind: "other" as const,
           key: other.id,
@@ -196,7 +214,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       } else groups.push({ hour, end, items: [item] });
     }
     return groups;
-  }, [booking, others.data, targets, day, timezone, groundId]);
+  }, [booking, others.data, targets, day, timezone, groundId, ownHolds]);
 
   const oldSlots = booking.charges
     .filter((charge) => charge.type === "SLOT")
