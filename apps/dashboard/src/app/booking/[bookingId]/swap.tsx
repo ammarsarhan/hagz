@@ -67,7 +67,6 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
   const name = firstName(booking.customer.name);
 
   const [day, setDay] = useState(() => localDateOf(booking.startsAt, timezone));
-  const [groundId, setGroundId] = useState(booking.ground.id);
   const weekStart = weekStartOf(day);
   const slots = useQuery(weekSlots(venueId, weekStart, venueId !== ""));
   const others = useQuery(weekBookings(venueId, weekStart, venueId !== ""));
@@ -103,15 +102,14 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
   const barOf = (other: StaffBooking) =>
     other.status === "CONFIRMED" ? "bg-primary" : "bg-[#c9d6ff]";
 
-  // Every booking on the ground this week it can trade with; the picked day's are listed, and
-  // each day with any gets a dot.
+  // Every booking this week it can trade with, on any ground (user: no ground picker here); the
+  // picked day's are listed, and each day with any gets a dot.
   const swappable = (others.data ?? []).filter(
     (other) =>
       other.id !== booking.id &&
       MOVABLE.includes(other.status) &&
       !other.hold &&
-      Date.parse(other.startsAt) > now &&
-      other.ground.id === groundId,
+      Date.parse(other.startsAt) > now,
   );
   const dots = new Set(swappable.map((other) => localDateOf(other.startsAt, timezone)));
   const candidates = swappable
@@ -221,13 +219,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
             setPartner(null);
             setDay(date);
           }}
-          grounds={grounds}
-          groundId={groundId}
           dots={dots}
-          onGround={(id) => {
-            setPartner(null);
-            setGroundId(id);
-          }}
         />
 
         {!others.data ? (
@@ -250,7 +242,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
           />
         ) : (
           <View className="gap-3 pt-5" style={{ paddingBottom: card.room }}>
-            {onDay(booking.startsAt) && booking.ground.id === groundId ? (
+            {onDay(booking.startsAt) ? (
               <View className="flex-row items-center">
                 <HourColumn from={booking.startsAt} to={booking.endsAt} timezone={timezone} faded />
                 <View className="ms-3 h-12 flex-1 justify-center rounded-xl border border-dashed border-ink-3 px-4">

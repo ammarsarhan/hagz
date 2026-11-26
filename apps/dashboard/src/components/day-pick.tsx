@@ -40,9 +40,10 @@ export function DayPickHeader({
   day: string;
   today: string;
   onDay: (date: string) => void;
-  grounds: readonly { id: string; name: string | null }[];
-  groundId: string;
-  onGround: (id: string) => void;
+  // The ground picker, on screens that pick one ground at a time (Move); left out, none.
+  grounds?: readonly { id: string; name: string | null }[];
+  groundId?: string;
+  onGround?: (id: string) => void;
 }) {
   return (
     <>
@@ -57,7 +58,7 @@ export function DayPickHeader({
           onWeek={(start) => onDay(start > weekStart ? start : addDays(start, 6))}
         />
       </View>
-      {grounds.length > 1 ? (
+      {grounds && onGround && grounds.length > 1 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

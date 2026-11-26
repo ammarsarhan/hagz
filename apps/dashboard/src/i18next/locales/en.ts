@@ -84,7 +84,7 @@ const en = {
         app: "App",
         walkIn: "Walk-in",
         withLabel: "Swap with {{name}}, {{hours}}",
-        none: "No bookings to swap with on this ground this day.",
+        none: "No bookings to swap with on this day.",
         moved: "{{ground}} · {{price}}",
         priceWas: "{{price}}, was {{was}}",
         barTitle: "Swap {{name}} and {{other}}",

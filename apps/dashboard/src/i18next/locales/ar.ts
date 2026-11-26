@@ -98,7 +98,7 @@ const ar: ArabicTranslations = {
         app: "التطبيق",
         walkIn: "حضور مباشر",
         withLabel: "تبديل مع {{name}}، {{hours}}",
-        none: "لا توجد حجوزات للتبديل في هذا الملعب في هذا اليوم.",
+        none: "لا توجد حجوزات للتبديل في هذا اليوم.",
         moved: "{{ground}} · {{price}}",
         priceWas: "{{price}}، كان {{was}}",
         barTitle: "تبديل {{name}} و{{other}}",
