@@ -278,6 +278,40 @@ describe("regulars", () => {
     expect(changed.reliability.released).toBe(0);
   });
 
+  it("a new day leaves out a week that already has a confirmed game, moved or not", async () => {
+    const { venue, owner, regular, starts } = await weeklyGround();
+    const groundId = (await prisma.groundSlot.findFirstOrThrow({ where: { venueId: venue.id } }))
+      .groundId;
+    // The day after each week's game is free too.
+    await prisma.groundSlot.createMany({
+      data: starts.map((start) => ({
+        groundId,
+        venueId: venue.id,
+        startsAt: new Date(start.getTime() + DAY),
+        endsAt: new Date(start.getTime() + DAY + HOUR),
+        tier: "BASE" as const,
+        price: 40_000,
+        scheduleVersion: 1,
+      })),
+    });
+    const made = await create(owner.id, venue.id, regular(karim));
+    const week1 = made.reservations[0];
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${week1?.id}/confirm`);
+
+    const res = await asStaff(owner.id, "PATCH", `/venues/${venue.id}/regulars/${made.id}`, {
+      dayOfWeek: (made.dayOfWeek + 1) % 7,
+      slotCount: 1,
+    });
+    const changed = VenueRegularDetail.parse(await res.json());
+    const [first, ...rest] = starts;
+    // The confirmed week stays where it was, and its week isn't reserved again on the new day.
+    expect(changed.reservations.map((booking) => [booking.status, booking.startsAt])).toEqual([
+      ["CONFIRMED", first?.toISOString()],
+      ...rest.map((start) => ["UNCONFIRMED", new Date(start.getTime() + DAY).toISOString()]),
+    ]);
+    expect(changed.skippedWeeks).toEqual([]);
+  });
+
   it("reorders overlapping regulars; only weeks reserved from then on follow", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));

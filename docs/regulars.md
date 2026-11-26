@@ -42,6 +42,8 @@ Staff can pause, resume and end a regular.
 
 **3. Topping up.** A job runs daily, and whenever a regular is created or changed. It makes sure each active regular has a reservation for every week up to `regularHorizon` weeks ahead. If a week's slots aren't free (someone else booked them, or staff blocked them), that week is **skipped and staff are told**, never forced.
 
+A regular plays **once a week**. A calendar week (Sunday to Saturday, in the venue's time) that already has a live game of theirs at another time is left alone. That covers a week confirmed before the regular's time changed, and one moved to another day or hour. Changing a Sunday regular to Mondays keeps a confirmed Sunday and doesn't reserve the Monday after it.
+
 **4. Before the deadline:**
 - **Confirm**: staff in the dashboard (after calling), or the regular from the reminder. `UNCONFIRMED` → `CONFIRMED`.
 - **Release**: staff or the regular, at any time before kick-off, even weeks ahead (Eid, exams, travel). `UNCONFIRMED` → `RELEASED`, and the slots are free at once.

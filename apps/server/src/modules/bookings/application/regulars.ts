@@ -28,6 +28,7 @@ import {
   localToday,
   reliabilityOf,
   upcomingWeeks,
+  weekOf,
   type ReservationOutcome,
   type Week,
 } from "../domain/regulars";
@@ -144,22 +145,47 @@ const statusOf = (regular: RegularRow, today: Date): RegularStatus => {
 };
 
 // A week the regular has a row for blocks reserving it again, unless the row was released because
-// the regular itself was changed or paused.
-const blockingWeeks = async (tx: Tx, regularId: string, weeks: readonly Week[]) => {
+// the regular itself was changed or paused. So does a calendar week it already has a live game in at
+// another time: one it confirmed before its time changed, or one moved to another day or hour. A
+// regular plays once a week (user, 2026-11-26).
+const WEEK_MS = 7 * 86_400_000;
+
+const blockingWeeks = async (
+  tx: Tx,
+  regularId: string,
+  weeks: readonly Week[],
+  timezone: string,
+) => {
   if (weeks.length === 0) return new Set<number>();
-  const rows = await tx.booking.findMany({
-    where: { regularId, startsAt: { in: weeks.map((week) => week.startsAt) } },
-    select: {
-      startsAt: true,
-      status: true,
-      events: { where: { type: BOOKING_EVENTS.REGULAR_CHANGED }, select: { id: true }, take: 1 },
-    },
-  });
-  return new Set(
-    rows
+  const first = Math.min(...weeks.map((week) => week.startsAt.getTime()));
+  const last = Math.max(...weeks.map((week) => week.startsAt.getTime()));
+  const [rows, live] = await Promise.all([
+    tx.booking.findMany({
+      where: { regularId, startsAt: { in: weeks.map((week) => week.startsAt) } },
+      select: {
+        startsAt: true,
+        status: true,
+        events: { where: { type: BOOKING_EVENTS.REGULAR_CHANGED }, select: { id: true }, take: 1 },
+      },
+    }),
+    tx.booking.findMany({
+      where: {
+        regularId,
+        status: { in: [...LIVE_STATUSES] },
+        startsAt: { gte: new Date(first - WEEK_MS), lte: new Date(last + WEEK_MS) },
+      },
+      select: { startsAt: true },
+    }),
+  ]);
+  const taken = new Set(live.map((row) => weekOf(localToday(row.startsAt, timezone))));
+  return new Set([
+    ...rows
       .filter((row) => !(row.status === "RELEASED" && row.events.length > 0))
       .map((row) => row.startsAt.getTime()),
-  );
+    ...weeks
+      .filter((week) => taken.has(weekOf(new Date(`${week.date}T00:00:00Z`))))
+      .map((week) => week.startsAt.getTime()),
+  ]);
 };
 
 // Reserves every week the venue's active regulars are missing, in priority order. One transaction
@@ -189,7 +215,7 @@ export const topUpVenue = async (
       });
       for (const regular of regulars) {
         const weeks = weeksOf(regular, terms, now);
-        const blocked = await blockingWeeks(tx, regular.id, weeks);
+        const blocked = await blockingWeeks(tx, regular.id, weeks, terms.timezone);
         const missed: string[] = [];
         for (const week of weeks) {
           if (blocked.has(week.startsAt.getTime())) continue;
@@ -404,7 +430,7 @@ export const regularDetail = async (
   let skippedWeeks: string[] = [];
   if (regular.status === "ACTIVE") {
     const weeks = weeksOf(row, terms, now);
-    const blocked = await transaction((tx) => blockingWeeks(tx, id, weeks));
+    const blocked = await transaction((tx) => blockingWeeks(tx, id, weeks, terms.timezone));
     skippedWeeks = weeks
       .filter((week) => !blocked.has(week.startsAt.getTime()))
       .map((week) => week.date);

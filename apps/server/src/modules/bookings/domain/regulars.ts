@@ -40,6 +40,12 @@ export const localToday = (now: Date, timezone: string): Date => {
 
 export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
+// The Sunday that starts a local day's calendar week, as the staff Calendar draws weeks. A regular
+// plays once a week: a game it already has in a week (confirmed, or moved there) stands for that
+// week, wherever and whenever it is.
+export const weekOf = (localDay: Date) =>
+  isoDate(new Date(localDay.getTime() - localDay.getUTCDay() * DAY_MS));
+
 type InstantOf = (
   date: { year: number; month: number; day: number },
   hour: number,
