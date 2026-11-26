@@ -563,6 +563,7 @@ const en = {
           regularPaused: "Released: the weekly game was paused",
           regularEnded: "Released: the weekly game ended",
           regularReordered: "Released: another regular went first",
+          regularHorizon: "Released: fewer weeks are kept ahead now",
           changed: "Changed",
           checkedIn: "Checked in",
           checkedInCode: "{{name}}, with the code",

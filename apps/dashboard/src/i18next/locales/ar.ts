@@ -645,6 +645,7 @@ const ar: ArabicTranslations = {
           regularPaused: "أُلغي: أُوقفت المباراة الأسبوعية مؤقتًا",
           regularEnded: "أُلغي: انتهت المباراة الأسبوعية",
           regularReordered: "أُلغي: تقدّم منتظم آخر في الدور",
+          regularHorizon: "أُلغي: أصبحت الأسابيع المحجوزة مقدمًا أقل",
           changed: "تغيّر",
           checkedIn: "سجّل الحضور",
           checkedInCode: "{{name}}، بالكود",

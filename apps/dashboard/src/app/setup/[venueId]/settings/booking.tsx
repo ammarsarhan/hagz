@@ -131,6 +131,14 @@ function SettingsList({
       return;
     }
     queryClient.setQueryData(bookingSettingsQuery(venueId).queryKey, result.data);
+    // A new window or horizon reaches the regulars' weeks already reserved (their deadlines, the
+    // weeks let go or added), and so the Calendar's and the regulars' pages.
+    if ("confirmationWindow" in change || "regularHorizon" in change)
+      await Promise.all(
+        ["regulars", "bookings", "slots"].map((area) =>
+          queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, area] }),
+        ),
+      );
   };
 
   const words = {
@@ -294,7 +302,8 @@ function Value({
   chevron: boolean;
 }) {
   return (
-    <View className="flex-row items-center gap-1.5">
+    // Well clear of the title and its line (user, 2026-11-26).
+    <View className="ms-4 flex-row items-center gap-1.5">
       <Text
         className={`text-[15px] leading-[1.33] ${strong ? "font-medium" : "text-ink-2"}`}
         numberOfLines={1}

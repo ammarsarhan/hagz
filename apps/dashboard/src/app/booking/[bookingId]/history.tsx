@@ -300,7 +300,9 @@ function describe(
               ? "screens.history.events.regularEnded"
               : reason === "REORDERED"
                 ? "screens.history.events.regularReordered"
-                : "screens.history.events.regularChanged",
+                : reason === "HORIZON"
+                  ? "screens.history.events.regularHorizon"
+                  : "screens.history.events.regularChanged",
         ),
         detail: t("screens.history.events.backOnSale"),
       };
