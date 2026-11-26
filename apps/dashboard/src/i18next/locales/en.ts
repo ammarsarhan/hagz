@@ -478,6 +478,8 @@ const en = {
         more: "{{price}}, {{diff}} more than before",
         less: "{{price}}, {{diff}} less than before",
         backOnSale: "{{hours}} goes back on sale. {{name}} can move back while it's free.",
+        backOnSaleTwo:
+          "{{first}} and {{second}} go back on sale. {{name}} can move back while they're free.",
         reason: "Reason (optional)",
         reasonHint: "Shown to {{name}}",
         submit: "Move booking",

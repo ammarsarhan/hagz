@@ -355,6 +355,18 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   );
 }
 
+// The old time less the new one, on the same ground: none, one or two pieces, in order.
+function leftOver(booking: Booking, target: MoveTarget): [string, string][] {
+  if (target.groundId !== booking.ground.id) return [[booking.startsAt, booking.endsAt]];
+  const [start, end] = [Date.parse(booking.startsAt), Date.parse(booking.endsAt)];
+  const [from, to] = [Date.parse(target.startsAt), Date.parse(target.endsAt)];
+  if (to <= start || from >= end) return [[booking.startsAt, booking.endsAt]];
+  const pieces: [string, string][] = [];
+  if (from > start) pieces.push([booking.startsAt, target.startsAt]);
+  if (to < end) pieces.push([target.endsAt, booking.endsAt]);
+  return pieces;
+}
+
 function ConfirmMove({
   booking,
   venueId,
@@ -397,6 +409,9 @@ function ConfirmMove({
       ground,
     });
   const difference = target.price - oldSlots;
+  // Only the hours the new time leaves go back on sale (user, 2026-11-26): 8–10 pm moved to
+  // 9–11 pm frees 8–9 pm; moved inside a longer time on the same ground, nothing does.
+  const freed = leftOver(booking, target).map(([from, to]) => hoursSpan(from, to, timezone, t));
 
   const move = async () => {
     setSending(true);
@@ -464,12 +479,15 @@ function ConfirmMove({
         </View>
       </View>
 
-      <Text className="mt-4 mb-5 text-label text-ink-2">
-        {t("screens.move.backOnSale", {
-          hours: hoursSpan(booking.startsAt, booking.endsAt, timezone, t),
-          name,
-        })}
-      </Text>
+      {freed.length > 0 ? (
+        <Text className="mt-4 mb-5 text-label text-ink-2">
+          {freed.length === 1
+            ? t("screens.move.backOnSale", { hours: freed[0], name })
+            : t("screens.move.backOnSaleTwo", { first: freed[0], second: freed[1], name })}
+        </Text>
+      ) : (
+        <View className="mb-5" />
+      )}
 
       <View className="mb-2">
         <Field

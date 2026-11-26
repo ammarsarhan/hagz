@@ -543,6 +543,8 @@ const ar: ArabicTranslations = {
         more: "{{price}}، أكثر بـ {{diff}}",
         less: "{{price}}، أقل بـ {{diff}}",
         backOnSale: "{{hours}} يعود متاحًا للحجز. يمكن لـ {{name}} الرجوع إليه ما دام متاحًا.",
+        backOnSaleTwo:
+          "{{first}} و{{second}} يعودان متاحين للحجز. يمكن لـ {{name}} الرجوع إليهما ما داما متاحين.",
         reason: "السبب (اختياري)",
         reasonHint: "يظهر لـ {{name}}",
         submit: "نقل الحجز",
