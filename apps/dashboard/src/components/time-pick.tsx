@@ -478,7 +478,7 @@ function NewRow({ name, detail, label }: { name: string; detail: string; label: 
     <View className={`flex-row items-center rounded-xl py-2 pe-4 ${SOFT_FILL}`}>
       <View className="ms-2 w-1 self-stretch rounded-full bg-primary" />
       <View className="ms-3 flex-1">
-        <Text className="text-subtitle">{name}</Text>
+        <Text className="text-subtitle font-medium">{name}</Text>
         <Text className="text-label text-ink-2">{detail}</Text>
       </View>
       <Text className="text-label text-primary">{label}</Text>
