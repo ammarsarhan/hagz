@@ -12,6 +12,7 @@ import {
   type StoredCharge,
 } from "@/modules/bookings/domain/moves";
 import { checkLength, checkRange, coversExactly } from "@/modules/bookings/domain/rules";
+import { joinFeeOf } from "@/modules/bookings/domain/listings";
 import { canMove, paymentDeadline, startOf } from "@/modules/bookings/domain/status";
 
 // The pure parts of booking (PR 4.1): which ranges can be booked, what they cost, and where a
@@ -280,5 +281,21 @@ describe("moving", () => {
     const movedAt = at("2026-12-01T10:00:00Z");
     expect(respondBy(movedAt, at("2026-12-05T18:00:00Z"))).toEqual(at("2026-12-02T10:00:00Z"));
     expect(respondBy(movedAt, at("2026-12-01T18:00:00Z"))).toEqual(at("2026-12-01T18:00:00Z"));
+  });
+});
+
+describe("joining fee", () => {
+  it("is the rate of the share, rounded to a unit", () => {
+    expect(joinFeeOf(6_000, 1000, 500)).toBe(600);
+    expect(joinFeeOf(12_500, 1000, 500)).toBe(1_300);
+  });
+
+  it("is never less than the marketplace's minimum", () => {
+    expect(joinFeeOf(4_000, 1000, 500)).toBe(500);
+    expect(joinFeeOf(1_000, 1000, 500)).toBe(500);
+  });
+
+  it("is off, minimum and all, at a rate of 0", () => {
+    expect(joinFeeOf(4_000, 0, 500)).toBe(0);
   });
 });

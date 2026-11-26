@@ -11990,6 +11990,8 @@ export interface paths {
                 query?: {
                     /** @description Part of the name or the phone number. */
                     q?: string;
+                    /** @description `name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly). */
+                    order?: "name" | "recent";
                     /** @description `nextCursor` from the previous page. */
                     cursor?: string;
                     limit?: number;
@@ -12114,7 +12116,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`). */
+                /** @description CUSTOMER_EXISTS: a customer here already has this number (with their `customerId` and `customerName`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -12259,7 +12261,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`). */
+                /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -18883,6 +18885,10 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description The shortest booking, in slots. */
+                minimumSlots: number;
+                /** @description The longest booking, in slots. */
+                maximumSlots: number;
             }[];
             slots: components["schemas"]["Slot"][];
         };
@@ -18993,6 +18999,11 @@ export interface components {
             openGame: {
                 players: number;
             } | null;
+            paymentMode: components["schemas"]["PaymentMode"];
+            /** @description `DEPOSIT`: the share paid online. */
+            deposit: number | null;
+            /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
+            paymentWindow: number | null;
         };
         /**
          * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
@@ -19612,6 +19623,8 @@ export interface components {
         VenueCustomerPage: {
             data: components["schemas"]["VenueCustomer"][];
             nextCursor: string | null;
+            /** @description How many customers match `q` (all of them without one), across every page. */
+            total: number;
         };
         VenueCustomer: {
             /** Format: uuid */

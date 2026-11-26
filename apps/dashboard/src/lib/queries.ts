@@ -5,7 +5,7 @@ import type { Coordinates } from "./places";
 
 // The answer, or the failure thrown, which is how TanStack Query expects a query to fail. The error
 // is the same problem (or network failure) `send` gives screens, so the messages don't change.
-const fetched = async <T>(request: Promise<{ data?: T; error?: unknown }>): Promise<T> => {
+export const fetched = async <T>(request: Promise<{ data?: T; error?: unknown }>): Promise<T> => {
   const result = await send(request);
   if (!result.ok) throw result.error;
   return result.data;

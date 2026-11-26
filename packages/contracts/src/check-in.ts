@@ -6,6 +6,11 @@ import { z } from "zod";
 
 const Instant = z.iso.datetime();
 
+// The window, shared so the staff app can say when check-in opens before the API has a window to
+// return (a booking still waiting to be paid).
+export const CHECK_IN_OPENS_BEFORE_MINUTES = 15;
+export const CHECK_IN_CLOSES_AFTER_MINUTES = 30;
+
 export const CheckInWindow = z
   .object({
     opensAt: Instant.meta({ description: "15 minutes before kick-off." }),
