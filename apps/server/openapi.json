@@ -7075,6 +7075,54 @@
           "nextCursor"
         ]
       },
+      "SchedulePreview": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "integer",
+            "description": "Bookings and holds still ahead in hours it closes, requests aside: they go ahead as booked."
+          },
+          "requests": {
+            "type": "integer",
+            "description": "Booking requests waiting in hours it closes: declined when it's saved."
+          },
+          "regulars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The customer's first name."
+                },
+                "lastWeek": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The last week already reserved, which still happens; null with none. It ends after it."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "lastWeek"
+              ]
+            },
+            "description": "Regulars whose weekly time it closes, wholly or in part."
+          }
+        },
+        "required": [
+          "bookings",
+          "requests",
+          "regulars"
+        ]
+      },
       "GroundRemoval": {
         "type": "object",
         "properties": {
@@ -22767,6 +22815,92 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/preview": {
+      "post": {
+        "tags": [
+          "Grounds"
+        ],
+        "summary": "What a new week of hours would leave behind",
+        "description": "Needs `schedule: manage`. Saves nothing. Counts what falls in hours the week would close: bookings and holds still ahead (they go ahead), requests waiting (declined on save), and regulars whose weekly time it closes, wholly or in part (they keep the weeks already reserved and end after the last).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "groundId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeekSchedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What it would leave behind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulePreview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or GROUND_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

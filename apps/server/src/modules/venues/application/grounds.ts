@@ -32,6 +32,7 @@ import {
   GONE_GROUNDS,
 } from "../domain/grounds";
 import { nameIn } from "../domain/names";
+import { desiredSlots, generationWindow } from "../domain/slots";
 import type { VenueAccess } from "./access";
 import { lockForEdit } from "./venue-edit";
 import { afterFootprintChange } from "./layout-hooks";
@@ -401,6 +402,33 @@ export const putSchedule = async (actor: VenueAccess, groundId: string, week: We
   });
   await enqueueGeneration([groundId]);
   return groundSchedule(actor.venueId, groundId);
+};
+
+// The hours a ground would be open under `week`, from now to the slot horizon, as start instants,
+// for bookings' schedule preview: what a change would leave behind, before it's saved.
+export const startsUnder = async (
+  venueId: string,
+  groundId: string,
+  week: WeekSchedule,
+  now: Date,
+): Promise<Set<number>> => {
+  const ground = await prisma.ground.findFirst({
+    where: { id: groundId, venueId, status: { notIn: [...GONE_GROUNDS] } },
+    select: {
+      basePrice: true,
+      peakPrice: true,
+      discountPrice: true,
+      venue: { select: { marketplace: { select: { timezone: true } } } },
+    },
+  });
+  if (!ground) throw groundNotFound();
+  const slots = desiredSlots({
+    schedule: week.days,
+    prices: ground,
+    timezone: ground.venue.marketplace.timezone,
+    ...generationWindow(now),
+  });
+  return new Set(slots.map((slot) => slot.startsAt.getTime()));
 };
 
 // Copies the hours and their tiers; each ground keeps its own prices, so each must have the prices

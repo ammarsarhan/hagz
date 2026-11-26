@@ -26,7 +26,7 @@ export { pinOf } from "./application/venue-edit";
 export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS, instantOf } from "./domain/slots";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";
-export { whenGroundRemoved } from "./application/grounds";
+export { startsUnder, whenGroundRemoved } from "./application/grounds";
 export { venuesAdminRoutes } from "./http/admin-routes";
 export { venuesCustomerRoutes } from "./http/customer-routes";
 export { venuesFavoriteRoutes } from "./http/favorite-routes";

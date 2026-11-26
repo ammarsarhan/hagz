@@ -193,6 +193,42 @@ describe("regulars", () => {
     expect((await detail(owner.id, venue.id, omarGame.id)).status).toBe("ENDED");
   });
 
+  it("previews a schedule change: the regulars whose weekly time it closes, and their weeks", async () => {
+    const { venue, ground, owner, starts, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const weekday = regular(karim).dayOfWeek;
+    const week = (closed: number | null) => ({
+      days: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+        dayOfWeek,
+        hours: Array.from({ length: 24 }, (_, hour) => ({ hour, tier: "BASE" })).filter(
+          ({ hour }) => !(dayOfWeek === weekday && hour === closed),
+        ),
+      })),
+    });
+    const preview = async (body: object) => {
+      const res = await asStaff(
+        owner.id,
+        "POST",
+        `/venues/${venue.id}/grounds/${ground.id}/schedule/preview`,
+        body,
+      );
+      expect(res.status).toBe(200);
+      return res.json();
+    };
+
+    expect(await preview(week(null))).toEqual({ bookings: 0, requests: 0, regulars: [] });
+    // Closing just the second hour of the game closes it too, and every week reserved has a slot
+    // in it.
+    const last = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(starts[3]);
+    expect(await preview(week(21))).toEqual({
+      bookings: 4,
+      requests: 0,
+      regulars: [{ id: made.id, name: "Karim", lastWeek: last }],
+    });
+    // Nothing was saved.
+    expect(await prisma.groundSchedule.count({ where: { groundId: ground.id } })).toBe(0);
+  });
+
   it("never gives one customer two regulars sharing an hour on a ground", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));

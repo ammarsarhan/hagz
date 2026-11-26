@@ -263,3 +263,31 @@ export const GroundRemoval = z
   .meta({ id: "GroundRemoval" });
 
 export type GroundRemoval = z.infer<typeof GroundRemoval>;
+
+// What a new week of hours would leave behind on a ground (user, 2026-11-27), for the warning
+// before it's saved. Only what falls in hours it would close counts.
+export const SchedulePreview = z
+  .object({
+    bookings: z.int().meta({
+      description:
+        "Bookings and holds still ahead in hours it closes, requests aside: they go ahead as booked.",
+    }),
+    requests: z.int().meta({
+      description: "Booking requests waiting in hours it closes: declined when it's saved.",
+    }),
+    regulars: z
+      .array(
+        z.object({
+          id: z.uuid(),
+          name: z.string().meta({ description: "The customer's first name." }),
+          lastWeek: z.iso.date().nullable().meta({
+            description:
+              "The last week already reserved, which still happens; null with none. It ends after it.",
+          }),
+        }),
+      )
+      .meta({ description: "Regulars whose weekly time it closes, wholly or in part." }),
+  })
+  .meta({ id: "SchedulePreview" });
+
+export type SchedulePreview = z.infer<typeof SchedulePreview>;

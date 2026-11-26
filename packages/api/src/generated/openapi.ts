@@ -10179,6 +10179,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What a new week of hours would leave behind
+         * @description Needs `schedule: manage`. Saves nothing. Counts what falls in hours the week would close: bookings and holds still ahead (they go ahead), requests waiting (declined on save), and regulars whose weekly time it closes, wholly or in part (they keep the weeks already reserved and end after the last).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WeekSchedule"];
+                };
+            };
+            responses: {
+                /** @description What it would leave behind */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SchedulePreview"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/grounds/{groundId}/removal": {
         parameters: {
             query?: never;
@@ -19638,6 +19711,24 @@ export interface components {
             data: components["schemas"]["StaffBooking"][];
             /** Format: uuid */
             nextCursor: string | null;
+        };
+        SchedulePreview: {
+            /** @description Bookings and holds still ahead in hours it closes, requests aside: they go ahead as booked. */
+            bookings: number;
+            /** @description Booking requests waiting in hours it closes: declined when it's saved. */
+            requests: number;
+            /** @description Regulars whose weekly time it closes, wholly or in part. */
+            regulars: {
+                /** Format: uuid */
+                id: string;
+                /** @description The customer's first name. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description The last week already reserved, which still happens; null with none. It ends after it.
+                 */
+                lastWeek: string | null;
+            }[];
         };
         GroundRemoval: {
             /** @description Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar. */
