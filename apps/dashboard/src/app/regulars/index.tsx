@@ -19,6 +19,7 @@ import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { Empty } from "@/components/empty";
 import { NoWeeklyArt } from "@/components/empty-art";
+import { Marquee } from "@/components/marquee";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
@@ -121,17 +122,23 @@ export default function Regulars() {
       footer={
         changed && pending ? (
           <BottomBar
-            title={pending.ids
-              .map((id, index) =>
-                // "1) Hossam, 2) Youssef" (user, 2026-11-26).
-                t("screens.regulars.reorder.who", {
-                  name: firstName(
-                    pendingGroup?.find((regular) => regular.id === id)?.customer.name ?? "",
-                  ),
-                  place: index + 1,
-                }),
-              )
-              .join(t("screens.regulars.new.comma"))}
+            // Too long for the bar, it scrolls from first priority to last (user, 2026-11-26).
+            title={
+              <Marquee
+                className="text-subtitle"
+                text={pending.ids
+                  .map((id, index) =>
+                    // "1) Hossam, 2) Youssef" (user, 2026-11-26).
+                    t("screens.regulars.reorder.who", {
+                      name: firstName(
+                        pendingGroup?.find((regular) => regular.id === id)?.customer.name ?? "",
+                      ),
+                      place: index + 1,
+                    }),
+                  )
+                  .join(t("screens.regulars.new.comma"))}
+              />
+            }
             detail={t("screens.regulars.reorder.stay")}
           >
             <BarButton
