@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, View, useWindowDimensions, type LayoutChangeEvent } from "react-native";
-import Reanimated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from "react-native-reanimated";
+import Reanimated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  FadeOutDown,
+  FadeOutUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { Text } from "./text";
 
 // A screen's big title, carried up beside its back or close button once it has scrolled away (first
@@ -77,16 +86,23 @@ export function CompactTitle({
   );
 }
 
-// A tab's pinned bar that names the section scrolled to (the Venue tab): empty at first, then
+// A tab's pinned bar that names the section scrolled to (the Venue tab): small and empty at first,
+// then
 // each section's heading once it has gone under ("Details", "People", "Rules"), and back again
 // scrolling up. A new name rolls in the way the page is moving. A grey hairline under the bar
 // once anything has scrolled under it.
 //
 //   const sections = useSectionTitle();
-//   <PinnedTitle sections={sections} />
-//   <FadingScroll scrollY={sections.scrollY} topFade={0}>
-//     <View onLayout={sections.onLayout("Details")}><SettingsHeading>Details</SettingsHeading></View>
+//   <PinnedTitle sections={sections}>
+//     <FadingScroll scrollY={sections.scrollY} topFade={0}>
+//       <View onLayout={sections.onLayout("Details")}><SettingsHeading>Details</SettingsHeading></View>
+//     </FadingScroll>
+//   </PinnedTitle>
 const ROLL_MS = 180;
+// The bar's height empty (with the scroll's own top padding, about the gap a tab's title had),
+// and with a name in it.
+const BAR_SMALL = 6;
+const BAR_FULL = 44;
 
 export function useSectionTitle() {
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -134,31 +150,53 @@ export function useSectionTitle() {
   return { scrollY, current, scrolled, onLayout };
 }
 
-export function PinnedTitle({ sections }: { sections: ReturnType<typeof useSectionTitle> }) {
+export function PinnedTitle({
+  sections,
+  children,
+}: {
+  sections: ReturnType<typeof useSectionTitle>;
+  // The page's scroll, which runs under the bar.
+  children: ReactNode;
+}) {
   const { label, down } = sections.current;
+  // Small while it has nothing to say, full height with a name; it floats over the scroll, so
+  // growing doesn't move the page.
+  const height = useSharedValue(BAR_SMALL);
+  useEffect(() => {
+    height.value = withTiming(label === null ? BAR_SMALL : BAR_FULL, {
+      duration: ROLL_MS,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [label, height]);
+  const grow = useAnimatedStyle(() => ({ height: height.value }));
   return (
-    <View
-      // Full width, so the hairline runs edge to edge.
-      className={`-mx-5 h-11 justify-center border-b px-5 ${sections.scrolled ? "border-border" : "border-transparent"}`}
-      // Screen readers get the headings themselves.
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-    >
-      <View className="h-5 overflow-hidden">
-        {label === null ? null : (
-          <Reanimated.View
-            key={label}
-            entering={(down ? FadeInUp : FadeInDown).duration(ROLL_MS)}
-            exiting={(down ? FadeOutUp : FadeOutDown).duration(ROLL_MS)}
-            className="absolute inset-x-0 top-0"
-          >
-            <Text className="text-body font-semibold leading-[20px]" numberOfLines={1}>
-              {label}
-            </Text>
-          </Reanimated.View>
-        )}
-      </View>
+    <View className="flex-1">
+      <View style={{ height: BAR_SMALL }} />
+      <View className="flex-1">{children}</View>
+      <Reanimated.View
+        // Full width, so the hairline runs edge to edge.
+        className={`absolute top-0 justify-center overflow-hidden border-b bg-white px-5 ${sections.scrolled ? "border-border" : "border-transparent"}`}
+        style={[{ left: -20, right: -20 }, grow]}
+        // Screen readers get the headings themselves.
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+      >
+        <View className="h-5 overflow-hidden">
+          {label === null ? null : (
+            <Reanimated.View
+              key={label}
+              entering={(down ? FadeInUp : FadeInDown).duration(ROLL_MS)}
+              exiting={(down ? FadeOutUp : FadeOutDown).duration(ROLL_MS)}
+              className="absolute inset-x-0 top-0"
+            >
+              <Text className="text-body font-semibold leading-[20px]" numberOfLines={1}>
+                {label}
+              </Text>
+            </Reanimated.View>
+          )}
+        </View>
+      </Reanimated.View>
     </View>
   );
 }

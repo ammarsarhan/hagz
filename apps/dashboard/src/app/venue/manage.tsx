@@ -192,60 +192,61 @@ export default function VenueTab() {
 
   return (
     <Screen tabbed>
-      <PinnedTitle sections={sections} />
-      {/* A hairline under the bar, not a fade. */}
-      <FadingScroll scrollY={sections.scrollY} topFade={0}>
-        <Title>{t(`${v}.title`)}</Title>
-        <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
-          {ready[0] ? (
-            <>
-              {/* Grey and pulsing until the photo has come, then the photo over it. */}
-              {loadedCover === ready[0].url ? null : <Bone className="absolute inset-0" />}
-              {/* The full photo through reachable() (the dev API's host as the phone sees it),
+      <PinnedTitle sections={sections}>
+        {/* A hairline under the bar, not a fade. */}
+        <FadingScroll scrollY={sections.scrollY} topFade={0}>
+          <Title>{t(`${v}.title`)}</Title>
+          <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+            {ready[0] ? (
+              <>
+                {/* Grey and pulsing until the photo has come, then the photo over it. */}
+                {loadedCover === ready[0].url ? null : <Bone className="absolute inset-0" />}
+                {/* The full photo through reachable() (the dev API's host as the phone sees it),
                 filling the space; no blurry preview while it loads. */}
-              <Image
-                source={{ uri: reachable(ready[0].url) }}
-                contentFit="cover"
-                transition={150}
-                onLoad={() => setLoadedCover(ready[0]?.url ?? null)}
-                style={{ width: "100%", height: "100%" }}
-                accessibilityIgnoresInvertColors
-              />
-            </>
-          ) : photosLoading ? (
-            // The photos aren't known yet: grey, not the no-photo pitch, which would flash first.
-            <Bone className="flex-1" />
-          ) : (
-            <PitchArt />
-          )}
-          {ready.length > 0 ? (
-            <View className="absolute end-2.5 bottom-2.5 rounded-full bg-black/30 px-2 py-0.5">
-              <Text className="text-[11px] font-medium leading-[14px] text-white">
-                {t(`${v}.photos`, { count: ready.length })}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+                <Image
+                  source={{ uri: reachable(ready[0].url) }}
+                  contentFit="cover"
+                  transition={150}
+                  onLoad={() => setLoadedCover(ready[0]?.url ?? null)}
+                  style={{ width: "100%", height: "100%" }}
+                  accessibilityIgnoresInvertColors
+                />
+              </>
+            ) : photosLoading ? (
+              // The photos aren't known yet: grey, not the no-photo pitch, which would flash first.
+              <Bone className="flex-1" />
+            ) : (
+              <PitchArt />
+            )}
+            {ready.length > 0 ? (
+              <View className="absolute end-2.5 bottom-2.5 rounded-full bg-black/30 px-2 py-0.5">
+                <Text className="text-[11px] font-medium leading-[14px] text-white">
+                  {t(`${v}.photos`, { count: ready.length })}
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
-        <View className="mt-4 items-center">
-          <Text className="text-center text-[22px] font-semibold leading-[1.27]">
-            {venue.name ?? ""}
-          </Text>
-          {/* The area, then how many grounds on a line of its own. */}
-          {venue.location ? (
-            <Text className="mt-1 text-center text-body text-ink-2">{venue.location}</Text>
-          ) : null}
-          {groundCount === undefined ? null : (
-            <Text className="text-center text-body text-ink-2">
-              {t(`${v}.groundCount`, { count: groundCount })}
+          <View className="mt-4 items-center">
+            <Text className="text-center text-[22px] font-semibold leading-[1.27]">
+              {venue.name ?? ""}
             </Text>
-          )}
-        </View>
+            {/* The area, then how many grounds on a line of its own. */}
+            {venue.location ? (
+              <Text className="mt-1 text-center text-body text-ink-2">{venue.location}</Text>
+            ) : null}
+            {groundCount === undefined ? null : (
+              <Text className="text-center text-body text-ink-2">
+                {t(`${v}.groundCount`, { count: groundCount })}
+              </Text>
+            )}
+          </View>
 
-        {group(t(`${v}.details`), place, true)}
-        {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
-        {group(t(`${v}.rules`), rules)}
-      </FadingScroll>
+          {group(t(`${v}.details`), place, true)}
+          {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
+          {group(t(`${v}.rules`), rules)}
+        </FadingScroll>
+      </PinnedTitle>
     </Screen>
   );
 }
