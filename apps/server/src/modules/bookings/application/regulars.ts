@@ -219,6 +219,38 @@ export const topUpVenue = async (
         const missed: string[] = [];
         for (const week of weeks) {
           if (blocked.has(week.startsAt.getTime())) continue;
+          // The customer's own booking at exactly this time (a staff hold, or one confirmed) is
+          // this week of theirs: it joins the regular rather than the week being skipped as taken
+          // (user, 2026-11-26). Its slots stay as they are: a hold's are HELD, as a reservation's.
+          const own = await tx.booking.findFirst({
+            where: {
+              venueId,
+              groundId: regular.groundId,
+              customerId: regular.customerId,
+              regularId: null,
+              startsAt: week.startsAt,
+              endsAt: week.endsAt,
+              OR: [{ status: "CONFIRMED" }, { status: "HELD", creatorId: { not: null } }],
+            },
+            select: { id: true, status: true },
+          });
+          if (own) {
+            await tx.booking.update({
+              where: { id: own.id },
+              data:
+                own.status === "HELD"
+                  ? { regularId: regular.id, status: "UNCONFIRMED", expiresAt: week.deadline }
+                  : { regularId: regular.id },
+            });
+            await tx.bookingEvent.create({
+              data: {
+                bookingId: own.id,
+                type: BOOKING_EVENTS.REGULAR_JOINED,
+                data: { from: own.status },
+              },
+            });
+            continue;
+          }
           const slots = await lockFreeSlots(tx, regular.groundId, week.startsAt, week.endsAt);
           if (!coversExactly(slots, week.startsAt, week.endsAt)) {
             missed.push(week.date);

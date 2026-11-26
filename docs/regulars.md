@@ -44,6 +44,8 @@ Staff can pause, resume and end a regular.
 
 A regular plays **once a week**. A calendar week (Sunday to Saturday, in the venue's time) that already has a live game of theirs at another time is left alone. That covers a week confirmed before the regular's time changed, and one moved to another day or hour. Changing a Sunday regular to Mondays keeps a confirmed Sunday and doesn't reserve the Monday after it.
 
+A booking of the **customer's own** at exactly a week's time (same ground and hours) **becomes that week** instead of the week being skipped as taken. A staff hold turns into an `UNCONFIRMED` week with the regular's deadline, and a confirmed booking joins as it is. Its history gets a `REGULAR_JOINED` event. Someone else's booking there still skips the week.
+
 **4. Before the deadline:**
 - **Confirm**: staff in the dashboard (after calling), or the regular from the reminder. `UNCONFIRMED` → `CONFIRMED`.
 - **Release**: staff or the regular, at any time before kick-off, even weeks ahead (Eid, exams, travel). `UNCONFIRMED` → `RELEASED`, and the slots are free at once.

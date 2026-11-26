@@ -312,6 +312,47 @@ describe("regulars", () => {
     expect(changed.skippedWeeks).toEqual([]);
   });
 
+  it("takes the customer's own hold or booking at its time as that week, not skipping it", async () => {
+    const { venue, owner, regular, starts, ground } = await weeklyGround();
+    const [first, second, third] = starts;
+    const at = (start: Date | undefined) => ({
+      groundId: ground.id,
+      startsAt: start?.toISOString(),
+      endsAt: new Date((start?.getTime() ?? 0) + 2 * HOUR).toISOString(),
+      customer: karim,
+    });
+    const hold = async (start: Date | undefined) => {
+      const res = await asStaff(owner.id, "POST", `/venues/${venue.id}/holds`, at(start));
+      expect(res.status).toBe(201);
+      return StaffBookingDetail.parse(await res.json());
+    };
+    // Karim's hold on the first week; his hold on the second, confirmed; Omar's hold on the third.
+    const held = await hold(first);
+    const booked = await hold(second);
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/holds/${booked.id}/confirm`);
+    const res = await asStaff(owner.id, "POST", `/venues/${venue.id}/holds`, {
+      ...at(third),
+      customer: omar,
+    });
+    expect(res.status).toBe(201);
+
+    const made = await create(owner.id, venue.id, regular(karim));
+    expect(made.reservations.map((booking) => [booking.id, booking.status])).toEqual([
+      [held.id, "UNCONFIRMED"],
+      [booked.id, "CONFIRMED"],
+      [expect.any(String), "UNCONFIRMED"],
+    ]);
+    // The hold waits for a confirm by the regular's deadline now, not the hold's.
+    expect(Date.parse(made.reservations[0]?.expiresAt ?? "")).toBe(
+      (first?.getTime() ?? 0) - 24 * HOUR,
+    );
+    // Omar's hold is someone else's: that week is skipped as taken.
+    expect(made.skippedWeeks).toEqual([third?.toISOString().slice(0, 10)]);
+    expect((await prisma.bookingEvent.findMany({ where: { type: "REGULAR_JOINED" } })).length).toBe(
+      2,
+    );
+  });
+
   it("reorders overlapping regulars; only weeks reserved from then on follow", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));
