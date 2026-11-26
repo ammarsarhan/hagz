@@ -255,6 +255,7 @@ export default function HoldTime() {
             <BarButton
               label={t("screens.hold.hold")}
               primary
+              incomplete={short}
               onPress={() => {
                 const first = pickedSlots[0];
                 const last = pickedSlots.at(-1);

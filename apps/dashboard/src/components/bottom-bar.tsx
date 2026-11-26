@@ -1,5 +1,13 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { colors } from "@/lib/colors";
 import { Text } from "./text";
 
@@ -34,18 +42,51 @@ export function BottomBar({
   );
 }
 
-// The bar's pill: blue for the step forward, white with a hairline for the other way.
+// The bar's pill: blue for the step forward, white with a hairline for the other way. `incomplete`:
+// not ready yet (a pick too short to hold), grey and breathing slowly, and does nothing.
+const PULSE_MS = 900;
+
 export function BarButton({
   label,
   onPress,
   primary = false,
   busy = false,
+  incomplete = false,
 }: {
   label: string;
   onPress: () => void;
   primary?: boolean;
   busy?: boolean;
+  incomplete?: boolean;
 }) {
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    if (incomplete)
+      pulse.value = withRepeat(
+        withTiming(0.5, { duration: PULSE_MS, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      );
+    else {
+      cancelAnimation(pulse);
+      pulse.value = withTiming(1, { duration: 150 });
+    }
+    return () => cancelAnimation(pulse);
+  }, [incomplete, pulse]);
+  const pulsing = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  if (incomplete)
+    return (
+      <Animated.View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: true }}
+        className="h-12 min-w-24 items-center justify-center rounded-full bg-field px-5"
+        style={pulsing}
+      >
+        <Text className="text-body font-semibold text-ink-3">{label}</Text>
+      </Animated.View>
+    );
   return (
     <Pressable
       accessibilityRole="button"
