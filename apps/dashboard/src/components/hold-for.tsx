@@ -47,6 +47,12 @@ const shownPhone = (phone: string) => {
   return match ? `+20 ${match[1]} ${match[2]} ${match[3]}` : phone;
 };
 
+// Who it's for, as the booking API takes it, and their name to show.
+export interface Choice {
+  customer: { venueCustomerId: string } | { name: string; phone: string };
+  name: string;
+}
+
 export function HoldFor({
   venueId,
   target,
@@ -54,6 +60,7 @@ export function HoldFor({
   holdMinutes,
   onClose,
   onHeld,
+  onChoose,
 }: {
   venueId: string;
   // The time being held; null while none is picked.
@@ -62,7 +69,10 @@ export function HoldFor({
   when: string;
   holdMinutes: number | null;
   onClose: () => void;
-  onHeld: (held: Held) => void;
+  onHeld?: (held: Held) => void;
+  // A new booking (D10): only who it's for is asked, nothing is held; given once the sheet has
+  // slid away.
+  onChoose?: (choice: Choice) => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -71,6 +81,7 @@ export function HoldFor({
   const [step, setStep] = useState<Step | null>(null);
   const following = useRef<Step | "done" | null>(null);
   const held = useRef<Held | null>(null);
+  const chosen = useRef<Choice | null>(null);
   const [holding, setHolding] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,14 +97,22 @@ export function HoldFor({
     following.current = null;
     if (next === "done") {
       const booking = held.current;
+      const choice = chosen.current;
       held.current = null;
-      if (booking) onHeld(booking);
+      chosen.current = null;
+      if (booking) onHeld?.(booking);
+      if (choice) onChoose?.(choice);
     } else if (next) setStep(next);
     else onClose();
   };
 
-  const hold = async (customer: { venueCustomerId: string } | { name: string; phone: string }) => {
+  const hold = async (customer: Choice["customer"], name: string) => {
     if (!target) return;
+    if (onChoose) {
+      chosen.current = { customer, name };
+      go("done");
+      return;
+    }
     setHolding("venueCustomerId" in customer ? customer.venueCustomerId : "new");
     const result = await send(
       api.POST("/v1/staff/venues/{venueId}/holds", {
@@ -151,7 +170,7 @@ export function HoldFor({
         venueId={venueId}
         when={when}
         holding={holding}
-        onPick={(customer) => void hold({ venueCustomerId: customer.id })}
+        onPick={(customer) => void hold({ venueCustomerId: customer.id }, customer.name)}
       />
 
       <Sheet {...sheet("new")} onBack={() => go("who")} backLabel={t("components.shared.nav.back")}>
@@ -159,7 +178,8 @@ export function HoldFor({
           when={when}
           holdMinutes={holdMinutes}
           holding={holding === "new"}
-          onHold={(name, phone) => void hold({ name, phone })}
+          label={onChoose ? t("screens.book.continue") : undefined}
+          onHold={(name, phone) => void hold({ name, phone }, name)}
         />
       </Sheet>
     </>
@@ -301,11 +321,14 @@ function NewCustomer({
   when,
   holdMinutes,
   holding,
+  label,
   onHold,
 }: {
   when: string;
   holdMinutes: number | null;
   holding: boolean;
+  // In place of "Hold for 15 minutes".
+  label?: string;
   onHold: (name: string, phone: string) => void;
 }) {
   const { t } = useTranslation();
@@ -335,9 +358,10 @@ function NewCustomer({
       <View className="mt-2">
         <Button
           label={
-            holdMinutes === null
+            label ??
+            (holdMinutes === null
               ? t("screens.hold.new.holdPlain")
-              : t("screens.hold.new.hold", { count: holdMinutes })
+              : t("screens.hold.new.hold", { count: holdMinutes }))
           }
           disabled={!ready}
           loading={holding}
