@@ -25,7 +25,7 @@ import { Text } from "./text";
 
 // A regular's ⋯ and what it leads to (Figma D12 655:111, 655:233).
 //
-// - RegularMenu: "Weekly game" centred by the close button, then a row for each thing to do, each with what it does
+// - RegularMenu: "Modify game" centred by the close button, then a row for each thing to do, each with what it does
 //   in grey: Change the time, Pause (Resume when paused), Copy a confirm link, End the weekly game.
 // - StateSheet: Pause or End asked first, what follows on the step rail (the confirmed weeks stay,
 //   the waiting ones go back on sale, then resume any time, or not at all), the button in a bar.
