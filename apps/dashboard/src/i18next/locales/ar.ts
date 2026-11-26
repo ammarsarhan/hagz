@@ -192,7 +192,7 @@ const ar: ArabicTranslations = {
         confirmed_other: "أكّد {{confirmed}} من {{count}} أسبوعًا",
         paused: "متوقف منذ {{date}}",
         new: {
-          title: "إضافة منتظم",
+          title: "اختر اليوم",
           subtitle_one: "اختر اليوم والوقت. يُحجز أسبوع واحد مقدمًا.",
           subtitle_two: "اختر اليوم والوقت. يُحجز أسبوعان مقدمًا.",
           subtitle_few: "اختر اليوم والوقت. تُحجز {{count}} أسابيع مقدمًا.",
