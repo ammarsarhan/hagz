@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Alert, View } from "react-native";
 import type { components } from "@hagz/api";
 import { datesJoin } from "@/lib/regulars";
-import { BarButton, BottomBar } from "./bottom-bar";
+import { Button } from "./button";
 import { Sheet } from "./sheet";
 import { StepRail, type Step } from "./step-rail";
 import { Text } from "./text";
@@ -11,8 +11,8 @@ type Removal = components["schemas"]["GroundRemoval"];
 
 // Deleting a ground, asked first (user, 2026-11-27): a sheet with what follows on the step rail, as
 // a regular's Pause and End: players stop seeing it, its bookings still to come go ahead and keep
-// it on the calendar marked Deleted, its regulars end with it, then it's gone. Delete in the bar
-// asks once more, natively and briefly, before anything happens.
+// it on the calendar marked Deleted, its regulars end with it, then it's gone. Cancel and Delete side
+// by side under it (no bar; user, 2026-11-27); Delete asks once more, natively and briefly, before anything happens.
 export function DeleteGroundSheet({
   name,
   removal,
@@ -39,7 +39,6 @@ export function DeleteGroundSheet({
       detail: t(`${d}.hiddenBody`),
       when: "",
       state: "now",
-      bold: "label",
     },
     ...(bookings > 0
       ? [
@@ -48,7 +47,6 @@ export function DeleteGroundSheet({
             detail: t(`${d}.aheadBody`),
             when: "",
             state: "now" as const,
-            bold: "label" as const,
           },
         ]
       : []),
@@ -59,7 +57,6 @@ export function DeleteGroundSheet({
             detail: t(`${d}.regularsBody`),
             when: "",
             state: "now" as const,
-            bold: "label" as const,
           },
         ]
       : []),
@@ -88,13 +85,18 @@ export function DeleteGroundSheet({
         {t(`${d}.title`, { name })}
       </Text>
       <StepRail gap={22} steps={steps} />
-      <View className="mt-8 pt-3">
-        <BottomBar
-          title={bookings > 0 ? t(`${d}.barTitle`, { count: bookings }) : t(`${d}.barTitlePlain`)}
-          detail={t(`${d}.barBody`)}
-        >
-          <BarButton label={t(`${d}.button`)} primary onPress={ask} />
-        </BottomBar>
+      <View className="mt-8 flex-row gap-3">
+        <View className="flex-1">
+          <Button
+            label={t("screens.setup.grounds.cancel")}
+            variant="secondary"
+            compact
+            onPress={onClose}
+          />
+        </View>
+        <View className="flex-1">
+          <Button label={t(`${d}.button`)} compact onPress={ask} />
+        </View>
       </View>
     </Sheet>
   );
