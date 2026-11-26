@@ -379,7 +379,7 @@ describe("regulars", () => {
     expect((await detail(owner.id, venue.id, karimGame.id)).reservations).toHaveLength(0);
   });
 
-  it("reorders overlapping regulars; only weeks reserved from then on follow", async () => {
+  it("reorders overlapping regulars; waiting weeks go to the new first, confirmed ones stay", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));
     const second = await create(owner.id, venue.id, regular(omar));
@@ -391,8 +391,20 @@ describe("regulars", () => {
       [second.id, 1],
       [first.id, 2],
     ]);
-    expect((await detail(owner.id, venue.id, first.id)).reservations).toHaveLength(4);
-    // Paused, the first lets its weeks go, and the second (now first in line) takes them.
+    // Karim's waiting weeks went to Omar, first now.
+    expect((await detail(owner.id, venue.id, first.id)).reservations).toHaveLength(0);
+    expect((await detail(owner.id, venue.id, second.id)).reservations).toHaveLength(4);
+    // A week Omar confirms stays his when the order flips back; his waiting weeks go to Karim.
+    const [kept] = (await detail(owner.id, venue.id, second.id)).reservations;
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${kept?.id}/confirm`);
+    await asStaff(owner.id, "PUT", `/venues/${venue.id}/regulars/order`, {
+      regularIds: [first.id, second.id],
+    });
+    expect(
+      (await detail(owner.id, venue.id, second.id)).reservations.map((booking) => booking.id),
+    ).toEqual([kept?.id]);
+    expect((await detail(owner.id, venue.id, first.id)).reservations).toHaveLength(3);
+    // Paused, Karim lets his weeks go, and Omar (next in line) takes them.
     await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${first.id}/pause`);
     expect((await detail(owner.id, venue.id, second.id)).reservations).toHaveLength(4);
     await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${first.id}/resume`);

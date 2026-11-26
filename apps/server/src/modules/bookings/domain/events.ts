@@ -29,7 +29,8 @@ export const BOOKING_EVENTS = {
   // DEADLINE when nobody confirmed it in time.
   RELEASED: "RELEASED",
   // Released because the regular was changed, paused or ended (now RELEASED); data: { reason }
-  // CHANGED, PAUSED or ENDED. Never counts against the regular's reliability.
+  // CHANGED, PAUSED, ENDED or REORDERED (moved down the line, its waiting weeks going to whoever is
+  // first now). Never counts against the regular's reliability.
   REGULAR_CHANGED: "REGULAR_CHANGED",
   // The customer's own booking at a new regular's time became that week of it (a staff hold now
   // UNCONFIRMED until the regular's deadline, a confirmed booking as it was); data: { from } its

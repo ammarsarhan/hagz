@@ -320,7 +320,7 @@ export const topUpAllVenues = async (clock: Clock = systemClock): Promise<number
 const releaseWeeks = async (
   tx: Tx,
   regularId: string,
-  reason: "CHANGED" | "PAUSED" | "ENDED",
+  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED",
   now: Date,
   keep: (startsAt: Date) => boolean = () => false,
 ) => {
@@ -607,8 +607,9 @@ export const resumeRegular = (actor: VenueAccess, id: string, clock: Clock = sys
 export const endRegular = (actor: VenueAccess, id: string, clock: Clock = systemClock) =>
   setState(actor, id, "END", clock);
 
-// Reorders regulars that overlap: they take the same set of priorities, in the order given. Only
-// weeks reserved from now on follow it.
+// Reorders regulars that overlap: they take the same set of priorities, in the order given. A regular
+// moved down lets its waiting weeks go, and the top-up hands them out in the new order, so whoever
+// is first now has them (user, 2026-11-26); a confirmed week stays with whoever confirmed it.
 export const orderRegulars = async (
   actor: VenueAccess,
   { regularIds }: OrderRegulars,
@@ -621,9 +622,12 @@ export const orderRegulars = async (
       SELECT id FROM "VenueRegular" WHERE id = ANY(${sorted}::uuid[]) ORDER BY id FOR UPDATE`;
     const rows = await tx.venueRegular.findMany({
       where: { id: { in: ids }, venueId: actor.venueId },
-      select: { id: true, priority: true },
+      select: { id: true, priority: true, createdAt: true },
     });
     if (rows.length !== ids.length) throw notOverlapping();
+    const before = [...rows]
+      .sort((a, b) => a.priority - b.priority || a.createdAt.getTime() - b.createdAt.getTime())
+      .map((row) => row.id);
     const places = rows.map((row) => row.priority).sort((a, b) => a - b);
     // Distinct places, even if two shared one before.
     for (let i = 1; i < places.length; i++) {
@@ -635,7 +639,11 @@ export const orderRegulars = async (
         where: { id: regularId },
         data: { priority: places[index] ?? index },
       });
+      if (index > before.indexOf(regularId)) {
+        await releaseWeeks(tx, regularId, "REORDERED", clock.now());
+      }
     }
   });
+  await topUpVenue(actor.venueId, clock);
   return listRegulars(actor, clock);
 };
