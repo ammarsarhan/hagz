@@ -1,6 +1,8 @@
+import type { TFunction } from "i18next";
 import type { components } from "@hagz/api";
 import { api } from "./api";
 import { send } from "./api-errors";
+import { intlLocale } from "./language";
 
 // Regulars (PR 4.5, docs/regulars.md): a customer's standing weekly time at the venue.
 
@@ -30,3 +32,22 @@ export const overlaps = (a: Regular, b: Regular) =>
   a.dayOfWeek === b.dayOfWeek &&
   a.startHour < b.startHour + b.slotCount &&
   b.startHour < a.startHour + a.slotCount;
+
+// "1, 8, 15 and 22 Dec"; "29 Dec, 5, 12 and 19 Jan" across a month's end. Joined by hand: Hermes
+// has no Intl.ListFormat.
+export const datesLabel = (t: TFunction, dates: readonly string[]) => {
+  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "short" });
+  const parts = dates.map((date, index) => {
+    const at = new Date(`${date}T12:00:00Z`);
+    const next = dates[index + 1];
+    const lastOfMonth = !next || next.slice(0, 7) !== date.slice(0, 7);
+    return lastOfMonth ? `${at.getUTCDate()} ${month.format(at)}` : String(at.getUTCDate());
+  });
+  const last = parts.at(-1) ?? "";
+  return parts.length < 2
+    ? last
+    : t("screens.regulars.new.and", {
+        list: parts.slice(0, -1).join(t("screens.regulars.new.comma")),
+        last,
+      });
+};
