@@ -258,12 +258,13 @@ function Fact({
           </Text>
         ) : null}
       </View>
-      <Change onPress={onChange} />
+      <Change onPress={onChange} grey />
     </View>
   );
 }
 
-function Change({ onPress }: { onPress: () => void }) {
+// Grey on the facts; ink on the time card (user, 2026-11-26).
+function Change({ onPress, grey = false }: { onPress: () => void; grey?: boolean }) {
   const { t } = useTranslation();
   return (
     <Pressable
@@ -272,7 +273,7 @@ function Change({ onPress }: { onPress: () => void }) {
       hitSlop={8}
       className="ms-3 active:opacity-70"
     >
-      <Text className="text-[15px] leading-5 font-medium underline">
+      <Text className={`text-[15px] leading-5 font-medium underline ${grey ? "text-ink-2" : ""}`}>
         {t("screens.regulars.confirm.change")}
       </Text>
     </Pressable>
