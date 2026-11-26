@@ -228,15 +228,15 @@ const en = {
   regular: {
     meta: "Your weekly game · Hagz",
     waiting: (name: string, weekday: string, deadline: string, venue: string, code: string) =>
-      `${name}, are you playing this ${weekday}? Answer by ${deadline}. If you don’t, the time goes back on sale. Calling ${venue}? Give them ${code}.`,
+      `${name}, are you playing this ${weekday}? Answer by ${deadline}. If you don’t, the time goes back on sale. Calling ${venue}? Give them this code: ${code}.`,
     playing: (venue: string, weekday: string, time: string) =>
       `You’re playing. ${venue} is keeping your time: see you ${weekday} at ${time}.`,
     letGo: (weekday: string) =>
       `You’re not playing this week, so the time is back on sale. Your weekly game carries on next ${weekday}.`,
     missed: (deadline: string, venue: string, code: string) =>
-      `Too late to answer: nobody confirmed by ${deadline}, so the time went back on sale. To play anyway, call ${venue} and give them ${code}.`,
+      `Too late to answer: nobody confirmed by ${deadline}, so the time went back on sale. To play anyway, call ${venue} and give them this code: ${code}.`,
     changed: (venue: string, code: string) =>
-      `${venue} changed this week’s booking time. For more information, call them and give them ${code}.`,
+      `${venue} changed this week’s booking time. For more information, call them and give them this code: ${code}.`,
     playingButton: "I’m playing",
     notThisWeek: "Not this week",
     failed: "That didn’t go through. Try again.",
@@ -490,15 +490,15 @@ const ar: Words = {
   regular: {
     meta: "موعدك الأسبوعي · حجز",
     waiting: (name, weekday, deadline, venue, code) =>
-      `${name}، هل ستلعب يوم ${weekday} هذا؟ ردّ قبل ${deadline}، وإلا يعود الموعد متاحًا للحجز. إذا اتصلت بـ${venue}، أعطهم الرمز ${code}.`,
+      `${name}، هل ستلعب يوم ${weekday} هذا؟ ردّ قبل ${deadline}، وإلا يعود الموعد متاحًا للحجز. إذا اتصلت بـ${venue}، أعطهم هذا الرمز: ${code}.`,
     playing: (venue, weekday, time) =>
       `ستلعب. ${venue} يحتفظ بموعدك: نراك يوم ${weekday} الساعة ${time}.`,
     letGo: (weekday) =>
       `لن تلعب هذا الأسبوع، فعاد الموعد متاحًا للحجز. موعدك الأسبوعي مستمر يوم ${weekday} القادم.`,
     missed: (deadline, venue, code) =>
-      `فات وقت الرد: لم يؤكد أحد قبل ${deadline}، فعاد الموعد متاحًا للحجز. إن أردت اللعب، اتصل بـ${venue} وأعطهم الرمز ${code}.`,
+      `فات وقت الرد: لم يؤكد أحد قبل ${deadline}، فعاد الموعد متاحًا للحجز. إن أردت اللعب، اتصل بـ${venue} وأعطهم هذا الرمز: ${code}.`,
     changed: (venue, code) =>
-      `غيّر ${venue} موعد حجز هذا الأسبوع. لمزيد من المعلومات، اتصل بهم وأعطهم الرمز ${code}.`,
+      `غيّر ${venue} موعد حجز هذا الأسبوع. لمزيد من المعلومات، اتصل بهم وأعطهم هذا الرمز: ${code}.`,
     playingButton: "سألعب",
     notThisWeek: "ليس هذا الأسبوع",
     failed: "لم يتم ذلك. حاول مرة أخرى.",
