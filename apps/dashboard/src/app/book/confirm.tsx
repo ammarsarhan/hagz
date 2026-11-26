@@ -95,6 +95,7 @@ export default function ConfirmBooking() {
         <BottomBar
           title={t("screens.book.bar", { name: params.name, price: money(total) })}
           detail={t("screens.book.paidHere")}
+          medium
         >
           <BarButton
             label={t("screens.book.add")}

@@ -17,9 +17,12 @@ import { Text } from "./text";
 export function BottomBar({
   title,
   detail,
+  medium = false,
   children,
 }: {
   title: string;
+  // The title in medium (a new booking's "Karim Adel · 900 EGP").
+  medium?: boolean;
   // A string, or a node of its own (a link: "Add a note").
   detail?: ReactNode;
   children: ReactNode;
@@ -29,7 +32,7 @@ export function BottomBar({
       <View className="-mx-5 -mt-3 mb-3 h-px bg-border" />
       <View className="flex-row items-center">
         <View className="me-3 flex-1">
-          <Text className="text-subtitle">{title}</Text>
+          <Text className={`text-subtitle ${medium ? "font-medium" : ""}`}>{title}</Text>
           {typeof detail === "string" ? (
             <Text className="text-caption text-ink-2">{detail}</Text>
           ) : (
