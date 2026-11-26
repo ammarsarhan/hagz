@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 import { colors } from "@/lib/colors";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
+import { Tile } from "./tile";
 
 // A booking's ⋯ (Figma D9 598:3): whose booking and when, then a tile for each thing to do to it,
 // each drawing what it does rather than an icon list: Move it to a free time, Swap it with another
@@ -58,31 +59,6 @@ export function BookingMenu({
         />
       </View>
     </Sheet>
-  );
-}
-
-function Tile({
-  title,
-  body,
-  art,
-  onPress,
-}: {
-  title: string;
-  body: string;
-  art: React.ReactNode;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}, ${body}`}
-      onPress={onPress}
-      className="flex-1 rounded-2xl border border-border px-4 pt-5 pb-4 active:opacity-70"
-    >
-      <View className="items-center">{art}</View>
-      <Text className="mt-4 text-subtitle font-semibold">{title}</Text>
-      <Text className="mt-0.5 text-caption text-ink-2">{body}</Text>
-    </Pressable>
   );
 }
 
