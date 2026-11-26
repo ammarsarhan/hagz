@@ -173,7 +173,7 @@ const en = {
           failed: "Couldn't load this regular. Go back and try again.",
           more: "More",
           time: "{{day}}, {{hours}}",
-          since: "since {{date}}",
+          since: "Since {{date}}",
           phone: "Phone",
           coming: "Coming weeks",
           noneComing: "No weeks reserved ahead.",

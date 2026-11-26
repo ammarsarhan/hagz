@@ -86,7 +86,6 @@ export default function RegularPage() {
       hours: `${hourLabel(t, one.startHour)} – ${hourLabel(t, one.startHour + one.slotCount)}`,
     }),
     one.ground.name,
-    t(`${p}.since`, { date: since }),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -125,6 +124,8 @@ export default function RegularPage() {
           {one.customer.name}
         </Text>
         <Text className="mt-1.5 text-subtitle text-ink-2">{line}</Text>
+        {/* Since when, on a line of its own right under (user, 2026-11-26). */}
+        <Text className="text-subtitle text-ink-2">{t(`${p}.since`, { date: since })}</Text>
 
         {phone ? (
           <View className="mt-5 flex-row items-center border-y border-border py-5">
