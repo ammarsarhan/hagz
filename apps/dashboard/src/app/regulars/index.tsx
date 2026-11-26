@@ -123,11 +123,12 @@ export default function Regulars() {
           <BottomBar
             title={pending.ids
               .map((id, index) =>
+                // "1) Hossam, 2) Youssef" (user, 2026-11-26).
                 t("screens.regulars.reorder.who", {
                   name: firstName(
                     pendingGroup?.find((regular) => regular.id === id)?.customer.name ?? "",
                   ),
-                  place: t("screens.regulars.reorder.place", { count: index + 1, ordinal: true }),
+                  place: index + 1,
                 }),
               )
               .join(t("screens.regulars.new.comma"))}
@@ -551,10 +552,7 @@ function Row({
     paused && regular.pausedAt
       ? t("screens.regulars.paused", { date: dateLabel(regular.pausedAt) })
       : weeks > 0
-        ? t("screens.regulars.confirmed", {
-            confirmed: regular.reliability.confirmed,
-            count: weeks,
-          })
+        ? confirmedLine(t, regular.reliability.confirmed, weeks)
         : null,
   ]
     .filter(Boolean)
@@ -586,6 +584,16 @@ function Row({
     </Pressable>
   );
 }
+
+// How the weeks have gone, said plainly (user, 2026-11-26: "confirmed 1 of 1 week" read oddly):
+// "confirmed every week", "confirmed their first week", "hasn't confirmed a week yet", else
+// "confirmed 7 of 8 weeks".
+const confirmedLine = (t: TFunction, confirmed: number, weeks: number) =>
+  confirmed === weeks
+    ? t("screens.regulars.confirmedAll", { count: weeks })
+    : confirmed === 0
+      ? t("screens.regulars.confirmedNone", { count: weeks })
+      : t("screens.regulars.confirmed", { confirmed, count: weeks });
 
 // "12 Nov", in the venue's time (Egypt for now), with the year when it isn't this one.
 const dateLabel = (at: string) => {
