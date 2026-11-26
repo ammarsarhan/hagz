@@ -169,7 +169,7 @@ export default function ConfirmRegular() {
         {/* The time picked, with the way back to change it. */}
         <View className="flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-4 py-4">
           <View className="flex-1">
-            <Text className="text-[16px] leading-[21px]">
+            <Text className="text-[16px] leading-[21px] font-medium">
               {t(`${c}.time`, { day, hours })}
             </Text>
             {/* The ground on a line of its own, under the time (user, 2026-11-26). */}

@@ -330,7 +330,7 @@ function FreeTime({
       onPress={onPress}
       className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 active:opacity-70 ${SOFT_FILL}`}
     >
-      <Text className="flex-1 text-[14px] leading-[19px] font-medium">{label}</Text>
+      <Text className="flex-1 text-[14px] leading-[19px]">{label}</Text>
       <View className="flex-row gap-1.5">
         {weeks.map((free, index) => (
           <View
