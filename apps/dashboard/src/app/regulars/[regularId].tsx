@@ -280,7 +280,7 @@ function ComingWeeks({ regular, timezone }: { regular: Detail; timezone: string 
     return <Text className="text-body text-ink-2">{t(`${p}.noneComing`)}</Text>;
   }
   return (
-    <View className="gap-3">
+    <View className="gap-5">
       {weeks.map(({ date, booking }) => {
         const confirmed = booking?.status === "CONFIRMED";
         const label = !booking
