@@ -170,7 +170,7 @@ const en = {
         confirmed_other: "confirmed {{confirmed}} of {{count}} weeks",
         paused: "paused since {{date}}",
         new: {
-          title: "New weekly game",
+          title: "Add regular",
           subtitle_one: "Pick the day and time. {{count}} week is reserved ahead.",
           subtitle_other: "Pick the day and time. {{count}} weeks are reserved ahead.",
           dates: "{{day}} · {{dates}}",
