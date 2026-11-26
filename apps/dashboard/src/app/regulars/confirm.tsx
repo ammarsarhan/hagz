@@ -253,7 +253,8 @@ function Fact({
   onChange,
 }: {
   label: string;
-  // The label as big as the value: First week and Last week (user, 2026-11-26).
+  // First week and Last week (user, 2026-11-26): the label as big as a name, the date under it
+  // smaller and in regular weight.
   bigLabel?: boolean;
   value: string;
   // A grey line under the value: the number under the name (user, 2026-11-26).
@@ -268,7 +269,14 @@ function Fact({
         >
           {label}
         </Text>
-        <Text className="mt-1.5 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
+        <Text
+          className={
+            bigLabel
+              ? "mt-1 text-[14px] leading-[19px]"
+              : "mt-1.5 text-[16px] leading-[21px] font-medium"
+          }
+          numberOfLines={1}
+        >
           {value}
         </Text>
         {detail ? (
