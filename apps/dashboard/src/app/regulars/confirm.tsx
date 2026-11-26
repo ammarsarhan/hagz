@@ -45,6 +45,8 @@ type Params = {
   // The weeks ahead, from the first, and whether each was free ("1") or taken ("0").
   dates: string;
   free: string;
+  // First names of the regulars it overlaps, whose line it joins (empty: none).
+  behind?: string;
   name: string;
   phone: string;
   customer: string;
@@ -249,10 +251,14 @@ export default function ConfirmRegular() {
           gap={22}
           steps={[
             {
-              label: t(`${c}.reserved`, {
-                count: reserved.length,
-                dates: `${firstDate(reserved)}${datesLabel(t, reserved)}`,
-              }),
+              // Nothing to reserve, only a place in line: whoever is ahead keeps the time.
+              label:
+                reserved.length === 0 && params.behind
+                  ? t(`${c}.inLine`, { names: params.behind })
+                  : t(`${c}.reserved`, {
+                      count: reserved.length,
+                      dates: `${firstDate(reserved)}${datesLabel(t, reserved)}`,
+                    }),
               detail:
                 [
                   joins.length > 0
@@ -262,9 +268,13 @@ export default function ConfirmRegular() {
                         name: params.name.trim().split(/\s+/)[0] ?? params.name,
                       })
                     : null,
-                  taken.length > 0
-                    ? t(`${c}.skipped`, { count: taken.length, dates: datesLabel(t, taken) })
-                    : null,
+                  params.behind
+                    ? reserved.length === 0
+                      ? t(`${c}.inLineDetail`)
+                      : t(`${c}.alsoInLine`, { names: params.behind })
+                    : taken.length > 0
+                      ? t(`${c}.skipped`, { count: taken.length, dates: datesLabel(t, taken) })
+                      : null,
                 ]
                   .filter(Boolean)
                   .join("\n") || undefined,

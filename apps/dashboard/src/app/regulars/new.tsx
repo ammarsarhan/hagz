@@ -22,6 +22,7 @@ import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HoldFor } from "@/components/hold-for";
+import { IconChevronDown } from "@/components/icons";
 import { MoveSheet } from "@/components/regular-sheets";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
@@ -53,6 +54,10 @@ import { push } from "@/lib/navigation";
 // its price a week and how many of the weeks it's free; Next asks who it's for.
 //
 // With a regularId it changes that regular's time instead (Figma 656:158): see `changing`.
+//
+// A time a regular already plays is one row, tapped to open its hours (user, 2026-11-26): those
+// hours can be picked too, on their own or with free hours either side, to join the line behind
+// them, whole or in part. Whoever is first in line gets each week; Regulars reorders them.
 
 // Until the first answer says the venue's; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
@@ -69,6 +74,18 @@ const PICK_MS = 160;
 interface Hour {
   hour: number;
   weeks: (Slot | null)[];
+  // Its price a week, whether or not it's free.
+  price: number;
+  // Inside a regular's time: picked, the new one is in line behind them.
+  line: boolean;
+}
+
+// Regulars playing hours that overlap, as one stretch of hours from `start` to `end`.
+interface Block {
+  key: string;
+  start: number;
+  end: number;
+  regulars: Regular[];
 }
 
 export default function NewRegular() {
@@ -103,6 +120,8 @@ export default function NewRegular() {
     setWeekday(changing.dayOfWeek);
     setPicked(changing.ground.id);
   }
+  // Which regular times are open, showing their hours.
+  const [openBlocks, setOpenedBlocks] = useState<Set<string>>(() => new Set());
   // Its waiting weeks' bookings: their hours are its own to move into.
   const own = (changing?.reservations ?? [])
     .filter((booking) => booking.status === "UNCONFIRMED")
@@ -128,6 +147,31 @@ export default function NewRegular() {
   const shortest = ground?.minimumSlots ?? 1;
   const longest = ground?.maximumSlots ?? 3;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
+
+  // Regulars already playing on the ground that weekday, and their times as blocks of hours.
+  const playing = regulars
+    .filter(
+      (regular) =>
+        regular.status === "ACTIVE" &&
+        regular.id !== changing?.id &&
+        regular.dayOfWeek === weekday &&
+        regular.ground.id === ground?.id,
+    )
+    .sort((a, b) => a.startHour - b.startHour);
+  const blocks: Block[] = [];
+  for (const regular of playing) {
+    const end = regular.startHour + regular.slotCount;
+    const last = blocks.at(-1);
+    if (last && regular.startHour < last.end) {
+      last.end = Math.max(last.end, end);
+      last.regulars.push(regular);
+    } else blocks.push({ key: regular.id, start: regular.startHour, end, regulars: [regular] });
+  }
+  const coveredKey = blocks
+    .flatMap((block) =>
+      Array.from({ length: block.end - block.start }, (_, index) => block.start + index),
+    )
+    .join(",");
 
   // The ground's free hours on the weekday, each on every week ahead.
   // Worked out again only when an answer changes (useQueries hands back a new array every render,
@@ -164,12 +208,18 @@ export default function NewRegular() {
         slot?.status === "AVAILABLE" || (slot?.bookingId != null && mine.has(slot.bookingId));
       return slot && open && Date.parse(slot.startsAt) > now ? slot : null;
     };
+    const covered = new Set(coveredKey.split(",").filter(Boolean).map(Number));
     return starts
-      .map((hour): Hour => ({ hour, weeks: byWeek.map((hours) => freeAt(hours, hour)) }))
-      .filter((one) => one.weeks.some(Boolean));
+      .map((hour): Hour => ({
+        hour,
+        weeks: byWeek.map((hours) => freeAt(hours, hour)),
+        price: byWeek.find((hours) => hours.has(hour))?.get(hour)?.price ?? 0,
+        line: covered.has(hour),
+      }))
+      .filter((one) => one.line || one.weeks.some(Boolean));
     // `weeks` is read through `answers`, which changes whenever it does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groundId, loaded, answers, dates, timezone, now, own]);
+  }, [groundId, loaded, answers, dates, timezone, now, own, coveredKey]);
 
   // Free hours next to each other, so a game can run on from one into the next.
   const joined = (a: number) => run[a + 1]?.hour === (run[a]?.hour ?? -2) + 1;
@@ -210,17 +260,66 @@ export default function NewRegular() {
   });
   const freeWeeks = pickedWeeks.filter(Boolean).length;
   const short = chosen !== null && pickedHours.length < shortest;
-  const pickedPrice = (pickedWeeks.find(Boolean) ?? []).reduce((sum, slot) => sum + slot.price, 0);
+  const pickedPrice = pickedHours.reduce((sum, one) => sum + one.price, 0);
   const pickStart = pickedHours[0]?.hour ?? 0;
   const pickLength = pickedHours.length;
+  // The regulars the pick overlaps: it joins the line behind them.
+  const behind = chosen
+    ? playing.filter(
+        (regular) =>
+          regular.startHour < pickStart + pickLength &&
+          pickStart < regular.startHour + regular.slotCount,
+      )
+    : [];
+  const behindNames = behind
+    .map((regular) => regular.customer.name.trim().split(/\s+/)[0] ?? regular.customer.name)
+    .join(t("screens.regulars.new.comma"));
+  // Open: tapped open, or holding some of the pick.
+  const isOpen = (block: Block) =>
+    openBlocks.has(block.key) ||
+    (chosen !== null && block.start < pickStart + pickLength && pickStart < block.end);
+  // A shut block's hours aren't on screen to be found under the finger.
+  const hidden = new Set(
+    blocks
+      .filter((block) => !isOpen(block))
+      .flatMap((block) =>
+        Array.from({ length: block.end - block.start }, (_, index) => block.start + index),
+      ),
+  );
+  const toggle = (block: Block) => {
+    void Haptics.selectionAsync();
+    const open = isOpen(block);
+    // Shutting it lets go of a pick inside it.
+    if (open && chosen && block.start < pickStart + pickLength && pickStart < block.end) {
+      setPick(null);
+    }
+    setOpenedBlocks((before) => {
+      const next = new Set(before);
+      if (open) next.delete(block.key);
+      else next.add(block.key);
+      return next;
+    });
+  };
 
   // Where each free hour sits in the list, for finding the one under the finger.
   const groupTops = useRef(new Map<number, number>());
   const rowPlaces = useRef(new Map<number, { group: number; y: number; height: number }>());
+  // Each regular's row, for a tap to open its block.
+  const regularPlaces = useRef(new Map<string, { group: number; y: number; height: number }>());
+  const blockAt = (y: number) =>
+    blocks.find((block) =>
+      block.regulars.some((regular) => {
+        const place = regularPlaces.current.get(regular.id);
+        if (!place) return false;
+        const top = (groupTops.current.get(place.group) ?? 0) + place.y;
+        return y >= top && y <= top + place.height;
+      }),
+    );
   const indexAt = (y: number) => {
     let nearest = -1;
     let distance = Infinity;
     run.forEach((one, index) => {
+      if (hidden.has(one.hour)) return;
       const place = rowPlaces.current.get(one.hour);
       if (!place) return;
       const top = (groupTops.current.get(place.group) ?? 0) + place.y;
@@ -266,6 +365,11 @@ export default function NewRegular() {
     .runOnJS(true)
     .onEnd((event, success) => {
       if (!success) return;
+      const block = blockAt(event.y);
+      if (block) {
+        toggle(block);
+        return;
+      }
       const { index, on } = indexAt(event.y);
       if (!on || index < 0) return;
       void Haptics.selectionAsync();
@@ -286,9 +390,9 @@ export default function NewRegular() {
   const placeGroup = (hour: number) => (event: LayoutChangeEvent) =>
     groupTops.current.set(hour, event.nativeEvent.layout.y);
   // The same function every render, so a row that hasn't changed doesn't draw again.
-  const placeRow = useCallback((hour: number, event: LayoutChangeEvent) => {
+  const placeRow = useCallback((hour: number, group: number, event: LayoutChangeEvent) => {
     const { y, height } = event.nativeEvent.layout;
-    rowPlaces.current.set(hour, { group: hour, y, height });
+    rowPlaces.current.set(hour, { group, y, height });
   }, []);
   const latest = useRef<(hour: number) => void>(() => undefined);
   latest.current = (hour: number) => {
@@ -298,25 +402,36 @@ export default function NewRegular() {
   };
   const tapHour = useCallback((hour: number) => latest.current(hour), []);
 
-  // Regulars already playing on the ground that weekday, at the hour they start.
-  const playing = regulars.filter(
-    (regular) =>
-      regular.status === "ACTIVE" &&
-      regular.id !== changing?.id &&
-      regular.dayOfWeek === weekday &&
-      regular.ground.id === ground?.id,
+  // Down the day: each free hour on its own, and each regular time as its block.
+  const groups = [
+    ...run
+      .filter((one) => !one.line)
+      .map((one) => ({ hour: one.hour, end: one.hour + 1, free: one, block: null })),
+    ...blocks.map((block) => ({ hour: block.start, end: block.end, free: null, block })),
+  ].sort((a, b) => a.hour - b.hour);
+  const freeRow = (one: Hour, group: number, line: boolean) => (
+    <FreeHour
+      key={`free-${one.hour}`}
+      hour={one.hour}
+      group={group}
+      line={line}
+      label={
+        line
+          ? t("screens.regulars.new.lineHour", {
+              hours: `${hourLabel(t, one.hour)} – ${hourLabel(t, one.hour + 1)}`,
+              price: money(one.price),
+            })
+          : t("screens.move.zone", { ground: ground?.name ?? "", price: money(one.price) })
+      }
+      weeks={weeksKey(one)}
+      on={(() => {
+        const index = run.indexOf(one);
+        return chosen !== null && index >= chosen.from && index <= chosen.to;
+      })()}
+      onAccessibilityTap={tapHour}
+      onPlace={placeRow}
+    />
   );
-  const rows = [
-    ...run.map((one) => ({ hour: one.hour, free: one, regular: null })),
-    ...playing.map((regular) => ({ hour: regular.startHour, free: null, regular })),
-  ].sort((a, b) => a.hour - b.hour || (a.regular ? -1 : 1));
-  // Under each hour: its regulars, then its free time.
-  const groups: { hour: number; rows: typeof rows }[] = [];
-  for (const row of rows) {
-    const last = groups.at(-1);
-    if (last?.hour === row.hour) last.rows.push(row);
-    else groups.push({ hour: row.hour, rows: [row] });
-  }
 
   // One object while asked: HoldFor opens its first sheet again whenever the target changes.
   const groundKey = ground?.id ?? "";
@@ -351,6 +466,9 @@ export default function NewRegular() {
     changing.dayOfWeek === weekday &&
     changing.startHour === pickStart &&
     changing.slotCount === pickLength;
+  // Joining a line needs no free week; changing a time still does.
+  const blocked =
+    short || same || (freeWeeks === 0 && (changing !== undefined || behind.length === 0));
   const letter = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "narrow" });
   const long = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" });
   // Sunday the 4th of January 2026, and the six days after it.
@@ -371,21 +489,27 @@ export default function NewRegular() {
                   ? t("screens.hold.tooShort", { count: shortest })
                   : same
                     ? t("screens.regulars.change.now")
-                    : freeWeeks === 0
-                      ? t("screens.regulars.new.noWeek")
-                      : t("screens.regulars.new.pickedDetail", {
-                          price: money(pickedPrice),
+                    : behind.length > 0 && !changing
+                      ? t("screens.regulars.new.behind", {
+                          names: behindNames,
                           free: freeWeeks,
                           count: dates.length,
                         })
+                      : freeWeeks === 0
+                        ? t("screens.regulars.new.noWeek")
+                        : t("screens.regulars.new.pickedDetail", {
+                            price: money(pickedPrice),
+                            free: freeWeeks,
+                            count: dates.length,
+                          })
               }
             >
               <BarButton
                 label={t("screens.book.next")}
                 primary
-                incomplete={short || freeWeeks === 0 || same}
+                incomplete={blocked}
                 onPress={() => {
-                  if (short || freeWeeks === 0 || same) return;
+                  if (blocked) return;
                   if (changing) setMoving(true);
                   else setAsking(true);
                 }}
@@ -483,31 +607,47 @@ export default function NewRegular() {
                         {hourLabel(t, group.hour)}
                       </Text>
                       <Text className="text-[13px] leading-[17px] text-ink-3">
-                        {hourLabel(t, group.hour + (group.rows[0]?.regular?.slotCount ?? 1))}
+                        {hourLabel(t, group.end)}
                       </Text>
                     </View>
                     <View className="flex-1 gap-4">
-                      {group.rows.map((row) =>
-                        row.regular ? (
-                          <RegularRow key={row.regular.id} regular={row.regular} />
-                        ) : row.free ? (
-                          <FreeHour
-                            key={`free-${row.hour}`}
-                            hour={row.hour}
-                            label={t("screens.move.zone", {
-                              ground: ground?.name ?? "",
-                              price: money(row.free.weeks.find(Boolean)?.price ?? 0),
-                            })}
-                            weeks={weeksKey(row.free)}
-                            on={(() => {
-                              const index = run.indexOf(row.free);
-                              return chosen !== null && index >= chosen.from && index <= chosen.to;
-                            })()}
-                            onAccessibilityTap={tapHour}
-                            onPlace={placeRow}
-                          />
-                        ) : null,
-                      )}
+                      {group.free
+                        ? freeRow(group.free, group.hour, false)
+                        : group.block
+                          ? [
+                              ...group.block.regulars.map((regular, index) => (
+                                <RegularRow
+                                  key={regular.id}
+                                  regular={regular}
+                                  chevron={
+                                    index === 0
+                                      ? isOpen(group.block as Block)
+                                        ? "up"
+                                        : "down"
+                                      : null
+                                  }
+                                  onToggle={() => toggle(group.block as Block)}
+                                  onLayout={(event) => {
+                                    const { y, height } = event.nativeEvent.layout;
+                                    regularPlaces.current.set(regular.id, {
+                                      group: group.hour,
+                                      y,
+                                      height,
+                                    });
+                                  }}
+                                />
+                              )),
+                              ...(isOpen(group.block)
+                                ? run
+                                    .filter(
+                                      (one) =>
+                                        one.hour >= (group.block as Block).start &&
+                                        one.hour < (group.block as Block).end,
+                                    )
+                                    .map((one) => freeRow(one, group.hour, true))
+                                : []),
+                            ]
+                          : null}
                     </View>
                   </View>
                 ))}
@@ -543,6 +683,7 @@ export default function NewRegular() {
               currency,
               dates: dates.join(","),
               free: pickedWeeks.map((week) => (week ? "1" : "0")).join(","),
+              behind: behindNames,
               name: choice.name,
               phone: choice.phone ?? "",
               customer: JSON.stringify(choice.customer),
@@ -584,6 +725,8 @@ type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 // Calendar's chips do. Drawn again only when what it shows changes.
 const FreeHour = memo(function FreeHour({
   hour,
+  group,
+  line,
   label,
   weeks,
   on,
@@ -591,11 +734,14 @@ const FreeHour = memo(function FreeHour({
   onPlace,
 }: {
   hour: number;
+  group: number;
+  // One of a regular's hours, opened: grey dashed, its own hours in the words.
+  line: boolean;
   label: string;
   weeks: string;
   on: boolean;
   onAccessibilityTap: (hour: number) => void;
-  onPlace: (hour: number, event: LayoutChangeEvent) => void;
+  onPlace: (hour: number, group: number, event: LayoutChangeEvent) => void;
 }) {
   const picked = useSharedValue(on ? 1 : 0);
   useEffect(() => {
@@ -630,8 +776,8 @@ const FreeHour = memo(function FreeHour({
       accessibilityLabel={label}
       accessibilityState={{ selected: on }}
       onAccessibilityTap={() => onAccessibilityTap(hour)}
-      onLayout={(event) => onPlace(hour, event)}
-      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 ${SOFT_FILL}`}
+      onLayout={(event) => onPlace(hour, group, event)}
+      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed px-3.5 ${line ? "border-ink-3 bg-white" : `border-primary ${SOFT_FILL}`}`}
     >
       <Text className="flex-1 text-[14px] leading-[19px]">{label}</Text>
       {dots(false)}
@@ -651,18 +797,41 @@ const FreeHour = memo(function FreeHour({
 // What a free hour's dots show, as a string, so an unchanged row compares equal.
 const weeksKey = (one: Hour) => one.weeks.map((week) => (week ? "1" : "0")).join("");
 
-// A regular already playing then: the weekly pale blue bar, who, and the ground.
-function RegularRow({ regular }: { regular: Regular }) {
+// A regular already playing then: the weekly pale blue bar, who, and the ground. The first of a
+// block has a chevron: tapped, the block opens its hours to pick from.
+function RegularRow({
+  regular,
+  chevron,
+  onToggle,
+  onLayout,
+}: {
+  regular: Regular;
+  chevron: "up" | "down" | null;
+  onToggle: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
+}) {
   const { t } = useTranslation();
   return (
-    <View className="h-[52px] flex-row items-center">
+    <View
+      accessible
+      accessibilityRole="button"
+      accessibilityState={{ expanded: chevron === "up" }}
+      onAccessibilityTap={onToggle}
+      onLayout={onLayout}
+      className="h-[52px] flex-row items-center"
+    >
       <View className={`h-11 w-1.5 rounded-[3px] ${WEEKLY}`} />
-      <View className="ms-3.5">
+      <View className="ms-3.5 flex-1">
         <Text className="text-[16px] leading-[21px] font-medium">{regular.customer.name}</Text>
         <Text className="text-[14px] leading-[19px] text-ink-2">
           {t("screens.regulars.new.weekly", { ground: regular.ground.name ?? "" })}
         </Text>
       </View>
+      {chevron ? (
+        <View style={chevron === "up" ? { transform: [{ rotate: "180deg" }] } : undefined}>
+          <IconChevronDown size={20} color={colors.ink3} strokeWidth={2} />
+        </View>
+      ) : null}
     </View>
   );
 }
