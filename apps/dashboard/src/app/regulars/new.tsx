@@ -12,8 +12,12 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  FadeIn,
   FadeInDown,
+  FadeInUp,
   FadeOutDown,
+  FadeOutUp,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -69,6 +73,11 @@ const WEEKLY = "bg-[#c9d6ff]";
 const HOLD_MS = 250;
 // How long a picked hour takes to fill in, and the bar to come up.
 const PICK_MS = 160;
+// The accordion: how long a regular's hours take to open or shut, the rows under moving with them,
+// and how far behind each other its hours come in.
+const OPEN_MS = 220;
+const STAGGER_MS = 35;
+const OPENING = LinearTransition.duration(OPEN_MS);
 
 // One hour on the ground, on each of the weeks ahead (null: taken, closed or gone that week).
 interface Hour {
@@ -409,12 +418,13 @@ export default function NewRegular() {
       .map((one) => ({ hour: one.hour, end: one.hour + 1, free: one, block: null })),
     ...blocks.map((block) => ({ hour: block.start, end: block.end, free: null, block })),
   ].sort((a, b) => a.hour - b.hour);
-  const freeRow = (one: Hour, group: number, line: boolean) => (
+  const freeRow = (one: Hour, group: number, line: boolean, index = 0) => (
     <FreeHour
       key={`free-${one.hour}`}
       hour={one.hour}
       group={group}
       line={line}
+      order={index}
       label={
         line
           ? t("screens.regulars.new.lineHour", {
@@ -600,7 +610,13 @@ export default function NewRegular() {
             <GestureDetector gesture={gesture}>
               <View className="mt-3.5 gap-4">
                 {groups.map((group) => (
-                  <View key={group.hour} className="flex-row" onLayout={placeGroup(group.hour)}>
+                  // Each moves to its new place as a block above opens or shuts.
+                  <Animated.View
+                    key={group.hour}
+                    layout={OPENING}
+                    className="flex-row"
+                    onLayout={placeGroup(group.hour)}
+                  >
                     {/* When it starts in weight, when it ends in grey under it. */}
                     <View className="w-14 pt-[7px]">
                       <Text className="text-[15px] leading-5 font-semibold">
@@ -644,12 +660,12 @@ export default function NewRegular() {
                                         one.hour >= (group.block as Block).start &&
                                         one.hour < (group.block as Block).end,
                                     )
-                                    .map((one) => freeRow(one, group.hour, true))
+                                    .map((one, index) => freeRow(one, group.hour, true, index))
                                 : []),
                             ]
                           : null}
                     </View>
-                  </View>
+                  </Animated.View>
                 ))}
               </View>
             </GestureDetector>
@@ -727,6 +743,7 @@ const FreeHour = memo(function FreeHour({
   hour,
   group,
   line,
+  order,
   label,
   weeks,
   on,
@@ -735,8 +752,10 @@ const FreeHour = memo(function FreeHour({
 }: {
   hour: number;
   group: number;
-  // One of a regular's hours, opened: grey dashed, its own hours in the words.
+  // One of a regular's hours, opened: grey dashed, its own hours in the words. It slides in from
+  // under the row above, `order` beats after the hour before it, and back up as the block shuts.
   line: boolean;
+  order: number;
   label: string;
   weeks: string;
   on: boolean;
@@ -770,7 +789,12 @@ const FreeHour = memo(function FreeHour({
     </View>
   );
   return (
-    <View
+    <Animated.View
+      entering={
+        line ? FadeInUp.duration(OPEN_MS).delay(order * STAGGER_MS) : FadeIn.duration(PICK_MS)
+      }
+      exiting={line ? FadeOutUp.duration(OPEN_MS * 0.6) : undefined}
+      layout={OPENING}
       accessible
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -790,7 +814,7 @@ const FreeHour = memo(function FreeHour({
         <Text className="flex-1 text-[14px] leading-[19px] text-on-primary">{label}</Text>
         {dots(true)}
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 });
 
@@ -811,6 +835,14 @@ function RegularRow({
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const { t } = useTranslation();
+  // The chevron turns over as its block opens, rather than flipping.
+  const turned = useSharedValue(chevron === "up" ? 1 : 0);
+  useEffect(() => {
+    turned.value = withTiming(chevron === "up" ? 1 : 0, { duration: OPEN_MS });
+  }, [chevron, turned]);
+  const turning = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${turned.value * 180}deg` }],
+  }));
   return (
     <View
       accessible
@@ -828,9 +860,9 @@ function RegularRow({
         </Text>
       </View>
       {chevron ? (
-        <View style={chevron === "up" ? { transform: [{ rotate: "180deg" }] } : undefined}>
+        <Animated.View style={turning}>
           <IconChevronDown size={20} color={colors.ink3} strokeWidth={2} />
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
