@@ -25,6 +25,8 @@ import { CloseButton } from "./nav";
 const DURATION = 220;
 // A `scrollable` sheet stops growing at this share of the screen.
 const MAX_SHARE = 0.75;
+// With the keyboard up, the room a sheet keeps between its top and the status bar.
+const TOP_GAP = 12;
 
 interface SheetProps {
   visible: boolean;
@@ -67,6 +69,28 @@ export function Sheet({
   // the window (Android).
   const [area, setArea] = useState(0);
   const [panelTop, setPanelTop] = useState<number | null>(null);
+  // The keyboard's height while it's up: the panel rises by it (KeyboardAvoidingView), so a tall
+  // panel is cut to what's left under the status bar, and drops the home indicator's room, which
+  // the keyboard covers.
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (event) => setKeyboard(event.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboard(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const tallest = Math.min(
+    screen * MAX_SHARE,
+    keyboard > 0 ? screen - keyboard - insets.top - TOP_GAP : Infinity,
+  );
 
   useEffect(() => {
     if (visible) setMounted(true);
@@ -106,9 +130,9 @@ export function Sheet({
             onLayout={(event) => setPanelTop(event.nativeEvent.layout.y)}
             className="rounded-t-sheet bg-white px-6 pt-2.5"
             style={{
-              paddingBottom: insets.bottom + 12,
+              paddingBottom: keyboard > 0 ? 12 : insets.bottom + 12,
               direction: isRTL ? "rtl" : "ltr",
-              ...(scrollable && { maxHeight: screen * MAX_SHARE }),
+              ...(scrollable && { maxHeight: tallest }),
               transform: [
                 // Down by the whole screen, so even a tall panel slides all the way out.
                 {
