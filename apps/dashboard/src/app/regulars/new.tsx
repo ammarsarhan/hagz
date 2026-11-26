@@ -223,7 +223,7 @@ export default function NewRegular() {
               {groups.map((group) => (
                 <View key={group.hour} className="flex-row">
                   {/* When it starts in weight, when it ends in grey under it. */}
-                  <View className="w-14 pt-0.5">
+                  <View className="w-14 pt-[7px]">
                     <Text className="text-[15px] leading-5 font-semibold">
                       {hourLabel(t, group.hour)}
                     </Text>
@@ -299,7 +299,7 @@ function FreeTime({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`h-11 flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 active:opacity-70 ${SOFT_FILL}`}
+      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 active:opacity-70 ${SOFT_FILL}`}
     >
       <Text className="flex-1 text-[14px] leading-[19px] font-medium">{label}</Text>
       <View className="flex-row gap-1.5">
@@ -318,8 +318,8 @@ function FreeTime({
 function RegularRow({ regular }: { regular: Regular }) {
   const { t } = useTranslation();
   return (
-    <View className="flex-row items-center">
-      <View className={`h-10 w-1.5 rounded-[3px] ${WEEKLY}`} />
+    <View className="h-[52px] flex-row items-center">
+      <View className={`h-11 w-1.5 rounded-[3px] ${WEEKLY}`} />
       <View className="ms-3.5">
         <Text className="text-[16px] leading-[21px] font-medium">{regular.customer.name}</Text>
         <Text className="text-[14px] leading-[19px] text-ink-2">
