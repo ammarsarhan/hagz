@@ -167,13 +167,17 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
           <BottomBar
             title={t("screens.swap.barTitle", { name, other })}
             detail={
-              <Text
+              // A Pressable, not a pressable Text, which iOS greys while pressed.
+              <Pressable
                 accessibilityRole="button"
-                className="text-caption text-ink underline"
                 onPress={() => setNoting(true)}
+                hitSlop={8}
+                className="self-start active:opacity-70"
               >
-                {t(note.trim() ? "screens.swap.editNote" : "screens.swap.addNote")}
-              </Text>
+                <Text className="text-caption text-ink underline">
+                  {t(note.trim() ? "screens.swap.editNote" : "screens.swap.addNote")}
+                </Text>
+              </Pressable>
             }
           >
             <BarButton

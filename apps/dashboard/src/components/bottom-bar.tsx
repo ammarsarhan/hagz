@@ -12,7 +12,7 @@ export function BottomBar({
   children,
 }: {
   title: string;
-  // A string, or text with a link in it ("Both are told · Add a note").
+  // A string, or a node of its own (a link: "Add a note").
   detail?: ReactNode;
   children: ReactNode;
 }) {
@@ -22,7 +22,11 @@ export function BottomBar({
       <View className="flex-row items-center">
         <View className="me-3 flex-1">
           <Text className="text-subtitle">{title}</Text>
-          {detail ? <Text className="text-caption text-ink-2">{detail}</Text> : null}
+          {typeof detail === "string" ? (
+            <Text className="text-caption text-ink-2">{detail}</Text>
+          ) : (
+            detail
+          )}
         </View>
         <View className="flex-row gap-2">{children}</View>
       </View>
