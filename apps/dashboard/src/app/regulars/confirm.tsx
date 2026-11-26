@@ -256,7 +256,7 @@ function Fact({
   onChange: () => void;
 }) {
   return (
-    <View className="flex-row items-end border-b border-border pt-5 pb-4">
+    <View className="flex-row items-center border-b border-border pt-5 pb-4">
       <View className="flex-1">
         <Text className="text-[14px] leading-[19px] font-medium text-ink-2">{label}</Text>
         <Text className="mt-1.5 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
