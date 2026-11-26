@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { intlLocale } from "@/lib/language";
+import { hourLabel } from "@/lib/hours";
 import { datesLabel } from "@/lib/regulars";
 import { BarButton, BottomBar } from "./bottom-bar";
 import { useHud } from "./hud";
@@ -24,6 +25,8 @@ import { Text } from "./text";
 // - StateSheet: Pause or End asked first, what follows on the step rail (the confirmed weeks stay,
 //   the waiting ones go back on sale, then resume any time, or not at all), the button in a bar.
 //   End has no frame of its own: it's Pause's sheet with End's words.
+// - MoveSheet (656:158): after picking the new time on Select day, what moves and what stays, Move
+//   in the bar. The server tells nobody, so the frame's "Youssef is told once" isn't said.
 
 type Detail = components["schemas"]["VenueRegularDetail"];
 type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
@@ -75,7 +78,10 @@ export function RegularMenu({
       closeLabel={t("components.shared.nav.close")}
       closeButton={false}
     >
-      <Text accessibilityRole="header" className="mt-2 mb-4 text-center text-[17px] leading-[23px] font-semibold">
+      <Text
+        accessibilityRole="header"
+        className="mt-2 mb-4 text-center text-[17px] leading-[23px] font-semibold"
+      >
         {t(`${m}.title`)}
       </Text>
       <View>
@@ -249,4 +255,147 @@ export function useResume(venueId: string, regularId: string) {
     if (!result.ok) hud.show(hudMessage(result.error));
   };
   return { resume, sending };
+}
+
+export interface NewTime {
+  groundId: string;
+  ground: string;
+  dayOfWeek: number;
+  startHour: number;
+  slotCount: number;
+  // "600 EGP".
+  price: string;
+  // The weeks ahead at the new time: free ones it gets, taken ones tried again daily.
+  free: string[];
+  taken: string[];
+}
+
+type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
+
+// Moving a regular to a new time, asked first. Done, it closes, then `onMoved` (back to its page).
+export function MoveSheet({
+  regular,
+  to,
+  venueId,
+  timezone,
+  visible,
+  onClose,
+  onMoved,
+}: {
+  regular: Detail;
+  to: NewTime;
+  venueId: string;
+  timezone: string;
+  visible: boolean;
+  onClose: () => void;
+  onMoved: () => void;
+}) {
+  const { t } = useTranslation();
+  const hud = useHud();
+  const done = useAfterRegular(venueId, regular.id);
+  const [sending, setSending] = useState(false);
+  const moved = useRef(false);
+  const c = "screens.regulars.change";
+  const name = firstName(regular.customer.name);
+  const dateOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
+  const datesOf = (status: "CONFIRMED" | "UNCONFIRMED") =>
+    regular.reservations
+      .filter((booking) => booking.status === status)
+      .map((booking) => dateOf.format(new Date(booking.startsAt)));
+  const confirmed = datesOf("CONFIRMED");
+  const waiting = datesOf("UNCONFIRMED");
+  const day = t(`screens.regulars.days.${String(to.dayOfWeek) as Weekday}`);
+
+  const steps: Step[] = [
+    ...(confirmed.length > 0
+      ? [
+          {
+            label: t("screens.regulars.pause.stays", {
+              count: confirmed.length,
+              dates: withWeekday(t, confirmed),
+            }),
+            detail: t("screens.regulars.pause.staysBody"),
+            when: "",
+            state: "done" as const,
+            bold: "label" as const,
+          },
+        ]
+      : []),
+    {
+      label:
+        to.free.length === 0
+          ? t(`${c}.noneFree`)
+          : waiting.length > 0
+            ? t(`${c}.moves`, {
+                count: waiting.length,
+                from: datesLabel(t, waiting),
+                to: withWeekday(t, to.free),
+              })
+            : t(`${c}.reserved`, { dates: withWeekday(t, to.free) }),
+      detail: waiting.length > 0 ? t("screens.regulars.pause.notCounted", { name }) : undefined,
+      when: "",
+      state: "now" as const,
+      bold: "label" as const,
+    },
+    ...(to.taken.length > 0
+      ? [
+          {
+            label: t(`${c}.taken`, { count: to.taken.length, dates: withWeekday(t, to.taken) }),
+            detail: t(`${c}.takenBody`),
+            when: "",
+            state: "maybe" as const,
+          },
+        ]
+      : []),
+  ];
+
+  const move = async () => {
+    setSending(true);
+    const result = await send(
+      api.PATCH("/v1/staff/venues/{venueId}/regulars/{regularId}", {
+        params: { path: { venueId, regularId: regular.id } },
+        body: {
+          groundId: to.groundId,
+          dayOfWeek: to.dayOfWeek,
+          startHour: to.startHour,
+          slotCount: to.slotCount,
+        },
+      }),
+    );
+    await done(result.ok ? result.data : undefined);
+    setSending(false);
+    if (!result.ok) {
+      hud.show(hudMessage(result.error));
+      return;
+    }
+    moved.current = true;
+    onClose();
+  };
+
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onHidden={() => {
+        if (moved.current) onMoved();
+      }}
+      closeLabel={t("components.shared.nav.close")}
+    >
+      <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
+        {t(`${c}.sheetTitle`, { day, hour: hourLabel(t, to.startHour) })}
+      </Text>
+      <StepRail gap={22} steps={steps} />
+      <View className="mt-8 pt-3">
+        <BottomBar
+          title={t("screens.regulars.confirm.time", {
+            day,
+            hours: `${hourLabel(t, to.startHour)} – ${hourLabel(t, to.startHour + to.slotCount)}`,
+          })}
+          detail={[to.ground, to.price].filter(Boolean).join(" · ")}
+        >
+          <BarButton label={t(`${c}.button`)} primary busy={sending} onPress={() => void move()} />
+        </BottomBar>
+      </View>
+    </Sheet>
+  );
 }
