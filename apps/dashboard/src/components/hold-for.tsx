@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
@@ -142,19 +142,17 @@ export function HoldFor({
         </View>
       </Sheet>
 
-      <Sheet
-        {...sheet("customers")}
-        scrollable
-        onBack={() => go("who")}
-        backLabel={t("components.shared.nav.back")}
-      >
-        <Customers
-          venueId={venueId}
-          when={when}
-          holding={holding}
-          onPick={(customer) => void hold({ venueCustomerId: customer.id })}
-        />
-      </Sheet>
+      <Customers
+        sheet={{
+          ...sheet("customers"),
+          onBack: () => go("who"),
+          backLabel: t("components.shared.nav.back"),
+        }}
+        venueId={venueId}
+        when={when}
+        holding={holding}
+        onPick={(customer) => void hold({ venueCustomerId: customer.id })}
+      />
 
       <Sheet {...sheet("new")} onBack={() => go("who")} backLabel={t("components.shared.nav.back")}>
         <NewCustomer
@@ -168,13 +166,16 @@ export function HoldFor({
   );
 }
 
-// The venue's customers: who played last first, or those matching what's typed.
+// The venue's customers: who played last first, or those matching what's typed. Its own sheet, so
+// the search box is one of the sheet's children and can stick under back once scrolled to it.
 function Customers({
+  sheet,
   venueId,
   when,
   holding,
   onPick,
 }: {
+  sheet: Omit<ComponentProps<typeof Sheet>, "children">;
   venueId: string;
   when: string;
   holding: string | null;
@@ -215,76 +216,83 @@ function Customers({
   const searching = typed !== q || customers.isPlaceholderData || customers.isLoading;
 
   return (
-    <>
-      <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
-        {t("screens.hold.customers.title")}
-      </Text>
-      <Text className="mt-1.5 mb-5 text-body text-ink-2">
-        {t("screens.hold.customers.for", { when })}
-      </Text>
-      <View className="h-12 flex-row items-center rounded-xl bg-field px-3.5">
-        <IconSearch size={20} color={colors.ink2} strokeWidth={1.75} />
-        <TextInput
-          className="ms-2.5 flex-1 text-[16px] text-ink"
-          value={text}
-          onChangeText={setText}
-          placeholder={t("screens.hold.customers.search")}
-          placeholderTextColor={colors.ink3}
-          selectionColor={colors.primary}
-          autoCorrect={false}
-          returnKeyType="search"
-          onSubmitEditing={() => setQ(typed)}
-        />
+    <Sheet {...sheet} scrollable stickyHeaderIndices={[1]}>
+      <View>
+        <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
+          {t("screens.hold.customers.title")}
+        </Text>
+        <Text className="mt-1.5 mb-5 text-body text-ink-2">
+          {t("screens.hold.customers.for", { when })}
+        </Text>
       </View>
-      <Text className="mt-6 mb-2 text-label text-ink-2">
-        {typed ? t("screens.hold.customers.matches") : t("screens.hold.customers.recent")}
-      </Text>
-      {customers.isError && !customers.data ? (
-        <Text className="text-body text-ink-2">{t("screens.hold.customers.failed")}</Text>
-      ) : searching || !customers.data ? (
-        <ActivityIndicator className="my-10" color={colors.ink3} />
-      ) : customers.data.length === 0 ? (
-        q ? (
-          <View className="items-center pt-6 pb-4">
-            <NoMatchArt />
-            <Text className="mt-3 text-center text-body text-ink-2" style={{ maxWidth: "75%" }}>
-              {t("screens.hold.customers.noMatch")}
-            </Text>
-          </View>
-        ) : (
-          <Text className="text-body text-ink-2" style={{ maxWidth: "75%" }}>
-            {t("screens.hold.customers.none")}
-          </Text>
-        )
-      ) : (
-        customers.data.map((customer) => (
-          <Pressable
-            key={customer.id}
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.hold.customers.holdFor", { name: customer.name })}
-            disabled={holding !== null}
-            onPress={() => onPick(customer)}
-            className="flex-row items-center py-2.5 active:opacity-70"
-          >
-            <Avatar name={customer.name} size="row" />
-            <View className="ms-3 flex-1">
-              <Text className="text-body">{customer.name}</Text>
-              <Text className="text-caption text-ink-2">
-                {[
-                  customer.phone ? shownPhone(customer.phone) : null,
-                  customer.bookingCount > 0
-                    ? t("screens.hold.customers.games", { count: customer.bookingCount })
-                    : t("screens.hold.customers.newHere"),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+      {/* Pinned once it reaches the top, on white, so the rows pass under it. */}
+      <View className="bg-white pb-3">
+        <View className="h-12 flex-row items-center rounded-xl bg-field px-3.5">
+          <IconSearch size={20} color={colors.ink2} strokeWidth={1.75} />
+          <TextInput
+            className="ms-2.5 flex-1 text-[16px] text-ink"
+            value={text}
+            onChangeText={setText}
+            placeholder={t("screens.hold.customers.search")}
+            placeholderTextColor={colors.ink3}
+            selectionColor={colors.primary}
+            autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={() => setQ(typed)}
+          />
+        </View>
+      </View>
+      <View>
+        <Text className="mt-3 mb-2 text-label text-ink-2">
+          {typed ? t("screens.hold.customers.matches") : t("screens.hold.customers.recent")}
+        </Text>
+        {customers.isError && !customers.data ? (
+          <Text className="text-body text-ink-2">{t("screens.hold.customers.failed")}</Text>
+        ) : searching || !customers.data ? (
+          <ActivityIndicator className="my-10" color={colors.ink3} />
+        ) : customers.data.length === 0 ? (
+          q ? (
+            <View className="items-center pt-6 pb-4">
+              <NoMatchArt />
+              <Text className="mt-3 text-center text-body text-ink-2" style={{ maxWidth: "75%" }}>
+                {t("screens.hold.customers.noMatch")}
               </Text>
             </View>
-            {holding === customer.id ? <ActivityIndicator color={colors.ink3} /> : null}
-          </Pressable>
-        ))
-      )}
-    </>
+          ) : (
+            <Text className="text-body text-ink-2" style={{ maxWidth: "75%" }}>
+              {t("screens.hold.customers.none")}
+            </Text>
+          )
+        ) : (
+          customers.data.map((customer) => (
+            <Pressable
+              key={customer.id}
+              accessibilityRole="button"
+              accessibilityLabel={t("screens.hold.customers.holdFor", { name: customer.name })}
+              disabled={holding !== null}
+              onPress={() => onPick(customer)}
+              className="flex-row items-center py-2.5 active:opacity-70"
+            >
+              <Avatar name={customer.name} size="row" />
+              <View className="ms-3 flex-1">
+                <Text className="text-body">{customer.name}</Text>
+                <Text className="text-caption text-ink-2">
+                  {[
+                    customer.phone ? shownPhone(customer.phone) : null,
+                    customer.bookingCount > 0
+                      ? t("screens.hold.customers.games", { count: customer.bookingCount })
+                      : t("screens.hold.customers.newHere"),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              </View>
+              {holding === customer.id ? <ActivityIndicator color={colors.ink3} /> : null}
+            </Pressable>
+          ))
+        )}
+      </View>
+    </Sheet>
   );
 }
 

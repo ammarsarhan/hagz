@@ -46,6 +46,9 @@ interface SheetProps {
   // still closes.
   onBack?: () => void;
   backLabel?: string;
+  // A scrollable sheet's children that stick at its top once scrolled to it (a search box), by
+  // their place among the sheet's children.
+  stickyHeaderIndices?: number[];
   children: ReactNode;
 }
 
@@ -58,6 +61,7 @@ export function Sheet({
   scrollable = false,
   onBack,
   backLabel,
+  stickyHeaderIndices,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -181,6 +185,7 @@ export function Sheet({
                   scrollEnabled={overflows}
                   bounces={overflows}
                   showsVerticalScrollIndicator={overflows}
+                  stickyHeaderIndices={stickyHeaderIndices}
                   onLayout={(event) => setRoom(event.nativeEvent.layout.height)}
                   onContentSizeChange={(_, height) => setContent(height)}
                 >
