@@ -209,7 +209,7 @@ export function RegularPage({ locale }: { locale: Locale }) {
             type="button"
             disabled={answering !== null}
             onClick={() => void answer("confirm")}
-            className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#1d1d1d] text-subtitle font-semibold text-white disabled:opacity-60 lg:flex-none lg:px-8"
+            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#1d1d1d] text-[15px] font-semibold text-white disabled:opacity-60 lg:flex-none lg:px-6"
           >
             {words.regular.playingButton}
           </button>
@@ -217,7 +217,7 @@ export function RegularPage({ locale }: { locale: Locale }) {
             type="button"
             disabled={answering !== null}
             onClick={() => void answer("release")}
-            className="flex h-12 flex-1 items-center justify-center rounded-full bg-chip text-subtitle font-semibold text-ink disabled:opacity-60 lg:flex-none lg:px-8"
+            className="flex h-11 flex-1 items-center justify-center rounded-full bg-chip text-[15px] font-semibold text-ink disabled:opacity-60 lg:flex-none lg:px-6"
           >
             {words.regular.notThisWeek}
           </button>
