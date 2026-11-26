@@ -29,6 +29,7 @@ import { useNow } from "@/lib/use-now";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan, relativeDay } from "@/lib/when";
+import { push } from "@/lib/navigation";
 
 // Picking a time for a hold (Figma D9 600:142) or a new booking (D10 612:26): the day under the week
 // strip and the grounds, one ground at a time like Move and Swap, from the one the Calendar was on
@@ -306,7 +307,7 @@ export function TimePick({
         ? t(`screens.setup.grounds.sports.${ground.sport}`)
         : t(`screens.setup.grounds.sizes.${ground.size}`)
       : "";
-    router.push({
+    push({
       pathname: "/book/details",
       params: {
         ...range,

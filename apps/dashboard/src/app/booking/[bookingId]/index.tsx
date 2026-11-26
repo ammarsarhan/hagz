@@ -32,6 +32,7 @@ import { isolate } from "@/lib/phone";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { push } from "@/lib/navigation";
 
 // A booking, for staff (Figma D8, 535:2 and 530:2; its states in D17, 642:2): the code, the player
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
@@ -430,7 +431,7 @@ function Page({
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push(`/booking/${booking.id}/history`)}
+            onPress={() => push(`/booking/${booking.id}/history`)}
             hitSlop={8}
             className="mt-3 self-start active:opacity-70"
           >
@@ -462,7 +463,7 @@ function Page({
         visible={menu}
         onClose={() => setMenu(false)}
         onHidden={() => {
-          if (picked.current) router.push(`/booking/${booking.id}/${picked.current}`);
+          if (picked.current) push(`/booking/${booking.id}/${picked.current}`);
           picked.current = null;
         }}
         onPick={(action) => {

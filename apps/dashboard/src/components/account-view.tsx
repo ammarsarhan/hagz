@@ -23,6 +23,7 @@ import { displayPhone, isolate } from "@/lib/phone";
 import { queries } from "@/lib/queries";
 import { signOut } from "@/lib/session";
 import { contactSupport, hasSupport } from "@/lib/support";
+import { push } from "@/lib/navigation";
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
@@ -148,7 +149,7 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
           title={t("screens.account.password.title")}
           body={t("screens.account.password.body")}
           trailing={chevron}
-          onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
+          onPress={() => push({ pathname: "/forgot-password", params: { phone } })}
         />
 
         <SettingsHeading>{t("screens.account.app")}</SettingsHeading>
@@ -181,7 +182,7 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
                   : t("screens.account.join.body")
               }
               trailing={chevron}
-              onPress={() => router.push("/join")}
+              onPress={() => push("/join")}
             />
           </>
         ) : null}

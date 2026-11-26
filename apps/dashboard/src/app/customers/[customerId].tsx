@@ -25,6 +25,7 @@ import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan } from "@/lib/when";
+import { push } from "@/lib/navigation";
 
 // A customer (Figma D11 619:2, edits 661:2): who they are, then Call, WhatsApp and Book; the team's
 // note with Edit; their games still to come (a regular's week to confirm says Confirm) and the
@@ -184,7 +185,7 @@ export default function CustomerPage() {
               label={t("screens.customer.book")}
               primary
               onPress={() =>
-                router.push({
+                push({
                   pathname: "/book",
                   params: { forId: person.id, forName: person.name },
                 })
@@ -378,7 +379,7 @@ function Game({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/booking/${booking.id}`)}
+      onPress={() => push(`/booking/${booking.id}`)}
       className="mb-4 flex-row items-stretch active:opacity-60"
     >
       <View className="w-14">
@@ -608,7 +609,7 @@ function DetailsSheet({
             hitSlop={8}
             onPress={() => {
               onClose();
-              router.push(`/customers/${taken.id}`);
+              push(`/customers/${taken.id}`);
             }}
             className="active:opacity-60"
           >

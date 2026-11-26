@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { LayoutAnimation } from "react-native";
 import { pendingInvitation } from "@/lib/pending-invitation";
 import { queries } from "@/lib/queries";
 import { signOut } from "@/lib/session";
 import { InvitationSheet, type SheetStart } from "./invitation-sheet";
+import { push } from "@/lib/navigation";
 
 // The invitation sheet as a screen uses it: opened from a card, from "Have a code?", or by an
 // invitation link (manage/invite/[code]), which can arrive on first run or on a venue's home. Answers
@@ -71,7 +72,7 @@ export function useInvitationSheet({
   const switchNumber = async (code: string) => {
     await signOut();
     pendingInvitation.keep(code);
-    router.push("/sign-in");
+    push("/sign-in");
   };
 
   const sheet =

@@ -2,7 +2,6 @@ import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
@@ -59,6 +58,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
+import { push } from "@/lib/navigation";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
@@ -349,7 +349,7 @@ export default function VenueCalendar() {
   // A booking opens its page; free and closed times wait for their own screens.
   const openRow = (row: CalendarRow) => {
     if (row.kind === "free" || row.kind === "closed") comingNext();
-    else router.push(`/booking/${row.booking.id}`);
+    else push(`/booking/${row.booking.id}`);
   };
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
@@ -404,7 +404,7 @@ export default function VenueCalendar() {
                     ? t("screens.calendar.requestsWaiting", { count: requests })
                     : t("screens.calendar.requests")
                 }
-                onPress={() => router.push("/requests")}
+                onPress={() => push("/requests")}
                 badge={requests}
               >
                 <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
@@ -653,7 +653,7 @@ export default function VenueCalendar() {
           const action = added.current;
           added.current = null;
           if (action)
-            router.push({
+            push({
               pathname: action === "hold" ? "/hold" : "/book",
               params: { date: day, ...(groundId ? { groundId } : {}) },
             });

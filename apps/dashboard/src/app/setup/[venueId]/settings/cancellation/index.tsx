@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { Button } from "@/components/button";
@@ -7,6 +6,7 @@ import { StepScreen } from "@/components/step-screen";
 import { Text } from "@/components/text";
 import { useCancellationFlow } from "@/lib/cancellation-flow";
 import { POLICIES } from "@/lib/settings";
+import { push } from "@/lib/navigation";
 
 // Choosing a cancellation policy, 1 (Figma "Cancellation · 1 Pick a policy", 330:2): the three
 // presets, each said in one line, or Custom. Continue goes to the owner's own rules for Custom, and
@@ -24,7 +24,7 @@ export default function PickPolicy() {
           label={t("common.actions.continue")}
           disabled={policy === null}
           onPress={() =>
-            router.push(
+            push(
               policy === "CUSTOM"
                 ? `/setup/${venueId}/settings/cancellation/custom`
                 : `/setup/${venueId}/settings/cancellation/confirm`,

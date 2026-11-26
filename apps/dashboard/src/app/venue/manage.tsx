@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import type { TFunction } from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ import { isRTL } from "@/lib/language";
 import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
+import { push } from "@/lib/navigation";
 
 // The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a bar pinned above the
 // scroll naming the section scrolled to (from Details on), the venue's photos
@@ -81,7 +82,7 @@ export default function VenueTab() {
   const groundCount = grounds.data?.length;
   const settings = detail.data?.settings;
   const comingNext = () => hud.show(t("common.comingNext"));
-  const open = (path: string) => () => router.push(`/setup/${venueId}/${path}`);
+  const open = (path: string) => () => push(`/setup/${venueId}/${path}`);
   const chevron = (
     <IconChevronRight
       size={18}
@@ -104,7 +105,7 @@ export default function VenueTab() {
       key: "customers",
       title: t(`${v}.customers`),
       body: t(`${v}.customersBody`),
-      onPress: () => router.push("/customers"),
+      onPress: () => push("/customers"),
     },
     can("bookings") && {
       key: "regulars",
@@ -114,7 +115,7 @@ export default function VenueTab() {
             count: regulars.data.filter((regular) => regular.status !== "ENDED").length,
           })
         : t(`${v}.regularsBody`),
-      onPress: () => router.push("/regulars"),
+      onPress: () => push("/regulars"),
     },
     can("staff") && { key: "team", title: t(`${v}.team`), body: team, onPress: comingNext },
   ];

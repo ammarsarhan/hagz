@@ -38,6 +38,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { datesLabel, regularsQuery, type Regular } from "@/lib/regulars";
 import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
+import { push } from "@/lib/navigation";
 
 // A new weekly game, its first step (Figma D12 656:2): the weekday, then the ground (one at a time,
 // as on Move and Hold a time; user, 2026-11-26: no All grounds), then its free hours: each dashed in
@@ -478,7 +479,7 @@ export default function NewRegular() {
         onChoose={(choice) => {
           setAsking(false);
           if (!chosen || !ground) return;
-          router.push({
+          push({
             pathname: "/regulars/confirm",
             params: {
               groundId: ground.id,

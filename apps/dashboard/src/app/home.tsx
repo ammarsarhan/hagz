@@ -1,5 +1,5 @@
 import { useQuery, type QueryFilters } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
+import { Redirect } from "expo-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View } from "react-native";
@@ -17,6 +17,7 @@ import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { runningVenues, unfinishedVenue } from "@/lib/venues";
+import { push } from "@/lib/navigation";
 
 // What can change on another phone while this screen is open: invitations sent or taken back, and
 // the draft (its name, area, "Last updated").
@@ -99,7 +100,7 @@ export default function Home() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("screens.account.open")}
-          onPress={() => router.push("/account")}
+          onPress={() => push("/account")}
           hitSlop={8}
           className="active:opacity-70"
         >

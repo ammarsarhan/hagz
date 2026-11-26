@@ -42,6 +42,7 @@ import {
   type PaymentMode,
 } from "@/lib/settings";
 import { useSaveSettings, type VenueDetail } from "@/lib/venue-edit";
+import { push } from "@/lib/navigation";
 
 // Setup item "Policy" (Figma "Payments · A Plain list", 326:2), laid out like the account screen's
 // groups (user, 2026-11-15): its headings and rows, each value on the grey line under its title. No
@@ -164,7 +165,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
             policy ? undefined : <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
           }
           trailing={chevron}
-          onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
+          onPress={() => push(`/setup/${venueId}/settings/cancellation`)}
         />
 
         <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>

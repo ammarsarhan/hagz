@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, I18nManager, useWindowDimensions, View } from "react-native";
@@ -13,6 +12,7 @@ import { DraftCard } from "./draft-card";
 import { InvitationCard, type ReceivedInvitation } from "./invitation-card";
 import { StartTiles } from "./start-tiles";
 import { Text } from "./text";
+import { push } from "@/lib/navigation";
 
 // The carousel runs left to right; in Arabic it's flipped so the next card comes from the left, as
 // onboarding's pager does. Builds that are natively right-to-left already scroll that way.
@@ -64,7 +64,7 @@ export function StartOptions({
 
   const startTiles = (
     <StartTiles
-      onCreateVenue={() => router.push("/create-venue")}
+      onCreateVenue={() => push("/create-venue")}
       onHaveCode={onHaveCode}
       canCreate={!draft}
     />
@@ -76,7 +76,7 @@ export function StartOptions({
       <SectionLabel>{t("screens.firstRun.draft.heading")}</SectionLabel>
       <DraftCard
         venue={draft}
-        onPress={() => router.push({ pathname: "/setup/[venueId]", params: { venueId: draft.id } })}
+        onPress={() => push({ pathname: "/setup/[venueId]", params: { venueId: draft.id } })}
       />
     </>
   ) : null;

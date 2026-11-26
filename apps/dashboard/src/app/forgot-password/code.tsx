@@ -13,6 +13,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { displayPhone, isolate, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Reset, step 3: the WhatsApp code, checked as soon as all six digits are in, before the new
 // password is asked for. Owners get no code; the line under the boxes points them to support.
@@ -49,7 +50,7 @@ export default function ResetCode() {
       }
       return;
     }
-    router.push({
+    push({
       pathname: "/forgot-password/new-password",
       params: { phone, resetToken: result.data.resetToken },
     });
@@ -114,7 +115,7 @@ export default function ResetCode() {
           {t("screens.forgotPassword.code.ownerHint")}{" "}
           <Text
             className="font-medium text-primary"
-            onPress={() => router.push("/forgot-password/support")}
+            onPress={() => push("/forgot-password/support")}
           >
             {t("screens.forgotPassword.code.ownerLink")}
           </Text>

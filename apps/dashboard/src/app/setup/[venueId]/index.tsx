@@ -22,6 +22,7 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { afterVenueWrite, queries } from "@/lib/queries";
+import { push } from "@/lib/navigation";
 
 // A draft venue's setup checklist (Figma "Venue creation · 7 Setup checklist (draft flow)", 285:2):
 // everything left to do before it can be sent for review, in any order, each item saved as it's
@@ -229,7 +230,7 @@ function Group({
           onPress={() => {
             const screen = SCREENS[item.key];
             if (!screen) return hud.show(t("common.comingNext"));
-            router.push(`/setup/${venueId}/${screen}`);
+            push(`/setup/${venueId}/${screen}`);
           }}
         />
       ))}

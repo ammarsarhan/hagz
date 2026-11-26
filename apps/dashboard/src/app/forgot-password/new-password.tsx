@@ -13,7 +13,7 @@ import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { leaveToOnboarding } from "@/lib/navigation";
+import { leaveToOnboarding, push } from "@/lib/navigation";
 
 const MIN_PASSWORD = 8;
 
@@ -54,7 +54,7 @@ export default function ResetNewPassword() {
     if (await auth.isSignedIn()) {
       await auth.forget();
       leaveToOnboarding();
-      router.push({ pathname: "/sign-in", params: { phone } });
+      push({ pathname: "/sign-in", params: { phone } });
       return;
     }
     router.dismissTo({ pathname: "/sign-in", params: { phone } });

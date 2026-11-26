@@ -21,6 +21,7 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { intlLocale, isRTL } from "@/lib/language";
+import { push } from "@/lib/navigation";
 
 // The venue's customers (Figma D11 557:2), from the Venue tab: A to Z under their first letters,
 // searched by name or number. Each row: the name (Walk-in for someone staff entered), how many
@@ -270,7 +271,7 @@ function Row({ customer, last }: { customer: Customer; last: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/customers/${customer.id}`)}
+      onPress={() => push(`/customers/${customer.id}`)}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${last ? "" : "border-b border-border"}`}
     >
       <View className="flex-1">

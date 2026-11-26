@@ -1,5 +1,4 @@
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
@@ -12,6 +11,7 @@ import { IconCheck, IconPlus } from "./icons";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 import { VenueCover } from "./venue-cover";
+import { push } from "@/lib/navigation";
 
 type StaffVenue = components["schemas"]["StaffVenue"];
 
@@ -61,8 +61,8 @@ export function VenueSwitcher({
   const startOrContinue = () => {
     after.current = () =>
       draft
-        ? router.push({ pathname: "/setup/[venueId]", params: { venueId: draft.id } })
-        : router.push("/create-venue");
+        ? push({ pathname: "/setup/[venueId]", params: { venueId: draft.id } })
+        : push("/create-venue");
     onClose();
   };
 

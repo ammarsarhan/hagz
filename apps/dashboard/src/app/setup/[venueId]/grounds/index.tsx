@@ -19,6 +19,7 @@ import { groundLine, type Ground } from "@/lib/grounds";
 import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { afterVenueWrite, queries } from "@/lib/queries";
+import { push } from "@/lib/navigation";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -54,7 +55,7 @@ function GroundsList({
   const decimals = decimalsOf(currency);
   const rows = useSwipeRows();
   const tap = (ground: Ground) => {
-    if (!rows.closeOpen()) router.push(`/setup/${venueId}/grounds/${ground.id}`);
+    if (!rows.closeOpen()) push(`/setup/${venueId}/grounds/${ground.id}`);
   };
 
   // Asked first: the ground is kept on the server for booking history, but there's no bringing it
@@ -134,7 +135,7 @@ function GroundsList({
       {grounds.length < MAXIMUM_GROUNDS ? (
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push(`/setup/${venueId}/grounds/new`)}
+          onPress={() => push(`/setup/${venueId}/grounds/new`)}
           hitSlop={8}
           className="flex-row items-center gap-1.5 self-start py-4 active:opacity-60"
         >

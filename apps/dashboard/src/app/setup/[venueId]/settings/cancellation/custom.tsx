@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { Fragment, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, View } from "react-native";
@@ -19,6 +18,7 @@ import {
   nextTier,
   type CancellationTier,
 } from "@/lib/settings";
+import { push } from "@/lib/navigation";
 
 // Choosing a cancellation policy, 2, for Custom only: the rules as rows (Figma "Refund staircase",
 // its rows, 448:51), from the most notice to the least, each with a swatch as deep as its refund,
@@ -128,7 +128,7 @@ export default function CustomRules() {
           label={t("common.actions.continue")}
           onPress={() => {
             setCustomTiers(tiers);
-            router.push(`/setup/${venueId}/settings/cancellation/confirm`);
+            push(`/setup/${venueId}/settings/cancellation/confirm`);
           }}
         />
       }
