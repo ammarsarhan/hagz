@@ -226,9 +226,11 @@ export const useAfterRegular = (venueId: string, regularId: string) => {
     if (answer)
       queryClient.setQueryData(["staff", "venues", venueId, "regulars", regularId], answer);
     return Promise.all([
+      // The list, and every other regular's page: weeks it let go or took back went to them
+      // (user, 2026-11-26: #2 still said skipped after #1 paused). Its own is set just above.
       queryClient.invalidateQueries({
         queryKey: ["staff", "venues", venueId, "regulars"],
-        exact: true,
+        predicate: (query) => query.queryKey[4] !== regularId,
       }),
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] }),
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] }),
