@@ -167,17 +167,13 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
           <BottomBar
             title={t("screens.swap.barTitle", { name, other })}
             detail={
-              <>
-                {t(note.trim() ? "screens.swap.noteAdded" : "screens.swap.bothTold")}
-                {" · "}
-                <Text
-                  accessibilityRole="button"
-                  className="text-caption text-ink underline"
-                  onPress={() => setNoting(true)}
-                >
-                  {t(note.trim() ? "screens.swap.editNote" : "screens.swap.addNote")}
-                </Text>
-              </>
+              <Text
+                accessibilityRole="button"
+                className="text-caption text-ink underline"
+                onPress={() => setNoting(true)}
+              >
+                {t(note.trim() ? "screens.swap.editNote" : "screens.swap.addNote")}
+              </Text>
             }
           >
             <BarButton
@@ -455,7 +451,12 @@ function Preview({
   );
 }
 
-// A blue arc on the right from one row to the other, a head at each end.
+// A bracket on the right joining the two rows: out from each, round a soft corner, along a straight
+// line between them, with a small solid head pointing back into each row.
+const ARROW_WIDTH = 22;
+const CORNER = 8;
+const HEAD = 4;
+
 function TradeArrow({
   a,
   b,
@@ -465,44 +466,37 @@ function TradeArrow({
 }) {
   const top = Math.min(a.y + a.height / 2, b.y + b.height / 2);
   const bottom = Math.max(a.y + a.height / 2, b.y + b.height / 2);
-  const height = Math.max(bottom - top, 1);
-  const width = 28;
-  const head = (x: number, y: number, dx: number, dy: number) => {
-    const length = Math.hypot(dx, dy) || 1;
-    const [ux, uy] = [dx / length, dy / length];
-    const side = (s: number) => `${x - ux * 6 - uy * 4 * s},${y - uy * 6 + ux * 4 * s}`;
-    return `M${side(1)} L${x},${y} L${side(-1)}`;
-  };
+  const height = Math.max(bottom - top, CORNER * 2);
+  const pad = HEAD + 1;
+  const right = ARROW_WIDTH - 1;
+  const start = HEAD + 1;
+  const line = [
+    `M${start} ${pad}`,
+    `H${right - CORNER}`,
+    `Q${right} ${pad} ${right} ${pad + CORNER}`,
+    `V${pad + height - CORNER}`,
+    `Q${right} ${pad + height} ${right - CORNER} ${pad + height}`,
+    `H${start}`,
+  ].join(" ");
+  const head = (y: number) =>
+    `M1 ${y} L${HEAD + 2} ${y - HEAD + 0.5} L${HEAD + 2} ${y + HEAD - 0.5} Z`;
   return (
     <View
       pointerEvents="none"
       className="absolute end-0"
-      style={{ top: top - 2, height: height + 4, width }}
+      style={{ top: top - pad, width: ARROW_WIDTH, height: height + pad * 2 }}
     >
-      <Svg width={width} height={height + 4} viewBox={`0 -2 ${width} ${height + 4}`}>
+      <Svg width={ARROW_WIDTH} height={height + pad * 2}>
         <Path
-          d={`M4 0 C24 6 24 ${height - 6} 4 ${height}`}
+          d={line}
           stroke={colors.primary}
-          strokeWidth={1.6}
-          fill="none"
-          strokeLinecap="round"
-        />
-        <Path
-          d={head(4, 0, -20, -6)}
-          stroke={colors.primary}
-          strokeWidth={1.6}
+          strokeWidth={1.5}
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <Path
-          d={head(4, height, -20, 6)}
-          stroke={colors.primary}
-          strokeWidth={1.6}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <Path d={head(pad)} fill={colors.primary} />
+        <Path d={head(pad + height)} fill={colors.primary} />
       </Svg>
     </View>
   );

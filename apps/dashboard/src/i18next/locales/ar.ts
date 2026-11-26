@@ -102,8 +102,6 @@ const ar: ArabicTranslations = {
         moved: "{{ground}} · {{price}}",
         priceWas: "{{price}}، كان {{was}}",
         barTitle: "تبديل {{name}} و{{other}}",
-        bothTold: "سيتم إبلاغ الاثنين",
-        noteAdded: "أُضيفت ملاحظة",
         addNote: "أضف ملاحظة",
         editNote: "عدّل الملاحظة",
         swap: "تبديل",

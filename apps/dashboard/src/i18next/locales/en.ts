@@ -88,8 +88,6 @@ const en = {
         moved: "{{ground}} · {{price}}",
         priceWas: "{{price}}, was {{was}}",
         barTitle: "Swap {{name}} and {{other}}",
-        bothTold: "Both are told",
-        noteAdded: "Note added",
         addNote: "Add a note",
         editNote: "Edit note",
         swap: "Swap",
