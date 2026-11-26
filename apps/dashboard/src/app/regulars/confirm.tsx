@@ -184,6 +184,7 @@ export default function ConfirmRegular() {
         <View className="h-2" />
         <Fact
           label={t(`${c}.for`)}
+          bigLabel
           value={params.name}
           detail={params.phone ? shownPhone(params.phone) : undefined}
           onChange={() => setAsking(true)}
@@ -253,8 +254,8 @@ function Fact({
   onChange,
 }: {
   label: string;
-  // Starts at and Last week (user, 2026-11-26): the label as big as a name, the date under it a
-  // touch smaller.
+  // For, Starts at and Last week (user, 2026-11-26): the label at 16, the value under it a touch
+  // smaller.
   bigLabel?: boolean;
   value: string;
   // A grey line under the value: the number under the name (user, 2026-11-26).
