@@ -169,8 +169,9 @@ const en = {
         paused: "paused since {{date}}",
       },
       venueTab: {
+        title: "Venue",
         peopleHeading: "People",
-        yourVenue: "Your venue",
+        details: "Details",
         rules: "Rules",
         customers: "Customers",
         customersBody: "Everyone who's booked here",

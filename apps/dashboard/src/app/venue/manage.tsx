@@ -12,6 +12,7 @@ import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Text } from "@/components/text";
+import { Title } from "@/components/title";
 import { api, reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -20,9 +21,9 @@ import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): the venue's cover photo
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, the venue's cover photo
 // (grey and pulsing while it loads), its name and area
-// centred under it, then the Account tab's headings and rows: Your venue (profile and photos,
+// centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
 // payments). Each row's grey line says what's there now. Rows for an area the member can't see
 // are left out. Setup's screens edit a live venue as they did the draft; rows whose screens
@@ -187,7 +188,10 @@ export default function VenueTab() {
         style={{ marginHorizontal: -20 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
       >
-        <View className="mt-5 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+        <View className="mt-5">
+          <Title>{t(`${v}.title`)}</Title>
+        </View>
+        <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             <>
               {/* Grey and pulsing until the photo has come, then the photo over it. */}
@@ -233,7 +237,7 @@ export default function VenueTab() {
           )}
         </View>
 
-        {group(t(`${v}.yourVenue`), place, true)}
+        {group(t(`${v}.details`), place, true)}
         {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
         {group(t(`${v}.rules`), rules)}
       </ScrollView>

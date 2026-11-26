@@ -191,8 +191,9 @@ const ar: ArabicTranslations = {
         paused: "متوقف منذ {{date}}",
       },
       venueTab: {
+        title: "الملعب",
         peopleHeading: "الأشخاص",
-        yourVenue: "ملعبك",
+        details: "التفاصيل",
         rules: "القواعد",
         customers: "العملاء",
         customersBody: "كل من حجز هنا",
