@@ -37,6 +37,8 @@ const SOFT = "#c9d6ff";
 const SOFT_FILL = "#f2f4ff";
 const ART = { width: 120, height: 66 };
 const RECENT = 8;
+// How long typing pauses before it's searched.
+const PAUSE_MS = 300;
 const DIGITS = 10;
 
 // "+201013372648" → "+20 101 337 2648".
@@ -181,11 +183,16 @@ function Customers({
   const { t } = useTranslation();
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
-  // Asked once typing pauses.
+  const typed = text.trim();
+  // Searched once typing pauses; cleared, back to the recent ones at once.
   useEffect(() => {
-    const timer = setTimeout(() => setQ(text.trim()), 250);
+    if (typed === "") {
+      setQ("");
+      return;
+    }
+    const timer = setTimeout(() => setQ(typed), PAUSE_MS);
     return () => clearTimeout(timer);
-  }, [text]);
+  }, [typed]);
 
   const customers = useQuery({
     queryKey: ["staff", "venues", venueId, "customers", { q, order: q ? "name" : "recent" }],
@@ -203,6 +210,9 @@ function Customers({
     },
     placeholderData: keepPreviousData,
   });
+  // What's typed isn't answered yet: still pausing, or asked and on its way. The last answer
+  // (kept meanwhile) isn't shown for it, so no rows show for something not typed.
+  const searching = typed !== q || customers.isPlaceholderData || customers.isLoading;
 
   return (
     <>
@@ -223,21 +233,29 @@ function Customers({
           selectionColor={colors.primary}
           autoCorrect={false}
           returnKeyType="search"
+          onSubmitEditing={() => setQ(typed)}
         />
       </View>
       <Text className="mt-6 mb-2 text-label text-ink-2">
-        {q ? t("screens.hold.customers.matches") : t("screens.hold.customers.recent")}
+        {typed ? t("screens.hold.customers.matches") : t("screens.hold.customers.recent")}
       </Text>
-      {!customers.data ? (
-        customers.isError ? (
-          <Text className="text-body text-ink-2">{t("screens.hold.customers.failed")}</Text>
-        ) : (
-          <ActivityIndicator className="my-6" color={colors.ink3} />
-        )
+      {customers.isError && !customers.data ? (
+        <Text className="text-body text-ink-2">{t("screens.hold.customers.failed")}</Text>
+      ) : searching || !customers.data ? (
+        <ActivityIndicator className="my-10" color={colors.ink3} />
       ) : customers.data.length === 0 ? (
-        <Text className="text-body text-ink-2" style={{ maxWidth: "75%" }}>
-          {q ? t("screens.hold.customers.noMatch") : t("screens.hold.customers.none")}
-        </Text>
+        q ? (
+          <View className="items-center pt-6 pb-4">
+            <NoMatchArt />
+            <Text className="mt-4 text-center text-body text-ink-2" style={{ maxWidth: "75%" }}>
+              {t("screens.hold.customers.noMatch")}
+            </Text>
+          </View>
+        ) : (
+          <Text className="text-body text-ink-2" style={{ maxWidth: "75%" }}>
+            {t("screens.hold.customers.none")}
+          </Text>
+        )
       ) : (
         customers.data.map((customer) => (
           <Pressable
@@ -319,6 +337,44 @@ function NewCustomer({
         />
       </View>
     </>
+  );
+}
+
+// Nobody found: an empty row under a magnifying glass.
+function NoMatchArt() {
+  return (
+    <Svg width={140} height={84} viewBox="0 0 140 84">
+      <Rect
+        x={14.5}
+        y={22.5}
+        width={96}
+        height={34}
+        rx={9}
+        fill={SOFT_FILL}
+        stroke={SOFT}
+        strokeWidth={1.2}
+        strokeDasharray="3 3"
+      />
+      <Circle cx={32} cy={39.5} r={6} fill={SOFT} />
+      <Rect x={44} y={34} width={36} height={3.5} rx={1.75} fill={SOFT} />
+      <Rect x={44} y={41.5} width={22} height={3} rx={1.5} fill={SOFT} />
+      {/* The glass, over the row's end. */}
+      <Circle
+        cx={104}
+        cy={36}
+        r={15}
+        fill={colors.white}
+        stroke={colors.primary}
+        strokeWidth={2.4}
+      />
+      <Path d="M115 47 L126 58" stroke={colors.primary} strokeWidth={3.2} strokeLinecap="round" />
+      <Path
+        d="M99 31 L109 41 M109 31 L99 41"
+        stroke={colors.primary}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
   );
 }
 
