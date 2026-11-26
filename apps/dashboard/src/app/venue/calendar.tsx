@@ -213,9 +213,17 @@ export default function VenueCalendar() {
       }),
     [day, timezone, bookings.data, slots.data, grounds, groundId, now],
   );
+  // A day's dot means bookings on it; with a ground picked, bookings on that ground (user,
+  // 2026-11-27), so a day with none there has no dot.
   const dots = useMemo(
-    () => bookingDays([...(bookings.data ?? []), ...around, ...(pending.data ?? [])], timezone),
-    [bookings.data, around, pending.data, timezone],
+    () =>
+      bookingDays(
+        [...(bookings.data ?? []), ...around, ...(pending.data ?? [])].filter(
+          (booking) => groundId === null || booking.ground.id === groundId,
+        ),
+        timezone,
+      ),
+    [bookings.data, around, pending.data, timezone, groundId],
   );
   const requests = pending.data?.length ?? 0;
   // The inbox is for venues that approve bookings themselves; one that confirms at once still shows
