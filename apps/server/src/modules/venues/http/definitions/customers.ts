@@ -76,7 +76,7 @@ export const createCustomer = createRoute({
     ...common,
     404: notFound,
     409: problemResponse(
-      "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`).",
+      "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId` and `customerName`).",
     ),
   },
 });
@@ -97,7 +97,7 @@ export const updateCustomer = createRoute({
     ...common,
     404: notFound,
     409: problemResponse(
-      "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
+      "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`).",
     ),
   },
 });

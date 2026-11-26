@@ -219,7 +219,13 @@ export const VenueCustomer = z
   .meta({ id: "VenueCustomer" });
 
 export const VenueCustomerPage = z
-  .object({ data: z.array(VenueCustomer), nextCursor: z.string().nullable() })
+  .object({
+    data: z.array(VenueCustomer),
+    nextCursor: z.string().nullable(),
+    total: z.int().meta({
+      description: "How many customers match `q` (all of them without one), across every page.",
+    }),
+  })
   .meta({ id: "VenueCustomerPage" });
 
 export const CreateVenueCustomer = z

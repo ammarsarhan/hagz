@@ -8098,11 +8098,16 @@
               "string",
               "null"
             ]
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many customers match `q` (all of them without one), across every page."
           }
         },
         "required": [
           "data",
-          "nextCursor"
+          "nextCursor",
+          "total"
         ]
       },
       "VenueCustomer": {
@@ -24896,7 +24901,7 @@
             }
           },
           "409": {
-            "description": "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`).",
+            "description": "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId` and `customerName`).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25075,7 +25080,7 @@
             }
           },
           "409": {
-            "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
+            "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`).",
             "content": {
               "application/problem+json": {
                 "schema": {

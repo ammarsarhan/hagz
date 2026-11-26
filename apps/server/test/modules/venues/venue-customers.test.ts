@@ -28,6 +28,7 @@ describe("venue customers", () => {
       await (await asStaff(owner.id, "GET", `/venues/${venue.id}/customers?limit=2`)).json(),
     );
     expect(all.data.map((customer) => customer.name)).toEqual(["Ahmed", "Bassem"]);
+    expect(all.total).toBe(4);
     const next = VenueCustomerPage.parse(
       await (
         await asStaff(
@@ -45,6 +46,7 @@ describe("venue customers", () => {
       await (await asStaff(owner.id, "GET", `/venues/${venue.id}/customers?q=100 123`)).json(),
     );
     expect(byPhone.data.map((customer) => customer.name)).toEqual(["Ahmed"]);
+    expect(byPhone.total).toBe(1);
   });
 
   it("lists who played last first, then who was added last, as one page", async () => {
@@ -100,7 +102,11 @@ describe("venue customers", () => {
       phone: "+201005551234",
     });
     expect(again.status).toBe(409);
-    expect(await again.json()).toMatchObject({ code: "CUSTOMER_EXISTS", customerId: karim.id });
+    expect(await again.json()).toMatchObject({
+      code: "CUSTOMER_EXISTS",
+      customerId: karim.id,
+      customerName: "Karim",
+    });
   });
 
   it("edits a walk-in's name and number, but only the note of an app player", async () => {

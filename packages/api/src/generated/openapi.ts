@@ -12116,7 +12116,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`). */
+                /** @description CUSTOMER_EXISTS: a customer here already has this number (with their `customerId` and `customerName`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -12261,7 +12261,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`). */
+                /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -19623,6 +19623,8 @@ export interface components {
         VenueCustomerPage: {
             data: components["schemas"]["VenueCustomer"][];
             nextCursor: string | null;
+            /** @description How many customers match `q` (all of them without one), across every page. */
+            total: number;
         };
         VenueCustomer: {
             /** Format: uuid */
