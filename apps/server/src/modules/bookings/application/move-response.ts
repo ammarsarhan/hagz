@@ -201,6 +201,7 @@ export const moveBack = async (
         target,
         { lines: original.charges, total: original.total, deposit: original.depositAmount },
         { type: "MOVE", groupId: null, staffId: null, accountId: customerId, reason: null },
+        now,
       );
       await releaseSlots(tx, [booking.id], now);
       return id;

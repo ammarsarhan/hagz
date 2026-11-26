@@ -312,6 +312,25 @@ describe("regulars", () => {
     expect(changed.skippedWeeks).toEqual([]);
   });
 
+  it("a waiting week moved takes the deadline of its new time", async () => {
+    const { venue, owner, regular, ground } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim, { slotCount: 1 }));
+    const week = made.reservations[1];
+    const later = new Date(Date.parse(week?.startsAt ?? "") + HOUR);
+    const res = await asStaff(owner.id, "POST", `/venues/${venue.id}/bookings/${week?.id}/move`, {
+      groundId: ground.id,
+      startsAt: later.toISOString(),
+      endsAt: new Date(later.getTime() + HOUR).toISOString(),
+    });
+    expect(res.status).toBe(200);
+    const moved = await prisma.booking.findFirstOrThrow({
+      where: { regularId: made.id, startsAt: later },
+    });
+    expect(moved.status).toBe("UNCONFIRMED");
+    // The venue's 24 hours before the new kick-off, not the old one's.
+    expect(moved.expiresAt?.getTime()).toBe(later.getTime() - 24 * HOUR);
+  });
+
   it("takes the customer's own hold or booking at its time as that week, not skipping it", async () => {
     const { venue, owner, regular, starts, ground } = await weeklyGround();
     const [first, second, third] = starts;

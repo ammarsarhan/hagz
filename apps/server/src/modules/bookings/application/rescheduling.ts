@@ -163,7 +163,9 @@ export interface Link {
 }
 
 // The booking that replaces `from` on the claimed slots: same customer, status, deadline, regular,
-// note and terms; the given charges. Run after `from` is retired, so the database's no-overlap
+// note and terms; the given charges. A regular's week still waiting for a confirm takes the deadline
+// of its new time instead (user, 2026-11-26): the venue's confirmationWindow before the new kick-off,
+// or the kick-off itself when that has already gone by. Run after `from` is retired, so the database's no-overlap
 // constraint doesn't see two live bookings on the same time.
 export const successor = async (
   tx: Tx,
@@ -172,8 +174,20 @@ export const successor = async (
   target: Target,
   price: { lines: readonly StoredCharge[]; total: number; deposit: number | null },
   link: Link,
+  now: Date,
 ): Promise<string> => {
   const actor = { staffId: link.staffId, customerId: link.accountId };
+  let expiresAt = from.expiresAt;
+  if (from.status === "UNCONFIRMED") {
+    const settings = await tx.venueSettings.findUnique({
+      where: { venueId: from.venueId },
+      select: { confirmationWindow: true },
+    });
+    const deadline = new Date(
+      target.startsAt.getTime() - (settings?.confirmationWindow ?? 24) * 3_600_000,
+    );
+    expiresAt = deadline > now ? deadline : target.startsAt;
+  }
   const { id } = await tx.booking.create({
     data: {
       venueId: from.venueId,
@@ -186,7 +200,7 @@ export const successor = async (
       startsAt: target.startsAt,
       endsAt: target.endsAt,
       note: from.note,
-      expiresAt: from.expiresAt,
+      expiresAt,
       total: price.total,
       depositAmount: price.deposit,
       paymentMode: from.paymentMode,
@@ -308,13 +322,21 @@ export const moveBooking = async (
         });
       }
       await retire(tx, booking);
-      const id = await successor(tx, booking, slots, target, repriced(booking, slots), {
-        type: "MOVE",
-        groupId: null,
-        staffId: actor.staffId,
-        accountId: null,
-        reason: body.reason ?? null,
-      });
+      const id = await successor(
+        tx,
+        booking,
+        slots,
+        target,
+        repriced(booking, slots),
+        {
+          type: "MOVE",
+          groupId: null,
+          staffId: actor.staffId,
+          accountId: null,
+          reason: body.reason ?? null,
+        },
+        now,
+      );
       // Whatever the old booking and the hold still hold, the move didn't take.
       await releaseSlots(tx, [...mayTake], now);
       return id;
@@ -370,7 +392,7 @@ export const swapBookings = async (
       };
       const take = (from: Moving, target: Target) => {
         const slots = claimed.get(from.id) ?? [];
-        return successor(tx, from, slots, target, repriced(from, slots), link);
+        return successor(tx, from, slots, target, repriced(from, slots), link, now);
       };
       const ids: [string, string] = [await take(a, rangeOf(b)), await take(b, rangeOf(a))];
       await releaseSlots(tx, [a.id, b.id], now);
