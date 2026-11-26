@@ -24,6 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isProblem } from "@hagz/api";
+import { AddSheet, type AddAction } from "@/components/add-sheet";
 import { Bone } from "@/components/bone";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
@@ -48,6 +49,7 @@ import {
   type StaffBooking,
 } from "@/lib/calendar";
 import { bookingRequests } from "@/lib/booking-requests";
+import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { queries } from "@/lib/queries";
 import { colors } from "@/lib/colors";
@@ -340,6 +342,10 @@ export default function VenueCalendar() {
   });
 
   const comingNext = () => hud.show(t("common.comingNext"));
+  // The + asks first: a new booking or a hold, opened once its sheet has slid away.
+  const [adding, setAdding] = useState(false);
+  const added = useRef<AddAction | null>(null);
+  const holdMinutes = useQuery(bookingSettingsQuery(venueId)).data?.staffHoldMinutes ?? null;
   // A booking opens its page; free and closed times wait for their own screens.
   const openRow = (row: CalendarRow) => {
     if (row.kind === "free" || row.kind === "closed") comingNext();
@@ -408,7 +414,7 @@ export default function VenueCalendar() {
           <LayoutAnimationConfig skipEntering>
             {pastDay ? null : (
               <Animated.View entering={PLUS_IN} className="ms-2">
-                <RoundButton label={t("screens.calendar.add")} onPress={comingNext}>
+                <RoundButton label={t("screens.calendar.add")} onPress={() => setAdding(true)}>
                   <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
                 </RoundButton>
               </Animated.View>
@@ -590,7 +596,7 @@ export default function VenueCalendar() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t("screens.calendar.add")}
-                onPress={comingNext}
+                onPress={() => setAdding(true)}
                 className="items-center justify-center rounded-full bg-primary active:opacity-80"
                 style={{
                   width: FAB,
@@ -635,6 +641,26 @@ export default function VenueCalendar() {
           onWeek={(start) => setPicked(start > weekStart ? start : addDays(start, 6))}
         />
       </Animated.View>
+      <AddSheet
+        holdMinutes={holdMinutes}
+        visible={adding}
+        onClose={() => setAdding(false)}
+        onPick={(action) => {
+          added.current = action;
+          setAdding(false);
+        }}
+        onHidden={() => {
+          const action = added.current;
+          added.current = null;
+          // A new booking is D10's, still to come.
+          if (action === "book") comingNext();
+          else if (action === "hold")
+            router.push({
+              pathname: "/hold",
+              params: { date: day, ...(groundId ? { groundId } : {}) },
+            });
+        }}
+      />
     </View>
   );
 }
