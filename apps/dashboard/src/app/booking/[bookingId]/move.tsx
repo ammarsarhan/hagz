@@ -62,7 +62,7 @@ const SWAY_LIFT = 4;
 // How much higher the tilted card's raised corner (and its shadow) reaches than its straight top,
 // and the room left between the last row and it.
 const TILT_REACH = 8;
-const CARD_GAP = 32;
+const CARD_GAP = 40;
 // FadingScroll's own room at the bottom, under its fade.
 const FADE = 28;
 
@@ -278,7 +278,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -20, marginTop: 4 }}
+            style={{ marginHorizontal: -20, marginTop: 8 }}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           >
             {grounds.map((ground) => (
