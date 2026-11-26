@@ -357,7 +357,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       <View
         pointerEvents="box-none"
         className="absolute inset-x-5"
-        style={{ bottom: insets.bottom + 8 }}
+        style={{ bottom: Math.max(insets.bottom - 12, 8) }}
       >
         <Animated.View
           className="flex-row items-center rounded-2xl bg-white px-4 py-3.5"
