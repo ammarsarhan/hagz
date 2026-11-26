@@ -283,7 +283,7 @@ function SettingsList({
   );
 }
 
-// A row's value at its end, grey with a chevron; the "Who's a regular" rows' in ink, as a rule.
+// A row's value at its end, grey with a chevron; the "Who's a regular" rows' in ink and medium, as a rule.
 function Value({
   children,
   strong = false,
@@ -296,7 +296,7 @@ function Value({
   return (
     <View className="flex-row items-center gap-1.5">
       <Text
-        className={`text-[15px] leading-[1.33] ${strong ? "font-semibold" : "text-ink-2"}`}
+        className={`text-[15px] leading-[1.33] ${strong ? "font-medium" : "text-ink-2"}`}
         numberOfLines={1}
       >
         {children}
