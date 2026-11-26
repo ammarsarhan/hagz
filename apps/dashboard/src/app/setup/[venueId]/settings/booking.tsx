@@ -4,7 +4,6 @@ import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Switch, View } from "react-native";
-import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
@@ -14,10 +13,9 @@ import { NoticeSheet } from "@/components/notice-sheet";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SettingsRow } from "@/components/settings-row";
-import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { Wheel, WheelBand, type WheelItem } from "@/components/wheel";
+import { PickSheet } from "@/components/pick-sheet";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
@@ -408,63 +406,6 @@ function Timeline({ t, hours }: { t: TFunction; hours: number }) {
         </View>
       </View>
     </View>
-  );
-}
-
-interface SheetWheel {
-  label: string;
-  items: WheelItem<number>[];
-  value: number;
-}
-
-// A setting's wheel sheet (Figma 645:176 / 645:333): its title and line, one or two wheels on one
-// band, and Done, grey until a wheel differs from what's saved.
-function PickSheet({
-  visible,
-  title,
-  body,
-  wheels,
-  onClose,
-  onDone,
-}: {
-  visible: boolean;
-  title: string;
-  body: string;
-  wheels: SheetWheel[];
-  onClose: () => void;
-  onDone: (values: number[]) => void;
-}) {
-  const { t } = useTranslation();
-  const [values, setValues] = useState(() => wheels.map((wheel) => wheel.value));
-  const changed = values.some((value, i) => value !== wheels[i]?.value);
-  return (
-    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
-        {title}
-      </Text>
-      <Text className="mt-2 text-subtitle text-ink-2">{body}</Text>
-      <View className="relative mt-5 flex-row">
-        <WheelBand />
-        {wheels.map((wheel, i) => (
-          <Wheel
-            key={wheel.label}
-            label={wheel.label}
-            items={wheel.items}
-            value={wheel.value}
-            onChange={(value) =>
-              setValues((current) => current.map((old, at) => (at === i ? value : old)))
-            }
-          />
-        ))}
-      </View>
-      <View className="mt-6">
-        <Button
-          label={t("screens.bookingSettings.done")}
-          disabled={!changed}
-          onPress={() => onDone(values)}
-        />
-      </View>
-    </Sheet>
   );
 }
 
