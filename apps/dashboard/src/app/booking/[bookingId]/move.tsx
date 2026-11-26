@@ -2,20 +2,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import Animated, {
-  cancelAnimation,
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
 import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { DayPickHeader, HourColumn, LiftedCard, useLiftedCard } from "@/components/day-pick";
 import { FadingScroll } from "@/components/fading-scroll";
 import { Field } from "@/components/field";
 import { useHud } from "@/components/hud";
@@ -25,18 +16,16 @@ import { SetupLoading } from "@/components/setup-loading";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { cardShadow } from "@/components/venue-map";
-import { Chip, WeekStrip } from "@/components/week-strip";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
-import { addDays, hourStartOf, localDateOf, weekStartOf } from "@/lib/calendar";
+import { hourStartOf, localDateOf, weekStartOf } from "@/lib/calendar";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { moveTargets, type MoveTarget } from "@/lib/move-targets";
 import { useNow } from "@/lib/use-now";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
-import { hourLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingQuery } from "./index";
 
 // Moving a booking (Figma D9: pick 605:2, confirm 600:2). The day as a list under the week strip
@@ -51,38 +40,8 @@ import { bookingQuery } from "./index";
 type Booking = components["schemas"]["StaffBookingDetail"];
 type StaffBooking = components["schemas"]["StaffBooking"];
 
-const NO_DOTS: ReadonlySet<string> = new Set();
 const HOUR = 3_600_000;
 const SOFT_FILL = "bg-[#f2f4ff]";
-
-// The lifted booking sways while it waits to be dropped: tilting a little either way as it rises
-// and settles, slowly, for as long as the screen is open.
-const SWAY_MS = 1600;
-const SWAY_LIFT = 4;
-// How much higher the tilted card's raised corner (and its shadow) reaches than its straight top,
-// and the room left between the last row and it.
-const TILT_REACH = 8;
-const CARD_GAP = 40;
-// FadingScroll's own room at the bottom, under its fade.
-const FADE = 28;
-
-const useFloat = () => {
-  const sway = useSharedValue(0);
-  useEffect(() => {
-    sway.value = withRepeat(
-      withTiming(1, { duration: SWAY_MS, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(sway);
-  }, [sway]);
-  return useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(sway.value, [0, 1], [0, -SWAY_LIFT]) },
-      { rotate: `${interpolate(sway.value, [0, 1], [-2, 0.5])}deg` },
-    ],
-  }));
-};
 
 export default function MoveBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
@@ -97,18 +56,8 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
-  const insets = useSafeAreaInsets();
   const compact = useCompactTitle();
-  const floatStyle = useFloat();
-  // The lifted card sits low, partly over the home indicator's space; the day's last rows scroll
-  // clear of it. The screen already ends above that space and the scroll keeps its fade's room at
-  // the bottom, so only the rest of the card's reach (its sway and tilt) and a gap are added.
-  const cardBottom = Math.max(insets.bottom - 12, 8);
-  const [cardHeight, setCardHeight] = useState(72);
-  const clearCard = Math.max(
-    0,
-    cardBottom + cardHeight + SWAY_LIFT + TILT_REACH + CARD_GAP - insets.bottom - FADE,
-  );
+  const card = useLiftedCard();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const { timezone, currency } = booking;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
@@ -264,52 +213,30 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         >
           {title}
         </Title>
-        <View style={{ marginHorizontal: -20 }}>
-          <WeekStrip
-            start={weekStart}
-            picked={day}
-            today={localDateOf(now, timezone)}
-            dots={NO_DOTS}
-            onPick={setDay}
-            onWeek={(start) => setDay(start > weekStart ? start : addDays(start, 6))}
-          />
-        </View>
-        {grounds.length > 1 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -20, marginTop: 8 }}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-          >
-            {grounds.map((ground) => (
-              <Chip
-                key={ground.id}
-                label={ground.name ?? ""}
-                on={groundId === ground.id}
-                onPress={() => setGroundId(ground.id)}
-              />
-            ))}
-          </ScrollView>
-        ) : null}
-        <View className="mt-4 h-px bg-border" style={{ marginHorizontal: -20 }} />
+        <DayPickHeader
+          weekStart={weekStart}
+          day={day}
+          today={localDateOf(now, timezone)}
+          onDay={setDay}
+          grounds={grounds}
+          groundId={groundId}
+          onGround={setGroundId}
+        />
 
         {!slots.data ? (
           <ActivityIndicator className="mt-8" color={colors.ink3} />
         ) : (
-          <View className="gap-5 pt-5" style={{ paddingBottom: clearCard }}>
+          <View className="gap-5 pt-5" style={{ paddingBottom: card.room }}>
             {targets.length === 0 ? (
               <Text className="text-body text-ink-2">{t("screens.move.none")}</Text>
             ) : null}
             {hours.map((group) => (
               <View key={group.hour} className="flex-row">
-                <View className="w-12">
-                  <Text className="text-label font-semibold">
-                    {hourLabel(new Date(group.hour).toISOString(), timezone, t)}
-                  </Text>
-                  <Text className="text-caption text-ink-3">
-                    {hourLabel(new Date(group.hour + HOUR).toISOString(), timezone, t)}
-                  </Text>
-                </View>
+                <HourColumn
+                  from={new Date(group.hour).toISOString()}
+                  to={new Date(group.hour + HOUR).toISOString()}
+                  timezone={timezone}
+                />
                 <View className="ms-3 flex-1 gap-2">
                   {group.items.map((item) =>
                     item.kind === "own" ? (
@@ -370,37 +297,17 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       </FadingScroll>
 
       {/* The booking, lifted off the calendar while its new time is picked. */}
-      <View
-        pointerEvents="box-none"
-        className="absolute inset-x-5"
-        style={{ bottom: cardBottom }}
-        onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}
-      >
-        <Animated.View
-          className="flex-row items-center rounded-2xl bg-white px-4 py-3.5"
-          style={[cardShadow, floatStyle]}
-        >
-          <View className="h-9 w-1 rounded-full bg-primary" />
-          <View className="ms-4 flex-1">
-            <Text className="text-subtitle">{booking.customer.name}</Text>
-            <Text className="text-label text-ink-2">
-              {t("screens.move.card", {
-                hours: span(booking.startsAt, booking.endsAt),
-                ground: booking.ground.name ?? "",
-                price: money(oldSlots),
-              })}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            hitSlop={8}
-            className="ms-3 active:opacity-70"
-          >
-            <Text className="text-body font-medium underline">{t("screens.move.cancel")}</Text>
-          </Pressable>
-        </Animated.View>
-      </View>
+      <LiftedCard
+        title={booking.customer.name}
+        detail={t("screens.move.card", {
+          hours: span(booking.startsAt, booking.endsAt),
+          ground: booking.ground.name ?? "",
+          price: money(oldSlots),
+        })}
+        bottom={card.bottom}
+        onLayout={card.onLayout}
+        onCancel={() => router.back()}
+      />
 
       {held ? (
         <ConfirmMove
