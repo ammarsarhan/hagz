@@ -24,7 +24,7 @@ import { paymentLabel } from "@/lib/settings";
 // are left out. Setup's screens edit a live venue as they did the draft; rows whose screens
 // aren't built yet say so.
 
-const COVER_HEIGHT = 150;
+const COVER_HEIGHT = 180;
 
 export default function VenueTab() {
   const { t } = useTranslation();
@@ -177,13 +177,6 @@ export default function VenueTab() {
     );
   };
 
-  const where = [
-    venue.location,
-    groundCount === undefined ? null : t(`${v}.groundCount`, { count: groundCount }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
   return (
     <Screen tabbed>
       <ScrollView
@@ -219,7 +212,15 @@ export default function VenueTab() {
           <Text className="text-center text-[22px] font-semibold leading-[1.27]">
             {venue.name ?? ""}
           </Text>
-          {where ? <Text className="mt-1 text-center text-body text-ink-2">{where}</Text> : null}
+          {/* The area, then how many grounds on a line of its own. */}
+          {venue.location ? (
+            <Text className="mt-1 text-center text-body text-ink-2">{venue.location}</Text>
+          ) : null}
+          {groundCount === undefined ? null : (
+            <Text className="text-center text-body text-ink-2">
+              {t(`${v}.groundCount`, { count: groundCount })}
+            </Text>
+          )}
         </View>
 
         {group(t(`${v}.yourVenue`), place, true)}
