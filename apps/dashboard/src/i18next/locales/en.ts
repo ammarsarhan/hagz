@@ -122,6 +122,7 @@ const en = {
           taken: "Taken since. Pick another time.",
           lapsed: "Haven't played lately",
           regulars: "Regulars",
+          customers: "Your customers",
           others: "Everyone else",
           played_one: "Played once",
           played_other: "Played {{count}} times",

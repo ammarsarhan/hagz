@@ -136,6 +136,7 @@ const ar: ArabicTranslations = {
           taken: "حُجز منذ قليل. اختر وقتًا آخر.",
           lapsed: "لم يلعبوا مؤخرًا",
           regulars: "المنتظمون",
+          customers: "عملاؤك",
           others: "الجميع",
           played_one: "لعب مرة واحدة",
           played_other: "لعب {{count}} مرات",

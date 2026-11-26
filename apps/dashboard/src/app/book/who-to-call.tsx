@@ -71,7 +71,10 @@ export default function WhoToCall() {
   const groupTitle: Record<Group, string> = {
     LAPSED_REGULAR: t("screens.book.call.lapsed"),
     ACTIVE_REGULAR: t("screens.book.call.regulars"),
-    OTHER: t("screens.book.call.others"),
+    // "Everyone else" only reads right under regulars; alone, they're just the venue's customers.
+    OTHER: candidates.data?.data.some((one) => one.group !== "OTHER")
+      ? t("screens.book.call.others")
+      : t("screens.book.call.customers"),
   };
 
   return (
