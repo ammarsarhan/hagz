@@ -224,21 +224,26 @@ function Person({
         <Text className="text-subtitle font-medium">{customer.name}</Text>
         <Text className="text-label text-ink-2">{record}</Text>
         {person.usual ? (
-          // Their usual day as a little week, and the hour.
+          // Their usual day as a little week, the day's disc stretched into a pill holding the
+          // hour, so the two read as one (user: a separate hour felt disjointed).
           <View className="mt-1.5 flex-row items-center">
-            {letters.map((letter, day) => (
-              <View
-                key={day}
-                className={`me-1 size-[18px] items-center justify-center rounded-full ${day === person.usual?.dayOfWeek ? "bg-primary" : ""}`}
-              >
-                <Text
-                  className={`text-[10px] font-medium ${day === person.usual?.dayOfWeek ? "text-on-primary" : "text-ink-3"}`}
+            {letters.map((letter, day) =>
+              day === person.usual?.dayOfWeek ? (
+                <View
+                  key={day}
+                  className="me-1 h-[18px] flex-row items-center rounded-full bg-primary px-1.5"
                 >
-                  {letter}
-                </Text>
-              </View>
-            ))}
-            <Text className="ms-2 text-label">{hourOf(person.usual.hour, t)}</Text>
+                  <Text className="text-[10px] font-semibold text-on-primary">{letter}</Text>
+                  <Text className="ms-1 text-[10px] font-medium text-on-primary">
+                    {hourOf(person.usual.hour, t)}
+                  </Text>
+                </View>
+              ) : (
+                <View key={day} className="me-1 size-[18px] items-center justify-center">
+                  <Text className="text-[10px] font-medium text-ink-3">{letter}</Text>
+                </View>
+              ),
+            )}
           </View>
         ) : null}
         {person.suggestedSlot ? (
