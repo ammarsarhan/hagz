@@ -16,6 +16,7 @@ import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, inputClass } from "@/components/field";
 import { GroupHeading } from "@/components/group-heading";
+import { NoticeSheet } from "@/components/notice-sheet";
 import { IconAlertTriangle, IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -34,11 +35,9 @@ import {
   DEFAULT_LOYALTY,
   LOYALTY_STAMPS,
   LOYALTY_WINDOWS,
-  NOTICE_CHOICES,
   PAYMENT_MODES,
   noticeLabel,
   paymentLabel,
-  type MinimumNotice,
   type PaymentMode,
 } from "@/lib/settings";
 import { useSaveSettings, type VenueDetail } from "@/lib/venue-edit";
@@ -56,8 +55,9 @@ export default function SetupSettings() {
   return <SettingsList venueId={venueId} venue={venue.data} fromVenue={from === "venue"} />;
 }
 
-// From the Venue tab (Payments), the cancellation policy is left out: the tab has its own
-// Cancellations row (user, 2026-11-26). Setup's checklist item keeps it.
+// From the Venue tab (Payments), how bookings are confirmed and when they close are on its Settings
+// page, and the cancellation policy has its own row (user, 2026-11-26). Setup's checklist item
+// keeps them all.
 function SettingsList({
   venueId,
   venue,
@@ -119,27 +119,34 @@ function SettingsList({
           {title}
         </Title>
 
-        <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
-        <SettingsRow
-          title={t("screens.setup.settings.autoConfirm")}
-          body={t("screens.setup.settings.autoConfirmBody")}
-          trailing={
-            <Switch
-              accessibilityLabel={t("screens.setup.settings.autoConfirm")}
-              value={settings.autoConfirm}
-              onValueChange={(autoConfirm) => void save({ autoConfirm })}
-              trackColor={{ true: colors.primary }}
+        {/* From the Venue tab, these are on its Settings page (user, 2026-11-26). */}
+        {fromVenue ? null : (
+          <>
+            <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
+            <SettingsRow
+              title={t("screens.setup.settings.autoConfirm")}
+              body={t("screens.setup.settings.autoConfirmBody")}
+              trailing={
+                <Switch
+                  accessibilityLabel={t("screens.setup.settings.autoConfirm")}
+                  value={settings.autoConfirm}
+                  onValueChange={(autoConfirm) => void save({ autoConfirm })}
+                  trackColor={{ true: colors.primary }}
+                />
+              }
             />
-          }
-        />
-        <SettingsRow
-          title={t("screens.setup.settings.closes")}
-          body={noticeLabel(t, settings.minimumNotice)}
-          trailing={chevron}
-          onPress={() => setChoosingNotice(true)}
-        />
+            <SettingsRow
+              title={t("screens.setup.settings.closes")}
+              body={noticeLabel(t, settings.minimumNotice)}
+              trailing={chevron}
+              onPress={() => setChoosingNotice(true)}
+            />
+          </>
+        )}
 
-        <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.payments")}</GroupHeading>
+        <GroupHeading className={`mb-1 ${fromVenue ? "" : "mt-9"}`}>
+          {t("screens.setup.settings.payments")}
+        </GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.howPlayersPay")}
           body={paymentLabel(t, settings.paymentMode)}
@@ -263,43 +270,6 @@ function SettingsList({
         }}
       />
     </Screen>
-  );
-}
-
-// When booking closes: one of a fixed list (NOTICE_CHOICES). Not drawn in Figma; a plain list of
-// the choices, like the cancellation policies, and choosing one saves it and closes the sheet.
-function NoticeSheet({
-  visible,
-  value,
-  onClose,
-  onChoose,
-}: {
-  visible: boolean;
-  value: MinimumNotice;
-  onClose: () => void;
-  onChoose: (minutes: MinimumNotice) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
-        {t("screens.setup.settings.closes")}
-      </Text>
-      <View accessibilityRole="radiogroup">
-        {NOTICE_CHOICES.map((minutes, i) => (
-          <Pressable
-            key={minutes}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: minutes === value }}
-            onPress={() => onChoose(minutes)}
-            className={`flex-row items-center gap-3 py-3.5 active:opacity-60 ${i === NOTICE_CHOICES.length - 1 ? "" : "border-b border-border"}`}
-          >
-            <Text className="flex-1 text-subtitle">{noticeLabel(t, minutes)}</Text>
-            <RadioMark selected={minutes === value} />
-          </Pressable>
-        ))}
-      </View>
-    </Sheet>
   );
 }
 

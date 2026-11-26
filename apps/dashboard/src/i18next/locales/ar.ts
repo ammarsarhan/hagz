@@ -382,8 +382,9 @@ const ar: ArabicTranslations = {
         },
       },
       bookingSettings: {
-        title: "إعدادات الحجز",
-        subtitle: "الحجوزات المؤقتة والحجوزات الأسبوعية. للأسعار والدفع والإلغاء صفحاتها الخاصة.",
+        title: "الإعدادات",
+        subtitle:
+          "الحجوزات والحجز المؤقت والحجوزات الأسبوعية. للأسعار والدفع والإلغاء صفحاتها الخاصة.",
         failed: "تعذّر تحميل الإعدادات. ارجع وحاول مرة أخرى.",
         holds: "الحجز المؤقت",
         holdFor: "احجز الوقت لمدة",
@@ -467,8 +468,8 @@ const ar: ArabicTranslations = {
         groundsBodyPlain: "ملاعبك وأماكنها",
         hours: "المواعيد والأسعار",
         hoursBody: "متى يفتح كل ملعب، وأسعاره",
-        bookingSettings: "إعدادات الحجز",
-        bookingSettingsBody: "الحجز المؤقت، المنتظمون، ومدى الحجز المسبق",
+        bookingSettings: "الإعدادات",
+        bookingSettingsBody: "الموافقة، الحجز المؤقت، المنتظمون",
         cancellations: "الإلغاء",
         cancellationsBody: "ما يسترده اللاعبون",
         payments: "الدفع",
@@ -1151,7 +1152,7 @@ const ar: ArabicTranslations = {
         },
         settings: {
           subtitle: "كيف تُؤكَّد الحجوزات وتُدفع وتُسترد. يمكنك تغيير أي منها لاحقًا.",
-          venueSubtitle: "كيف تُؤكَّد الحجوزات وتُدفع، ومكافأة الولاء.",
+          venueSubtitle: "كيف يدفع اللاعبون، ومكافأة الولاء.",
           bookings: "الحجوزات",
           payments: "المدفوعات",
           cancellations: "الإلغاء",

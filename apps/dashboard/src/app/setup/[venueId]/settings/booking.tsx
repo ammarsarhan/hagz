@@ -3,13 +3,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Switch, View } from "react-native";
 import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
+import { NoticeSheet } from "@/components/notice-sheet";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SettingsRow } from "@/components/settings-row";
@@ -24,10 +25,14 @@ import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel, shortDayName } from "@/lib/hours";
 import { isRTL } from "@/lib/language";
+import { queries } from "@/lib/queries";
+import { noticeLabel } from "@/lib/settings";
+import { useSaveSettings } from "@/lib/venue-edit";
 import type { components } from "@hagz/api";
 
-// Booking settings (Figma D18, 645:3), from Venue › Rules: holds, regulars, and who goes first in Who to call,
-// in the rows of the venue's other settings with each value at the row's end. A row opens a wheel
+// Settings (Figma D18 "Booking settings", 645:3), from Venue › Rules: how bookings are confirmed
+// and when they close (moved here from Payments, user, 2026-11-26), holds, regulars, and who goes
+// first in Who to call, in the rows of the venue's other settings with each value at the row's end. A row opens a wheel
 // sheet (645:176; two wheels side by side for "Plays often", 645:333), whose Done stays grey
 // until it differs from what's saved, and saves as it closes.
 //
@@ -150,7 +155,8 @@ function SettingsList({
 
   return (
     <>
-      <GroupHeading className="mb-1">{t(`${b}.holds`)}</GroupHeading>
+      <VenueBookings venueId={venueId} canEdit={canEdit} />
+      <GroupHeading className="mb-1 mt-9">{t(`${b}.holds`)}</GroupHeading>
       <SettingsRow
         title={t(`${b}.holdFor`)}
         body={t(`${b}.holdForBody`)}
@@ -286,6 +292,49 @@ function SettingsList({
         ]}
         onClose={close}
         onDone={([lapsedAfter]) => void save({ lapsedAfter })}
+      />
+    </>
+  );
+}
+
+// How bookings are confirmed and when booking closes: the venue's own settings (saved with
+// PATCH settings, as on setup's Policy page), drawn as they are there.
+function VenueBookings({ venueId, canEdit }: { venueId: string; canEdit: boolean }) {
+  const { t } = useTranslation();
+  const venue = useQuery(queries.venue(venueId));
+  const save = useSaveSettings(venueId);
+  const [choosing, setChoosing] = useState(false);
+  const settings = venue.data?.settings;
+  if (!settings) return null;
+  return (
+    <>
+      <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
+      <SettingsRow
+        title={t("screens.setup.settings.autoConfirm")}
+        body={t("screens.setup.settings.autoConfirmBody")}
+        trailing={
+          <Switch
+            accessibilityLabel={t("screens.setup.settings.autoConfirm")}
+            value={settings.autoConfirm}
+            disabled={!canEdit}
+            onValueChange={(autoConfirm) => void save({ autoConfirm })}
+            trackColor={{ true: colors.primary }}
+          />
+        }
+      />
+      <SettingsRow
+        title={t("screens.setup.settings.closes")}
+        trailing={<Value chevron={canEdit}>{noticeLabel(t, settings.minimumNotice)}</Value>}
+        onPress={canEdit ? () => setChoosing(true) : undefined}
+      />
+      <NoticeSheet
+        visible={choosing}
+        value={settings.minimumNotice}
+        onClose={() => setChoosing(false)}
+        onChoose={(minimumNotice) => {
+          setChoosing(false);
+          if (minimumNotice !== settings.minimumNotice) void save({ minimumNotice });
+        }}
       />
     </>
   );

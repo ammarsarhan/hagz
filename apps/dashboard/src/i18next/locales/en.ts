@@ -317,8 +317,9 @@ const en = {
         },
       },
       bookingSettings: {
-        title: "Booking settings",
-        subtitle: "Holds and regulars. Prices, payments and cancellations have their own pages.",
+        title: "Settings",
+        subtitle:
+          "Bookings, holds and regulars. Prices, payments and cancellations have their own pages.",
         failed: "Couldn't load the settings. Go back and try again.",
         holds: "Holds",
         holdFor: "Hold a time for",
@@ -386,8 +387,8 @@ const en = {
         groundsBodyPlain: "Your grounds and where they are",
         hours: "Hours and prices",
         hoursBody: "When each ground opens, and its prices",
-        bookingSettings: "Booking settings",
-        bookingSettingsBody: "Holds, regulars, how far ahead",
+        bookingSettings: "Settings",
+        bookingSettingsBody: "Approval, holds, regulars",
         cancellations: "Cancellations",
         cancellationsBody: "What players get back",
         payments: "Payments",
@@ -1071,7 +1072,7 @@ const en = {
         },
         settings: {
           subtitle: "How bookings are confirmed, paid for and refunded. Change any of it later.",
-          venueSubtitle: "How bookings are confirmed and paid for, and the loyalty reward.",
+          venueSubtitle: "How players pay, and the loyalty reward.",
           bookings: "Bookings",
           payments: "Payments",
           cancellations: "Cancellations",

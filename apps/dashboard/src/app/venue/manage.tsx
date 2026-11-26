@@ -28,8 +28,8 @@ import { push } from "@/lib/navigation";
 // scroll (a hairline once scrolled; no section names coming into it, user 2026-11-26), the venue's photos
 // taking turns every 5 seconds (grey and pulsing while the first loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
-// grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
-// payments). Each row's grey line says what's there now. Rows for an area the member can't see
+// grounds, hours), People (customers, regulars, team) and Rules (settings, payments,
+// cancellations). Each row's grey line says what's there now. Rows for an area the member can't see
 // are left out. Setup's screens edit a live venue as they did the draft; rows whose screens
 // aren't built yet say so.
 
@@ -152,19 +152,19 @@ export default function VenueTab() {
       onPress: open("settings/booking"),
     },
     can("venue") && {
+      key: "payments",
+      title: t(`${v}.payments`),
+      body: settings ? payment(t, settings) : t(`${v}.paymentsBody`),
+      // Without its cancellation policy: the Venue tab has a row of its own for that.
+      onPress: open("settings?from=venue"),
+    },
+    can("venue") && {
       key: "cancellations",
       title: t(`${v}.cancellations`),
       body: settings?.cancellationPolicy
         ? t(`screens.setup.settings.cancellation.policies.${settings.cancellationPolicy}.title`)
         : t(`${v}.cancellationsBody`),
       onPress: open("settings/cancellation"),
-    },
-    can("venue") && {
-      key: "payments",
-      title: t(`${v}.payments`),
-      body: settings ? payment(t, settings) : t(`${v}.paymentsBody`),
-      // Without its cancellation policy: the Venue tab has a row of its own for that.
-      onPress: open("settings?from=venue"),
     },
   ];
 
