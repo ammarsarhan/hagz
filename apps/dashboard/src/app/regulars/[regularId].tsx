@@ -41,9 +41,10 @@ import { regularQuery } from "@/lib/regulars";
 // Paused (655:340): since when instead of since it began, only its confirmed weeks (nothing else is
 // reserved meanwhile), and Resume in a bar. Ended, the list no longer shows it: the page closes.
 //
-// Last 10 weeks (655:2): a dot a settled week, oldest first: black played, hollow let go in time,
-// dashed not answered, grey a no-show. No legend under them (user, 2026-11-26); each dot says its
-// week and how it went to a screen reader. Then the totals, all time, under "So far".
+// Last 4 weeks (655:2): always four dots, oldest first (user, 2026-11-27: never one lone dot): black
+// played, hollow let go in time, dashed not answered, grey a no-show, and a faint dot for each of
+// the four with nothing settled yet. No legend under them (user, 2026-11-26); each dot says its week
+// and how it went to a screen reader. Then the totals, all time, under "So far".
 
 type Detail = components["schemas"]["VenueRegularDetail"];
 type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
@@ -57,6 +58,7 @@ const DOT: Record<Detail["lastWeeks"][number]["outcome"], string> = {
   NOT_ANSWERED: "border-[1.5px] border-dashed border-ink",
   NO_SHOW: "bg-ink-3",
 };
+const LAST_WEEKS = 4;
 
 export default function RegularPage() {
   const { t } = useTranslation();
@@ -213,26 +215,31 @@ export default function RegularPage() {
         ) : null}
 
         <View className="mt-6 h-px bg-border" />
-        {one.lastWeeks.length > 0 ? (
-          <>
-            <GroupHeading className="mt-7 mb-4">
-              {t(`${p}.lastWeeks`, { count: one.lastWeeks.length })}
-            </GroupHeading>
-            <View className="flex-row gap-[11.5px]">
-              {one.lastWeeks.map((week) => (
-                <View
-                  key={week.date}
-                  accessible
-                  accessibilityLabel={`${dayMonth.format(new Date(`${week.date}T12:00:00Z`))} · ${t(`${p}.outcomes.${week.outcome}`)}`}
-                  className={`size-[22px] rounded-full ${DOT[week.outcome]}`}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
-        <GroupHeading className={`${one.lastWeeks.length > 0 ? "mt-8" : "mt-7"} mb-3`}>
-          {t(`${p}.soFar`)}
+        <GroupHeading className="mt-7 mb-4">
+          {t(`${p}.lastWeeks`, { count: LAST_WEEKS })}
         </GroupHeading>
+        <View className="flex-row gap-[11.5px]">
+          {Array.from(
+            { length: LAST_WEEKS - Math.min(one.lastWeeks.length, LAST_WEEKS) },
+            (_, i) => (
+              <View
+                key={`none-${i}`}
+                accessible
+                accessibilityLabel={t(`${p}.outcomes.NONE`)}
+                className="size-[22px] rounded-full bg-border"
+              />
+            ),
+          )}
+          {one.lastWeeks.slice(-LAST_WEEKS).map((week) => (
+            <View
+              key={week.date}
+              accessible
+              accessibilityLabel={`${dayMonth.format(new Date(`${week.date}T12:00:00Z`))} · ${t(`${p}.outcomes.${week.outcome}`)}`}
+              className={`size-[22px] rounded-full ${DOT[week.outcome]}`}
+            />
+          ))}
+        </View>
+        <GroupHeading className="mt-8 mb-3">{t(`${p}.soFar`)}</GroupHeading>
         {figures.map((figure) => (
           <View key={figure.key} className="flex-row justify-between py-2">
             <Text className="text-[15px] leading-5 text-ink-2">{figure.label}</Text>

@@ -318,6 +318,7 @@ const ar: ArabicTranslations = {
             NO_SHOW: "لم يحضر",
             LET_GO: "تُرك في الوقت",
             NOT_ANSWERED: "لم يُرد",
+            NONE: "لا مباراة بعد",
           },
           confirmed: "مؤكدة",
           released: "تُركت في الوقت",

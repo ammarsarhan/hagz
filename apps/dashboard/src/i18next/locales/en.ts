@@ -264,6 +264,7 @@ const en = {
             NO_SHOW: "No-show",
             LET_GO: "Let go in time",
             NOT_ANSWERED: "Not answered",
+            NONE: "No game yet",
           },
           confirmed: "Confirmed",
           released: "Let go in time",
