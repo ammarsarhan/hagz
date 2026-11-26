@@ -40,7 +40,6 @@ import { bookingQuery } from "./index";
 type Booking = components["schemas"]["StaffBookingDetail"];
 type StaffBooking = components["schemas"]["StaffBooking"];
 
-const HOUR = 3_600_000;
 const SOFT_FILL = "bg-[#f2f4ff]";
 
 export default function MoveBooking() {
@@ -176,12 +175,23 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         Date.parse(a.startsAt) - Date.parse(b.startsAt) ||
         Number(a.kind === "free") - Number(b.kind === "free"),
     );
-    const groups: { hour: number; items: Item[] }[] = [];
+    const endOf = (item: Item) =>
+      item.kind === "own"
+        ? booking.endsAt
+        : item.kind === "other"
+          ? item.booking.endsAt
+          : item.target.endsAt;
+    // Each group under the hour its rows start in, its column ending where the last of them ends
+    // (a three-hour booking from 6 reads 6pm to 9pm, not to 7).
+    const groups: { hour: number; end: number; items: Item[] }[] = [];
     for (const item of items) {
       const hour = hourStartOf(item.startsAt, timezone);
+      const end = Date.parse(endOf(item));
       const last = groups.at(-1);
-      if (last?.hour === hour) last.items.push(item);
-      else groups.push({ hour, items: [item] });
+      if (last?.hour === hour) {
+        last.items.push(item);
+        last.end = Math.max(last.end, end);
+      } else groups.push({ hour, end, items: [item] });
     }
     return groups;
   }, [booking, others.data, targets, day, timezone, groundId]);
@@ -235,7 +245,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
               <View key={group.hour} className="flex-row">
                 <HourColumn
                   from={new Date(group.hour).toISOString()}
-                  to={new Date(group.hour + HOUR).toISOString()}
+                  to={new Date(group.end).toISOString()}
                   timezone={timezone}
                 />
                 <View className="ms-3 flex-1 gap-2">

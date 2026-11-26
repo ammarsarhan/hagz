@@ -40,7 +40,6 @@ import { hoursSpan, relativeDay } from "@/lib/when";
 // 2026-11-26). The pick shows solid blue, and a bar says its hours and price, with Hold, which asks
 // who it's for (HoldFor) and then opens the held booking.
 
-const HOUR = 3_600_000;
 // How long a free time is held before dragging starts (the opening hours grid's beat).
 const HOLD_MS = 250;
 const SOFT_FILL = "bg-[#f2f4ff]";
@@ -103,12 +102,18 @@ export default function HoldTime() {
         })),
     ];
     items.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
-    const groups: { hour: number; items: Item[] }[] = [];
+    const endOf = (item: Item) => (item.kind === "free" ? item.slot.endsAt : item.booking.endsAt);
+    // Each group under the hour its rows start in, its column ending where the last of them ends
+    // (a three-hour booking from 6 reads 6pm to 9pm, not to 7).
+    const groups: { hour: number; end: number; items: Item[] }[] = [];
     for (const item of items) {
       const hour = hourStartOf(item.startsAt, timezone);
+      const end = Date.parse(endOf(item));
       const last = groups.at(-1);
-      if (last?.hour === hour) last.items.push(item);
-      else groups.push({ hour, items: [item] });
+      if (last?.hour === hour) {
+        last.items.push(item);
+        last.end = Math.max(last.end, end);
+      } else groups.push({ hour, end, items: [item] });
     }
     return groups;
   }, [slots.data, bookings.data, day, groundId, timezone, now]);
@@ -307,7 +312,7 @@ export default function HoldTime() {
                 <View key={group.hour} className="flex-row" onLayout={placeGroup(group.hour)}>
                   <HourColumn
                     from={new Date(group.hour).toISOString()}
-                    to={new Date(group.hour + HOUR).toISOString()}
+                    to={new Date(group.end).toISOString()}
                     timezone={timezone}
                   />
                   <View className="ms-3 flex-1 gap-2">
