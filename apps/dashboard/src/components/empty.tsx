@@ -28,7 +28,7 @@ export function Empty({
       </Text>
       {action ? (
         <View className="mt-6">
-          <Button label={action.label} onPress={action.onPress} compact />
+          <Button label={action.label} onPress={action.onPress} compact wide />
         </View>
       ) : null}
     </View>
