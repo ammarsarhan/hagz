@@ -190,11 +190,13 @@ export default function ConfirmRegular() {
         />
         <Fact
           label={t(`${c}.firstWeek`)}
+          bigLabel
           value={first ? dayMonth.format(new Date(`${first}T12:00:00Z`)) : ""}
           onChange={() => hud.show(t("common.comingNext"))}
         />
         <Fact
           label={t(`${c}.lastWeek`)}
+          bigLabel
           value={t(`${c}.noEnd`)}
           onChange={() => hud.show(t("common.comingNext"))}
         />
@@ -245,11 +247,14 @@ export default function ConfirmRegular() {
 // One of the facts: what it is in grey, the value under it, Change at its end, a hairline under.
 function Fact({
   label,
+  bigLabel = false,
   value,
   detail,
   onChange,
 }: {
   label: string;
+  // The label as big as the value: First week and Last week (user, 2026-11-26).
+  bigLabel?: boolean;
   value: string;
   // A grey line under the value: the number under the name (user, 2026-11-26).
   detail?: string;
@@ -258,7 +263,11 @@ function Fact({
   return (
     <View className="flex-row items-center border-b border-border pt-5 pb-4">
       <View className="flex-1">
-        <Text className="text-[14px] leading-[19px] font-medium text-ink-2">{label}</Text>
+        <Text
+          className={`font-medium text-ink-2 ${bigLabel ? "text-[16px] leading-[21px]" : "text-[14px] leading-[19px]"}`}
+        >
+          {label}
+        </Text>
         <Text className="mt-1.5 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
           {value}
         </Text>
