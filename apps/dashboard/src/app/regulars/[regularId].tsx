@@ -28,6 +28,7 @@ import { intlLocale } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
+import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { regularQuery } from "@/lib/regulars";
 
 // A regular (Figma D12 655:2), from the Regulars list: who, their weekly time, ground and since
@@ -41,24 +42,25 @@ import { regularQuery } from "@/lib/regulars";
 // Paused (655:340): since when instead of since it began, only its confirmed weeks (nothing else is
 // reserved meanwhile), and Resume in a bar. Ended, the list no longer shows it: the page closes.
 //
-// Last 4 weeks (655:2): always four dots, oldest first (user, 2026-11-27: never one lone dot): black
-// played, hollow let go in time, dashed not answered, grey a no-show, and a faint dot for each of
-// the four with nothing settled yet. No legend under them (user, 2026-11-26); each dot says its week
-// and how it went to a screen reader. Then the totals, all time, under "So far".
+// Next 4 weeks (user, 2026-11-27): a dot for each week kept ahead, soonest first: blue confirmed
+// (moved ones too), pale blue waiting, hollow let go, dashed not answered, and a faint dot for a
+// week with nothing reserved (skipped, or paused). As many as the venue keeps ahead. No legend
+// under them (user, 2026-11-26); each dot says its week and state to a screen reader. Then the
+// totals, all time, under "So far".
 
 type Detail = components["schemas"]["VenueRegularDetail"];
 type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 const WEEKLY = "bg-[#c9d6ff]";
-// How each settled week's dot looks (Figma 655:2; a no-show, not drawn there, grey).
-const DOT: Record<Detail["lastWeeks"][number]["outcome"], string> = {
-  PLAYED: "bg-ink",
+// How each coming week's dot looks.
+const DOT: Record<Detail["comingWeeks"][number]["state"], string> = {
+  CONFIRMED: "bg-primary",
+  WAITING: WEEKLY,
   LET_GO: "border-[1.5px] border-ink",
   NOT_ANSWERED: "border-[1.5px] border-dashed border-ink",
-  NO_SHOW: "bg-ink-3",
 };
-const LAST_WEEKS = 4;
+const FALLBACK_HORIZON = 4;
 
 export default function RegularPage() {
   const { t } = useTranslation();
@@ -76,6 +78,8 @@ export default function RegularPage() {
   const { resume, sending: resuming } = useResume(venueId, regularId);
   const copyLink = useCopyConfirmLink(venueId);
   const regular = useQuery(regularQuery(venueId, regularId));
+  // As many dots as the venue keeps weeks ahead.
+  const horizon = useQuery(bookingSettingsQuery(venueId)).data?.regularHorizon ?? FALLBACK_HORIZON;
 
   const back = <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />;
   const one = regular.data;
@@ -215,27 +219,22 @@ export default function RegularPage() {
         ) : null}
 
         <View className="mt-6 h-px bg-border" />
-        <GroupHeading className="mt-7 mb-4">
-          {t(`${p}.lastWeeks`, { count: LAST_WEEKS })}
-        </GroupHeading>
+        <GroupHeading className="mt-7 mb-4">{t(`${p}.nextWeeks`, { count: horizon })}</GroupHeading>
         <View className="flex-row gap-[11.5px]">
-          {Array.from(
-            { length: LAST_WEEKS - Math.min(one.lastWeeks.length, LAST_WEEKS) },
-            (_, i) => (
-              <View
-                key={`none-${i}`}
-                accessible
-                accessibilityLabel={t(`${p}.outcomes.NONE`)}
-                className="size-[22px] rounded-full bg-border"
-              />
-            ),
-          )}
-          {one.lastWeeks.slice(-LAST_WEEKS).map((week) => (
+          {one.comingWeeks.slice(0, horizon).map((week) => (
             <View
               key={week.date}
               accessible
-              accessibilityLabel={`${dayMonth.format(new Date(`${week.date}T12:00:00Z`))} · ${t(`${p}.outcomes.${week.outcome}`)}`}
-              className={`size-[22px] rounded-full ${DOT[week.outcome]}`}
+              accessibilityLabel={`${dayMonth.format(new Date(`${week.date}T12:00:00Z`))} · ${t(`${p}.weekStates.${week.state}`)}`}
+              className={`size-[22px] rounded-full ${DOT[week.state]}`}
+            />
+          ))}
+          {Array.from({ length: Math.max(horizon - one.comingWeeks.length, 0) }, (_, i) => (
+            <View
+              key={`none-${i}`}
+              accessible
+              accessibilityLabel={t(`${p}.weekStates.NONE`)}
+              className="size-[22px] rounded-full bg-border"
             />
           ))}
         </View>
