@@ -114,6 +114,40 @@ export interface ReservationOutcome {
   releasedBy: "STAFF" | "CUSTOMER" | "DEADLINE" | "REGULAR" | null;
 }
 
+// How one of its weeks went, for the regular's last-weeks dots: played, a no-show, let go in time
+// (or cancelled after confirming), or not answered by the deadline.
+export type WeekOutcome = "PLAYED" | "NO_SHOW" | "LET_GO" | "NOT_ANSWERED";
+
+// Its last `count` weeks that are settled, oldest first. A week still waiting, or confirmed and not
+// yet played, isn't settled; one released because the regular changed isn't its doing.
+export const lastWeeksOf = (
+  rows: readonly (ReservationOutcome & { startsAt: Date })[],
+  now: Date,
+  timezone: string,
+  count = 10,
+): { date: string; outcome: WeekOutcome }[] =>
+  rows
+    .flatMap((row) => {
+      const outcome: WeekOutcome | null =
+        row.releasedBy === "REGULAR"
+          ? null
+          : row.releasedBy === "DEADLINE"
+            ? "NOT_ANSWERED"
+            : row.releasedBy !== null || (row.status === "CANCELLED" && row.confirmed)
+              ? "LET_GO"
+              : row.status === "NO_SHOW"
+                ? "NO_SHOW"
+                : row.confirmed &&
+                    row.startsAt <= now &&
+                    (row.status === "COMPLETED" || row.status === "CONFIRMED")
+                  ? "PLAYED"
+                  : null;
+      return outcome ? [{ startsAt: row.startsAt, outcome }] : [];
+    })
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .slice(-count)
+    .map((week) => ({ date: isoDate(localToday(week.startsAt, timezone)), outcome: week.outcome }));
+
 export const reliabilityOf = (rows: readonly ReservationOutcome[]): Reliability => {
   const counted = rows.filter((row) => row.releasedBy !== "REGULAR");
   return {

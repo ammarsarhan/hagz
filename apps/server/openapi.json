@@ -7390,6 +7390,34 @@
               "example": "2026-12-03"
             },
             "description": "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day."
+          },
+          "lastWeeks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "A calendar day in the venue's timezone.",
+                  "example": "2026-12-03"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "PLAYED",
+                    "NO_SHOW",
+                    "LET_GO",
+                    "NOT_ANSWERED"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "outcome"
+              ]
+            },
+            "description": "Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted."
           }
         },
         "required": [
@@ -7407,7 +7435,8 @@
           "reliability",
           "createdAt",
           "reservations",
-          "skippedWeeks"
+          "skippedWeeks",
+          "lastWeeks"
         ]
       },
       "CreateRegular": {

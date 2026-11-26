@@ -19400,6 +19400,17 @@ export interface components {
             reservations: components["schemas"]["StaffBooking"][];
             /** @description Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day. */
             skippedWeeks: string[];
+            /** @description Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted. */
+            lastWeeks: {
+                /**
+                 * Format: date
+                 * @description A calendar day in the venue's timezone.
+                 * @example 2026-12-03
+                 */
+                date: string;
+                /** @enum {string} */
+                outcome: "PLAYED" | "NO_SHOW" | "LET_GO" | "NOT_ANSWERED";
+            }[];
         };
         CreateRegular: {
             /** @description Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them). */

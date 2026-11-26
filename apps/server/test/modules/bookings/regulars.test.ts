@@ -8,7 +8,7 @@ import {
 import { beforeEach, describe, expect, it } from "vitest";
 import { expireDueBookings } from "@/modules/bookings/application/expire-bookings";
 import { topUpVenue } from "@/modules/bookings/application/regulars";
-import { localToday, upcomingWeeks } from "@/modules/bookings/domain/regulars";
+import { lastWeeksOf, localToday, upcomingWeeks } from "@/modules/bookings/domain/regulars";
 import { ALL_PERMISSIONS, instantOf } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import { aGround, asCustomer, asStaff, HOUR, signedIn, staffAt } from "../../support/bookings";
@@ -486,5 +486,39 @@ describe("regular weeks", () => {
       },
     );
     expect(ending.map((week) => week.date)).toEqual(["2026-04-24"]);
+  });
+});
+
+describe("a regular's last weeks", () => {
+  it("lists its settled weeks, oldest first, the last ten", () => {
+    const now = new Date("2026-11-26T12:00:00Z");
+    // Tuesdays at 8pm Cairo (18:00Z), going back from the 24th.
+    const week = (back: number) => new Date(Date.UTC(2026, 10, 24 - 7 * back, 18));
+    const row = (
+      back: number,
+      status: string,
+      confirmed: boolean,
+      releasedBy: "STAFF" | "CUSTOMER" | "DEADLINE" | "REGULAR" | null = null,
+    ) => ({ startsAt: week(back), status: status as never, confirmed, releasedBy });
+    const rows = [
+      row(-1, "UNCONFIRMED", false), // next week: not settled
+      row(0, "COMPLETED", true),
+      row(1, "NO_SHOW", true),
+      row(2, "RELEASED", false, "CUSTOMER"),
+      row(3, "RELEASED", false, "DEADLINE"),
+      row(4, "RELEASED", false, "REGULAR"), // the regular paused: not counted
+      row(5, "CANCELLED", true),
+      ...Array.from({ length: 8 }, (_, index) => row(6 + index, "COMPLETED", true)),
+    ];
+    const weeks = lastWeeksOf(rows, now, TZ);
+    expect(weeks).toHaveLength(10);
+    expect(weeks.slice(-5)).toEqual([
+      { date: "2026-10-20", outcome: "LET_GO" },
+      { date: "2026-11-03", outcome: "NOT_ANSWERED" },
+      { date: "2026-11-10", outcome: "LET_GO" },
+      { date: "2026-11-17", outcome: "NO_SHOW" },
+      { date: "2026-11-24", outcome: "PLAYED" },
+    ]);
+    expect(weeks[0]).toEqual({ date: "2026-09-15", outcome: "PLAYED" });
   });
 });

@@ -71,6 +71,17 @@ export const VenueRegularDetail = VenueRegular.extend({
     description:
       "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day.",
   }),
+  lastWeeks: z
+    .array(
+      z.object({
+        date: LocalDate,
+        outcome: z.enum(["PLAYED", "NO_SHOW", "LET_GO", "NOT_ANSWERED"]),
+      }),
+    )
+    .meta({
+      description:
+        "Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted.",
+    }),
 }).meta({ id: "VenueRegularDetail" });
 
 export const CreateRegular = z

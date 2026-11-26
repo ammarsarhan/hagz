@@ -27,6 +27,7 @@ import {
   isoDate,
   localToday,
   reliabilityOf,
+  lastWeeksOf,
   upcomingWeeks,
   weekOf,
   type ReservationOutcome,
@@ -352,12 +353,13 @@ const lockRegular = async (tx: Tx, venueId: string, id: string) => {
   return regular;
 };
 
-const reliabilities = async (regularIds: readonly string[]) => {
+const outcomesOf = async (regularIds: readonly string[]) => {
   const rows = await prisma.booking.findMany({
     where: { regularId: { in: [...regularIds] } },
     select: {
       regularId: true,
       status: true,
+      startsAt: true,
       events: {
         where: {
           type: {
@@ -368,7 +370,7 @@ const reliabilities = async (regularIds: readonly string[]) => {
       },
     },
   });
-  const outcomes = new Map<string, ReservationOutcome[]>();
+  const outcomes = new Map<string, (ReservationOutcome & { startsAt: Date })[]>();
   for (const row of rows) {
     if (!row.regularId) continue;
     const released = row.events.find(
@@ -376,7 +378,8 @@ const reliabilities = async (regularIds: readonly string[]) => {
         event.type === BOOKING_EVENTS.RELEASED || event.type === BOOKING_EVENTS.REGULAR_CHANGED,
     );
     const by = (released?.data as { by?: string } | null)?.by;
-    const outcome: ReservationOutcome = {
+    const outcome = {
+      startsAt: row.startsAt,
       status: row.status,
       confirmed: row.events.some((event) => event.type === BOOKING_EVENTS.CONFIRMED),
       releasedBy:
@@ -385,10 +388,15 @@ const reliabilities = async (regularIds: readonly string[]) => {
           : by === "STAFF" || by === "CUSTOMER" || by === "DEADLINE"
             ? by
             : null,
-    };
+    } satisfies ReservationOutcome & { startsAt: Date };
     outcomes.set(row.regularId, [...(outcomes.get(row.regularId) ?? []), outcome]);
   }
-  return (regularId: string) => reliabilityOf(outcomes.get(regularId) ?? []);
+  return (regularId: string) => outcomes.get(regularId) ?? [];
+};
+
+const reliabilities = async (regularIds: readonly string[]) => {
+  const outcomes = await outcomesOf(regularIds);
+  return (regularId: string) => reliabilityOf(outcomes(regularId));
 };
 
 const listSelect = {
@@ -453,7 +461,8 @@ export const regularDetail = async (
   if (!row) throw regularNotFound();
   const terms = await termsOf(prisma, actor.venueId);
   const today = localToday(now, terms.timezone);
-  const regular = present(row, today, await reliabilities([row.id]));
+  const outcomes = await outcomesOf([row.id]);
+  const regular = present(row, today, (one) => reliabilityOf(outcomes(one)));
   const reservations = await prisma.booking.findMany({
     where: { regularId: id, endsAt: { gt: now }, status: { in: [...LIVE_STATUSES] } },
     orderBy: { startsAt: "asc" },
@@ -467,7 +476,12 @@ export const regularDetail = async (
       .filter((week) => !blocked.has(week.startsAt.getTime()))
       .map((week) => week.date);
   }
-  return { ...regular, reservations: reservations.map((row) => presentStaff(row)), skippedWeeks };
+  return {
+    ...regular,
+    reservations: reservations.map((row) => presentStaff(row)),
+    skippedWeeks,
+    lastWeeks: lastWeeksOf(outcomes(row.id), now, terms.timezone),
+  };
 };
 
 const checkDates = (startsOn: Date, endsOn: Date | null, today: Date) => {
