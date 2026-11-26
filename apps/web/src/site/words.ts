@@ -226,25 +226,25 @@ const en = {
     notFound: "Booking not found · Hagz",
   },
   regular: {
-    meta: "Your weekly game · Hagz",
+    meta: "Your weekly booking · Hagz",
     waiting: (name: string, weekday: string, deadline: string, venue: string, code: string) =>
-      `${name}, are you playing this ${weekday}? Answer by ${deadline}. If you don’t, the time goes back on sale. Calling ${venue}? Give them this code: ${code}.`,
+      `${name}, please confirm your booking for ${weekday}. Reply by ${deadline}, or the time will be released for others to book. If you contact ${venue}, please quote booking code ${code}.`,
     playing: (venue: string, weekday: string, time: string) =>
-      `You’re playing. ${venue} is keeping your time: see you ${weekday} at ${time}.`,
+      `Your booking is confirmed. ${venue} will see you on ${weekday} at ${time}.`,
     letGo: (weekday: string) =>
-      `You’re not playing this week, so the time is back on sale. Your weekly game carries on next ${weekday}.`,
+      `You’ve released this week’s booking, and the time is now open for others to book. Your weekly booking continues next ${weekday}.`,
     missed: (deadline: string, venue: string, code: string) =>
-      `Too late to answer: nobody confirmed by ${deadline}, so the time went back on sale. To play anyway, call ${venue} and give them this code: ${code}.`,
+      `The confirmation deadline of ${deadline} has passed, so the time has been released for others to book. To play this week, please contact ${venue} and quote booking code ${code}.`,
     changed: (venue: string, code: string) =>
-      `${venue} changed this week’s booking time. For more information, call them and give them this code: ${code}.`,
+      `${venue} has changed the time of this week’s booking. For more information, please contact them and quote booking code ${code}.`,
     playingButton: "I’m playing",
     notThisWeek: "Not this week",
-    failed: "That didn’t go through. Try again.",
-    missingTitle: "This link doesn’t work",
-    missingLine: "Ask the venue for a new one.",
+    failed: "Something went wrong. Please try again.",
+    missingTitle: "This link is invalid",
+    missingLine: "Please ask the venue to send you a new link.",
     errorTitle: "Something went wrong",
-    errorLine: "Check your connection and open the link again.",
-    noAppLine: "Get the app to see your weekly game and book times of your own.",
+    errorLine: "Please check your connection and open the link again.",
+    noAppLine: "Download the app to manage your weekly booking and book other times.",
   },
 };
 
@@ -488,25 +488,25 @@ const ar: Words = {
     notFound: "الحجز غير موجود · حجز",
   },
   regular: {
-    meta: "موعدك الأسبوعي · حجز",
+    meta: "حجزك الأسبوعي · حجز",
     waiting: (name, weekday, deadline, venue, code) =>
-      `${name}، هل ستلعب يوم ${weekday} هذا؟ ردّ قبل ${deadline}، وإلا يعود الموعد متاحًا للحجز. إذا اتصلت بـ${venue}، أعطهم هذا الرمز: ${code}.`,
+      `${name}، يُرجى تأكيد حجزك يوم ${weekday}. يُرجى الرد قبل ${deadline}، وإلا سيُتاح الموعد للحجز. عند التواصل مع ${venue}، يُرجى ذكر رمز الحجز ${code}.`,
     playing: (venue, weekday, time) =>
-      `ستلعب. ${venue} يحتفظ بموعدك: نراك يوم ${weekday} الساعة ${time}.`,
+      `تم تأكيد حجزك. ${venue} بانتظارك يوم ${weekday} الساعة ${time}.`,
     letGo: (weekday) =>
-      `لن تلعب هذا الأسبوع، فعاد الموعد متاحًا للحجز. موعدك الأسبوعي مستمر يوم ${weekday} القادم.`,
+      `تم إلغاء حجزك لهذا الأسبوع، وأصبح الموعد متاحًا للحجز. يستمر حجزك الأسبوعي يوم ${weekday} القادم.`,
     missed: (deadline, venue, code) =>
-      `فات وقت الرد: لم يؤكد أحد قبل ${deadline}، فعاد الموعد متاحًا للحجز. إن أردت اللعب، اتصل بـ${venue} وأعطهم هذا الرمز: ${code}.`,
+      `انتهت مهلة التأكيد في ${deadline}، فأصبح الموعد متاحًا للحجز. للعب هذا الأسبوع، يُرجى التواصل مع ${venue} وذكر رمز الحجز ${code}.`,
     changed: (venue, code) =>
-      `غيّر ${venue} موعد حجز هذا الأسبوع. لمزيد من المعلومات، اتصل بهم وأعطهم هذا الرمز: ${code}.`,
+      `قام ${venue} بتغيير موعد حجز هذا الأسبوع. لمزيد من المعلومات، يُرجى التواصل معهم وذكر رمز الحجز ${code}.`,
     playingButton: "سألعب",
     notThisWeek: "ليس هذا الأسبوع",
-    failed: "لم يتم ذلك. حاول مرة أخرى.",
-    missingTitle: "هذا الرابط لا يعمل",
-    missingLine: "اطلب من الملعب رابطًا جديدًا.",
+    failed: "حدث خطأ. يُرجى المحاولة مرة أخرى.",
+    missingTitle: "هذا الرابط غير صالح",
+    missingLine: "يُرجى طلب رابط جديد من الملعب.",
     errorTitle: "حدث خطأ ما",
-    errorLine: "تأكد من اتصالك وافتح الرابط مرة أخرى.",
-    noAppLine: "حمّل التطبيق لترى موعدك الأسبوعي وتحجز مواعيد أخرى.",
+    errorLine: "يُرجى التحقق من اتصالك وفتح الرابط مرة أخرى.",
+    noAppLine: "حمّل التطبيق لإدارة حجزك الأسبوعي وحجز مواعيد أخرى.",
   },
 };
 
