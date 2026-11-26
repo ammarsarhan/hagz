@@ -249,14 +249,14 @@ function WeekRow({
       accessibilityRole={onPress ? "button" : undefined}
       disabled={!onPress}
       onPress={onPress}
-      className="flex-row items-center active:opacity-60"
+      className="min-h-[52px] flex-row items-center active:opacity-60"
     >
       <View className="w-14">
         <Text className="text-[15px] leading-5 font-semibold">{weekday.format(at)}</Text>
         <Text className="text-[13px] leading-[17px] text-ink-3">{dayMonth.format(at)}</Text>
       </View>
       <View
-        className={`h-10 w-1.5 rounded-[3px] ${
+        className={`h-[52px] w-1.5 rounded-[3px] ${
           bar === "confirmed"
             ? "bg-primary"
             : bar === "waiting"
