@@ -24715,6 +24715,21 @@
           {
             "schema": {
               "type": "string",
+              "enum": [
+                "name",
+                "recent"
+              ],
+              "default": "name",
+              "description": "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly)."
+            },
+            "required": false,
+            "description": "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly).",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "`nextCursor` from the previous page."
             },
             "required": false,

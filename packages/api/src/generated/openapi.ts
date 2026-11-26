@@ -11990,6 +11990,8 @@ export interface paths {
                 query?: {
                     /** @description Part of the name or the phone number. */
                     q?: string;
+                    /** @description `name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly). */
+                    order?: "name" | "recent";
                     /** @description `nextCursor` from the previous page. */
                     cursor?: string;
                     limit?: number;

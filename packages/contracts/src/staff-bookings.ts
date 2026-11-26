@@ -188,8 +188,16 @@ export const VenueCustomersQuery = z
     q: z.string().trim().max(100).optional().meta({
       description: "Part of the name or the phone number.",
     }),
+    order: z.enum(["name", "recent"]).default("name").meta({
+      description:
+        "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly).",
+    }),
     cursor: z.string().optional().meta({ description: "`nextCursor` from the previous page." }),
     limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .refine((query) => !(query.order === "recent" && query.cursor), {
+    message: "`recent` is one page; it takes no cursor.",
+    path: ["cursor"],
   })
   .meta({ id: "VenueCustomersQuery" });
 

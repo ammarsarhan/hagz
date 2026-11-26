@@ -91,7 +91,7 @@ const decodeCursor = (text: string) => {
 
 export const listVenueCustomers = async (
   actor: VenueAccess,
-  { q, cursor, limit }: VenueCustomersQuery,
+  { q, order, cursor, limit }: VenueCustomersQuery,
 ): Promise<VenueCustomerPage> => {
   const text = q ? literal(q) : null;
   const digits = q?.replace(/[\s()-]/g, "");
@@ -105,15 +105,19 @@ export const listVenueCustomers = async (
           ...(digits ? [{ phone: { contains: literal(digits) } }] : []),
         ],
       }),
-      ...(after && {
-        AND: [
-          {
-            OR: [{ name: { gt: after.name } }, { name: after.name, id: { gt: after.id } }],
-          },
-        ],
-      }),
+      ...(after &&
+        order === "name" && {
+          AND: [
+            {
+              OR: [{ name: { gt: after.name } }, { name: after.name, id: { gt: after.id } }],
+            },
+          ],
+        }),
     },
-    orderBy: [{ name: "asc" }, { id: "asc" }],
+    orderBy:
+      order === "recent"
+        ? [{ lastBookedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }, { id: "desc" }]
+        : [{ name: "asc" }, { id: "asc" }],
     take: limit + 1,
     select,
   });
@@ -121,7 +125,7 @@ export const listVenueCustomers = async (
   const last = page.at(-1);
   return {
     data: page.map(present),
-    nextCursor: rows.length > limit && last ? encodeCursor(last) : null,
+    nextCursor: order === "name" && rows.length > limit && last ? encodeCursor(last) : null,
   };
 };
 
