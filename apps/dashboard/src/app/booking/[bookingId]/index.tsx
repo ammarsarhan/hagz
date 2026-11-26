@@ -153,7 +153,7 @@ function Page({
   const compact = useCompactTitle();
   // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
   const [menu, setMenu] = useState(false);
-  // What was picked, done once the sheet has slid away: Move opens its screen (swap comes next).
+  // What was picked, opened once the sheet has slid away: Move's screen or Swap's.
   const picked = useRef<MenuAction | null>(null);
   const movable =
     canManage &&
@@ -414,8 +414,7 @@ function Page({
         visible={menu}
         onClose={() => setMenu(false)}
         onHidden={() => {
-          if (picked.current === "move") router.push(`/booking/${booking.id}/move`);
-          else if (picked.current) comingNext();
+          if (picked.current) router.push(`/booking/${booking.id}/${picked.current}`);
           picked.current = null;
         }}
         onPick={(action) => {
