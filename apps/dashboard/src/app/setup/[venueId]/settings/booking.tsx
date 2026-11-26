@@ -26,9 +26,9 @@ import { hourLabel, shortDayName } from "@/lib/hours";
 import { isRTL } from "@/lib/language";
 import type { components } from "@hagz/api";
 
-// Booking settings (Figma D18, 645:3), from Venue › Rules: holds, regulars and who counts as one,
+// Booking settings (Figma D18, 645:3), from Venue › Rules: holds, regulars, and who goes first in Who to call,
 // in the rows of the venue's other settings with each value at the row's end. A row opens a wheel
-// sheet (645:176; two wheels side by side for "Becomes a regular", 645:333), whose Done stays grey
+// sheet (645:176; two wheels side by side for "Plays often", 645:333), whose Done stays grey
 // until it differs from what's saved, and saves as it closes.
 //
 // Left out until what they do is built: the regulars' reminder, the discount on freed weeks and
@@ -291,7 +291,7 @@ function SettingsList({
   );
 }
 
-// A row's value at its end, grey with a chevron; the "Who's a regular" rows' in ink and medium, as a rule.
+// A row's value at its end, grey with a chevron; the "Who to call" rows' in ink and medium.
 function Value({
   children,
   strong = false,
