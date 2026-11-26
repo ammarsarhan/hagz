@@ -410,8 +410,9 @@ function ConfirmMove({
         },
       }),
     );
-    setSending(false);
+    // On success it keeps spinning while the sheet slides away and the booking's page takes over.
     if (!result.ok) {
+      setSending(false);
       hud.show(hudMessage(result.error));
       return;
     }

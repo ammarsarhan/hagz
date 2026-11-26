@@ -63,11 +63,12 @@ export default function ConfirmBooking() {
         },
       }),
     );
-    setSending(false);
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] });
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "customers"] });
+    // On success it keeps spinning until the booking's page takes over.
     if (!result.ok) {
+      setSending(false);
       hud.show(hudMessage(result.error));
       return;
     }

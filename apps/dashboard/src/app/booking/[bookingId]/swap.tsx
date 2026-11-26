@@ -131,9 +131,10 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
         body: { withBookingId: partner.id, ...(note.trim() ? { reason: note.trim() } : {}) },
       }),
     );
-    setSending(false);
     void refresh();
+    // On success it keeps spinning until the booking's page takes over.
     if (!result.ok) {
+      setSending(false);
       hud.show(hudMessage(result.error));
       return;
     }
