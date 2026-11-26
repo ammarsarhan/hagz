@@ -13,7 +13,7 @@ export const groundRemoval = createRoute({
   tags: ["Grounds"],
   summary: "What removing a ground leaves behind",
   description:
-    "Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).",
+    "Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good), the requests waiting on it (declined when it's removed) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).",
   middleware: [requireStaff, requireVenueAccess("schedule", "view")] as const,
   security: [{ [STAFF_BEARER]: [] }],
   request: { params: z.object({ venueId: z.uuid(), groundId: z.uuid() }) },

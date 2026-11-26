@@ -247,7 +247,10 @@ export const GroundRemoval = z
   .object({
     bookings: z.int().meta({
       description:
-        "Bookings and holds still ahead on it: they go ahead, and keep it on the calendar.",
+        "Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar.",
+    }),
+    requests: z.int().meta({
+      description: "Booking requests waiting for the venue on it: declined when it's removed.",
     }),
     lastEndsAt: z.iso.datetime().nullable().meta({
       description: "When the last of them ends, and the ground goes for good; null with none.",

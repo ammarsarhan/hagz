@@ -6705,7 +6705,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a ground
-         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.
+         * @description Needs `schedule: manage`. Booking requests waiting on it are declined first. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.
          */
         delete: {
             parameters: {
@@ -10188,7 +10188,7 @@ export interface paths {
         };
         /**
          * What removing a ground leaves behind
-         * @description Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).
+         * @description Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good), the requests waiting on it (declined when it's removed) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).
          */
         get: {
             parameters: {
@@ -19640,8 +19640,10 @@ export interface components {
             nextCursor: string | null;
         };
         GroundRemoval: {
-            /** @description Bookings and holds still ahead on it: they go ahead, and keep it on the calendar. */
+            /** @description Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar. */
             bookings: number;
+            /** @description Booking requests waiting for the venue on it: declined when it's removed. */
+            requests: number;
             /**
              * Format: date-time
              * @description When the last of them ends, and the ground goes for good; null with none.

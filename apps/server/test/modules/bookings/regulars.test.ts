@@ -158,6 +158,7 @@ describe("regulars", () => {
     );
     expect(await preview.json()).toEqual({
       bookings: 4,
+      requests: 0,
       lastEndsAt: new Date((starts[3]?.getTime() ?? 0) + 2 * HOUR).toISOString(),
       regulars: ["Karim", "Omar"],
     });

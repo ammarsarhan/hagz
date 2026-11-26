@@ -20,4 +20,4 @@ export { manualCheckIn } from "./application/check-in";
 export { expireDueBookings } from "./application/expire-bookings";
 export { createRegular } from "./application/regulars";
 export { moveBooking } from "./application/rescheduling";
-export { declineBooking } from "./application/staff-decisions";
+export { declineBooking, declineWaitingOnGround } from "./application/staff-decisions";

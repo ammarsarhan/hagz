@@ -6,8 +6,9 @@ import { AppError } from "@/platform/errors/app-error";
 import { LIVE_STATUSES } from "../domain/status";
 
 // What removing a ground leaves behind, for the warning staff see first (user, 2026-11-27): its
-// bookings still to come, which go ahead and keep it on the calendar until the last one ends, and
-// the regulars on it, which keep the weeks they have and end with it. Removing itself is the venues
+// bookings still to come, which go ahead and keep it on the calendar until the last one ends, the
+// requests waiting on it, which are declined, and the regulars on it, which keep the weeks they
+// have and end with it. Removing itself is the venues
 // module's (DELETE /grounds/{groundId}).
 
 const groundNotFound = () =>
@@ -24,15 +25,19 @@ export const groundRemoval = async (
     select: { id: true },
   });
   if (!ground) throw groundNotFound();
+  // Requests still waiting are declined when it's removed, so they don't keep it.
   const where = {
     groundId,
     endsAt: { gt: now },
     status: {
-      in: LIVE_STATUSES.filter((status) => status !== "COMPLETED" && status !== "NO_SHOW"),
+      in: LIVE_STATUSES.filter(
+        (status) => status !== "COMPLETED" && status !== "NO_SHOW" && status !== "PENDING",
+      ),
     },
   };
-  const [bookings, last, regulars] = await Promise.all([
+  const [bookings, requests, last, regulars] = await Promise.all([
     prisma.booking.count({ where }),
+    prisma.booking.count({ where: { groundId, status: "PENDING", expiresAt: { gt: now } } }),
     prisma.booking.findFirst({ where, orderBy: { endsAt: "desc" }, select: { endsAt: true } }),
     prisma.venueRegular.findMany({
       where: { groundId, endedAt: null },
@@ -42,6 +47,7 @@ export const groundRemoval = async (
   ]);
   return {
     bookings,
+    requests,
     lastEndsAt: last?.endsAt.toISOString() ?? null,
     regulars: regulars.map(
       (regular) => regular.customer.name.trim().split(/\s+/)[0] ?? regular.customer.name,
