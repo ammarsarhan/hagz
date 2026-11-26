@@ -5777,13 +5777,23 @@
                 },
                 "size": {
                   "$ref": "#/components/schemas/GroundSize"
+                },
+                "minimumSlots": {
+                  "type": "integer",
+                  "description": "The shortest booking, in slots."
+                },
+                "maximumSlots": {
+                  "type": "integer",
+                  "description": "The longest booking, in slots."
                 }
               },
               "required": [
                 "id",
                 "name",
                 "sport",
-                "size"
+                "size",
+                "minimumSlots",
+                "maximumSlots"
               ]
             }
           },

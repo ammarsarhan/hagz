@@ -18885,6 +18885,10 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description The shortest booking, in slots. */
+                minimumSlots: number;
+                /** @description The longest booking, in slots. */
+                maximumSlots: number;
             }[];
             slots: components["schemas"]["Slot"][];
         };
