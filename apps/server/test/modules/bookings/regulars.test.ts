@@ -426,8 +426,12 @@ describe("regulars", () => {
     // Paused, Karim lets his weeks go, and Omar (next in line) takes them.
     await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${first.id}/pause`);
     expect((await detail(owner.id, venue.id, second.id)).reservations).toHaveLength(4);
+    // Back, Karim is first again: Omar's waiting weeks come back to him; Omar's confirmed one stays.
     await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${first.id}/resume`);
-    expect((await detail(owner.id, venue.id, first.id)).reservations).toHaveLength(0);
+    expect((await detail(owner.id, venue.id, first.id)).reservations).toHaveLength(3);
+    expect(
+      (await detail(owner.id, venue.id, second.id)).reservations.map((booking) => booking.id),
+    ).toEqual([kept?.id]);
   });
 
   it("refuses a start date that has passed, and needs bookings: manage", async () => {

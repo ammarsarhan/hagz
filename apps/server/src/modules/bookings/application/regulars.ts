@@ -572,6 +572,44 @@ export const updateRegular = async (
   return regularDetail(actor, id, clock);
 };
 
+// The regulars behind `regularId` in line at a time overlapping its own let their waiting weeks go,
+// so the top-up after hands them out in priority order again (user, 2026-11-26: a regular back
+// from a pause gets its weeks back from the one next in line). Confirmed weeks stay put.
+const yieldWeeks = async (tx: Tx, regularId: string, now: Date) => {
+  const self = await tx.venueRegular.findUniqueOrThrow({
+    where: { id: regularId },
+    select: {
+      venueId: true,
+      groundId: true,
+      dayOfWeek: true,
+      startHour: true,
+      slotCount: true,
+      priority: true,
+      createdAt: true,
+    },
+  });
+  const others = await tx.venueRegular.findMany({
+    where: {
+      venueId: self.venueId,
+      groundId: self.groundId,
+      dayOfWeek: self.dayOfWeek,
+      id: { not: regularId },
+      pausedAt: null,
+      endedAt: null,
+    },
+    select: { id: true, startHour: true, slotCount: true, priority: true, createdAt: true },
+  });
+  for (const other of others) {
+    const overlaps =
+      other.startHour < self.startHour + self.slotCount &&
+      self.startHour < other.startHour + other.slotCount;
+    const behind =
+      other.priority > self.priority ||
+      (other.priority === self.priority && other.createdAt > self.createdAt);
+    if (overlaps && behind) await releaseWeeks(tx, other.id, "REORDERED", now);
+  }
+};
+
 const setState = async (
   actor: VenueAccess,
   id: string,
@@ -590,12 +628,13 @@ const setState = async (
       await tx.venueRegular.update({ where: { id: regular.id }, data: { pausedAt: now } });
     } else if (change === "RESUME" && status === "PAUSED") {
       await tx.venueRegular.update({ where: { id: regular.id }, data: { pausedAt: null } });
+      await yieldWeeks(tx, regular.id, now);
     } else if (change === "END") {
       await releaseWeeks(tx, regular.id, "ENDED", now);
       await tx.venueRegular.update({ where: { id: regular.id }, data: { endedAt: now } });
     }
   });
-  // Weeks it let go may go to the next regular in priority; resuming reserves its own again.
+  // Weeks it let go may go to the next regular in priority; resuming takes its own back.
   await topUpVenue(actor.venueId, clock);
   return regularDetail(actor, id, clock);
 };
