@@ -197,6 +197,9 @@ function Hud({
         accessibilityLiveRegion="polite"
         className="h-14 flex-row items-center gap-2.5 rounded-hud border border-hairline bg-hud pe-[22px] ps-[18px]"
         style={{
+          // Never wider than three quarters of the screen: a longer message shrinks to fit on its
+          // one line rather than stretching the pill (user, 2026-11-26).
+          maxWidth: "75%",
           opacity: progress,
           transform: [
             { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
@@ -208,7 +211,14 @@ function Hud({
         }}
       >
         {leading ?? <IconAlertCircleFilled size={22} color={colors.ink} />}
-        <Text className="text-subtitle font-medium">{message}</Text>
+        <Text
+          className="shrink text-subtitle font-medium"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {message}
+        </Text>
       </Animated.View>
     </View>
   );
