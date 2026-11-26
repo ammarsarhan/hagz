@@ -313,6 +313,12 @@ const ar: ArabicTranslations = {
           nextWeeks_few: "الأسابيع الـ{{count}} القادمة",
           nextWeeks_many: "الأسابيع الـ{{count}} القادمة",
           nextWeeks_other: "الأسابيع الـ{{count}} القادمة",
+          tally: {
+            CONFIRMED: "{{count}} مؤكد",
+            LET_GO: "{{count}} مرفوض",
+            NOT_ANSWERED: "{{count}} بلا رد",
+            WAITING: "{{count}} معلّق",
+          },
           weekStates: {
             CONFIRMED: "مؤكد",
             WAITING: "بانتظار التأكيد",

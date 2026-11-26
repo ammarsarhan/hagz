@@ -50,6 +50,17 @@ export const overlaps = (a: Regular, b: Regular) =>
 
 // "1, 8, 15 and 22 Dec"; "29 Dec, 5, 12 and 19 Jan" across a month's end. Joined by hand: Hermes
 // has no Intl.ListFormat.
+// "a, b and c", in the app's words (Hermes has no Intl.ListFormat).
+export const datesJoin = (t: TFunction, parts: readonly string[]) => {
+  const last = parts.at(-1) ?? "";
+  return parts.length < 2
+    ? last
+    : t("screens.regulars.new.and", {
+        list: parts.slice(0, -1).join(t("screens.regulars.new.comma")),
+        last,
+      });
+};
+
 export const datesLabel = (t: TFunction, dates: readonly string[]) => {
   const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "short" });
   const parts = dates.map((date, index) => {
@@ -58,11 +69,5 @@ export const datesLabel = (t: TFunction, dates: readonly string[]) => {
     const lastOfMonth = !next || next.slice(0, 7) !== date.slice(0, 7);
     return lastOfMonth ? `${at.getUTCDate()} ${month.format(at)}` : String(at.getUTCDate());
   });
-  const last = parts.at(-1) ?? "";
-  return parts.length < 2
-    ? last
-    : t("screens.regulars.new.and", {
-        list: parts.slice(0, -1).join(t("screens.regulars.new.comma")),
-        last,
-      });
+  return datesJoin(t, parts);
 };

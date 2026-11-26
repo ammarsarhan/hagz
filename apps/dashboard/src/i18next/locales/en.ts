@@ -259,6 +259,12 @@ const en = {
           soFar: "So far",
           nextWeeks_one: "Next week",
           nextWeeks_other: "Next {{count}} weeks",
+          tally: {
+            CONFIRMED: "{{count}} confirmed",
+            LET_GO: "{{count}} declined",
+            NOT_ANSWERED: "{{count}} not answered",
+            WAITING: "{{count}} pending",
+          },
           weekStates: {
             CONFIRMED: "Confirmed",
             WAITING: "Waiting",

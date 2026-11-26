@@ -29,7 +29,7 @@ import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
-import { regularQuery } from "@/lib/regulars";
+import { datesJoin, regularQuery } from "@/lib/regulars";
 
 // A regular (Figma D12 655:2), from the Regulars list: who, their weekly time, ground and since
 // when; their number with Call and WhatsApp; the coming weeks as rows, each with the Calendar's bar
@@ -80,6 +80,15 @@ export default function RegularPage() {
   const regular = useQuery(regularQuery(venueId, regularId));
   // As many dots as the venue keeps weeks ahead.
   const horizon = useQuery(bookingSettingsQuery(venueId)).data?.regularHorizon ?? FALLBACK_HORIZON;
+  // Under the dots: "1 confirmed, 1 declined and 2 pending", leaving out what there's none of.
+  const shown = regular.data?.comingWeeks.slice(0, horizon) ?? [];
+  const tally = datesJoin(
+    t,
+    (["CONFIRMED", "LET_GO", "NOT_ANSWERED", "WAITING"] as const).flatMap((state) => {
+      const count = shown.filter((week) => week.state === state).length;
+      return count > 0 ? [t(`screens.regulars.page.tally.${state}`, { count })] : [];
+    }),
+  );
 
   const back = <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />;
   const one = regular.data;
@@ -238,6 +247,7 @@ export default function RegularPage() {
             />
           ))}
         </View>
+        {tally ? <Text className="mt-3 text-[14px] leading-[19px] text-ink-2">{tally}</Text> : null}
         <GroupHeading className="mt-8 mb-3">{t(`${p}.soFar`)}</GroupHeading>
         {figures.map((figure) => (
           <View key={figure.key} className="flex-row justify-between py-2">
