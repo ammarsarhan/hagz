@@ -796,7 +796,7 @@ function Row({
         </View>
       ) : null}
       <View
-        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-border bg-white" : BAR[row.kind]}`}
+        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
       />
       <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
         <Text
