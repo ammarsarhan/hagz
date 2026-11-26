@@ -159,9 +159,10 @@ export function Sheet({
             >
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
               {/* A scrollable sheet keeps room under this row, so the list scrolls away beneath a gap
-                  rather than straight under the title. */}
+                  rather than straight under the title; so does one with back, whose button sits
+                  over the title's start. */}
               <View
-                className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable ? "mb-4" : ""}`}
+                className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable || onBack ? "mb-4" : ""}`}
               >
                 {header ? (
                   <View pointerEvents="none" className="absolute inset-x-12 items-center">
