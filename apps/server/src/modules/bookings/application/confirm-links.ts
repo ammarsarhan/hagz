@@ -76,7 +76,7 @@ export const createConfirmLink = async (
   // In the regular's language when they have the app, else Arabic, the page's own default.
   const language = booking.customer.customer?.language === "EN" ? "en" : "ar";
   return {
-    url: webLinks.weekConfirm(token, language),
+    url: webLinks.regularConfirm(token, language),
     expiresAt: booking.expiresAt.toISOString(),
   };
 };

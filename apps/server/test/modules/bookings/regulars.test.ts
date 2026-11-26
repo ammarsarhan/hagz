@@ -586,7 +586,7 @@ describe("confirm links", () => {
     const first = made.reservations[0];
     const { link, token } = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
     // Arabic unless the regular has the app in English; the token only in the fragment.
-    expect(new URL(link.url).pathname).toBe("/ar/week");
+    expect(new URL(link.url).pathname).toBe("/ar/regular");
     expect(link.expiresAt).toBe(new Date((starts[0]?.getTime() ?? 0) - 24 * HOUR).toISOString());
     expect(await prisma.reminderToken.count({ where: { tokenHash: token } })).toBe(0);
 

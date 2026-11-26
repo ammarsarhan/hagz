@@ -36,7 +36,7 @@ export const ROUTES = {
   sharedBooking: { app: "customer", path: "/booking/[code]" },
   // A regular's confirm link (PR 4.5): a web page that confirms or lets one week go without signing
   // in. The token rides in the fragment, like the admin links. In Arabic under /ar.
-  weekConfirm: { app: "web", path: "/week" },
+  regularConfirm: { app: "web", path: "/regular" },
 } as const satisfies Record<string, { app: AppName | "web"; path: string }>;
 
 export type RouteName = keyof typeof ROUTES;
@@ -70,7 +70,7 @@ export const links = (webUrl: string) => {
     venue: (slug: string, language: "en" | "ar" = "en") =>
       base + (language === "ar" ? "/ar" : "") + fill(ROUTES.venue.path, slug),
     sharedBooking: (code: string) => base + fill(ROUTES.sharedBooking.path, code),
-    weekConfirm: (token: string, language: "en" | "ar" = "ar") =>
-      `${base}${language === "ar" ? "/ar" : ""}${ROUTES.weekConfirm.path}#token=${encodeURIComponent(token)}`,
+    regularConfirm: (token: string, language: "en" | "ar" = "ar") =>
+      `${base}${language === "ar" ? "/ar" : ""}${ROUTES.regularConfirm.path}#token=${encodeURIComponent(token)}`,
   } satisfies Record<RouteName, (value: string) => string>;
 };
