@@ -111,6 +111,12 @@ const ar: ArabicTranslations = {
         noteHint: "سبب تغيير الأوقات",
         done: "تم",
       },
+      hold: {
+        title: "احجز وقتًا مؤقتًا",
+        subtitle: "اختر الوقت، ثم لمن هو.",
+        none: "لا توجد أوقات متاحة في هذا الملعب في هذا اليوم.",
+        zoneLabel: "احجز {{hours}} مؤقتًا في {{ground}}",
+      },
       move: {
         title: "نقل حجز {{name}}",
         subtitle: "اضغط على وقت متاح لنقل {{name}} إليه.",
@@ -308,6 +314,16 @@ const ar: ArabicTranslations = {
       },
       calendar: {
         title: "التقويم",
+        addSheet: {
+          title: "إضافة إلى التقويم",
+          body: "اختر الوقت بعد ذلك",
+          book: "حجز جديد",
+          bookBody: "حضور مباشر أو مكالمة",
+          hold: "احجز وقتًا مؤقتًا",
+          holdBody_one: "دقيقة واحدة للتفكير",
+          holdBody_other: "{{count}} دقيقة للتفكير",
+          holdBodyPlain: "وقت للتفكير",
+        },
         day: "{{weekday}} {{day}} {{month}}",
         requests: "طلبات الحجز",
         requestsWaiting_one: "طلب حجز واحد",

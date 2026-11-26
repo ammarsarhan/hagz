@@ -97,6 +97,12 @@ const en = {
         noteHint: "Why the times changed",
         done: "Done",
       },
+      hold: {
+        title: "Hold a time",
+        subtitle: "Pick the time, then who it's for.",
+        none: "No free times on this ground this day.",
+        zoneLabel: "Hold {{hours}} on {{ground}}",
+      },
       move: {
         title: "Move {{name}}'s booking",
         subtitle: "Tap a free time to drop {{name}} into it.",
@@ -305,6 +311,16 @@ const en = {
         requestsWaiting_one: "{{count}} booking request",
         requestsWaiting_other: "{{count}} booking requests",
         add: "New booking or hold",
+        addSheet: {
+          title: "Add to the calendar",
+          body: "Pick the time next",
+          book: "New booking",
+          bookBody: "A walk-in or a call",
+          hold: "Hold a time",
+          holdBody_one: "{{count}} minute to decide",
+          holdBody_other: "{{count}} minutes to decide",
+          holdBodyPlain: "Time to decide",
+        },
         allGrounds: "All grounds",
         // The hour column: "4pm", "10:30pm".
         hour: "{{time}}{{period}}",
