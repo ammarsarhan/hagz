@@ -358,15 +358,18 @@ export function TimePick({
         >
           {title}
         </Title>
-        <DayPickHeader
-          weekStart={weekStart}
-          day={day}
-          today={localDateOf(now, timezone)}
-          onDay={(date) => choose(() => setDay(date))}
-          grounds={preview ? undefined : grounds}
-          groundId={groundId}
-          onGround={preview ? undefined : (id) => choose(() => setPicked(id))}
-        />
+        {/* A preview is only to look at: the strip doesn't move. */}
+        <View pointerEvents={preview ? "none" : "auto"}>
+          <DayPickHeader
+            weekStart={weekStart}
+            day={day}
+            today={localDateOf(now, timezone)}
+            onDay={(date) => choose(() => setDay(date))}
+            grounds={preview ? undefined : grounds}
+            groundId={groundId}
+            onGround={preview ? undefined : (id) => choose(() => setPicked(id))}
+          />
+        </View>
 
         {!slots.data || !bookings.data ? (
           <ActivityIndicator className="mt-8" color={colors.ink3} />
@@ -413,6 +416,7 @@ export function TimePick({
                       ) : (
                         <FreeRow
                           key={item.key}
+                          quiet={preview !== undefined}
                           on={(() => {
                             const index = run.indexOf(item.slot);
                             return chosen !== null && index >= chosen.from && index <= chosen.to;
@@ -484,6 +488,7 @@ function NewRow({ name, detail, label }: { name: string; detail: string; label: 
 
 // A free time: dashed in soft blue, or solid blue while picked.
 function FreeRow({
+  quiet,
   on,
   label,
   free,
@@ -491,6 +496,8 @@ function FreeRow({
   onAccessibilityTap,
   onLayout,
 }: {
+  // In a preview: grey, nothing to tap; only the new booking is in colour (user).
+  quiet: boolean;
   on: boolean;
   label: string;
   free: string;
@@ -498,7 +505,12 @@ function FreeRow({
   onAccessibilityTap: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
-  return (
+  return quiet ? (
+    <View className="h-12 flex-row items-center rounded-xl border border-dashed border-border px-4">
+      <Text className="flex-1 text-body text-ink-3">{label}</Text>
+      <Text className="text-label text-ink-3">{free}</Text>
+    </View>
+  ) : (
     <View
       accessible
       accessibilityRole="button"
