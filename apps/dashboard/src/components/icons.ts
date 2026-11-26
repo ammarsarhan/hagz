@@ -48,6 +48,10 @@ export { default as IconCreditCard } from "@tabler/icons-react-native/IconCredit
 export { default as IconDeviceCctv } from "@tabler/icons-react-native/IconDeviceCctv";
 export { default as IconDeviceTv } from "@tabler/icons-react-native/IconDeviceTv";
 export { default as IconDots } from "@tabler/icons-react-native/IconDots";
+export { default as IconLink } from "@tabler/icons-react-native/IconLink";
+export { default as IconPlayerPause } from "@tabler/icons-react-native/IconPlayerPause";
+export { default as IconPlayerPlay } from "@tabler/icons-react-native/IconPlayerPlay";
+export { default as IconSquare } from "@tabler/icons-react-native/IconSquare";
 export { default as IconDroplet } from "@tabler/icons-react-native/IconDroplet";
 export { default as IconFirstAidKit } from "@tabler/icons-react-native/IconFirstAidKit";
 export { default as IconFriends } from "@tabler/icons-react-native/IconFriends";
