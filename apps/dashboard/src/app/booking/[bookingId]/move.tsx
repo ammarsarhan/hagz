@@ -59,6 +59,10 @@ const SOFT_FILL = "bg-[#f2f4ff]";
 // and settles, slowly, for as long as the screen is open.
 const SWAY_MS = 1600;
 const SWAY_LIFT = 4;
+// How much higher the tilted card's raised corner (and its shadow) reaches than its straight top,
+// and the room left between the last row and it.
+const TILT_REACH = 8;
+const CARD_GAP = 20;
 // FadingScroll's own room at the bottom, under its fade.
 const FADE = 28;
 
@@ -98,10 +102,13 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const floatStyle = useFloat();
   // The lifted card sits low, partly over the home indicator's space; the day's last rows scroll
   // clear of it. The screen already ends above that space and the scroll keeps its fade's room at
-  // the bottom, so only the rest of the card's reach (and its sway) is added.
+  // the bottom, so only the rest of the card's reach (its sway and tilt) and a gap are added.
   const cardBottom = Math.max(insets.bottom - 12, 8);
   const [cardHeight, setCardHeight] = useState(72);
-  const clearCard = Math.max(0, cardBottom + cardHeight + SWAY_LIFT + 8 - insets.bottom - FADE);
+  const clearCard = Math.max(
+    0,
+    cardBottom + cardHeight + SWAY_LIFT + TILT_REACH + CARD_GAP - insets.bottom - FADE,
+  );
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
   const { timezone, currency } = booking;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
