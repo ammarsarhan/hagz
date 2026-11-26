@@ -485,6 +485,79 @@ describe("regulars", () => {
   });
 });
 
+describe("booking settings on regulars already set", () => {
+  const change = async (staffId: string, venueId: string, body: object) => {
+    const res = await asStaff(staffId, "PATCH", `/venues/${venueId}/booking-settings`, body);
+    expect(res.status).toBe(200);
+  };
+  const weeks = (regularId: string) =>
+    prisma.booking.findMany({
+      where: { regularId },
+      orderBy: { startsAt: "asc" },
+      select: { status: true, startsAt: true, expiresAt: true },
+    });
+
+  it("a longer confirmation window moves each waiting week's deadline, unless that has passed", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    // The first week kicks off in about three days: 96 hours before it has already gone.
+    await change(owner.id, venue.id, { confirmationWindow: 96 });
+    const after = await weeks(made.id);
+    expect(after.map((week) => week.status)).toEqual(Array(4).fill("UNCONFIRMED"));
+    expect(after.map((week) => week.expiresAt?.getTime())).toEqual(
+      starts.map((start, i) => start.getTime() - (i === 0 ? 24 : 96) * HOUR),
+    );
+  });
+
+  it("a shorter confirmation window gives every waiting week the later deadline", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    await change(owner.id, venue.id, { confirmationWindow: 12 });
+    expect((await weeks(made.id)).map((week) => week.expiresAt?.getTime())).toEqual(
+      starts.map((start) => start.getTime() - 12 * HOUR),
+    );
+  });
+
+  it("a shorter horizon lets go of the waiting weeks beyond it; confirmed ones stay", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const last = made.reservations[3];
+    const confirmed = await asStaff(
+      owner.id,
+      "POST",
+      `/venues/${venue.id}/reservations/${last?.id}/confirm`,
+    );
+    expect(confirmed.status).toBe(200);
+
+    await change(owner.id, venue.id, { regularHorizon: 2 });
+    expect((await weeks(made.id)).map((week) => [week.status, week.startsAt])).toEqual([
+      ["UNCONFIRMED", starts[0]],
+      ["UNCONFIRMED", starts[1]],
+      ["RELEASED", starts[2]],
+      ["CONFIRMED", starts[3]],
+    ]);
+    // Its slots are back on sale, and it isn't counted against the regular.
+    const third = await prisma.booking.findFirstOrThrow({
+      where: { regularId: made.id, startsAt: starts[2] },
+      include: { slots: true, events: true },
+    });
+    expect(third.slots).toHaveLength(0);
+    expect(third.events.at(-1)).toMatchObject({
+      type: "REGULAR_CHANGED",
+      data: { reason: "HORIZON" },
+    });
+    expect((await detail(owner.id, venue.id, made.id)).reliability.released).toBe(0);
+  });
+
+  it("a longer horizon reserves the new weeks straight away", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround(6);
+    const made = await create(owner.id, venue.id, regular(karim));
+    expect(made.reservations).toHaveLength(4);
+    await change(owner.id, venue.id, { regularHorizon: 6 });
+    expect((await weeks(made.id)).map((week) => week.startsAt)).toEqual(starts);
+  });
+});
+
 describe("regular weeks", () => {
   const weekly = {
     dayOfWeek: 5,

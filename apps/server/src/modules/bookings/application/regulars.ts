@@ -1,4 +1,5 @@
 import type {
+  BookingSettings,
   CancellationTier,
   CreateRegular,
   OrderRegulars,
@@ -321,7 +322,7 @@ export const topUpAllVenues = async (clock: Clock = systemClock): Promise<number
 const releaseWeeks = async (
   tx: Tx,
   regularId: string,
-  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED",
+  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED" | "HORIZON",
   now: Date,
   keep: (startsAt: Date) => boolean = () => false,
 ) => {
@@ -342,6 +343,63 @@ const releaseWeeks = async (
     })),
   });
 };
+
+// A change to the venue's booking settings, carried on to the regulars' weeks already reserved
+// (user, 2026-11-26; docs/regulars.md "Booking settings"):
+// - A new confirmation window moves every waiting week's deadline to it, unless that has already
+//   passed: a settings change never lets a week go, it keeps the deadline it had.
+// - A shorter horizon lets go of the waiting weeks beyond it (not counted against anyone); the
+//   confirmed ones stay, as the customer said yes to them.
+// - Then the top-up: a longer horizon's new weeks, and weeks a shorter window brings back into
+//   reach, are reserved straight away rather than at night.
+// The hold length and who counts as a regular need nothing here: holds read it when made or
+// extended, and Fill a slot when it's asked.
+export const followBookingSettings = async (
+  venueId: string,
+  previous: BookingSettings,
+  next: BookingSettings,
+  clock: Clock = systemClock,
+) => {
+  const window = next.confirmationWindow !== previous.confirmationWindow;
+  const shorter = next.regularHorizon < previous.regularHorizon;
+  const longer = next.regularHorizon > previous.regularHorizon;
+  if (!window && !shorter && !longer) return;
+  await transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(${`regulars:${venueId}`}, 0))`;
+    const now = clock.now();
+    if (window) {
+      await tx.$executeRaw`
+        UPDATE "Booking"
+        SET "expiresAt" = "startsAt" - make_interval(hours => ${next.confirmationWindow}::int)
+        WHERE "venueId" = ${venueId}::uuid
+          AND "regularId" IS NOT NULL
+          AND status = 'UNCONFIRMED'
+          AND "startsAt" - make_interval(hours => ${next.confirmationWindow}::int) > ${now}`;
+    }
+    if (shorter) {
+      const terms = await termsOf(tx, venueId);
+      const last = localToday(now, terms.timezone).getTime() + next.regularHorizon * 7 * DAY_MS;
+      const waiting = await tx.booking.findMany({
+        where: { venueId, regularId: { not: null }, status: "UNCONFIRMED", startsAt: { gt: now } },
+        select: { regularId: true },
+        distinct: ["regularId"],
+      });
+      for (const { regularId } of waiting) {
+        if (!regularId) continue;
+        await releaseWeeks(
+          tx,
+          regularId,
+          "HORIZON",
+          now,
+          (startsAt) => localToday(startsAt, terms.timezone).getTime() <= last,
+        );
+      }
+    }
+  });
+  await topUpVenue(venueId, clock);
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const lockRegular = async (tx: Tx, venueId: string, id: string) => {
   await tx.$queryRaw`SELECT id FROM "VenueRegular" WHERE id = ${id}::uuid FOR UPDATE`;

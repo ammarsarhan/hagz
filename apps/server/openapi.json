@@ -7741,6 +7741,97 @@
         ],
         "description": "In priority order. A regular has a standing weekly time here, or played `regularBookings` games in the last `regularPeriod` weeks; lapsed when they haven't played for `lapsedAfter` weeks."
       },
+      "BookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "required": [
+          "staffHoldMinutes",
+          "regularHorizon",
+          "confirmationWindow",
+          "lapsedAfter",
+          "regularBookings",
+          "regularPeriod"
+        ]
+      },
+      "UpdateBookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "description": "Only what's sent changes."
+      },
       "GamePage": {
         "type": "object",
         "properties": {
@@ -8251,97 +8342,6 @@
             "description": "Staff's own note about the customer; never shown to them. Empty clears it."
           }
         }
-      },
-      "BookingSettings": {
-        "type": "object",
-        "properties": {
-          "staffHoldMinutes": {
-            "type": "integer",
-            "minimum": 5,
-            "maximum": 60,
-            "description": "How long a staff hold lasts."
-          },
-          "regularHorizon": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks of regulars' reservations kept ahead."
-          },
-          "confirmationWindow": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 168,
-            "description": "Hours before kick-off a regular's week must be confirmed."
-          },
-          "lapsedAfter": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks without a game before a regular counts as lapsed."
-          },
-          "regularBookings": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "description": "Games within `regularPeriod` weeks that make someone a regular."
-          },
-          "regularPeriod": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 26,
-            "description": "Weeks."
-          }
-        },
-        "required": [
-          "staffHoldMinutes",
-          "regularHorizon",
-          "confirmationWindow",
-          "lapsedAfter",
-          "regularBookings",
-          "regularPeriod"
-        ]
-      },
-      "UpdateBookingSettings": {
-        "type": "object",
-        "properties": {
-          "staffHoldMinutes": {
-            "type": "integer",
-            "minimum": 5,
-            "maximum": 60,
-            "description": "How long a staff hold lasts."
-          },
-          "regularHorizon": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks of regulars' reservations kept ahead."
-          },
-          "confirmationWindow": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 168,
-            "description": "Hours before kick-off a regular's week must be confirmed."
-          },
-          "lapsedAfter": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks without a game before a regular counts as lapsed."
-          },
-          "regularBookings": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "description": "Games within `regularPeriod` weeks that make someone a regular."
-          },
-          "regularPeriod": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 26,
-            "description": "Weeks."
-          }
-        },
-        "description": "Only what's sent changes."
       },
       "SystemStatus": {
         "type": "object",
@@ -23520,6 +23520,167 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/booking-settings": {
+      "get": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Staff holds, regulars and Fill a slot settings",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT: no settings yet.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Change staff holds, regulars and Fill a slot settings",
+        "description": "Needs `venue: manage`. Only what's sent changes. A new hold length applies to holds made or extended from now on. A new confirmation window moves the deadline of every regular's week still waiting to it, unless that has already passed (the week keeps its deadline). A shorter horizon lets go of waiting weeks beyond it (confirmed ones stay); a longer one reserves the new weeks straight away.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/games": {
       "get": {
         "tags": [
@@ -25116,167 +25277,6 @@
           },
           "409": {
             "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/staff/venues/{venueId}/booking-settings": {
-      "get": {
-        "tags": [
-          "Venue settings"
-        ],
-        "summary": "Staff holds, regulars and Fill a slot settings",
-        "security": [
-          {
-            "staffBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "venueId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The settings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingSettings"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "VENUE_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VENUE_STATUS_CONFLICT: no settings yet.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Venue settings"
-        ],
-        "summary": "Change staff holds, regulars and Fill a slot settings",
-        "description": "Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.",
-        "security": [
-          {
-            "staffBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "venueId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBookingSettings"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The settings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingSettings"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "VENUE_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VENUE_STATUS_CONFLICT",
             "content": {
               "application/problem+json": {
                 "schema": {

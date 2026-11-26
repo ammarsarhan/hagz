@@ -7,7 +7,8 @@ import { VENUE_SETTINGS_CHANGED } from "../domain/events";
 import { lockForEdit } from "./venue-edit";
 
 // The venue's day-to-day booking settings: staff holds, regulars, and Fill a slot's thresholds.
-// Changes are logged with the venue's other settings changes.
+// Changes are logged with the venue's other settings changes. The bookings module serves them, and
+// carries a change on to the regulars' weeks already reserved (it gets what they were before).
 
 const KEYS = [
   "staffHoldMinutes",
@@ -46,7 +47,7 @@ export const bookingSettings = async (actor: VenueAccess): Promise<BookingSettin
 export const updateBookingSettings = async (
   actor: VenueAccess,
   change: UpdateBookingSettings,
-): Promise<BookingSettings> =>
+): Promise<{ previous: BookingSettings; settings: BookingSettings }> =>
   transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const current = await tx.venueSettings.findUnique({
@@ -61,7 +62,7 @@ export const updateBookingSettings = async (
         changes[key] = { previous: current[key], next };
       }
     }
-    if (Object.keys(changes).length === 0) return current;
+    if (Object.keys(changes).length === 0) return { previous: current, settings: current };
     const updated = await tx.venueSettings.update({
       where: { venueId: actor.venueId },
       data: change,
@@ -75,5 +76,5 @@ export const updateBookingSettings = async (
         data: { changes },
       },
     });
-    return updated;
+    return { previous: current, settings: updated };
   });

@@ -18,6 +18,8 @@ export {
   type RangeSlot,
 } from "./application/booking-slots";
 export type { VenueAccess } from "./application/access";
+// For bookings: its settings, served there since a change reaches the regulars' weeks.
+export { bookingSettings, updateBookingSettings } from "./application/booking-settings";
 export { requireVenueAccess } from "./http/require-venue-access";
 export { nameIn, placeOf, translationIn } from "./domain/names";
 export { pinOf } from "./application/venue-edit";

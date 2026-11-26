@@ -1,7 +1,9 @@
+import { bookingSettings, updateBookingSettings } from "@/modules/venues";
 import { createRouter } from "@/platform/http/router";
 import {
   createRegular,
   endRegular,
+  followBookingSettings,
   listRegulars,
   orderRegulars,
   pauseRegular,
@@ -12,6 +14,7 @@ import {
 import { slotCandidates } from "../application/fill-slot";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { staffBookingDetail } from "../application/staff-bookings";
+import * as settings from "./definitions/booking-settings";
 import * as route from "./definitions/regulars";
 
 // `order` is registered before `{regularId}` so it isn't read as an id.
@@ -56,4 +59,15 @@ export const bookingsRegularRoutes = createRouter()
       await slotCandidates(c.var.venue, c.req.valid("param").slotId, c.req.valid("query")),
       200,
     ),
-  );
+  )
+  .openapi(settings.getBookingSettings, async (c) =>
+    c.json(await bookingSettings(c.var.venue), 200),
+  )
+  .openapi(settings.updateBookingSettings, async (c) => {
+    const { previous, settings: next } = await updateBookingSettings(
+      c.var.venue,
+      c.req.valid("json"),
+    );
+    await followBookingSettings(c.var.venue.venueId, previous, next);
+    return c.json(next, 200);
+  });

@@ -11004,6 +11004,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff holds, regulars and Fill a slot settings */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT: no settings yet. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change staff holds, regulars and Fill a slot settings
+         * @description Needs `venue: manage`. Only what's sent changes. A new hold length applies to holds made or extended from now on. A new confirmation window moves the deadline of every regular's week still waiting to it, unless that has already passed (the week keeps its deadline). A shorter horizon lets go of waiting weeks beyond it (confirmed ones stay); a longer one reserves the new weeks straight away.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateBookingSettings"];
+                };
+            };
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/v1/games": {
         parameters: {
             query?: never;
@@ -12262,145 +12401,6 @@ export interface paths {
                     };
                 };
                 /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`). */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/v1/staff/venues/{venueId}/booking-settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Staff holds, regulars and Fill a slot settings */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    venueId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The settings */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["BookingSettings"];
-                    };
-                };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_NOT_FOUND */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_STATUS_CONFLICT: no settings yet. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Change staff holds, regulars and Fill a slot settings
-         * @description Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    venueId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["UpdateBookingSettings"];
-                };
-            };
-            responses: {
-                /** @description The settings */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["BookingSettings"];
-                    };
-                };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_NOT_FOUND */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_STATUS_CONFLICT */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -19518,6 +19518,35 @@ export interface components {
          * @enum {string}
          */
         CandidateGroup: "LAPSED_REGULAR" | "ACTIVE_REGULAR" | "OTHER";
+        BookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings: number;
+            /** @description Weeks. */
+            regularPeriod: number;
+        };
+        /** @description Only what's sent changes. */
+        UpdateBookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes?: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon?: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow?: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter?: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings?: number;
+            /** @description Weeks. */
+            regularPeriod?: number;
+        };
         GamePage: {
             data: components["schemas"]["Game"][];
             nextCursor: string | null;
@@ -19675,35 +19704,6 @@ export interface components {
             phone?: string | null;
             /** @description Staff's own note about the customer; never shown to them. Empty clears it. */
             note?: string;
-        };
-        BookingSettings: {
-            /** @description How long a staff hold lasts. */
-            staffHoldMinutes: number;
-            /** @description Weeks of regulars' reservations kept ahead. */
-            regularHorizon: number;
-            /** @description Hours before kick-off a regular's week must be confirmed. */
-            confirmationWindow: number;
-            /** @description Weeks without a game before a regular counts as lapsed. */
-            lapsedAfter: number;
-            /** @description Games within `regularPeriod` weeks that make someone a regular. */
-            regularBookings: number;
-            /** @description Weeks. */
-            regularPeriod: number;
-        };
-        /** @description Only what's sent changes. */
-        UpdateBookingSettings: {
-            /** @description How long a staff hold lasts. */
-            staffHoldMinutes?: number;
-            /** @description Weeks of regulars' reservations kept ahead. */
-            regularHorizon?: number;
-            /** @description Hours before kick-off a regular's week must be confirmed. */
-            confirmationWindow?: number;
-            /** @description Weeks without a game before a regular counts as lapsed. */
-            lapsedAfter?: number;
-            /** @description Games within `regularPeriod` weeks that make someone a regular. */
-            regularBookings?: number;
-            /** @description Weeks. */
-            regularPeriod?: number;
         };
         SystemStatus: {
             /** Format: date-time */
