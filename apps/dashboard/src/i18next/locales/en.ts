@@ -302,6 +302,7 @@ const en = {
           body: "Nobody else can book it. Not confirmed by then, it's free again.",
           more_one: "Hold {{count}} more minute",
           more_other: "Hold {{count}} more minutes",
+          given: "Held longer once already",
           morePlain: "Hold it longer",
           paidHere: "Paid at the venue",
           confirm: "Confirm booking",

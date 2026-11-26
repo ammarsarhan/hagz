@@ -3,6 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import type { components } from "@hagz/api";
 import { api } from "@/lib/api";
@@ -25,6 +33,10 @@ type Booking = components["schemas"]["StaffBookingDetail"];
 const SIZE = 112;
 const STROKE = 9;
 const TRACK = "#e6ebff";
+// More time given: the ring sweeps back and the clock counts up together, this long.
+const GROW_MS = 700;
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const clock = (ms: number) => {
   const seconds = Math.max(0, Math.ceil(ms / 1000));
@@ -74,6 +86,41 @@ export function HoldRing({
   const radius = (SIZE - STROKE) / 2;
   const around = 2 * Math.PI * radius;
 
+  // The ring glides between the second-by-second shares, so it drains smoothly; when more time is
+  // given it sweeps back round, eased.
+  const drawn = useSharedValue(share);
+  useEffect(() => {
+    const grew = share > drawn.value + 0.01;
+    drawn.value = withTiming(share, {
+      duration: grew ? GROW_MS : 1000,
+      easing: grew ? Easing.out(Easing.cubic) : Easing.linear,
+    });
+  }, [share, drawn]);
+  const arc = useAnimatedProps(() => ({
+    strokeDashoffset: around * (1 - drawn.value),
+    opacity: drawn.value > 0.001 ? 1 : 0,
+  }));
+
+  // The clock counts up to the new deadline rather than jumping: what it still owes, run down.
+  const [owed, setOwed] = useState(0);
+  const lastDeadline = useRef(deadline);
+  useEffect(() => {
+    const added = deadline - lastDeadline.current;
+    lastDeadline.current = deadline;
+    if (added <= 0) return;
+    const start = Date.now();
+    let frame = 0;
+    const step = () => {
+      const progress = Math.min((Date.now() - start) / GROW_MS, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      setOwed(added * (1 - eased));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(frame);
+  }, [deadline]);
+  const shown = left - owed;
+
   const ended = useRef(false);
   useEffect(() => {
     if (left <= 0 && !ended.current) {
@@ -107,7 +154,7 @@ export function HoldRing({
             fill="none"
           />
           {/* What's left, from the top, running down anticlockwise. */}
-          <Circle
+          <AnimatedCircle
             cx={SIZE / 2}
             cy={SIZE / 2}
             r={radius}
@@ -115,9 +162,9 @@ export function HoldRing({
             strokeWidth={STROKE}
             fill="none"
             strokeLinecap="round"
-            strokeDasharray={`${around * share} ${around}`}
+            strokeDasharray={`${around} ${around}`}
             transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-            opacity={share > 0 ? 1 : 0}
+            animatedProps={arc}
           />
         </Svg>
         <Text
@@ -125,7 +172,7 @@ export function HoldRing({
           style={{ fontVariant: ["tabular-nums"] }}
           accessibilityLabel={t("screens.booking.hold.leftLabel", { time: clock(left) })}
         >
-          {clock(left)}
+          {clock(shown)}
         </Text>
         <Text className="text-caption text-ink-2">{t("screens.booking.hold.left")}</Text>
       </View>
@@ -137,19 +184,26 @@ export function HoldRing({
         </Text>
         <Text className="mt-1 text-label text-ink-2">{t("screens.booking.hold.body")}</Text>
         {canManage && !extended ? (
-          <Pressable
-            accessibilityRole="button"
-            disabled={extending}
-            onPress={() => void extend()}
-            hitSlop={8}
-            className={`mt-2.5 self-start active:opacity-70 ${extending ? "opacity-50" : ""}`}
-          >
-            <Text className="text-body font-medium underline">
-              {holdMinutes === null
-                ? t("screens.booking.hold.morePlain")
-                : t("screens.booking.hold.more", { count: holdMinutes })}
-            </Text>
-          </Pressable>
+          <Animated.View key="more" exiting={FadeOut.duration(200)} className="self-start">
+            <Pressable
+              accessibilityRole="button"
+              disabled={extending}
+              onPress={() => void extend()}
+              hitSlop={8}
+              className={`mt-2.5 self-start active:opacity-70 ${extending ? "opacity-50" : ""}`}
+            >
+              <Text className="text-body font-medium underline">
+                {holdMinutes === null
+                  ? t("screens.booking.hold.morePlain")
+                  : t("screens.booking.hold.more", { count: holdMinutes })}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        ) : extended ? (
+          // Once given, said where the link was.
+          <Animated.View key="given" entering={FadeIn.delay(200).duration(250)}>
+            <Text className="mt-2.5 text-label text-ink-2">{t("screens.booking.hold.given")}</Text>
+          </Animated.View>
         ) : null}
       </View>
     </View>
