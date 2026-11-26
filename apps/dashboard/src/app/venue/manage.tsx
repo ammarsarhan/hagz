@@ -4,9 +4,11 @@ import { router } from "expo-router";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import { Bone } from "@/components/bone";
+import { PinnedTitle, useCompactTitle, useSectionTitle } from "@/components/compact-title";
+import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
@@ -21,7 +23,8 @@ import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, the venue's cover photo
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title (pinned once it scrolls
+// away, then naming the section scrolled to), the venue's cover photo
 // (grey and pulsing while it loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
@@ -65,6 +68,9 @@ export default function VenueTab() {
     enabled: can("staff"),
   });
 
+  // The title pinned above the scroll: Venue, then each section as its heading goes under.
+  const compact = useCompactTitle();
+  const sections = useSectionTitle(compact.scrollY);
   // The cover photo that has finished drawing, so the grey stand-in can go.
   const [loadedCover, setLoadedCover] = useState<string | null>(null);
 
@@ -165,9 +171,12 @@ export default function VenueTab() {
     if (shown.length === 0) return null;
     return (
       <>
-        <SettingsHeading first={first} tight={first}>
-          {heading}
-        </SettingsHeading>
+        {/* Where it ends, for the pinned title to switch to it. */}
+        <View onLayout={sections.onLayout(heading)}>
+          <SettingsHeading first={first} tight={first}>
+            {heading}
+          </SettingsHeading>
+        </View>
         {shown.map((row, index) => (
           <SettingsRow
             key={row.key}
@@ -184,15 +193,9 @@ export default function VenueTab() {
 
   return (
     <Screen tabbed>
-      <ScrollView
-        alwaysBounceVertical
-        showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-      >
-        <View className="mt-5">
-          <Title>{t(`${v}.title`)}</Title>
-        </View>
+      <PinnedTitle title={t(`${v}.title`)} sections={sections} style={compact.style} />
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title onTitleLayout={compact.onTitleLayout}>{t(`${v}.title`)}</Title>
         <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             <>
@@ -242,7 +245,7 @@ export default function VenueTab() {
         {group(t(`${v}.details`), place, true)}
         {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
         {group(t(`${v}.rules`), rules)}
-      </ScrollView>
+      </FadingScroll>
     </Screen>
   );
 }
