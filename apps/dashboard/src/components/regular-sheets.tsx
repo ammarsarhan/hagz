@@ -75,7 +75,7 @@ export function RegularMenu({
       closeLabel={t("components.shared.nav.close")}
       closeButton={false}
     >
-      <Text accessibilityRole="header" className="mb-1 text-center text-[17px] leading-[23px] font-semibold">
+      <Text accessibilityRole="header" className="mt-2 mb-4 text-center text-[17px] leading-[23px] font-semibold">
         {t(`${m}.title`)}
       </Text>
       <View>
