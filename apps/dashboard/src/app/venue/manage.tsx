@@ -165,7 +165,9 @@ export default function VenueTab() {
     if (shown.length === 0) return null;
     return (
       <>
-        <SettingsHeading first={first}>{heading}</SettingsHeading>
+        <SettingsHeading first={first} tight={first}>
+          {heading}
+        </SettingsHeading>
         {shown.map((row, index) => (
           <SettingsRow
             key={row.key}

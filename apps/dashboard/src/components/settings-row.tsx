@@ -47,9 +47,16 @@ export function SettingsRow({
 export function SettingsHeading({
   children,
   first = false,
+  tight = false,
 }: {
   children: string;
   first?: boolean;
+  // Closer to what's above it: the Venue tab's first heading, under the venue's name.
+  tight?: boolean;
 }) {
-  return <GroupHeading className={`mb-1 ${first ? "mt-8" : "mt-7"}`}>{children}</GroupHeading>;
+  return (
+    <GroupHeading className={`mb-1 ${tight ? "mt-5" : first ? "mt-8" : "mt-7"}`}>
+      {children}
+    </GroupHeading>
+  );
 }
