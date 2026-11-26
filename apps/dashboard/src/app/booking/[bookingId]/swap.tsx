@@ -202,6 +202,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
       />
       <FadingScroll scrollY={compact.scrollY}>
         <Title
+          small
           onTitleLayout={compact.onTitleLayout}
           subtitle={
             partner

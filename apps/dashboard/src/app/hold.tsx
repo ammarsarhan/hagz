@@ -280,7 +280,7 @@ export default function HoldTime() {
         }
       />
       <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging}>
-        <Title onTitleLayout={compact.onTitleLayout} subtitle={t("screens.hold.subtitle")}>
+        <Title small onTitleLayout={compact.onTitleLayout} subtitle={t("screens.hold.subtitle")}>
           {title}
         </Title>
         <DayPickHeader

@@ -208,6 +208,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       />
       <FadingScroll scrollY={compact.scrollY}>
         <Title
+          small
           onTitleLayout={compact.onTitleLayout}
           subtitle={t("screens.move.subtitle", { name })}
         >
