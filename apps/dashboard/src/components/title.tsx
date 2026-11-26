@@ -6,7 +6,7 @@ import { Text } from "./text";
 // `action` (such as "Change" under the number a code went to) gets its own line under the subtitle,
 // so it never wraps onto the end of the sentence. `onTitleLayout` says where the title itself sits,
 // for a screen that shows it again in the nav bar once it's scrolled away. `small`: the day-picking
-// screens (Move, Swap, Hold a time), where the week strip under it should come up sooner: 24/30
+// screens (Move, Swap, Hold a time), where the week strip under it should come up sooner: 26/32
 // over a 15 subtitle, closer together (user, 2026-11-26).
 export function Title({
   children,
@@ -27,7 +27,7 @@ export function Title({
         accessibilityRole="header"
         className={
           small
-            ? "mb-1 text-heading font-semibold tracking-[-0.3px]"
+            ? "mb-1 text-[26px] leading-[32px] font-semibold tracking-[-0.35px]"
             : "mb-2 text-title font-semibold tracking-[-0.4px]"
         }
         onLayout={onTitleLayout}
