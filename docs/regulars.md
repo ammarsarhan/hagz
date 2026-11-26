@@ -20,7 +20,7 @@ Agreed on 2026-11-22 (PR 4.5):
 - **A closed hour:** that week is skipped like a taken one, and the regular carries on by itself once the hour reopens.
 - **Missed deadlines:** never paused automatically; they show in the reliability figures only.
 - **Pausing or ending** releases the regular's future `UNCONFIRMED` reservations at once (`REGULAR_CHANGED`, not counted against reliability). `CONFIRMED` weeks stay. Resuming reserves again from the next free week.
-- **Overlapping regulars are allowed**, with a **priority** that staff set by reordering the regulars that overlap. Lower goes first; a new regular joins at the end. Priority only decides who gets a week when it's first reserved. A week already reserved stays with that regular. If they release it, the next one in priority gets it straight away, as long as its deadline hasn't passed.
+- **Overlapping regulars are allowed**, with a **priority** that staff set by reordering the regulars that overlap. Lower goes first; a new regular joins at the end. Reordering moves **waiting** weeks: a regular moved down lets its `UNCONFIRMED` weeks go (`REGULAR_CHANGED` with reason `REORDERED`), and the top-up gives them to whoever is first now. A **confirmed** week stays with whoever confirmed it. If a regular releases a week, the next one in priority gets it straight away, as long as its deadline hasn't passed.
 - **Creating a regular whose first weeks are taken** still creates it. The answer lists the weeks it skipped.
 - **Prices:** each week copies the slot prices. There's no special weekly price; any deal is given at the counter.
 

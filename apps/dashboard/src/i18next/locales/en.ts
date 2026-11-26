@@ -230,7 +230,7 @@ const en = {
           place_ordinal_other: "{{count}}th",
           now: "now {{place}}",
           who: "{{place}}) {{name}}",
-          stay: "Weeks already reserved stay",
+          stay: "Waiting weeks go to the first · confirmed ones stay",
           save: "Save order",
         },
         page: {
@@ -511,6 +511,7 @@ const en = {
           regularJoinedHold: "The hold now waits for a confirm by the weekly game's deadline",
           regularPaused: "Released: the weekly game was paused",
           regularEnded: "Released: the weekly game ended",
+          regularReordered: "Released: another regular went first",
           changed: "Changed",
           checkedIn: "Checked in",
           checkedInCode: "{{name}}, with the code",

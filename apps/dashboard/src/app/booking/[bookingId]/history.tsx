@@ -298,7 +298,9 @@ function describe(
             ? "screens.history.events.regularPaused"
             : reason === "ENDED"
               ? "screens.history.events.regularEnded"
-              : "screens.history.events.regularChanged",
+              : reason === "REORDERED"
+                ? "screens.history.events.regularReordered"
+                : "screens.history.events.regularChanged",
         ),
         detail: t("screens.history.events.backOnSale"),
       };

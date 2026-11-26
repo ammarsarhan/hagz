@@ -280,7 +280,7 @@ const ar: ArabicTranslations = {
           place_ordinal_other: "رقم {{count}}",
           now: "الآن {{place}}",
           who: "{{place}}) {{name}}",
-          stay: "الأسابيع المحجوزة بالفعل تبقى",
+          stay: "الأسابيع المنتظرة تذهب للأول · المؤكدة تبقى",
           save: "حفظ الترتيب",
         },
         page: {
@@ -572,6 +572,7 @@ const ar: ArabicTranslations = {
           regularJoinedHold: "الحجز المؤقت ينتظر التأكيد حتى موعد المباراة الأسبوعية",
           regularPaused: "أُلغي: أُوقفت المباراة الأسبوعية مؤقتًا",
           regularEnded: "أُلغي: انتهت المباراة الأسبوعية",
+          regularReordered: "أُلغي: تقدّم منتظم آخر في الدور",
           changed: "تغيّر",
           checkedIn: "سجّل الحضور",
           checkedInCode: "{{name}}، بالكود",

@@ -114,6 +114,9 @@ export default function Regulars() {
     }
     queryClient.setQueryData(regularsQuery(venueId).queryKey, result.data.data);
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] });
+    // Waiting weeks moved to whoever is first now: the calendar and its free times changed too.
+    void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
+    void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] });
     setPending(null);
   };
 
