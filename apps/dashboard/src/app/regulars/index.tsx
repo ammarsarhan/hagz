@@ -8,6 +8,8 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  FadeInDown,
+  FadeOutDown,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
@@ -124,33 +126,36 @@ export default function Regulars() {
     <Screen
       footer={
         changed && pending ? (
-          <BottomBar
-            // Too long for the bar, it scrolls from first priority to last (user, 2026-11-26).
-            title={
-              <Marquee
-                className="text-subtitle"
-                text={pending.ids
-                  .map((id, index) =>
-                    // "1) Hossam, 2) Youssef" (user, 2026-11-26).
-                    t("screens.regulars.reorder.who", {
-                      name: firstName(
-                        pendingGroup?.find((regular) => regular.id === id)?.customer.name ?? "",
-                      ),
-                      place: index + 1,
-                    }),
-                  )
-                  .join(t("screens.regulars.new.comma"))}
+          // Up and away smoothly, not in a blink (the save's last step).
+          <Animated.View entering={FadeInDown.duration(240)} exiting={FadeOutDown.duration(180)}>
+            <BottomBar
+              // Too long for the bar, it scrolls from first priority to last (user, 2026-11-26).
+              title={
+                <Marquee
+                  className="text-subtitle"
+                  text={pending.ids
+                    .map((id, index) =>
+                      // "1) Hossam, 2) Youssef" (user, 2026-11-26).
+                      t("screens.regulars.reorder.who", {
+                        name: firstName(
+                          pendingGroup?.find((regular) => regular.id === id)?.customer.name ?? "",
+                        ),
+                        place: index + 1,
+                      }),
+                    )
+                    .join(t("screens.regulars.new.comma"))}
+                />
+              }
+              detail={t("screens.regulars.reorder.stay")}
+            >
+              <BarButton
+                label={t("screens.regulars.reorder.save")}
+                primary
+                busy={saving}
+                onPress={() => void save()}
               />
-            }
-            detail={t("screens.regulars.reorder.stay")}
-          >
-            <BarButton
-              label={t("screens.regulars.reorder.save")}
-              primary
-              busy={saving}
-              onPress={() => void save()}
-            />
-          </BottomBar>
+            </BottomBar>
+          </Animated.View>
         ) : undefined
       }
     >
@@ -208,7 +213,12 @@ export default function Regulars() {
               <GroupHeading>{t(`screens.regulars.days.${String(day) as Weekday}`)}</GroupHeading>
               {groups.map((group) => (
                 <TimeGroup
-                  key={group[0]?.id}
+                  // By who's in it, not who's first: a saved order keeps the same group on screen
+                  // (keyed by the first, it was drawn again from scratch and jolted).
+                  key={group
+                    .map((regular) => regular.id)
+                    .sort()
+                    .join(",")}
                   group={ordered(group)}
                   saved={group}
                   canReorder={canAdd && group.length > 1}
