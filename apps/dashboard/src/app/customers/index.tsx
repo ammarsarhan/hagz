@@ -109,7 +109,7 @@ export default function Customers() {
   const title = t("screens.customers.title");
   const header = (
     <View>
-      <Title onTitleLayout={compact.onTitleLayout} subtitle={t("screens.customers.subtitle")}>
+      <Title small onTitleLayout={compact.onTitleLayout} subtitle={t("screens.customers.subtitle")}>
         {title}
       </Title>
       <View className="mb-2 h-12 flex-row items-center rounded-xl bg-field px-3.5">
