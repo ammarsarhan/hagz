@@ -314,7 +314,7 @@ function Customers({
             >
               <Avatar name={customer.name} size="row" />
               <View className="ms-3 flex-1">
-                <Text className="text-body">{customer.name}</Text>
+                <Text className="text-body font-medium">{customer.name}</Text>
                 <Text className="text-caption text-ink-2">
                   {[
                     customer.phone ? shownPhone(customer.phone) : null,
