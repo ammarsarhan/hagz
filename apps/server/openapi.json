@@ -7391,6 +7391,34 @@
             },
             "description": "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day."
           },
+          "comingWeeks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "A calendar day in the venue's timezone.",
+                  "example": "2026-12-03"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "CONFIRMED",
+                    "WAITING",
+                    "LET_GO",
+                    "NOT_ANSWERED"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "state"
+              ]
+            },
+            "description": "Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed."
+          },
           "lastWeeks": {
             "type": "array",
             "items": {
@@ -7436,6 +7464,7 @@
           "createdAt",
           "reservations",
           "skippedWeeks",
+          "comingWeeks",
           "lastWeeks"
         ]
       },

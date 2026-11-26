@@ -104,6 +104,22 @@ describe("regulars", () => {
     expect(first.slots.map((slot) => slot.status)).toEqual(["HELD", "HELD"]);
   });
 
+  it("lists its coming weeks, let-go ones too, and none of them as past", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const [week1, week2] = made.reservations;
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${week1?.id}/confirm`);
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${week2?.id}/release`);
+    const after = await detail(owner.id, venue.id, made.id);
+    expect(after.comingWeeks.map((week) => week.state)).toEqual([
+      "CONFIRMED",
+      "LET_GO",
+      "WAITING",
+      "WAITING",
+    ]);
+    expect(after.lastWeeks).toEqual([]);
+  });
+
   it("never gives one customer two regulars sharing an hour on a ground", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));

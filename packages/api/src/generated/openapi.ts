@@ -19679,6 +19679,17 @@ export interface components {
             reservations: components["schemas"]["StaffBooking"][];
             /** @description Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day. */
             skippedWeeks: string[];
+            /** @description Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed. */
+            comingWeeks: {
+                /**
+                 * Format: date
+                 * @description A calendar day in the venue's timezone.
+                 * @example 2026-12-03
+                 */
+                date: string;
+                /** @enum {string} */
+                state: "CONFIRMED" | "WAITING" | "LET_GO" | "NOT_ANSWERED";
+            }[];
             /** @description Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted. */
             lastWeeks: {
                 /**

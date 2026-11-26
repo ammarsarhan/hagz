@@ -28,6 +28,7 @@ import {
   isoDate,
   localToday,
   reliabilityOf,
+  comingWeeksOf,
   lastWeeksOf,
   upcomingWeeks,
   weekOf,
@@ -418,6 +419,7 @@ const outcomesOf = async (regularIds: readonly string[]) => {
       regularId: true,
       status: true,
       startsAt: true,
+      endsAt: true,
       events: {
         where: {
           type: {
@@ -428,7 +430,7 @@ const outcomesOf = async (regularIds: readonly string[]) => {
       },
     },
   });
-  const outcomes = new Map<string, (ReservationOutcome & { startsAt: Date })[]>();
+  const outcomes = new Map<string, (ReservationOutcome & { startsAt: Date; endsAt: Date })[]>();
   for (const row of rows) {
     if (!row.regularId) continue;
     const released = row.events.find(
@@ -438,6 +440,7 @@ const outcomesOf = async (regularIds: readonly string[]) => {
     const by = (released?.data as { by?: string } | null)?.by;
     const outcome = {
       startsAt: row.startsAt,
+      endsAt: row.endsAt,
       status: row.status,
       confirmed: row.events.some((event) => event.type === BOOKING_EVENTS.CONFIRMED),
       releasedBy:
@@ -446,7 +449,7 @@ const outcomesOf = async (regularIds: readonly string[]) => {
           : by === "STAFF" || by === "CUSTOMER" || by === "DEADLINE"
             ? by
             : null,
-    } satisfies ReservationOutcome & { startsAt: Date };
+    } satisfies ReservationOutcome & { startsAt: Date; endsAt: Date };
     outcomes.set(row.regularId, [...(outcomes.get(row.regularId) ?? []), outcome]);
   }
   return (regularId: string) => outcomes.get(regularId) ?? [];
@@ -539,6 +542,7 @@ export const regularDetail = async (
     reservations: reservations.map((row) => presentStaff(row)),
     skippedWeeks,
     lastWeeks: lastWeeksOf(outcomes(row.id), now, terms.timezone),
+    comingWeeks: comingWeeksOf(outcomes(row.id), now, terms.timezone),
   };
 };
 

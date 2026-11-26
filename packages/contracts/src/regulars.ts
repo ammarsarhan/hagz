@@ -72,6 +72,17 @@ export const VenueRegularDetail = VenueRegular.extend({
     description:
       "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day.",
   }),
+  comingWeeks: z
+    .array(
+      z.object({
+        date: LocalDate,
+        state: z.enum(["CONFIRMED", "WAITING", "LET_GO", "NOT_ANSWERED"]),
+      }),
+    )
+    .meta({
+      description:
+        "Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed.",
+    }),
   lastWeeks: z
     .array(
       z.object({
