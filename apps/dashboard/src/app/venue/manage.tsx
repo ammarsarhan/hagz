@@ -10,7 +10,7 @@ import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Text } from "@/components/text";
-import { api } from "@/lib/api";
+import { api, reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { isRTL } from "@/lib/language";
@@ -18,8 +18,8 @@ import { fetched, queries } from "@/lib/queries";
 import { paymentLabel } from "@/lib/settings";
 
 // The Venue tab (Figma "D3 · Venue tab, round 3", C): the venue's cover photo, its name and area
-// centred under it, then the Account tab's headings and rows: People (customers, regulars, team),
-// Your venue (profile and photos, grounds, hours) and Rules (booking settings, cancellations,
+// centred under it, then the Account tab's headings and rows: Your venue (profile and photos,
+// grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
 // payments). Each row's grey line says what's there now. Rows for an area the member can't see
 // are left out. Setup's screens edit a live venue as they did the draft; rows whose screens
 // aren't built yet say so.
@@ -194,11 +194,13 @@ export default function VenueTab() {
       >
         <View className="mt-10 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
+            // The full photo through reachable() (the dev API's host as the phone sees it), filling
+            // the space; no blurry preview while it loads.
             <Image
-              source={{ uri: ready[0].url }}
-              placeholder={venue.coverPreview ? { uri: venue.coverPreview } : undefined}
+              source={{ uri: reachable(ready[0].url) }}
               contentFit="cover"
-              style={{ flex: 1 }}
+              transition={150}
+              style={{ width: "100%", height: "100%" }}
               accessibilityIgnoresInvertColors
             />
           ) : (
@@ -220,8 +222,8 @@ export default function VenueTab() {
           {where ? <Text className="mt-1 text-center text-body text-ink-2">{where}</Text> : null}
         </View>
 
-        {group(t(`${v}.peopleHeading`), people, true)}
-        {group(t(`${v}.yourVenue`), place, !people.some(Boolean))}
+        {group(t(`${v}.yourVenue`), place, true)}
+        {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
         {group(t(`${v}.rules`), rules)}
       </ScrollView>
     </Screen>
