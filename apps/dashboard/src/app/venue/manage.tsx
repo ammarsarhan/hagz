@@ -24,8 +24,8 @@ import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 import { push } from "@/lib/navigation";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a bar pinned above the
-// scroll naming the section scrolled to (from Details on), the venue's photos
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a plain bar pinned above the
+// scroll (a hairline once scrolled; no section names coming into it, user 2026-11-26), the venue's photos
 // taking turns every 5 seconds (grey and pulsing while the first loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
@@ -172,12 +172,10 @@ export default function VenueTab() {
     if (shown.length === 0) return null;
     return (
       <>
-        {/* Where it ends, for the pinned title to switch to it. */}
-        <View onLayout={sections.onLayout(heading)}>
-          <SettingsHeading first={first} tight={first}>
-            {heading}
-          </SettingsHeading>
-        </View>
+        {/* Not told to the bar: it stays plain all the way down (user, 2026-11-26). */}
+        <SettingsHeading first={first} tight={first}>
+          {heading}
+        </SettingsHeading>
         {shown.map((row, index) => (
           <SettingsRow
             key={row.key}
