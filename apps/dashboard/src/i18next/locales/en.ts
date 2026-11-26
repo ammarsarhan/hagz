@@ -183,7 +183,7 @@ const en = {
         confirm: {
           title: "Add regular",
           subtitle: "Check it, then add it.",
-          time: "{{day}}, {{hours}} · {{ground}}",
+          time: "{{day}}, {{hours}}",
           perWeek: "{{price}} a week",
           change: "Change",
           for: "For",

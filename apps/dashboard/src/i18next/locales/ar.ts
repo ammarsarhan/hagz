@@ -207,7 +207,7 @@ const ar: ArabicTranslations = {
         confirm: {
           title: "إضافة منتظم",
           subtitle: "راجعها، ثم أضفها.",
-          time: "{{day}}، {{hours}} · {{ground}}",
+          time: "{{day}}، {{hours}}",
           perWeek: "{{price}} أسبوعيًا",
           change: "تغيير",
           for: "لـ",

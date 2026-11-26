@@ -159,11 +159,13 @@ export default function ConfirmRegular() {
         </Title>
 
         {/* The time picked, with the way back to change it. */}
-        <View className="h-[60px] flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-3.5">
+        <View className="flex-row items-center rounded-[14px] border-[1.5px] border-dashed border-primary bg-[#f7f8ff] px-3.5 py-2.5">
           <View className="flex-1">
             <Text className="text-[16px] leading-[21px] font-medium">
-              {t(`${c}.time`, { day, hours, ground: params.ground })}
+              {t(`${c}.time`, { day, hours })}
             </Text>
+            {/* The ground on a line of its own, under the time (user, 2026-11-26). */}
+            <Text className="text-[15px] leading-5">{params.ground}</Text>
             <Text className="text-[13px] leading-[17px] text-ink-2">
               {[t(`${c}.perWeek`, { price: money }), params.kind].filter(Boolean).join(" · ")}
             </Text>
@@ -173,9 +175,8 @@ export default function ConfirmRegular() {
 
         <Fact
           label={t(`${c}.for`)}
-          value={[params.name, params.phone ? shownPhone(params.phone) : null]
-            .filter(Boolean)
-            .join(" · ")}
+          value={params.name}
+          detail={params.phone ? shownPhone(params.phone) : undefined}
           onChange={() => setAsking(true)}
         />
         <Fact
@@ -232,7 +233,18 @@ export default function ConfirmRegular() {
 }
 
 // One of the facts: what it is in grey, the value under it, Change at its end, a hairline under.
-function Fact({ label, value, onChange }: { label: string; value: string; onChange: () => void }) {
+function Fact({
+  label,
+  value,
+  detail,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  // A grey line under the value: the number under the name (user, 2026-11-26).
+  detail?: string;
+  onChange: () => void;
+}) {
   return (
     <View className="flex-row items-end border-b border-border pt-4 pb-2">
       <View className="flex-1">
@@ -240,6 +252,11 @@ function Fact({ label, value, onChange }: { label: string; value: string; onChan
         <Text className="mt-1 text-[16px] leading-[21px] font-medium" numberOfLines={1}>
           {value}
         </Text>
+        {detail ? (
+          <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
+            {detail}
+          </Text>
+        ) : null}
       </View>
       <Change onPress={onChange} />
     </View>
