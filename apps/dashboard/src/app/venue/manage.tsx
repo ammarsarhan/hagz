@@ -3,13 +3,10 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
-import { CompactTitle, useCompactTitle } from "@/components/compact-title";
-import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
-import { NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Text } from "@/components/text";
@@ -34,8 +31,6 @@ export default function VenueTab() {
   const hud = useHud();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
-  // The venue's name rises into the bar once the big one has scrolled under it.
-  const compact = useCompactTitle();
   const can = (area: keyof NonNullable<typeof venue>["permissions"]) =>
     venue !== undefined && venue.permissions[area] !== "none";
 
@@ -191,12 +186,13 @@ export default function VenueTab() {
 
   return (
     <Screen tabbed>
-      <NavBar
-        flush
-        start={<CompactTitle button={null} title={venue.name ?? ""} style={compact.style} />}
-      />
-      <FadingScroll scrollY={compact.scrollY}>
-        <View className="overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
+      <ScrollView
+        alwaysBounceVertical
+        showsVerticalScrollIndicator={false}
+        style={{ marginHorizontal: -20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+      >
+        <View className="mt-10 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             // The full photo through reachable() (the dev API's host as the phone sees it), filling
             // the space; no blurry preview while it loads.
@@ -219,7 +215,7 @@ export default function VenueTab() {
           ) : null}
         </View>
 
-        <View className="mt-4 items-center" onLayout={compact.onTitleLayout}>
+        <View className="mt-4 items-center">
           <Text className="text-center text-[22px] font-semibold leading-[1.27]">
             {venue.name ?? ""}
           </Text>
@@ -229,8 +225,7 @@ export default function VenueTab() {
         {group(t(`${v}.yourVenue`), place, true)}
         {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
         {group(t(`${v}.rules`), rules)}
-        <View className="h-6" />
-      </FadingScroll>
+      </ScrollView>
     </Screen>
   );
 }
