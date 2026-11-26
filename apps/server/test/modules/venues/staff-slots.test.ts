@@ -92,6 +92,8 @@ describe("reading a day", () => {
     expect(res.status).toBe(200);
     const day = VenueSlots.parse(await res.json());
     expect(day.slots.map((s) => s.id)).toEqual(slots.slice(0, 3).map((s) => s.id));
+    // How long a booking there may run, for picking a stretch of them.
+    expect(day.grounds[0]).toMatchObject({ minimumSlots: 1, maximumSlots: 3 });
 
     const outsider = await createStaff({ phone: phone() });
     await addMember(venueId, outsider.id, { permissions: NO_PERMISSIONS });

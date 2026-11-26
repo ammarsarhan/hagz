@@ -11,9 +11,13 @@ export const PHONE_HOURS_AFTER_START = 24;
 // Each player's share of the booking: in contracts, so the app's review step shows the same.
 export { shareOf } from "@hagz/contracts";
 
-// The joining fee: the marketplace's rate (basis points) of the share, rounded to a unit.
-export const joinFeeOf = (share: number, rate: number) =>
-  Math.round((share * rate) / 10_000 / UNIT) * UNIT;
+// The joining fee: the marketplace's rate (basis points) of the share, rounded to a unit, and never
+// less than the marketplace's minimum (user, 2026-11-25: 5 EGP in Egypt). A rate of 0 turns the fee
+// off, minimum and all.
+export const joinFeeOf = (share: number, rate: number, minimum: number) => {
+  if (rate === 0) return 0;
+  return Math.max(Math.round((share * rate) / 10_000 / UNIT) * UNIT, minimum);
+};
 
 // Players a booker can ask for: the ground's players less the booker.
 export const maxNeeded = (sport: GroundSport, size: GroundSize) => playersOn(sport, size) - 1;

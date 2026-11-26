@@ -10,6 +10,8 @@ export { default as IconMapPin } from "@tabler/icons-react-native/IconMapPin";
 export { default as IconSearch } from "@tabler/icons-react-native/IconSearch";
 export { default as IconClock } from "@tabler/icons-react-native/IconClock";
 export { default as IconCopy } from "@tabler/icons-react-native/IconCopy";
+// A booking's phone row: call.
+export { default as IconPhone } from "@tabler/icons-react-native/IconPhone";
 export { default as IconBrandWhatsapp } from "@tabler/icons-react-native/IconBrandWhatsapp";
 export { default as IconChevronDown } from "@tabler/icons-react-native/IconChevronDown";
 export { default as IconChevronLeft } from "@tabler/icons-react-native/IconChevronLeft";
@@ -18,6 +20,9 @@ export { default as IconExternalLink } from "@tabler/icons-react-native/IconExte
 export { default as IconEye } from "@tabler/icons-react-native/IconEye";
 export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
+// The calendar's pill back to now.
+export { default as IconArrowUp } from "@tabler/icons-react-native/IconArrowUp";
+export { default as IconArrowsExchange } from "@tabler/icons-react-native/IconArrowsExchange";
 export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
@@ -84,3 +89,5 @@ export { default as IconArrowDown } from "@tabler/icons-react-native/IconArrowDo
 export { default as IconDoor } from "@tabler/icons-react-native/IconDoor";
 export { default as IconList } from "@tabler/icons-react-native/IconList";
 export { default as IconRotate } from "@tabler/icons-react-native/IconRotate";
+export { default as IconPencil } from "@tabler/icons-react-native/IconPencil";
+export { default as IconCalendarPlus } from "@tabler/icons-react-native/IconCalendarPlus";

@@ -28,6 +28,7 @@ describe("venue customers", () => {
       await (await asStaff(owner.id, "GET", `/venues/${venue.id}/customers?limit=2`)).json(),
     );
     expect(all.data.map((customer) => customer.name)).toEqual(["Ahmed", "Bassem"]);
+    expect(all.total).toBe(4);
     const next = VenueCustomerPage.parse(
       await (
         await asStaff(
@@ -45,6 +46,39 @@ describe("venue customers", () => {
       await (await asStaff(owner.id, "GET", `/venues/${venue.id}/customers?q=100 123`)).json(),
     );
     expect(byPhone.data.map((customer) => customer.name)).toEqual(["Ahmed"]);
+    expect(byPhone.total).toBe(1);
+  });
+
+  it("lists who played last first, then who was added last, as one page", async () => {
+    const { venue } = await aGround();
+    const owner = await staffAt(venue.id);
+    const ids: Record<string, string> = {};
+    for (const name of ["Zeyad", "Karim", "Bassem", "Omar"]) {
+      const res = await asStaff(owner.id, "POST", `/venues/${venue.id}/customers`, { name });
+      ids[name] = VenueCustomer.parse(await res.json()).id;
+    }
+    await prisma.venueCustomer.update({
+      where: { id: ids.Karim },
+      data: { lastBookedAt: new Date("2026-01-02T18:00:00Z") },
+    });
+    await prisma.venueCustomer.update({
+      where: { id: ids.Zeyad },
+      data: { lastBookedAt: new Date("2026-01-05T18:00:00Z") },
+    });
+
+    const recent = VenueCustomerPage.parse(
+      await (
+        await asStaff(owner.id, "GET", `/venues/${venue.id}/customers?order=recent&limit=3`)
+      ).json(),
+    );
+    expect(recent.data.map((customer) => customer.name)).toEqual(["Zeyad", "Karim", "Omar"]);
+    expect(recent.nextCursor).toBeNull();
+    const paged = await asStaff(
+      owner.id,
+      "GET",
+      `/venues/${venue.id}/customers?order=recent&cursor=abc`,
+    );
+    expect(paged.status).toBe(400);
   });
 
   it("adds a walk-in with a normalized number, and refuses a number already there", async () => {
@@ -68,7 +102,11 @@ describe("venue customers", () => {
       phone: "+201005551234",
     });
     expect(again.status).toBe(409);
-    expect(await again.json()).toMatchObject({ code: "CUSTOMER_EXISTS", customerId: karim.id });
+    expect(await again.json()).toMatchObject({
+      code: "CUSTOMER_EXISTS",
+      customerId: karim.id,
+      customerName: "Karim",
+    });
   });
 
   it("edits a walk-in's name and number, but only the note of an app player", async () => {

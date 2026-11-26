@@ -47,7 +47,7 @@ export type RowKind =
 
 export type CalendarRow =
   | { kind: "closed"; key: string; startsAt: string; endsAt: string; groundId: string }
-  // Open slots nobody has: one row per hour and price, naming every ground free then at it.
+  // Open slots nobody has: one row per time, naming every ground free then, and its prices' range.
   | {
       kind: "free";
       key: string;
@@ -55,7 +55,7 @@ export type CalendarRow =
       endsAt: string;
       groundId: string;
       groundIds: string[];
-      price: number;
+      price: { from: number; to: number };
       ended: boolean;
     }
   | {
@@ -111,12 +111,12 @@ const closedStretches = (slots: readonly Slot[]) => {
   return stretches;
 };
 
-// Open slots nobody holds, grounds at the same hour and price together.
+// Open slots nobody holds, every ground free at the same time in one row (user: not split by price).
 const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: number) => {
   const groups = new Map<string, Slot[]>();
   for (const slot of slots) {
     if (slot.status !== "AVAILABLE") continue;
-    const key = `${slot.startsAt}|${slot.endsAt}|${slot.price}`;
+    const key = `${slot.startsAt}|${slot.endsAt}`;
     groups.set(key, [...(groups.get(key) ?? []), slot]);
   }
   return [...groups].map(([key, group]) => {
@@ -129,7 +129,10 @@ const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: n
       endsAt: first.endsAt,
       groundId: groundIds[0] ?? first.groundId,
       groundIds,
-      price: first.price,
+      price: {
+        from: Math.min(...group.map((slot) => slot.price)),
+        to: Math.max(...group.map((slot) => slot.price)),
+      },
       ended: Date.parse(first.endsAt) <= now,
     };
   });
@@ -200,11 +203,32 @@ export const dayRows = ({
   );
 };
 
-// Where the now line goes in a day's rows: before the first that starts after now (the length when
-// none does). Rows already under way stay above it.
-export const nowIndex = (rows: readonly CalendarRow[], now: number) => {
-  const at = rows.findIndex((row) => Date.parse(row.startsAt) > now);
-  return at === -1 ? rows.length : at;
+// The start of the venue-local hour a moment falls in, in milliseconds.
+export const hourStartOf = (at: string, timezone: string) => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(at));
+  const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const time = Date.parse(at);
+  return time - (value("minute") * 60 + value("second")) * 1000 - (time % 1000);
+};
+
+// All grounds' rows under the hour each starts in (user: hour headings, so a three-hour booking
+// and the hours free beside it don't read as rows out of order). Rows come in sorted by start.
+export const hourGroups = (rows: readonly CalendarRow[], timezone: string) => {
+  const groups: { hour: number; rows: CalendarRow[] }[] = [];
+  for (const row of rows) {
+    const hour = hourStartOf(row.startsAt, timezone);
+    const last = groups.at(-1);
+    if (last && last.hour === hour) last.rows.push(row);
+    else groups.push({ hour, rows: [row] });
+  }
+  // Bookings and closed times above the free hours (user).
+  for (const group of groups)
+    group.rows.sort((a, b) => Number(a.kind === "free") - Number(b.kind === "free"));
+  return groups;
 };
 
 // The days with bookings on them, requests included, for the dots under the week strip.
@@ -213,13 +237,3 @@ export const bookingDays = (bookings: readonly StaffBooking[], timezone: string)
 
 // The weekday a date falls on, 0 for Sunday.
 export const weekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
-
-// "1st", "2nd", "3rd", "11th", "22nd".
-export const ordinal = (day: number) => {
-  const tens = day % 100;
-  const suffix =
-    tens >= 11 && tens <= 13
-      ? "th"
-      : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[day % 10] ?? "th");
-  return `${day}${suffix}`;
-};

@@ -189,6 +189,8 @@ const ensureMarketplace = async () => {
       taxRate: 1400,
       // 1 EGP per player per hour: 10 EGP an hour on a 5-a-side pitch (user, 2026-11-23).
       serviceFee: 100,
+      // A joining fee of at least 5 EGP (user, 2026-11-25).
+      joinFeeMinimum: 500,
       isActive: true,
       translations: { create: names("Egypt", "مصر") },
     },

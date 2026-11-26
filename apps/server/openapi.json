@@ -5777,13 +5777,23 @@
                 },
                 "size": {
                   "$ref": "#/components/schemas/GroundSize"
+                },
+                "minimumSlots": {
+                  "type": "integer",
+                  "description": "The shortest booking, in slots."
+                },
+                "maximumSlots": {
+                  "type": "integer",
+                  "description": "The longest booking, in slots."
                 }
               },
               "required": [
                 "id",
                 "name",
                 "sport",
-                "size"
+                "size",
+                "minimumSlots",
+                "maximumSlots"
               ]
             }
           },
@@ -6137,6 +6147,23 @@
               "players"
             ],
             "description": "An open game: how many players to expect besides the booker."
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`DEPOSIT`: the share paid online."
+          },
+          "paymentWindow": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise."
           }
         },
         "required": [
@@ -6156,7 +6183,10 @@
           "expiresAt",
           "hold",
           "regular",
-          "openGame"
+          "openGame",
+          "paymentMode",
+          "deposit",
+          "paymentWindow"
         ]
       },
       "BookingSource": {
@@ -8068,11 +8098,16 @@
               "string",
               "null"
             ]
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many customers match `q` (all of them without one), across every page."
           }
         },
         "required": [
           "data",
-          "nextCursor"
+          "nextCursor",
+          "total"
         ]
       },
       "VenueCustomer": {
@@ -24695,6 +24730,21 @@
           {
             "schema": {
               "type": "string",
+              "enum": [
+                "name",
+                "recent"
+              ],
+              "default": "name",
+              "description": "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly)."
+            },
+            "required": false,
+            "description": "`name`: A to Z, paged. `recent`: who played last first, then who was added last (one page, for picking someone quickly).",
+            "name": "order",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "`nextCursor` from the previous page."
             },
             "required": false,
@@ -24851,7 +24901,7 @@
             }
           },
           "409": {
-            "description": "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId`).",
+            "description": "CUSTOMER_EXISTS: a customer here already has this number (with their `customerId` and `customerName`).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25030,7 +25080,7 @@
             }
           },
           "409": {
-            "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
+            "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`).",
             "content": {
               "application/problem+json": {
                 "schema": {

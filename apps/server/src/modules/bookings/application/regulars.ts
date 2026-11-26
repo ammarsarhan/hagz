@@ -409,7 +409,7 @@ export const regularDetail = async (
       .filter((week) => !blocked.has(week.startsAt.getTime()))
       .map((week) => week.date);
   }
-  return { ...regular, reservations: reservations.map(presentStaff), skippedWeeks };
+  return { ...regular, reservations: reservations.map((row) => presentStaff(row)), skippedWeeks };
 };
 
 const checkDates = (startsOn: Date, endsOn: Date | null, today: Date) => {

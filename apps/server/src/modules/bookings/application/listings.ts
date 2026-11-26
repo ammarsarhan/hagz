@@ -94,7 +94,7 @@ interface Listable {
   status: string;
   total: number;
   ground: { sport: Parameters<typeof playersOn>[0]; size: Parameters<typeof playersOn>[1] };
-  venue: { marketplace: { joinFeeRate: number } };
+  venue: { marketplace: { joinFeeRate: number; joinFeeMinimum: number } };
 }
 
 const listableSelect = {
@@ -107,13 +107,14 @@ const listableSelect = {
   regularId: true,
   customer: { select: { customerId: true } },
   ground: { select: { sport: true, size: true } },
-  venue: { select: { marketplace: { select: { joinFeeRate: true } } } },
+  venue: { select: { marketplace: { select: { joinFeeRate: true, joinFeeMinimum: true } } } },
   listing: { select: { id: true, status: true, playerCount: true } },
 } as const satisfies Prisma.BookingSelect;
 
 const terms = (booking: Listable) => {
   const share = shareOf(booking.total, playersOn(booking.ground.sport, booking.ground.size));
-  return { sharePrice: share, joinFee: joinFeeOf(share, booking.venue.marketplace.joinFeeRate) };
+  const { joinFeeRate, joinFeeMinimum } = booking.venue.marketplace;
+  return { sharePrice: share, joinFee: joinFeeOf(share, joinFeeRate, joinFeeMinimum) };
 };
 
 const checkNeeded = (booking: Listable, needed: number) => {

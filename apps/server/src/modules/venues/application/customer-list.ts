@@ -25,12 +25,13 @@ export const venueCustomerNotFound = () =>
     detail: "This venue has no such customer.",
   });
 
-const numberTaken = (customerId: string | undefined) =>
+// With who has it, so the app can say so and open them.
+const numberTaken = (existing: { id: string; name: string } | null) =>
   new AppError({
     code: "CUSTOMER_EXISTS",
     status: 409,
     detail: "One of the venue's customers already has this number.",
-    extensions: customerId ? { customerId } : {},
+    extensions: existing ? { customerId: existing.id, customerName: existing.name } : {},
   });
 
 const linked = () =>
@@ -91,37 +92,52 @@ const decodeCursor = (text: string) => {
 
 export const listVenueCustomers = async (
   actor: VenueAccess,
-  { q, cursor, limit }: VenueCustomersQuery,
+  { q, order, cursor, limit }: VenueCustomersQuery,
 ): Promise<VenueCustomerPage> => {
   const text = q ? literal(q) : null;
   const digits = q?.replace(/[\s()-]/g, "");
   const after = cursor ? decodeCursor(cursor) : null;
-  const rows = await prisma.venueCustomer.findMany({
-    where: {
-      venueId: actor.venueId,
-      ...(text && {
-        OR: [
-          { name: { contains: text, mode: "insensitive" } },
-          ...(digits ? [{ phone: { contains: literal(digits) } }] : []),
-        ],
-      }),
-      ...(after && {
-        AND: [
-          {
-            OR: [{ name: { gt: after.name } }, { name: after.name, id: { gt: after.id } }],
-          },
-        ],
-      }),
-    },
-    orderBy: [{ name: "asc" }, { id: "asc" }],
-    take: limit + 1,
-    select,
-  });
+  const matching: Prisma.VenueCustomerWhereInput = {
+    venueId: actor.venueId,
+    ...(text && {
+      OR: [
+        { name: { contains: text, mode: "insensitive" } },
+        ...(digits ? [{ phone: { contains: literal(digits) } }] : []),
+      ],
+    }),
+  };
+  const [rows, total] = await Promise.all([
+    prisma.venueCustomer.findMany({
+      where: {
+        ...matching,
+        ...(after &&
+          order === "name" && {
+            AND: [
+              {
+                OR: [{ name: { gt: after.name } }, { name: after.name, id: { gt: after.id } }],
+              },
+            ],
+          }),
+      },
+      orderBy:
+        order === "recent"
+          ? [
+              { lastBookedAt: { sort: "desc", nulls: "last" } },
+              { createdAt: "desc" },
+              { id: "desc" },
+            ]
+          : [{ name: "asc" }, { id: "asc" }],
+      take: limit + 1,
+      select,
+    }),
+    prisma.venueCustomer.count({ where: matching }),
+  ]);
   const page = rows.slice(0, limit);
   const last = page.at(-1);
   return {
     data: page.map(present),
-    nextCursor: rows.length > limit && last ? encodeCursor(last) : null,
+    nextCursor: order === "name" && rows.length > limit && last ? encodeCursor(last) : null,
+    total,
   };
 };
 
@@ -137,7 +153,7 @@ export const venueCustomerDetail = async (actor: VenueAccess, id: string) =>
 const existingWithNumber = (venueId: string, phone: string) =>
   prisma.venueCustomer.findUnique({
     where: { venueId_phone: { venueId, phone } },
-    select: { id: true },
+    select: { id: true, name: true },
   });
 
 // A walk-in entered by staff. A number one of the venue's customers already has is refused, with
@@ -160,7 +176,7 @@ export const createVenueCustomer = async (
     return present(row);
   } catch (error) {
     if (violatedUniqueIndex(error) === PHONE_INDEX && e164) {
-      throw numberTaken((await existingWithNumber(actor.venueId, e164))?.id);
+      throw numberTaken(await existingWithNumber(actor.venueId, e164));
     }
     throw error;
   }
@@ -189,7 +205,7 @@ export const updateVenueCustomer = async (
     return present(await find(actor.venueId, current.id));
   } catch (error) {
     if (violatedUniqueIndex(error) === PHONE_INDEX && e164) {
-      throw numberTaken((await existingWithNumber(actor.venueId, e164))?.id);
+      throw numberTaken(await existingWithNumber(actor.venueId, e164));
     }
     throw error;
   }

@@ -7,10 +7,11 @@ import type {
   StaffBookingsQuery,
 } from "@hagz/contracts";
 import { StaffBookingDetail } from "@hagz/contracts";
+import type { PaymentMode } from "@/generated/prisma/enums";
 import type { VenueAccess } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
-import { LIVE_STATUSES } from "../domain/status";
+import { LIVE_STATUSES, paymentDeadline } from "../domain/status";
 import {
   adminBookingDetail,
   bookingHistory,
@@ -37,6 +38,8 @@ export const staffSelect = {
   ...summarySelect,
   expiresAt: true,
   regularId: true,
+  paymentMode: true,
+  depositAmount: true,
   listing: { select: { status: true, playerCount: true } },
 } as const;
 const select = staffSelect;
@@ -46,12 +49,22 @@ const select = staffSelect;
 export const isHold = (booking: { status: string; creatorId: string | null }) =>
   booking.status === "HELD" && booking.creatorId !== null;
 
+// What approving a pending booking would give the player to pay: the venue's window from now,
+// never past kick-off. Only known where the venue's settings were read (its calendar and requests).
+interface PaymentTerms {
+  now: Date;
+  paymentWindow: number | null;
+}
+
 export const presentStaff = (
   row: Parameters<typeof presentSummary>[0] & {
     expiresAt: Date | null;
     regularId: string | null;
+    paymentMode: PaymentMode;
+    depositAmount: number | null;
     listing: { status: string; playerCount: number } | null;
   },
+  terms?: PaymentTerms,
 ) => ({
   ...presentSummary(row),
   expiresAt: row.expiresAt?.toISOString() ?? null,
@@ -60,6 +73,16 @@ export const presentStaff = (
   openGame:
     row.listing?.status === "OPEN" && row.listing.playerCount > 0
       ? { players: row.listing.playerCount }
+      : null,
+  paymentMode: row.paymentMode,
+  deposit: row.depositAmount,
+  paymentWindow:
+    terms && row.status === "PENDING" && row.paymentMode !== "MANUAL"
+      ? Math.floor(
+          (paymentDeadline(terms.now, row.startsAt, terms.paymentWindow).getTime() -
+            terms.now.getTime()) /
+            60_000,
+        )
       : null,
 });
 
@@ -70,7 +93,10 @@ export const listVenueBookings = async (
 ): Promise<StaffBooking[]> => {
   const venue = await prisma.venue.findUniqueOrThrow({
     where: { id: actor.venueId },
-    select: { marketplace: { select: { timezone: true } } },
+    select: {
+      marketplace: { select: { timezone: true } },
+      settings: { select: { paymentWindow: true } },
+    },
   });
   const { timezone } = venue.marketplace;
   const [bounds] = await prisma.$queryRaw<{ from: Date; to: Date }[]>`
@@ -89,7 +115,8 @@ export const listVenueBookings = async (
     orderBy: [{ startsAt: "asc" }, { groundId: "asc" }, { id: "asc" }],
     select,
   });
-  return rows.map(presentStaff);
+  const terms = { now: systemClock.now(), paymentWindow: venue.settings?.paymentWindow ?? null };
+  return rows.map((row) => presentStaff(row, terms));
 };
 
 // Waiting for the venue's approval and not yet expired, the ones that expire soonest first.
@@ -97,12 +124,20 @@ export const pendingBookings = async (
   actor: VenueAccess,
   clock: Clock = systemClock,
 ): Promise<StaffBooking[]> => {
-  const rows = await prisma.booking.findMany({
-    where: { venueId: actor.venueId, status: "PENDING", expiresAt: { gt: clock.now() } },
-    orderBy: [{ expiresAt: "asc" }, { id: "asc" }],
-    select,
-  });
-  return rows.map(presentStaff);
+  const now = clock.now();
+  const [rows, settings] = await Promise.all([
+    prisma.booking.findMany({
+      where: { venueId: actor.venueId, status: "PENDING", expiresAt: { gt: now } },
+      orderBy: [{ expiresAt: "asc" }, { id: "asc" }],
+      select,
+    }),
+    prisma.venueSettings.findUnique({
+      where: { venueId: actor.venueId },
+      select: { paymentWindow: true },
+    }),
+  ]);
+  const terms = { now, paymentWindow: settings?.paymentWindow ?? null };
+  return rows.map((row) => presentStaff(row, terms));
 };
 
 const ensureAtVenue = async (venueId: string, bookingId: string) => {
@@ -170,7 +205,7 @@ export const customerBookings = async (
   });
   const page = rows.slice(0, limit);
   return {
-    data: page.map(presentStaff),
+    data: page.map((row) => presentStaff(row)),
     nextCursor: rows.length > limit ? (page.at(-1)?.id ?? null) : null,
   };
 };
