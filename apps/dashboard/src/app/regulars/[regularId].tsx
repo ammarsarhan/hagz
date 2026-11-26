@@ -200,7 +200,12 @@ export default function RegularPage() {
         <GroupHeading className="mt-7 mb-4">{t(`${p}.coming`)}</GroupHeading>
         <ComingWeeks regular={one} timezone={timezone} />
         {paused ? (
-          <Text className="mt-4 text-[14px] leading-[19px] text-ink-2">{t(`${p}.pausedNote`)}</Text>
+          // Right under the heading when there are no weeks above it (user, 2026-11-26).
+          <Text
+            className={`${one.reservations.length > 0 ? "mt-4" : ""} text-[14px] leading-[19px] text-ink-2`}
+          >
+            {t(`${p}.pausedNote`)}
+          </Text>
         ) : null}
 
         <View className="mt-6 h-px bg-border" />
