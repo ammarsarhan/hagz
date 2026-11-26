@@ -279,6 +279,7 @@ const ar: ArabicTranslations = {
           code: "حجز #{{code}}",
           waiting: "في الانتظار",
           confirmBy: "يُؤكَّد قبل {{date}}، {{time}}",
+          movedTo: "نُقل إلى {{hours}} · {{ground}}",
           skipped: "متخطّى",
           skippedDetail: "الوقت محجوز. نحاول مجددًا كل يوم.",
           soFar: "حتى الآن",

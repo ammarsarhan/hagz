@@ -25,7 +25,7 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
-import { sentenceTime } from "@/lib/when";
+import { hoursSpan, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
 import { regularQuery } from "@/lib/regulars";
 
@@ -263,6 +263,28 @@ function ComingWeeks({ regular, timezone }: { regular: Detail; timezone: string 
     day: "numeric",
     month: "short",
   });
+  const hourOf = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "numeric",
+    hourCycle: "h23",
+  });
+  // A week moved off the regular's own time (on the Calendar, Move or Swap): where it went. The
+  // date column already says the day (user, 2026-11-26).
+  const movedTo = (booking: Detail["reservations"][number]) => {
+    const start = new Date(booking.startsAt);
+    const weekday = new Date(`${dateOf.format(start)}T12:00:00Z`).getUTCDay();
+    const hours = (Date.parse(booking.endsAt) - start.getTime()) / 3_600_000;
+    const usual =
+      booking.ground.id === regular.ground.id &&
+      weekday === regular.dayOfWeek &&
+      Number(hourOf.format(start).slice(0, 2)) === regular.startHour &&
+      hours === regular.slotCount;
+    if (usual) return undefined;
+    return t(`${p}.movedTo`, {
+      hours: hoursSpan(booking.startsAt, booking.endsAt, timezone, t),
+      ground: booking.ground.name ?? "",
+    });
+  };
   const weeks = [
     ...regular.reservations.map((booking) => ({
       date: dateOf.format(new Date(booking.startsAt)),
@@ -301,9 +323,10 @@ function ComingWeeks({ regular, timezone }: { regular: Detail; timezone: string 
               : "";
         return (
           <WeekRow
-            key={date}
+            key={booking?.id ?? date}
             date={date}
             label={label}
+            moved={booking ? movedTo(booking) : undefined}
             detail={detail}
             bar={!booking ? "skipped" : confirmed ? "confirmed" : "waiting"}
             onPress={booking ? () => push(`/booking/${booking.id}`) : undefined}
@@ -317,12 +340,15 @@ function ComingWeeks({ regular, timezone }: { regular: Detail; timezone: string 
 function WeekRow({
   date,
   label,
+  moved,
   detail,
   bar,
   onPress,
 }: {
   date: string;
   label: string;
+  // "Moved to 8 – 9 pm · Pitch 2", over the grey line.
+  moved?: string;
   detail: string;
   bar: "confirmed" | "waiting" | "skipped";
   onPress?: () => void;
@@ -356,6 +382,11 @@ function WeekRow({
       />
       <View className="ms-3.5 flex-1">
         <Text className="text-[16px] leading-[21px] font-medium">{label}</Text>
+        {moved ? (
+          <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
+            {moved}
+          </Text>
+        ) : null}
         {detail ? (
           <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
             {detail}

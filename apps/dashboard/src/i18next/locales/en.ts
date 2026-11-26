@@ -237,6 +237,7 @@ const en = {
           code: "Booking #{{code}}",
           waiting: "Waiting",
           confirmBy: "Confirm by {{date}}, {{time}}",
+          movedTo: "Moved to {{hours}} · {{ground}}",
           skipped: "Skipped",
           skippedDetail: "The time's taken. Tried again daily.",
           soFar: "So far",
