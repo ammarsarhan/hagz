@@ -615,7 +615,7 @@ const en = {
           given: "Held longer once already",
           morePlain: "Hold it longer",
           paidHere: "Paid at the venue",
-          confirm: "Confirm booking",
+          confirm: "Confirm",
           releaseTitle: "Let {{name}}'s hold go?",
           releaseBody: "{{when}}. The time goes back on sale at once.",
           release: "Let it go",

@@ -14,7 +14,7 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { HoldBar, HoldRing, ReleaseSheet } from "@/components/hold-parts";
 import { useHud } from "@/components/hud";
-import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
+import { IconBrandWhatsapp, IconDots, IconLockOpen, IconPhone } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { marksOutcome, MARK_WINDOW_MS, OutcomeBar } from "@/components/outcome-bar";
 import { Screen } from "@/components/screen";
@@ -278,9 +278,11 @@ function Page({
         }
         end={
           movable ? (
+            // A hold's button opens one thing, letting it go, so it says so: an open lock, not ⋯
+            // (user, 2026-11-26).
             <RoundButton
-              icon={IconDots}
-              label={t("screens.booking.more")}
+              icon={holding ? IconLockOpen : IconDots}
+              label={holding ? t("screens.booking.hold.release") : t("screens.booking.more")}
               onPress={() => (holding ? setReleasing(true) : setMenu(true))}
             />
           ) : undefined

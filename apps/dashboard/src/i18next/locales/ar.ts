@@ -671,7 +671,7 @@ const ar: ArabicTranslations = {
           given: "مُدِّد مرة واحدة بالفعل",
           morePlain: "مدّد الحجز",
           paidHere: "الدفع في الملعب",
-          confirm: "تأكيد الحجز",
+          confirm: "تأكيد",
           releaseTitle: "إلغاء الحجز المؤقت لـ {{name}}؟",
           releaseBody: "{{when}}. يصبح الوقت متاحًا للحجز فورًا.",
           release: "إلغاء الحجز المؤقت",
