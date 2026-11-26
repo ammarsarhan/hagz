@@ -227,7 +227,6 @@ const initialOf = (name: string) => {
 
 function Row({ customer, last }: { customer: Customer; last: boolean }) {
   const { t } = useTranslation();
-  const hud = useHud();
   const record = [
     customer.bookingCount > 0
       ? t("screens.customers.played", { count: customer.bookingCount })
@@ -239,7 +238,7 @@ function Row({ customer, last }: { customer: Customer; last: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => hud.show(t("common.comingNext"))}
+      onPress={() => router.push(`/customers/${customer.id}`)}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${last ? "" : "border-b border-border"}`}
     >
       <View className="flex-1">

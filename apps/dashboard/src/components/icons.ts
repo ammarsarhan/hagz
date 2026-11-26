@@ -89,3 +89,5 @@ export { default as IconArrowDown } from "@tabler/icons-react-native/IconArrowDo
 export { default as IconDoor } from "@tabler/icons-react-native/IconDoor";
 export { default as IconList } from "@tabler/icons-react-native/IconList";
 export { default as IconRotate } from "@tabler/icons-react-native/IconRotate";
+export { default as IconPencil } from "@tabler/icons-react-native/IconPencil";
+export { default as IconCalendarPlus } from "@tabler/icons-react-native/IconCalendarPlus";

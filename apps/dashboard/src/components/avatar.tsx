@@ -16,12 +16,20 @@ export function Avatar({
   size = "small",
 }: {
   name: string;
-  size?: "small" | "row" | "large";
+  size?: "small" | "row" | "page" | "large";
 }) {
   if (size === "row") {
     return (
       <View className="size-10 items-center justify-center rounded-full bg-chip">
         <Text className="text-[13px] font-semibold">{initialsOf(name)}</Text>
+      </View>
+    );
+  }
+  // Atop a customer's page: 64, both initials.
+  if (size === "page") {
+    return (
+      <View className="size-16 items-center justify-center rounded-full bg-chip">
+        <Text className="text-[22px] font-semibold">{initialsOf(name)}</Text>
       </View>
     );
   }
