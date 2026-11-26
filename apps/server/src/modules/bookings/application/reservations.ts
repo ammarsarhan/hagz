@@ -10,7 +10,10 @@ import { topUpVenue } from "./regulars";
 // released by staff (after calling) or by the regular in the app, until its deadline. Nothing is paid
 // through Hagz. A released week goes to the next overlapping regular in priority, if any.
 
-type Who = { staff: VenueAccess } | { customerId: string };
+// Staff, the regular signed in to the app, or whoever holds a confirm link (its token stands for the
+// regular: it was made for this week, so who opened it isn't checked).
+export type Who =
+  { staff: VenueAccess } | { customerId: string } | { link: { customerId: string | null } };
 
 const select = {
   id: true,
@@ -44,10 +47,43 @@ const lockReservation = async (
   return booking;
 };
 
+// Who answered, on the booking's event: by STAFF or by the CUSTOMER, and `via: "LINK"` from a
+// confirm link.
 const actor = (who: Who) =>
   "staff" in who
-    ? { staffId: who.staff.staffId, by: "STAFF" as const }
-    : { customerId: who.customerId, by: "CUSTOMER" as const };
+    ? { ids: { staffId: who.staff.staffId }, data: { by: "STAFF" as const } }
+    : "link" in who
+      ? {
+          ids: who.link.customerId ? { customerId: who.link.customerId } : {},
+          data: { by: "CUSTOMER" as const, via: "LINK" as const },
+        }
+      : { ids: { customerId: who.customerId }, data: { by: "CUSTOMER" as const } };
+
+// Inside a caller's transaction (the confirm link marks its token used in the same one).
+export const confirmIn = async (tx: Tx, who: Who, bookingId: string, now: Date) => {
+  const { ids, data } = actor(who);
+  const booking = await lockReservation(tx, who, bookingId, "CONFIRMED", now);
+  await tx.booking.update({
+    where: { id: booking.id },
+    data: { status: "CONFIRMED", expiresAt: null },
+  });
+  await bookHeldSlots(tx, booking.id);
+  await tx.bookingEvent.create({
+    data: { bookingId: booking.id, type: BOOKING_EVENTS.CONFIRMED, data, ...ids },
+  });
+};
+
+// Returns the venue, for the top-up the caller runs once the transaction is done.
+export const releaseIn = async (tx: Tx, who: Who, bookingId: string, now: Date) => {
+  const { ids, data } = actor(who);
+  const booking = await lockReservation(tx, who, bookingId, "RELEASED", now);
+  await tx.booking.update({ where: { id: booking.id }, data: { status: "RELEASED" } });
+  await releaseSlots(tx, [booking.id], now);
+  await tx.bookingEvent.create({
+    data: { bookingId: booking.id, type: BOOKING_EVENTS.RELEASED, data, ...ids },
+  });
+  return booking.venueId;
+};
 
 export const confirmReservation = async (
   who: Who,
@@ -55,18 +91,7 @@ export const confirmReservation = async (
   clock: Clock = systemClock,
 ): Promise<void> => {
   const now = clock.now();
-  const { by, ...ids } = actor(who);
-  await transaction(async (tx) => {
-    const booking = await lockReservation(tx, who, bookingId, "CONFIRMED", now);
-    await tx.booking.update({
-      where: { id: booking.id },
-      data: { status: "CONFIRMED", expiresAt: null },
-    });
-    await bookHeldSlots(tx, booking.id);
-    await tx.bookingEvent.create({
-      data: { bookingId: booking.id, type: BOOKING_EVENTS.CONFIRMED, data: { by }, ...ids },
-    });
-  });
+  await transaction((tx) => confirmIn(tx, who, bookingId, now));
 };
 
 export const releaseReservation = async (
@@ -75,15 +100,6 @@ export const releaseReservation = async (
   clock: Clock = systemClock,
 ): Promise<void> => {
   const now = clock.now();
-  const { by, ...ids } = actor(who);
-  const venueId = await transaction(async (tx) => {
-    const booking = await lockReservation(tx, who, bookingId, "RELEASED", now);
-    await tx.booking.update({ where: { id: booking.id }, data: { status: "RELEASED" } });
-    await releaseSlots(tx, [booking.id], now);
-    await tx.bookingEvent.create({
-      data: { bookingId: booking.id, type: BOOKING_EVENTS.RELEASED, data: { by }, ...ids },
-    });
-    return booking.venueId;
-  });
+  const venueId = await transaction((tx) => releaseIn(tx, who, bookingId, now));
   await topUpVenue(venueId, clock);
 };

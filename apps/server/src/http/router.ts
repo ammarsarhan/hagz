@@ -2,6 +2,7 @@ import {
   bookingsAdminRoutes,
   bookingsCustomerRoutes,
   bookingsCheckInRoutes,
+  bookingsConfirmLinkRoutes,
   bookingsGameRoutes,
   bookingsRegularRoutes,
   bookingsStaffRoutes,
@@ -72,6 +73,7 @@ router.route("/v1", paymentsCustomerRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", bookingsStaffRoutes);
 router.route("/v1", bookingsRegularRoutes);
+router.route("/v1", bookingsConfirmLinkRoutes);
 router.route("/v1", bookingsGameRoutes);
 router.route("/v1", bookingsCheckInRoutes);
 router.route("/v1", venuesCustomerRoutes);

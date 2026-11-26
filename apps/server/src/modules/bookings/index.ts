@@ -5,6 +5,7 @@ export { createBooking } from "./application/create-booking";
 export { bookingsAdminRoutes } from "./http/admin-routes";
 export { bookingsCustomerRoutes } from "./http/customer-routes";
 export { bookingsCheckInRoutes } from "./http/check-in-routes";
+export { bookingsConfirmLinkRoutes } from "./http/confirm-link-routes";
 export { bookingsGameRoutes } from "./http/game-routes";
 export { bookingsRegularRoutes } from "./http/regular-routes";
 export { bookingsStaffRoutes } from "./http/staff-routes";

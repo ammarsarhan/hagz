@@ -7560,6 +7560,25 @@
         },
         "description": "A new time or ground releases its unconfirmed weeks and reserves the new time; confirmed weeks stay."
       },
+      "ConfirmLink": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Works once, until the week's deadline."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The week's deadline."
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ]
+      },
       "SlotCandidates": {
         "type": "object",
         "properties": {
@@ -7831,6 +7850,91 @@
           }
         },
         "description": "Only what's sent changes."
+      },
+      "ReminderWeek": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "CONFIRMED",
+              "RELEASED",
+              "EXPIRED"
+            ],
+            "description": "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used."
+          },
+          "name": {
+            "type": "string",
+            "description": "The regular's first name."
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "slug": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "slug"
+            ]
+          },
+          "ground": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "name",
+          "venue",
+          "ground",
+          "startsAt",
+          "endsAt",
+          "deadline",
+          "timezone"
+        ]
+      },
+      "ReminderTokenBody": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "description": "The token from the link's #token=."
       },
       "GamePage": {
         "type": "object",
@@ -23347,6 +23451,112 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/reservations/{bookingId}/link": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Copy a confirm link for a regular's week",
+        "description": "A fresh single-use link each time (only its hash is stored), for staff to send from their own WhatsApp. It confirms or lets the week go without signing in, until the week's deadline, and stops working once the week is answered. At most 10 an hour per week.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmLink"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RESERVATION_NOT_WAITING: not a regular's week still waiting.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "LINKS_UNAVAILABLE: no web address set in this environment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/staff/venues/{venueId}/reservations/{bookingId}/release": {
       "post": {
         "tags": [
@@ -23670,6 +23880,162 @@
           },
           "409": {
             "description": "VENUE_STATUS_CONFLICT",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/week": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "The week a confirm link is for",
+        "description": "Read-only (a POST so the token stays out of the URL). `state` says whether it can still be answered.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/confirm": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "Confirm the week",
+        "description": "Uses the link up. A link that can't answer any more returns the week with its `state` instead.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/release": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "Let the week go",
+        "description": "Uses the link up; the time goes back on sale, or to the next regular in line. A link that can't answer any more returns the week with its `state` instead.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
             "content": {
               "application/problem+json": {
                 "schema": {

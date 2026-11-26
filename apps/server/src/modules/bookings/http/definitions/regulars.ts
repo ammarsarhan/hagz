@@ -1,5 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  ConfirmLink,
   SlotCandidates,
   SlotCandidatesQuery,
   CreateRegular,
@@ -170,6 +171,26 @@ export const confirmReservation = createRoute({
   security,
   request: { params: bookingParams },
   responses: reservationResponses,
+});
+
+export const confirmLink = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/reservations/{bookingId}/link",
+  tags,
+  summary: "Copy a confirm link for a regular's week",
+  description:
+    "A fresh single-use link each time (only its hash is stored), for staff to send from their own WhatsApp. It confirms or lets the week go without signing in, until the week's deadline, and stops working once the week is answered. At most 10 an hour per week.",
+  middleware: [requireStaff, requireVenueAccess("bookings", "manage")] as const,
+  security,
+  request: { params: bookingParams },
+  responses: {
+    201: { description: "The link", ...json(ConfirmLink) },
+    ...common,
+    404: problemResponse("VENUE_NOT_FOUND or BOOKING_NOT_FOUND"),
+    409: problemResponse("RESERVATION_NOT_WAITING: not a regular's week still waiting."),
+    429: problemResponse("RATE_LIMITED"),
+    503: problemResponse("LINKS_UNAVAILABLE: no web address set in this environment."),
+  },
 });
 
 export const releaseReservation = createRoute({

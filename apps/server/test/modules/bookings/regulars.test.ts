@@ -1,5 +1,7 @@
 import {
   Booking,
+  ConfirmLink,
+  ReminderWeek,
   BookingPage,
   StaffBookingDetail,
   VenueRegularDetail,
@@ -10,6 +12,7 @@ import { expireDueBookings } from "@/modules/bookings/application/expire-booking
 import { topUpVenue } from "@/modules/bookings/application/regulars";
 import { lastWeeksOf, localToday, upcomingWeeks } from "@/modules/bookings/domain/regulars";
 import { ALL_PERMISSIONS, instantOf } from "@/modules/venues";
+import { router } from "@/http/router";
 import { prisma } from "@/platform/db/prisma";
 import { aGround, asCustomer, asStaff, HOUR, signedIn, staffAt } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
@@ -555,6 +558,115 @@ describe("booking settings on regulars already set", () => {
     expect(made.reservations).toHaveLength(4);
     await change(owner.id, venue.id, { regularHorizon: 6 });
     expect((await weeks(made.id)).map((week) => week.startsAt)).toEqual(starts);
+  });
+});
+
+describe("confirm links", () => {
+  const copy = (staffId: string, venueId: string, bookingId: string) =>
+    asStaff(staffId, "POST", `/venues/${venueId}/reservations/${bookingId}/link`);
+  const tokenOf = async (res: Response) => {
+    expect(res.status).toBe(201);
+    const link = ConfirmLink.parse(await res.json());
+    return { link, token: decodeURIComponent(new URL(link.url).hash.replace("#token=", "")) };
+  };
+  const open = (action: "week" | "confirm" | "release", token: string) =>
+    router.request(`/v1/confirm-links/${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept-Language": "en" },
+      body: JSON.stringify({ token }),
+    });
+  const week = async (res: Response) => {
+    expect(res.status).toBe(200);
+    return ReminderWeek.parse(await res.json());
+  };
+
+  it("staff copy a link that confirms the week once, without signing in", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const first = made.reservations[0];
+    const { link, token } = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    // Arabic unless the regular has the app in English; the token only in the fragment.
+    expect(new URL(link.url).pathname).toBe("/ar/week");
+    expect(link.expiresAt).toBe(new Date((starts[0]?.getTime() ?? 0) - 24 * HOUR).toISOString());
+    expect(await prisma.reminderToken.count({ where: { tokenHash: token } })).toBe(0);
+
+    expect(await week(await open("week", token))).toMatchObject({
+      state: "WAITING",
+      name: "Karim",
+      startsAt: starts[0]?.toISOString(),
+    });
+    expect((await week(await open("confirm", token))).state).toBe("CONFIRMED");
+    const confirmed = await prisma.booking.findUniqueOrThrow({
+      where: { id: first?.id ?? "" },
+      include: { events: true, slots: true },
+    });
+    expect(confirmed.status).toBe("CONFIRMED");
+    expect(confirmed.slots.map((slot) => slot.status)).toEqual(["BOOKED", "BOOKED"]);
+    expect(confirmed.events.at(-1)).toMatchObject({
+      type: "CONFIRMED",
+      data: { by: "CUSTOMER", via: "LINK" },
+    });
+    // Used up: it can't let the week go now, and says how the week stands.
+    expect((await week(await open("release", token))).state).toBe("CONFIRMED");
+    expect((await detail(owner.id, venue.id, made.id)).reliability.confirmed).toBe(1);
+  });
+
+  it("lets the week go through a link, and the next regular in line gets it", async () => {
+    const { venue, owner, starts, regular } = await weeklyGround();
+    const first = await create(owner.id, venue.id, regular(karim));
+    const second = await create(owner.id, venue.id, regular(omar));
+    const { token } = await tokenOf(
+      await copy(owner.id, venue.id, first.reservations[0]?.id ?? ""),
+    );
+    expect((await week(await open("release", token))).state).toBe("RELEASED");
+    const taken = await prisma.booking.findFirstOrThrow({
+      where: { regularId: second.id, startsAt: starts[0] },
+    });
+    expect(taken.status).toBe("UNCONFIRMED");
+  });
+
+  it("every link for a week stops working once it's answered, and at its deadline", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const [first, second] = made.reservations;
+    const one = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    const two = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    expect(one.token).not.toBe(two.token);
+    await week(await open("confirm", one.token));
+    expect((await week(await open("release", two.token))).state).toBe("CONFIRMED");
+    expect(
+      (await prisma.booking.findUniqueOrThrow({ where: { id: first?.id ?? "" } })).status,
+    ).toBe("CONFIRMED");
+
+    const late = await tokenOf(await copy(owner.id, venue.id, second?.id ?? ""));
+    await prisma.booking.update({
+      where: { id: second?.id ?? "" },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    expect((await week(await open("confirm", late.token))).state).toBe("EXPIRED");
+    expect(
+      (await prisma.booking.findUniqueOrThrow({ where: { id: second?.id ?? "" } })).status,
+    ).toBe("UNCONFIRMED");
+  });
+
+  it("is only for a week still waiting, at staff's own venue, and unknown links are refused", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim));
+    const first = made.reservations[0];
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${first?.id}/confirm`);
+    const answered = await copy(owner.id, venue.id, first?.id ?? "");
+    expect(answered.status).toBe(409);
+    expect(await answered.json()).toMatchObject({ code: "RESERVATION_NOT_WAITING" });
+
+    const viewer = await staffAt(venue.id, {
+      role: "MEMBER",
+      permissions: { ...ALL_PERMISSIONS, bookings: "view" },
+    });
+    expect((await copy(viewer.id, venue.id, made.reservations[1]?.id ?? "")).status).toBe(403);
+
+    const unknown = await open("week", "x".repeat(43));
+    expect(unknown.status).toBe(404);
+    expect(await unknown.json()).toMatchObject({ code: "CONFIRM_LINK_NOT_FOUND" });
   });
 });
 

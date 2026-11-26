@@ -168,6 +168,39 @@ export const SlotCandidates = z
   })
   .meta({ id: "SlotCandidates" });
 
+// A confirm link (docs/regulars.md "Reminders"): staff copy one for a waiting week and send it from
+// their own WhatsApp; the regular opens it on the web and confirms or lets the week go without
+// signing in.
+export const ConfirmLink = z
+  .object({
+    url: z.url().meta({ description: "Works once, until the week's deadline." }),
+    expiresAt: Instant.meta({ description: "The week's deadline." }),
+  })
+  .meta({ id: "ConfirmLink" });
+
+export const ReminderTokenBody = z
+  .object({ token: z.string().min(20).max(200) })
+  .meta({ id: "ReminderTokenBody", description: "The token from the link's #token=." });
+
+export const ReminderWeek = z
+  .object({
+    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "EXPIRED"]).meta({
+      description:
+        "WAITING: can be confirmed or let go. CONFIRMED / RELEASED: answered (by this link or otherwise). EXPIRED: the deadline passed, or this link was used.",
+    }),
+    name: z.string().meta({ description: "The regular's first name." }),
+    venue: z.object({ name: z.string().nullable(), slug: z.string() }),
+    ground: z.string().nullable(),
+    startsAt: Instant,
+    endsAt: Instant,
+    deadline: Instant.nullable(),
+    timezone: z.string(),
+  })
+  .meta({ id: "ReminderWeek" });
+
+export type ConfirmLink = z.infer<typeof ConfirmLink>;
+export type ReminderTokenBody = z.infer<typeof ReminderTokenBody>;
+export type ReminderWeek = z.infer<typeof ReminderWeek>;
 export type RegularStatus = z.infer<typeof RegularStatus>;
 export type Reliability = z.infer<typeof Reliability>;
 export type VenueRegular = z.infer<typeof VenueRegular>;

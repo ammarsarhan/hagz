@@ -11,6 +11,7 @@ import {
   resumeRegular,
   updateRegular,
 } from "../application/regulars";
+import { createConfirmLink } from "../application/confirm-links";
 import { slotCandidates } from "../application/fill-slot";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { staffBookingDetail } from "../application/staff-bookings";
@@ -49,6 +50,9 @@ export const bookingsRegularRoutes = createRouter()
     await confirmReservation({ staff: c.var.venue }, bookingId);
     return c.json(await staffBookingDetail(c.var.venue.venueId, bookingId), 200);
   })
+  .openapi(route.confirmLink, async (c) =>
+    c.json(await createConfirmLink(c.var.venue, c.req.valid("param").bookingId), 201),
+  )
   .openapi(route.releaseReservation, async (c) => {
     const { bookingId } = c.req.valid("param");
     await releaseReservation({ staff: c.var.venue }, bookingId);
