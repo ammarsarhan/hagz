@@ -14,6 +14,7 @@ import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import {
   RegularMenu,
   StateSheet,
+  useCopyConfirmLink,
   useResume,
   type RegularAction,
 } from "@/components/regular-sheets";
@@ -71,6 +72,7 @@ export default function RegularPage() {
   // The menu's pick, acted on once the menu has slid away: one sheet at a time.
   const picked = useRef<RegularAction | null>(null);
   const { resume, sending: resuming } = useResume(venueId, regularId);
+  const copyLink = useCopyConfirmLink(venueId);
   const regular = useQuery(regularQuery(venueId, regularId));
 
   const back = <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />;
@@ -256,6 +258,7 @@ export default function RegularPage() {
           } else if (action === "change") {
             push({ pathname: "/regulars/new", params: { regularId: one.id } });
           } else if (action === "resume") void resume();
+          else if (action === "link") void copyLink(one);
           else if (action) comingNext();
         }}
       />

@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import type { TFunction } from "i18next";
 import { useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +11,8 @@ import { colors } from "@/lib/colors";
 import { intlLocale } from "@/lib/language";
 import { hourLabel } from "@/lib/hours";
 import { datesLabel } from "@/lib/regulars";
+import { dayLabel } from "@/lib/when";
+import { localDateOf } from "@/lib/calendar";
 import { BarButton, BottomBar } from "./bottom-bar";
 import { useHud } from "./hud";
 import { IconClock, IconLink, IconPlayerPause, IconPlayerPlay, IconSquare } from "./icons";
@@ -267,6 +270,48 @@ export function useResume(venueId: string, regularId: string) {
     if (!result.ok) hud.show(hudMessage(result.error));
   };
   return { resume, sending };
+}
+
+// The menu's "Copy a confirm link": a fresh link for the soonest week still waiting for an answer,
+// on the clipboard for staff to send from their own WhatsApp (docs/regulars.md "Reminders"). The
+// HUD says which week it's for.
+export function useCopyConfirmLink(venueId: string) {
+  const { t } = useTranslation();
+  const hud = useHud();
+  const busy = useRef(false);
+  return async (regular: { reservations: components["schemas"]["StaffBooking"][] }) => {
+    if (busy.current) return;
+    const now = Date.now();
+    const week = regular.reservations
+      .filter(
+        (booking) =>
+          booking.status === "UNCONFIRMED" &&
+          booking.expiresAt !== null &&
+          Date.parse(booking.expiresAt) > now,
+      )
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
+    if (!week) {
+      hud.show(t("screens.regulars.menu.noneWaiting"));
+      return;
+    }
+    busy.current = true;
+    const result = await send(
+      api.POST("/v1/staff/venues/{venueId}/reservations/{bookingId}/link", {
+        params: { path: { venueId, bookingId: week.id } },
+      }),
+    );
+    busy.current = false;
+    if (!result.ok) {
+      hud.show(hudMessage(result.error));
+      return;
+    }
+    await Clipboard.setStringAsync(result.data.url);
+    hud.show(
+      t("screens.regulars.menu.copied", {
+        day: dayLabel(localDateOf(week.startsAt, week.timezone), t),
+      }),
+    );
+  };
 }
 
 export interface NewTime {

@@ -184,8 +184,12 @@ function describe(
   { next, fromShown }: { next?: Booking; fromShown: boolean },
 ): Entry | null {
   const at = event.createdAt;
-  const by = who(event, t);
   const player = firstName(booking.customer.name);
+  // A regular's week answered from a confirm link staff sent: the regular, by the link.
+  const by =
+    field(event, "via") === "LINK"
+      ? t("screens.history.events.fromLink", { name: player })
+      : who(event, t);
   switch (event.type) {
     case "CREATED": {
       if (field(event, "from") && fromShown) return null;
