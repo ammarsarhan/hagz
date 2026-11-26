@@ -209,7 +209,14 @@ function Hud({
         }}
       >
         {leading ?? <IconAlertCircleFilled size={20} color={colors.ink} />}
-        <Text className="shrink text-body font-medium" numberOfLines={2}>
+        {/* One line, shrunk to fit the three quarters of the screen it may take, as the staff
+            app's (user, 2026-11-26). */}
+        <Text
+          className="shrink text-body font-medium"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
           {message}
         </Text>
       </Animated.View>
