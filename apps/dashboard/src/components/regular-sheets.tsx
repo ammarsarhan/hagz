@@ -2,30 +2,24 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import type { components } from "@hagz/api";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { intlLocale, isRTL } from "@/lib/language";
+import { intlLocale } from "@/lib/language";
 import { datesLabel } from "@/lib/regulars";
 import { BarButton, BottomBar } from "./bottom-bar";
 import { useHud } from "./hud";
-import {
-  IconChevronRight,
-  IconClock,
-  IconLink,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconSquare,
-} from "./icons";
+import { IconClock, IconLink, IconPlayerPause, IconPlayerPlay, IconSquare } from "./icons";
+import { SettingsRow } from "./settings-row";
 import { Sheet } from "./sheet";
 import { StepRail, type Step } from "./step-rail";
 import { Text } from "./text";
 
 // A regular's ⋯ and what it leads to (Figma D12 655:111, 655:233).
 //
-// - RegularMenu: "Modify game" centred by the close button, then a row for each thing to do, each with what it does
+// - RegularMenu: as the customer app's photo sheet, "Modify game" small and centred, then a row for each thing to do, each with what it does
 //   in grey: Change the time, Pause (Resume when paused), Copy a confirm link, End the weekly game.
 // - StateSheet: Pause or End asked first, what follows on the step rail (the confirmed weeks stay,
 //   the waiting ones go back on sale, then resume any time, or not at all), the button in a bar.
@@ -71,41 +65,31 @@ export function RegularMenu({
     { action: "link", icon: IconLink, title: t(`${m}.link`), body: t(`${m}.linkBody`) },
     { action: "end", icon: IconSquare, title: t(`${m}.end`), body: t(`${m}.endBody`) },
   ];
+  // As the customer app's photo sheet (user, 2026-11-26): no close button, a small title centred
+  // over settings rows, each one's icon at its end.
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
       onHidden={onHidden}
       closeLabel={t("components.shared.nav.close")}
-      // Centred on the close button's row, short (user, 2026-11-26).
-      header={
-        <Text accessibilityRole="header" className="text-subtitle font-semibold">
-          {t(`${m}.title`)}
-        </Text>
-      }
+      closeButton={false}
     >
-      {rows.map((row, index) => (
-        <Pressable
-          key={row.action}
-          accessibilityRole="button"
-          onPress={() => onPick(row.action)}
-          className={`flex-row items-center py-4 active:opacity-60 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
-        >
-          <View className="size-10 items-center justify-center rounded-full bg-chip">
-            <row.icon size={20} color={colors.ink} strokeWidth={2} />
-          </View>
-          <View className="ms-3.5 flex-1">
-            <Text className="text-[16px] leading-[21px] font-medium">{row.title}</Text>
-            <Text className="text-[14px] leading-[19px] text-ink-2">{row.body}</Text>
-          </View>
-          <IconChevronRight
-            size={18}
-            color={colors.unit}
-            strokeWidth={2}
-            style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+      <Text accessibilityRole="header" className="mb-1 text-center text-body font-semibold">
+        {t(`${m}.title`)}
+      </Text>
+      <View>
+        {rows.map((row, index) => (
+          <SettingsRow
+            key={row.action}
+            title={row.title}
+            body={row.body}
+            trailing={<row.icon size={20} color={colors.ink} strokeWidth={1.75} />}
+            onPress={() => onPick(row.action)}
+            divider={index < rows.length - 1}
           />
-        </Pressable>
-      ))}
+        ))}
+      </View>
     </Sheet>
   );
 }
