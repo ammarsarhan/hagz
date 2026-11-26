@@ -336,6 +336,13 @@ export default function NewRegular() {
         name: changing.customer.name.trim().split(/\s+/)[0] ?? changing.customer.name,
       })
     : t("screens.regulars.new.title");
+  // The Calendar weeks (Sunday first) where it has a confirmed game, which keep it.
+  const confirmedWeeks = new Set(
+    (changing?.reservations ?? [])
+      .filter((booking) => booking.status === "CONFIRMED")
+      .map((booking) => weekStartOf(localDateOf(booking.startsAt, timezone))),
+  );
+  const playedWeek = (date: string) => confirmedWeeks.has(weekStartOf(date));
   // The pick is the time it has now: nothing to move.
   const same =
     changing !== undefined &&
@@ -553,8 +560,10 @@ export default function NewRegular() {
             startHour: pickStart,
             slotCount: pickLength,
             price: money(pickedPrice),
-            free: dates.filter((_, week) => pickedWeeks[week]),
-            taken: dates.filter((_, week) => !pickedWeeks[week]),
+            // A week it already has a confirmed game in stays as it is: the server reserves
+            // the new time only in the others (a regular plays once a week).
+            free: dates.filter((date, week) => pickedWeeks[week] && !playedWeek(date)),
+            taken: dates.filter((date, week) => !pickedWeeks[week] && !playedWeek(date)),
           }}
           venueId={venueId}
           timezone={timezone}
