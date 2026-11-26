@@ -51,6 +51,8 @@ A booking of the **customer's own** at exactly a week's time (same ground and ho
 - **Release**: staff or the regular, at any time before kick-off, even weeks ahead (Eid, exams, travel). `UNCONFIRMED` → `RELEASED`, and the slots are free at once.
 - **Nobody answers**: at the deadline, the sweeper moves it to `RELEASED` and frees the slots.
 
+A week goes to the next regular in line **only while its confirmation deadline is still ahead**; after that it goes straight back on sale (user, 2026-11-26). So a week nobody answered is never handed on: by its deadline, kick-off is only `confirmationWindow` away, the next regular would have no time to confirm (and isn't told until reminders exist in Phase 7), and the week was shown to them as taken all along, so a public sale is likelier to fill it (Search marks it "just freed"). This is deliberate, not a missing hand-off: `upcomingWeeks` never reserves a week whose deadline has passed. Revisit once reminders can offer a short last-minute window.
+
 A confirmed reservation is then an ordinary booking: it can be cancelled, completed or marked as a no-show. Hagz took no money, so a cancellation refunds nothing; it only frees the slots and counts against the regular's reliability.
 
 ## Filling released slots
@@ -139,6 +141,15 @@ Staff see every reservation's state in the calendar, and who still hasn't answer
 | `regularBookings` / `regularPeriod` | `VenueSettings` | Bookings within weeks that make a customer a regular | 3 in 8 |
 | `fillAlertHours` | `VenueSettings` | Hours before kick-off to alert about an empty slot | 6 |
 | `fillAlertOnRelease`, `fillAlertNearStart`, `fillAlertDigest` | `VenueSettings` | Each on or off | All on |
+
+Staff change them on Venue › Rules › Booking settings (`PATCH /v1/staff/venues/{venueId}/booking-settings`, `venue: manage`), and a change reaches what's already set (user, 2026-11-26):
+
+- **`staffHoldMinutes`:** a hold already running keeps its deadline; holds made or extended from then on use the new length.
+- **`confirmationWindow`:** every regular's waiting week gets the new deadline (`startsAt − window`), unless that has already passed, when it keeps the one it had: changing a setting never lets a week go. Weeks the shorter window brings back into reach are reserved at once.
+- **`regularHorizon`:** shorter lets go of the waiting weeks beyond it (`REGULAR_CHANGED` with reason `HORIZON`, not counted against the regular), and confirmed ones stay, since the customer said yes to them. Longer reserves the new weeks at once instead of at the nightly top-up.
+- **`regularBookings`, `regularPeriod`, `lapsedAfter`:** read by Fill a slot each time it's asked, so they apply straight away to nothing stored.
+
+The routes live in the bookings module (it carries a change on to the reservations); the venues module still owns and writes `VenueSettings`. Reminders, the freed-week discount and the fill alerts aren't on the page until they do something.
 
 ## Schema changes
 
