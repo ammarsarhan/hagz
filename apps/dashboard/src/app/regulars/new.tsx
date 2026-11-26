@@ -1,12 +1,11 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
-import { useHud } from "@/components/hud";
+import { HoldFor } from "@/components/hold-for";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -19,7 +18,7 @@ import { colors } from "@/lib/colors";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
-import { regularsQuery, type Regular } from "@/lib/regulars";
+import { datesLabel, regularsQuery, type Regular } from "@/lib/regulars";
 import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
 
@@ -43,7 +42,6 @@ interface Time {
 
 export default function NewRegular() {
   const { t } = useTranslation();
-  const hud = useHud();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const compact = useCompactTitle();
@@ -56,6 +54,8 @@ export default function NewRegular() {
   const today = localDateOf(now, timezone);
   const [weekday, setWeekday] = useState(() => new Date(`${today}T12:00:00Z`).getUTCDay());
   const [picked, setPicked] = useState<string | null>(null);
+  // The free time tapped, while who it's for is asked.
+  const [asking, setAsking] = useState<Time | null>(null);
 
   // The weekday's next dates, from today, one a week.
   const dates = useMemo(() => {
@@ -139,6 +139,19 @@ export default function NewRegular() {
     else groups.push({ hour: row.hour, rows: [row] });
   }
 
+  // One object while asked: HoldFor opens its first sheet again whenever the target changes.
+  const groundKey = ground?.id ?? "";
+  const target = useMemo(
+    () => (asking ? { groundId: groundKey, startsAt: "", endsAt: "" } : null),
+    [asking, groundKey],
+  );
+  // "Tuesdays, 8 – 9 pm on Pitch 2".
+  const whenLabel = (hour: number) =>
+    t("screens.regulars.new.when", {
+      day: t(`screens.regulars.days.${String(weekday) as Weekday}`),
+      hours: `${hourLabel(t, hour)} – ${hourLabel(t, hour + length)}`,
+      ground: ground?.name ?? "",
+    });
   const title = t("screens.regulars.new.title");
   const letter = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "narrow" });
   const long = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" });
@@ -243,7 +256,7 @@ export default function NewRegular() {
                             price: money(priceOf(row.time)),
                           })}
                           weeks={row.time.weeks.map(Boolean)}
-                          onPress={() => hud.show(t("common.comingNext"))}
+                          onPress={() => setAsking(row.time)}
                         />
                       ) : null,
                     )}
@@ -254,6 +267,41 @@ export default function NewRegular() {
           </View>
         )}
       </FadingScroll>
+
+      {/* Who it's for (the hold's sheets, nothing held), then the last look. */}
+      <HoldFor
+        venueId={venueId}
+        target={target}
+        when={asking ? whenLabel(asking.hour) : ""}
+        holdMinutes={null}
+        onClose={() => setAsking(null)}
+        onChoose={(choice) => {
+          const time = asking;
+          setAsking(null);
+          if (!time || !ground) return;
+          router.push({
+            pathname: "/regulars/confirm",
+            params: {
+              groundId: ground.id,
+              ground: ground.name ?? "",
+              kind:
+                ground.size === "STANDARD"
+                  ? t(`screens.setup.grounds.sports.${ground.sport}`)
+                  : t(`screens.setup.grounds.sizes.${ground.size}`),
+              dayOfWeek: String(weekday),
+              startHour: String(time.hour),
+              slotCount: String(length),
+              price: String(priceOf(time)),
+              currency,
+              dates: dates.join(","),
+              free: time.weeks.map((week) => (week ? "1" : "0")).join(","),
+              name: choice.name,
+              phone: choice.phone ?? "",
+              customer: JSON.stringify(choice.customer),
+            },
+          });
+        }}
+      />
     </Screen>
   );
 }
@@ -263,25 +311,6 @@ type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 // The game's price on its first free week.
 const priceOf = (time: Time) =>
   (time.weeks.find(Boolean) ?? []).reduce((sum, slot) => sum + slot.price, 0);
-
-// "1, 8, 15 and 22 Dec"; "29 Dec, 5, 12 and 19 Jan" across a month's end.
-const datesLabel = (t: TFunction, dates: readonly string[]) => {
-  const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "short" });
-  const parts = dates.map((date, index) => {
-    const at = new Date(`${date}T12:00:00Z`);
-    const next = dates[index + 1];
-    const lastOfMonth = !next || next.slice(0, 7) !== date.slice(0, 7);
-    return lastOfMonth ? `${at.getUTCDate()} ${month.format(at)}` : String(at.getUTCDate());
-  });
-  // Joined by hand: Hermes has no Intl.ListFormat.
-  const last = parts.at(-1) ?? "";
-  return parts.length < 2
-    ? last
-    : t("screens.regulars.new.and", {
-        list: parts.slice(0, -1).join(t("screens.regulars.new.comma")),
-        last,
-      });
-};
 
 // A free weekly time: dashed in blue with its ground and price, and a dot a week ahead, filled
 // when that week is free.
