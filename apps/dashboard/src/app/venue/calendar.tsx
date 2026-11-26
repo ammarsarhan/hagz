@@ -652,11 +652,9 @@ export default function VenueCalendar() {
         onHidden={() => {
           const action = added.current;
           added.current = null;
-          // A new booking is D10's, still to come.
-          if (action === "book") comingNext();
-          else if (action === "hold")
+          if (action)
             router.push({
-              pathname: "/hold",
+              pathname: action === "hold" ? "/hold" : "/book",
               params: { date: day, ...(groundId ? { groundId } : {}) },
             });
         }}
