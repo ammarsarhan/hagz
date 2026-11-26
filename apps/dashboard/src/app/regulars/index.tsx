@@ -8,7 +8,6 @@ import { Empty } from "@/components/empty";
 import { NoWeeklyArt } from "@/components/empty-art";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
-import { useHud } from "@/components/hud";
 import { IconChevronRight, IconPlus } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -20,6 +19,7 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { hourLabel } from "@/lib/hours";
 import { intlLocale, isRTL } from "@/lib/language";
 import { overlaps, regularsQuery, weeksDecided, type Regular } from "@/lib/regulars";
+import { push } from "@/lib/navigation";
 
 // The venue's regulars (Figma D12 653:3), from the Venue tab: their weekly games under the weekday,
 // Sundays first, each with its hours, who, the ground and how the weeks have gone. Regulars who
@@ -37,14 +37,12 @@ type Group = Regular[];
 
 export default function Regulars() {
   const { t } = useTranslation();
-  const hud = useHud();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const canAdd = venue?.permissions.bookings === "manage";
   const compact = useCompactTitle();
   const regulars = useQuery(regularsQuery(venueId));
   const settings = useQuery(bookingSettingsQuery(venueId)).data;
-  const comingNext = () => hud.show(t("common.comingNext"));
 
   const days = byDay(regulars.data ?? []);
   const title = t("screens.regulars.title");
@@ -67,7 +65,7 @@ export default function Regulars() {
             <RoundButton
               icon={IconPlus}
               label={t("screens.regulars.add")}
-              onPress={() => router.push("/regulars/new")}
+              onPress={() => push("/regulars/new")}
             />
           ) : undefined
         }
@@ -95,7 +93,7 @@ export default function Regulars() {
             body={t("screens.regulars.none")}
             action={
               canAdd
-                ? { label: t("screens.regulars.add"), onPress: () => router.push("/regulars/new") }
+                ? { label: t("screens.regulars.add"), onPress: () => push("/regulars/new") }
                 : undefined
             }
           />
@@ -104,7 +102,11 @@ export default function Regulars() {
             <View key={day} className={index === 0 ? "mt-2" : "mt-6"}>
               <GroupHeading>{t(`screens.regulars.days.${String(day) as Weekday}`)}</GroupHeading>
               {groups.map((group) => (
-                <TimeGroup key={group[0]?.id} group={group} onOpen={comingNext} />
+                <TimeGroup
+                  key={group[0]?.id}
+                  group={group}
+                  onOpen={(id) => push(`/regulars/${id}`)}
+                />
               ))}
             </View>
           ))
@@ -142,7 +144,7 @@ const deadlineLine = (t: TFunction, hours: number) =>
 
 // One time on the weekday: its hours once on the left, the regulars wanting it on the right, a
 // hairline under each (indented between regulars sharing the time).
-function TimeGroup({ group, onOpen }: { group: Group; onOpen: () => void }) {
+function TimeGroup({ group, onOpen }: { group: Group; onOpen: (id: string) => void }) {
   const { t } = useTranslation();
   const first = group[0];
   if (!first) return null;
@@ -165,7 +167,7 @@ function TimeGroup({ group, onOpen }: { group: Group; onOpen: () => void }) {
             regular={regular}
             place={group.length > 1 ? index + 1 : null}
             divider={index < group.length - 1}
-            onPress={onOpen}
+            onPress={() => onOpen(regular.id)}
           />
         ))}
       </View>
