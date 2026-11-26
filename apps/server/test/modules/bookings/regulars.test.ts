@@ -353,6 +353,32 @@ describe("regulars", () => {
     );
   });
 
+  it("lines up a regular that overlaps another in part, and lets it go first", async () => {
+    const { venue, owner, regular } = await weeklyGround();
+    // Karim plays 8–10pm; Omar wants just 9–10pm, so he's in line behind Karim, with no week yet.
+    const karimGame = await create(owner.id, venue.id, regular(karim));
+    const omarGame = await create(
+      owner.id,
+      venue.id,
+      regular(omar, { startHour: 21, slotCount: 1 }),
+    );
+    expect(omarGame.reservations).toHaveLength(0);
+    const list = VenueRegularList.parse(
+      await (await asStaff(owner.id, "GET", `/venues/${venue.id}/regulars`)).json(),
+    );
+    expect(list.data.map((item) => item.id)).toEqual([karimGame.id, omarGame.id]);
+    // Omar first now; Karim pauses, and his weeks go to Omar.
+    const res = await asStaff(owner.id, "PUT", `/venues/${venue.id}/regulars/order`, {
+      regularIds: [omarGame.id, karimGame.id],
+    });
+    expect(res.status).toBe(200);
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${karimGame.id}/pause`);
+    expect((await detail(owner.id, venue.id, omarGame.id)).reservations).toHaveLength(4);
+    // Back, Karim can't have 8–10pm while Omar keeps 9–10pm: he waits in line now.
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${karimGame.id}/resume`);
+    expect((await detail(owner.id, venue.id, karimGame.id)).reservations).toHaveLength(0);
+  });
+
   it("reorders overlapping regulars; only weeks reserved from then on follow", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const first = await create(owner.id, venue.id, regular(karim));
