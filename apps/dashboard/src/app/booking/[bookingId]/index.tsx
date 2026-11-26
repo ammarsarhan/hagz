@@ -12,6 +12,7 @@ import { CheckInSection } from "@/components/check-in-section";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
+import { HoldBar, HoldRing, ReleaseSheet } from "@/components/hold-parts";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
@@ -23,6 +24,7 @@ import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { bookingRequests } from "@/lib/booking-requests";
+import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { localDateOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
@@ -35,12 +37,17 @@ import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
-// Still to come on this page: the Scan a code bar and the ⋯ menu.
+// A staff hold (D9 606:76) shows its ring running down instead, Confirm in the bar, and Let it go
+// in ⋯. Still to come on this page: the Scan a code bar.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 type Event = components["schemas"]["BookingHistoryEvent"];
 
 const HOUR = 3_600_000;
+
+// A staff hold still running.
+const held = (booking: Booking): booking is Booking & { expiresAt: string } =>
+  booking.hold && booking.status === "HELD" && booking.expiresAt !== null;
 
 // What a price line is, after the hours it charges.
 const CHARGE_KEYS = {
@@ -108,7 +115,10 @@ export default function BookingPage() {
       if (!result.ok) throw result.error;
       return result.data.data;
     },
-    enabled: data !== undefined && (showsNext(data, Date.now()) || data.status === "CANCELLED"),
+    // A hold's history says whether it has had its extension.
+    enabled:
+      data !== undefined &&
+      (showsNext(data, Date.now()) || data.status === "CANCELLED" || held(data)),
   });
   const requests = useQuery({
     ...bookingRequests(venueId),
@@ -153,6 +163,10 @@ function Page({
   const compact = useCompactTitle();
   // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
   const [menu, setMenu] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const holding = held(booking);
+  const holdMinutes =
+    useQuery({ ...bookingSettingsQuery(venueId), enabled: holding }).data?.staffHoldMinutes ?? null;
   // What was picked, opened once the sheet has slid away: Move's screen or Swap's.
   const picked = useRef<MenuAction | null>(null);
   const movable =
@@ -222,7 +236,14 @@ function Page({
   return (
     <Screen
       footer={
-        !canManage ? undefined : marksOutcome(booking, now) ? (
+        !canManage ? undefined : holding ? (
+          <HoldBar
+            booking={booking}
+            venueId={venueId}
+            price={money(booking.total)}
+            onChanged={refetch}
+          />
+        ) : marksOutcome(booking, now) ? (
           <OutcomeBar booking={booking} venueId={venueId} until={markUntil} onChanged={refetch} />
         ) : booking.status === "PENDING" && booking.expiresAt ? (
           <RequestBar
@@ -259,7 +280,7 @@ function Page({
             <RoundButton
               icon={IconDots}
               label={t("screens.booking.more")}
-              onPress={() => setMenu(true)}
+              onPress={() => (holding ? setReleasing(true) : setMenu(true))}
             />
           ) : undefined
         }
@@ -303,6 +324,19 @@ function Page({
                 onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`)}
               />
             </View>
+          </Section>
+        ) : null}
+
+        {holding ? (
+          <Section>
+            <HoldRing
+              booking={booking}
+              venueId={venueId}
+              extended={history.some((event) => event.type === "HOLD_EXTENDED")}
+              holdMinutes={holdMinutes}
+              canManage={canManage}
+              onEnded={() => void refetch()}
+            />
           </Section>
         ) : null}
 
@@ -404,6 +438,20 @@ function Page({
           </Pressable>
         </Section>
       </FadingScroll>
+      {holding ? (
+        <ReleaseSheet
+          booking={booking}
+          venueId={venueId}
+          name={firstName}
+          when={t("screens.booking.menuWhen", {
+            day: relativeDay(localDateOf(booking.startsAt, timezone), now, timezone, t),
+            hours: hoursSpan(booking.startsAt, booking.endsAt, timezone, t),
+            ground: ground.name ?? "",
+          })}
+          visible={releasing}
+          onClose={() => setReleasing(false)}
+        />
+      ) : null}
       <BookingMenu
         name={firstName}
         when={t("screens.booking.menuWhen", {
