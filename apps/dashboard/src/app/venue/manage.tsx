@@ -15,6 +15,7 @@ import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { isRTL } from "@/lib/language";
 import { fetched, queries } from "@/lib/queries";
+import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
 // The Venue tab (Figma "D3 · Venue tab, round 3", C): the venue's cover photo, its name and area
@@ -37,16 +38,8 @@ export default function VenueTab() {
   const photos = useQuery({ ...queries.photos(venueId), enabled: can("venue") });
   const grounds = useQuery({ ...queries.grounds(venueId), enabled: can("schedule") });
   const detail = useQuery({ ...queries.venue(venueId), enabled: can("venue") });
-  const regulars = useQuery({
-    queryKey: ["staff", "venues", venueId, "regulars"],
-    queryFn: async () =>
-      (
-        await fetched(
-          api.GET("/v1/staff/venues/{venueId}/regulars", { params: { path: { venueId } } }),
-        )
-      ).data,
-    enabled: can("customers"),
-  });
+  // Regulars are read with bookings: view, as the API asks.
+  const regulars = useQuery({ ...regularsQuery(venueId), enabled: can("bookings") });
   const members = useQuery({
     queryKey: ["staff", "venues", venueId, "members"],
     queryFn: async () =>
@@ -99,13 +92,15 @@ export default function VenueTab() {
       body: t(`${v}.customersBody`),
       onPress: () => router.push("/customers"),
     },
-    can("customers") && {
+    can("bookings") && {
       key: "regulars",
       title: t(`${v}.regulars`),
       body: regulars.data
-        ? t(`${v}.weekly`, { count: regulars.data.length })
+        ? t(`${v}.weekly`, {
+            count: regulars.data.filter((regular) => regular.status !== "ENDED").length,
+          })
         : t(`${v}.regularsBody`),
-      onPress: comingNext,
+      onPress: () => router.push("/regulars"),
     },
     can("staff") && { key: "team", title: t(`${v}.team`), body: team, onPress: comingNext },
   ];
