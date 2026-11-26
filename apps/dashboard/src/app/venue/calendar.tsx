@@ -740,7 +740,7 @@ function Row({
   timezone: string;
   ground: string;
   currency: string;
-  // The row under way now: its hours column in baby blue.
+  // The row under way now: its hours in blue.
   current?: boolean;
   onPress: () => void;
 }) {
@@ -773,20 +773,19 @@ function Row({
     >
       {hour === undefined ? (
         // Pulled out by its padding, so the hours line up with the other rows' either way.
-        <View className={`-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1 ${current ? NOW_TINT : ""}`}>
+        // The row under way: just its hours in blue, no tint behind (user, 2026-11-26).
+        <View className="-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1">
           <Text
-            className={`leading-5 ${current ? `text-label font-semibold ${NOW_TEXT}` : `text-body ${ended ? "text-ink-3" : "font-semibold"}`}`}
+            className={`text-body leading-5 ${current ? `font-semibold ${NOW_TEXT}` : ended ? "text-ink-3" : "font-semibold"}`}
             numberOfLines={1}
           >
             {hourLabel(row.startsAt, timezone, t)}
           </Text>
-          <Text
-            className={`leading-[13px] ${current ? `text-[10px] ${NOW_TEXT}` : "text-[11px] text-ink-3"}`}
-          >
+          <Text className={`text-[11px] leading-[13px] ${current ? NOW_TEXT : "text-ink-3"}`}>
             {t("screens.calendar.to")}
           </Text>
           <Text
-            className={`leading-[17px] ${current ? `text-[12px] ${NOW_TEXT}` : "text-caption text-ink-3"}`}
+            className={`text-caption leading-[17px] ${current ? NOW_TEXT : "text-ink-3"}`}
             numberOfLines={1}
           >
             {hourLabel(row.endsAt, timezone, t)}
