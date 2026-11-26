@@ -1,5 +1,6 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Animated, View, useWindowDimensions, type LayoutChangeEvent } from "react-native";
+import Reanimated, { FadeInDown, FadeInUp, FadeOutDown, FadeOutUp } from "react-native-reanimated";
 import { Text } from "./text";
 
 // A screen's big title, carried up beside its back or close button once it has scrolled away (first
@@ -71,6 +72,90 @@ export function CompactTitle({
             {detail}
           </Text>
         ) : null}
+      </Animated.View>
+    </View>
+  );
+}
+
+// A tab's pinned title that follows the page (the Venue tab): empty while the big title shows, the
+// page's name once it has gone under (faded in like CompactTitle), then each section's heading as
+// it goes under in turn ("Details", "People", "Rules"), and back again scrolling up. A new name
+// rolls in the way the page is moving.
+//
+//   const compact = useCompactTitle();
+//   const sections = useSectionTitle(compact.scrollY);
+//   <PinnedTitle title="Venue" sections={sections} style={compact.style} />
+//   <FadingScroll scrollY={compact.scrollY}>
+//     <Title onTitleLayout={compact.onTitleLayout}>Venue</Title>
+//     <View onLayout={sections.onLayout("Details")}><SettingsHeading>Details</SettingsHeading></View>
+const ROLL_MS = 180;
+
+export function useSectionTitle(scrollY: Animated.Value) {
+  // Where each heading ends in the scroll; a heading is current once the scroll is past it.
+  const ends = useRef(new Map<string, number>());
+  const [current, setCurrent] = useState<{ label: string | null; down: boolean }>({
+    label: null,
+    down: true,
+  });
+  const shown = useRef<{ label: string | null; index: number }>({ label: null, index: -1 });
+
+  const pick = useCallback((y: number) => {
+    const passed = [...ends.current.entries()]
+      .sort((a, b) => a[1] - b[1])
+      .filter(([, end]) => y >= end);
+    const index = passed.length - 1;
+    const label = passed.at(-1)?.[0] ?? null;
+    if (label === shown.current.label) return;
+    const down = index > shown.current.index;
+    shown.current = { label, index };
+    setCurrent({ label, down });
+  }, []);
+
+  useEffect(() => {
+    // Native-driven, so the scroll keeps its pace; JS only hears it to swap the words.
+    const id = scrollY.addListener(({ value }) => pick(value));
+    return () => scrollY.removeListener(id);
+  }, [scrollY, pick]);
+
+  const onLayout = (label: string) => (event: LayoutChangeEvent) => {
+    const { y, height } = event.nativeEvent.layout;
+    ends.current.set(label, y + height);
+  };
+
+  return { current, onLayout };
+}
+
+export function PinnedTitle({
+  title,
+  sections,
+  style,
+}: {
+  title: string;
+  sections: ReturnType<typeof useSectionTitle>;
+  style: ReturnType<typeof useCompactTitle>["style"];
+}) {
+  const { label, down } = sections.current;
+  const words = label ?? title;
+  return (
+    <View
+      className="h-11 justify-center"
+      // Screen readers get the big title and the headings themselves.
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Animated.View pointerEvents="none" style={style}>
+        <View className="h-5 overflow-hidden">
+          <Reanimated.View
+            key={words}
+            entering={(down ? FadeInUp : FadeInDown).duration(ROLL_MS)}
+            exiting={(down ? FadeOutUp : FadeOutDown).duration(ROLL_MS)}
+            className="absolute inset-x-0 top-0"
+          >
+            <Text className="text-body font-semibold leading-[20px]" numberOfLines={1}>
+              {words}
+            </Text>
+          </Reanimated.View>
+        </View>
       </Animated.View>
     </View>
   );
