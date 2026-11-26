@@ -77,29 +77,38 @@ export function CompactTitle({
   );
 }
 
-// A tab's pinned title that follows the page (the Venue tab): empty while the big title shows, the
-// page's name once it has gone under (faded in like CompactTitle), then each section's heading as
-// it goes under in turn ("Details", "People", "Rules"), and back again scrolling up. A new name
-// rolls in the way the page is moving.
+// A tab's pinned bar that names the section scrolled to (the Venue tab): empty at first, then
+// each section's heading once it has gone under ("Details", "People", "Rules"), and back again
+// scrolling up. A new name rolls in the way the page is moving. A grey hairline under the bar
+// once anything has scrolled under it.
 //
-//   const compact = useCompactTitle();
-//   const sections = useSectionTitle(compact.scrollY);
-//   <PinnedTitle title="Venue" sections={sections} style={compact.style} />
-//   <FadingScroll scrollY={compact.scrollY}>
-//     <Title onTitleLayout={compact.onTitleLayout}>Venue</Title>
+//   const sections = useSectionTitle();
+//   <PinnedTitle sections={sections} />
+//   <FadingScroll scrollY={sections.scrollY} topFade={0}>
 //     <View onLayout={sections.onLayout("Details")}><SettingsHeading>Details</SettingsHeading></View>
 const ROLL_MS = 180;
 
-export function useSectionTitle(scrollY: Animated.Value) {
+export function useSectionTitle() {
+  const scrollY = useRef(new Animated.Value(0)).current;
   // Where each heading ends in the scroll; a heading is current once the scroll is past it.
   const ends = useRef(new Map<string, number>());
   const [current, setCurrent] = useState<{ label: string | null; down: boolean }>({
     label: null,
     down: true,
   });
-  const shown = useRef<{ label: string | null; index: number }>({ label: null, index: -1 });
+  const [scrolled, setScrolled] = useState(false);
+  const shown = useRef<{ label: string | null; index: number; scrolled: boolean }>({
+    label: null,
+    index: -1,
+    scrolled: false,
+  });
 
   const pick = useCallback((y: number) => {
+    const under = y > 0;
+    if (under !== shown.current.scrolled) {
+      shown.current.scrolled = under;
+      setScrolled(under);
+    }
     const passed = [...ends.current.entries()]
       .sort((a, b) => a[1] - b[1])
       .filter(([, end]) => y >= end);
@@ -107,7 +116,7 @@ export function useSectionTitle(scrollY: Animated.Value) {
     const label = passed.at(-1)?.[0] ?? null;
     if (label === shown.current.label) return;
     const down = index > shown.current.index;
-    shown.current = { label, index };
+    shown.current = { ...shown.current, label, index };
     setCurrent({ label, down });
   }, []);
 
@@ -122,41 +131,34 @@ export function useSectionTitle(scrollY: Animated.Value) {
     ends.current.set(label, y + height);
   };
 
-  return { current, onLayout };
+  return { scrollY, current, scrolled, onLayout };
 }
 
-export function PinnedTitle({
-  title,
-  sections,
-  style,
-}: {
-  title: string;
-  sections: ReturnType<typeof useSectionTitle>;
-  style: ReturnType<typeof useCompactTitle>["style"];
-}) {
+export function PinnedTitle({ sections }: { sections: ReturnType<typeof useSectionTitle> }) {
   const { label, down } = sections.current;
-  const words = label ?? title;
   return (
     <View
-      className="h-11 justify-center"
-      // Screen readers get the big title and the headings themselves.
+      // Full width, so the hairline runs edge to edge.
+      className={`-mx-5 h-11 justify-center border-b px-5 ${sections.scrolled ? "border-border" : "border-transparent"}`}
+      // Screen readers get the headings themselves.
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
     >
-      <Animated.View pointerEvents="none" style={style}>
-        <View className="h-5 overflow-hidden">
+      <View className="h-5 overflow-hidden">
+        {label === null ? null : (
           <Reanimated.View
-            key={words}
+            key={label}
             entering={(down ? FadeInUp : FadeInDown).duration(ROLL_MS)}
             exiting={(down ? FadeOutUp : FadeOutDown).duration(ROLL_MS)}
             className="absolute inset-x-0 top-0"
           >
             <Text className="text-body font-semibold leading-[20px]" numberOfLines={1}>
-              {words}
+              {label}
             </Text>
           </Reanimated.View>
-        </View>
-      </Animated.View>
+        )}
+      </View>
     </View>
   );
 }

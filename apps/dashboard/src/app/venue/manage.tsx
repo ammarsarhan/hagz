@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import { Bone } from "@/components/bone";
-import { PinnedTitle, useCompactTitle, useSectionTitle } from "@/components/compact-title";
+import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
@@ -23,8 +23,8 @@ import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
 import { paymentLabel } from "@/lib/settings";
 
-// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title (pinned once it scrolls
-// away, then naming the section scrolled to), the venue's cover photo
+// The Venue tab (Figma "D3 · Venue tab, round 3", C): the title, a bar pinned above the
+// scroll naming the section scrolled to (from Details on), the venue's cover photo
 // (grey and pulsing while it loads), its name and area
 // centred under it, then the Account tab's headings and rows: Details (profile and photos,
 // grounds, hours), People (customers, regulars, team) and Rules (booking settings, cancellations,
@@ -68,9 +68,8 @@ export default function VenueTab() {
     enabled: can("staff"),
   });
 
-  // The title pinned above the scroll: Venue, then each section as its heading goes under.
-  const compact = useCompactTitle();
-  const sections = useSectionTitle(compact.scrollY);
+  // The bar pinned above the scroll: each section's name once its heading goes under.
+  const sections = useSectionTitle();
   // The cover photo that has finished drawing, so the grey stand-in can go.
   const [loadedCover, setLoadedCover] = useState<string | null>(null);
 
@@ -193,9 +192,10 @@ export default function VenueTab() {
 
   return (
     <Screen tabbed>
-      <PinnedTitle title={t(`${v}.title`)} sections={sections} style={compact.style} />
-      <FadingScroll scrollY={compact.scrollY}>
-        <Title onTitleLayout={compact.onTitleLayout}>{t(`${v}.title`)}</Title>
+      <PinnedTitle sections={sections} />
+      {/* A hairline under the bar, not a fade. */}
+      <FadingScroll scrollY={sections.scrollY} topFade={0}>
+        <Title>{t(`${v}.title`)}</Title>
         <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
           {ready[0] ? (
             <>
