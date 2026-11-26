@@ -116,12 +116,16 @@ export function StateSheet({
   timezone: string;
   visible: boolean;
   onClose: () => void;
-  onHidden?: () => void;
+  // Once it has slid away; with the regular as it now is, when it was paused or ended.
+  onHidden?: (changed?: Detail) => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
   const done = useAfterRegular(venueId, regular.id);
   const [sending, setSending] = useState(false);
+  // The answer, kept until the sheet has gone: applied sooner, the sheet would show the regular as
+  // it now is while it slides down (user, 2026-11-26).
+  const changed = useRef<Detail | null>(null);
   const s = `screens.regulars.${action}` as const;
   const name = firstName(regular.customer.name);
   const dateOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
@@ -172,12 +176,13 @@ export function StateSheet({
         ? api.POST("/v1/staff/venues/{venueId}/regulars/{regularId}/pause", path)
         : api.POST("/v1/staff/venues/{venueId}/regulars/{regularId}/end", path),
     );
-    await done(result.ok ? result.data : undefined);
     setSending(false);
     if (!result.ok) {
+      void done();
       hud.show(hudMessage(result.error));
       return;
     }
+    changed.current = result.data;
     onClose();
   };
 
@@ -185,7 +190,12 @@ export function StateSheet({
     <Sheet
       visible={visible}
       onClose={onClose}
-      onHidden={onHidden}
+      onHidden={() => {
+        const answer = changed.current ?? undefined;
+        changed.current = null;
+        if (answer) void done(answer);
+        onHidden?.(answer);
+      }}
       closeLabel={t("components.shared.nav.close")}
     >
       <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
@@ -294,7 +304,8 @@ export function MoveSheet({
   const hud = useHud();
   const done = useAfterRegular(venueId, regular.id);
   const [sending, setSending] = useState(false);
-  const moved = useRef(false);
+  // The answer, kept until the sheet has gone (as StateSheet's).
+  const moved = useRef<Detail | null>(null);
   const c = "screens.regulars.change";
   const name = firstName(regular.customer.name);
   const dateOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
@@ -362,13 +373,13 @@ export function MoveSheet({
         },
       }),
     );
-    await done(result.ok ? result.data : undefined);
     setSending(false);
     if (!result.ok) {
+      void done();
       hud.show(hudMessage(result.error));
       return;
     }
-    moved.current = true;
+    moved.current = result.data;
     onClose();
   };
 
@@ -377,7 +388,11 @@ export function MoveSheet({
       visible={visible}
       onClose={onClose}
       onHidden={() => {
-        if (moved.current) onMoved();
+        const answer = moved.current;
+        moved.current = null;
+        if (!answer) return;
+        void done(answer);
+        onMoved();
       }}
       closeLabel={t("components.shared.nav.close")}
     >

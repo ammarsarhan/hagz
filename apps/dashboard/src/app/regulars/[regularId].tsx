@@ -240,8 +240,8 @@ export default function RegularPage() {
           timezone={timezone}
           visible={sheetOpen}
           onClose={() => setSheetOpen(false)}
-          onHidden={() => {
-            const ended = sheet === "end" && regular.data?.status === "ENDED";
+          onHidden={(changed) => {
+            const ended = changed?.status === "ENDED";
             setSheet(null);
             if (ended) router.back();
           }}
