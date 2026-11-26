@@ -157,7 +157,7 @@ export default function RegularPage() {
         <View className="mt-6 h-px bg-border" />
         <GroupHeading className="mt-7 mb-3">{t(`${p}.soFar`)}</GroupHeading>
         {figures.map((figure) => (
-          <View key={figure.key} className="flex-row justify-between py-[5px]">
+          <View key={figure.key} className="flex-row justify-between py-2">
             <Text className="text-[15px] leading-5 text-ink-2">{figure.label}</Text>
             <Text className="text-[15px] leading-5">{figure.value}</Text>
           </View>
