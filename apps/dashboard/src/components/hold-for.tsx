@@ -140,7 +140,12 @@ export function HoldFor({
         </View>
       </Sheet>
 
-      <Sheet {...sheet("customers")} scrollable>
+      <Sheet
+        {...sheet("customers")}
+        scrollable
+        onBack={() => go("who")}
+        backLabel={t("components.shared.nav.back")}
+      >
         <Customers
           venueId={venueId}
           when={when}
@@ -149,7 +154,7 @@ export function HoldFor({
         />
       </Sheet>
 
-      <Sheet {...sheet("new")}>
+      <Sheet {...sheet("new")} onBack={() => go("who")} backLabel={t("components.shared.nav.back")}>
         <NewCustomer
           when={when}
           holdMinutes={holdMinutes}

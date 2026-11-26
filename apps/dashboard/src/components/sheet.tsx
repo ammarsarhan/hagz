@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isRTL } from "@/lib/language";
 import { SheetHud } from "./hud";
-import { CloseButton } from "./nav";
+import { BackButton, CloseButton } from "./nav";
 
 // A bottom sheet: dimmed screen behind, white panel with 28px top corners, a grab handle, and only
 // the close button (end side) above the content. Tapping outside closes it. The Modal renders
@@ -41,6 +41,11 @@ interface SheetProps {
   // A long list (the venue switcher): the panel stops at 75% of the screen and what's under the
   // close row scrolls, only when it's more than fits. Shorter, it neither scrolls nor bounces.
   scrollable?: boolean;
+  // A sheet reached from another (Who's it for? → Your customers): back on the start side, in
+  // place of the close button, to that one. Android's back button goes back too; the backdrop
+  // still closes.
+  onBack?: () => void;
+  backLabel?: string;
   children: ReactNode;
 }
 
@@ -51,6 +56,8 @@ export function Sheet({
   closeLabel,
   header,
   scrollable = false,
+  onBack,
+  backLabel,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -112,7 +119,7 @@ export function Sheet({
       transparent
       visible={mounted}
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={onBack ?? onClose}
       onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
@@ -154,14 +161,18 @@ export function Sheet({
               {/* A scrollable sheet keeps room under this row, so the list scrolls away beneath a gap
                   rather than straight under the title. */}
               <View
-                className={`h-10 flex-row items-center justify-end ${scrollable ? "mb-4" : ""}`}
+                className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable ? "mb-4" : ""}`}
               >
                 {header ? (
                   <View pointerEvents="none" className="absolute inset-x-12 items-center">
                     {header}
                   </View>
                 ) : null}
-                <CloseButton label={closeLabel} onPress={onClose} />
+                {onBack ? (
+                  <BackButton label={backLabel ?? closeLabel} onPress={onBack} />
+                ) : (
+                  <CloseButton label={closeLabel} onPress={onClose} />
+                )}
               </View>
               {scrollable ? (
                 <ScrollView
