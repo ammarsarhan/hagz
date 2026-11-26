@@ -184,7 +184,7 @@ const en = {
           link: "Copy a confirm link",
           linkBody: "Send it from your WhatsApp",
           copied: "Confirm link for {{day}} copied",
-          noneWaiting: "No week is waiting for an answer",
+          noneWaiting: "No week coming up",
           end: "End the weekly game",
           endBody: "Confirmed weeks still happen",
         },

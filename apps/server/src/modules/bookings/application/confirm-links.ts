@@ -33,7 +33,7 @@ const notWaiting = () =>
   new AppError({
     code: "RESERVATION_NOT_WAITING",
     status: 409,
-    detail: "Only a regular's week still waiting for an answer has a confirm link.",
+    detail: "Only a regular's coming week, confirmed or still waiting for an answer, has a link.",
   });
 
 const unavailable = () =>
@@ -56,29 +56,31 @@ export const createConfirmLink = async (
       id: true,
       status: true,
       regularId: true,
+      startsAt: true,
       expiresAt: true,
       customer: { select: { customer: { select: { language: true } } } },
     },
   });
   if (!booking) throw venueBookingNotFound();
-  if (
-    booking.status !== "UNCONFIRMED" ||
-    !booking.regularId ||
-    !booking.expiresAt ||
-    booking.expiresAt <= now
-  ) {
-    throw notWaiting();
-  }
+  // A waiting week until its deadline; a confirmed one until kick-off, where the page says it's on
+  // (user, 2026-11-27: the link is for the very next week, whatever its state).
+  const until =
+    booking.status === "UNCONFIRMED"
+      ? booking.expiresAt
+      : booking.status === "CONFIRMED"
+        ? booking.startsAt
+        : null;
+  if (!booking.regularId || !until || until <= now) throw notWaiting();
   await consume(COPIES, booking.id);
   const token = randomToken();
   await prisma.reminderToken.create({
-    data: { bookingId: booking.id, tokenHash: hashToken(token), expiresAt: booking.expiresAt },
+    data: { bookingId: booking.id, tokenHash: hashToken(token), expiresAt: until },
   });
   // In the regular's language when they have the app, else Arabic, the page's own default.
   const language = booking.customer.customer?.language === "EN" ? "en" : "ar";
   return {
     url: webLinks.regularConfirm(token, language),
-    expiresAt: booking.expiresAt.toISOString(),
+    expiresAt: until.toISOString(),
   };
 };
 

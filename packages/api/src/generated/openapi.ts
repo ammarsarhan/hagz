@@ -10916,7 +10916,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RESERVATION_NOT_WAITING: not a regular's week still waiting. */
+                /** @description RESERVATION_NOT_WAITING: not a regular's coming week, confirmed or still waiting. */
                 409: {
                     headers: {
                         [name: string]: unknown;

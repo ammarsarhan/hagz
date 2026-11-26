@@ -282,12 +282,16 @@ export function useCopyConfirmLink(venueId: string) {
   return async (regular: { reservations: components["schemas"]["StaffBooking"][] }) => {
     if (busy.current) return;
     const now = Date.now();
+    // The very next week (user, 2026-11-27): confirmed or still waiting, never one past it. A
+    // waiting week whose deadline has passed is on its way back on sale, so it's skipped.
     const week = regular.reservations
       .filter(
         (booking) =>
-          booking.status === "UNCONFIRMED" &&
-          booking.expiresAt !== null &&
-          Date.parse(booking.expiresAt) > now,
+          Date.parse(booking.startsAt) > now &&
+          (booking.status === "CONFIRMED" ||
+            (booking.status === "UNCONFIRMED" &&
+              booking.expiresAt !== null &&
+              Date.parse(booking.expiresAt) > now)),
       )
       .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0];
     if (!week) {

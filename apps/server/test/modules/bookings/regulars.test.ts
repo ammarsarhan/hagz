@@ -699,14 +699,20 @@ describe("confirm links", () => {
     expect((await week(await open("confirm", link.token))).state).toBe("CONFIRMED");
   });
 
-  it("is only for a week still waiting, at staff's own venue, and unknown links are refused", async () => {
+  it("is for a coming week, confirmed or waiting, at staff's own venue; unknown links are refused", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const made = await create(owner.id, venue.id, regular(karim));
-    const first = made.reservations[0];
+    const [first, , third] = made.reservations;
+    // The very next week, already confirmed: its link says so, with nothing left to answer.
     await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${first?.id}/confirm`);
-    const answered = await copy(owner.id, venue.id, first?.id ?? "");
-    expect(answered.status).toBe(409);
-    expect(await answered.json()).toMatchObject({ code: "RESERVATION_NOT_WAITING" });
+    const confirmed = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    expect((await week(await open("week", confirmed.token))).state).toBe("CONFIRMED");
+    expect((await week(await open("release", confirmed.token))).state).toBe("CONFIRMED");
+
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${third?.id}/release`);
+    const released = await copy(owner.id, venue.id, third?.id ?? "");
+    expect(released.status).toBe(409);
+    expect(await released.json()).toMatchObject({ code: "RESERVATION_NOT_WAITING" });
 
     const viewer = await staffAt(venue.id, {
       role: "MEMBER",

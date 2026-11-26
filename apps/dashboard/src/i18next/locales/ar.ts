@@ -214,7 +214,7 @@ const ar: ArabicTranslations = {
           link: "نسخ رابط التأكيد",
           linkBody: "أرسله من واتساب",
           copied: "نُسخ رابط تأكيد {{day}}",
-          noneWaiting: "لا يوجد أسبوع ينتظر الرد",
+          noneWaiting: "لا يوجد أسبوع قادم",
           end: "إنهاء المباراة الأسبوعية",
           endBody: "الأسابيع المؤكدة تُلعب كما هي",
         },

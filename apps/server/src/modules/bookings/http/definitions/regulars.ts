@@ -189,7 +189,9 @@ export const confirmLink = createRoute({
     201: { description: "The link", ...json(ConfirmLink) },
     ...common,
     404: problemResponse("VENUE_NOT_FOUND or BOOKING_NOT_FOUND"),
-    409: problemResponse("RESERVATION_NOT_WAITING: not a regular's week still waiting."),
+    409: problemResponse(
+      "RESERVATION_NOT_WAITING: not a regular's coming week, confirmed or still waiting.",
+    ),
     429: problemResponse("RATE_LIMITED"),
     503: problemResponse("LINKS_UNAVAILABLE: no web address set in this environment."),
   },
