@@ -188,6 +188,7 @@ const en = {
           released: "Let go in time",
           missed: "Not answered",
           noShows: "No-shows",
+          weeks_zero: "None yet",
           weeks_one: "{{count}} week",
           weeks_other: "{{count}} weeks",
         },

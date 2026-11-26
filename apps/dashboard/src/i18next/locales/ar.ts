@@ -210,7 +210,7 @@ const ar: ArabicTranslations = {
           released: "تُركت في الوقت",
           missed: "بلا رد",
           noShows: "لم يحضر",
-          weeks_zero: "{{count}} أسبوع",
+          weeks_zero: "لا شيء بعد",
           weeks_one: "أسبوع واحد",
           weeks_two: "أسبوعان",
           weeks_few: "{{count}} أسابيع",
