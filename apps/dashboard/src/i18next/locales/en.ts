@@ -179,6 +179,9 @@ const en = {
           none: "No free times on this ground that day.",
           weekly: "{{ground}} · weekly",
           when: "{{day}}, {{hours}} on {{ground}}",
+          noWeek: "None of the weeks ahead has all these hours free",
+          pickedDetail_one: "{{price}} a week · free {{free}} of {{count}} week",
+          pickedDetail_other: "{{price}} a week · free {{free}} of {{count}} weeks",
         },
         confirm: {
           title: "Add regular",

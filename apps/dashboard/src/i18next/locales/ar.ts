@@ -203,6 +203,11 @@ const ar: ArabicTranslations = {
           none: "لا توجد أوقات متاحة في هذا الملعب في هذا اليوم.",
           weekly: "{{ground}} · أسبوعيًا",
           when: "{{day}}، {{hours}} في {{ground}}",
+          noWeek: "لا يوجد أسبوع قادم كل هذه الساعات فيه متاحة",
+          pickedDetail_one: "{{price}} أسبوعيًا · متاح {{free}} من أسبوع واحد",
+          pickedDetail_two: "{{price}} أسبوعيًا · متاح {{free}} من أسبوعين",
+          pickedDetail_few: "{{price}} أسبوعيًا · متاح {{free}} من {{count}} أسابيع",
+          pickedDetail_other: "{{price}} أسبوعيًا · متاح {{free}} من {{count}} أسبوعًا",
         },
         confirm: {
           title: "إضافة منتظم",

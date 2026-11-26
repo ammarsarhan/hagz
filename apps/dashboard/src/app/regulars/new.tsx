@@ -1,11 +1,21 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HoldFor } from "@/components/hold-for";
+import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -23,10 +33,15 @@ import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
 
 // A new weekly game, its first step (Figma D12 656:2): the weekday, then the ground (one at a time,
-// as on Move and Hold a time; user, 2026-11-26: no All grounds), then the times it's free. Each
-// free time is the ground's shortest game from that hour, dashed in blue with its price, and a dot
-// for each of the weeks reserved ahead (the venue's regularHorizon): filled when that week is free,
-// hollow when it's taken. Regulars already playing then are shown at their time.
+// as on Move and Hold a time; user, 2026-11-26: no All grounds), then its free hours: each dashed in
+// blue with its price, and a dot for each of the weeks reserved ahead (the venue's regularHorizon),
+// filled when that week the hour is free, hollow when it's taken. Regulars already playing then are
+// shown at their time.
+//
+// Picking works as on New booking and Hold a time (user, 2026-11-26): a tap picks the ground's
+// shortest game from that hour; holding one and dragging stretches it over the free hours next to
+// it, back to back, up to the ground's longest. The pick shows solid blue, and a bar says its hours,
+// its price a week and how many of the weeks it's free; Next asks who it's for.
 
 // Until the first answer says the venue's; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
@@ -34,14 +49,18 @@ const FALLBACK_HORIZON = 4;
 const SOFT_FILL = "bg-[#f7f8ff]";
 const WEEKLY = "bg-[#c9d6ff]";
 
-// One time on the ground: the game from `hour`, on each of the weeks ahead (null: taken that week).
-interface Time {
+// How long a free hour is held before dragging starts (the opening hours grid's beat).
+const HOLD_MS = 250;
+
+// One hour on the ground, on each of the weeks ahead (null: taken, closed or gone that week).
+interface Hour {
   hour: number;
-  weeks: (Slot[] | null)[];
+  weeks: (Slot | null)[];
 }
 
 export default function NewRegular() {
   const { t } = useTranslation();
+  const hud = useHud();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const compact = useCompactTitle();
@@ -54,8 +73,10 @@ export default function NewRegular() {
   const today = localDateOf(now, timezone);
   const [weekday, setWeekday] = useState(() => new Date(`${today}T12:00:00Z`).getUTCDay());
   const [picked, setPicked] = useState<string | null>(null);
-  // The free time tapped, while who it's for is asked.
-  const [asking, setAsking] = useState<Time | null>(null);
+  // The pick, as its first and last hours, and whether who it's for is being asked.
+  const [pick, setPickHours] = useState<{ from: number; to: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   // The weekday's next dates, from today, one a week.
   const dates = useMemo(() => {
@@ -73,11 +94,12 @@ export default function NewRegular() {
   const currency = answer?.currency ?? "EGP";
   const grounds = answer?.grounds ?? [];
   const ground = grounds.find((one) => one.id === picked) ?? grounds[0];
-  const length = ground?.minimumSlots ?? 1;
+  const shortest = ground?.minimumSlots ?? 1;
+  const longest = ground?.maximumSlots ?? 3;
   const money = (minor: number) => `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
 
-  // The ground's times on the weekday, each with its game on every week ahead.
-  const times = useMemo(() => {
+  // The ground's free hours on the weekday, each on every week ahead.
+  const run = useMemo(() => {
     if (!ground || !loaded) return [];
     const hourOf = (at: string) =>
       Number(
@@ -98,27 +120,134 @@ export default function NewRegular() {
       return hours;
     });
     const starts = [...new Set(byWeek.flatMap((hours) => [...hours.keys()]))].sort((a, b) => a - b);
-    // The game from `hour` that week, when every hour of it is free, back to back and still ahead.
-    const gameAt = (hours: Map<number, Slot>, hour: number) => {
-      const game: Slot[] = [];
-      for (let step = 0; step < length; step += 1) {
-        const slot = hours.get(hour + step);
-        const before = game.at(-1);
-        if (
-          !slot ||
-          slot.status !== "AVAILABLE" ||
-          Date.parse(slot.startsAt) <= now ||
-          (before && before.endsAt !== slot.startsAt)
-        )
-          return null;
-        game.push(slot);
-      }
-      return game;
+    // Free that week: open for booking and still ahead.
+    const freeAt = (hours: Map<number, Slot>, hour: number) => {
+      const slot = hours.get(hour);
+      return slot && slot.status === "AVAILABLE" && Date.parse(slot.startsAt) > now ? slot : null;
     };
     return starts
-      .map((hour): Time => ({ hour, weeks: byWeek.map((hours) => gameAt(hours, hour)) }))
-      .filter((time) => time.weeks.some(Boolean));
-  }, [ground, loaded, weeks, dates, timezone, length, now]);
+      .map((hour): Hour => ({ hour, weeks: byWeek.map((hours) => freeAt(hours, hour)) }))
+      .filter((one) => one.weeks.some(Boolean));
+  }, [ground, loaded, weeks, dates, timezone, now]);
+
+  // Free hours next to each other, so a game can run on from one into the next.
+  const joined = (a: number) => run[a + 1]?.hour === (run[a]?.hour ?? -2) + 1;
+  // From `anchor` towards `toward`, as far as the hours run back to back and the longest game
+  // allows; then on past the end if that's shorter than the shortest game.
+  const stretch = (anchor: number, toward: number) => {
+    let from = anchor;
+    let to = anchor;
+    while (to < toward && to - from + 1 < longest && joined(to)) to += 1;
+    while (from > toward && to - from + 1 < longest && joined(from - 1)) from -= 1;
+    while (to - from + 1 < shortest && to - from + 1 < longest && joined(to)) to += 1;
+    return { from, to };
+  };
+  const setPick = (next: { from: number; to: number } | null) => {
+    const from = next ? run[next.from] : undefined;
+    const to = next ? run[next.to] : undefined;
+    setPickHours(from && to ? { from: from.hour, to: to.hour } : null);
+  };
+  const chosen = (() => {
+    if (!pick) return null;
+    const from = run.findIndex((one) => one.hour === pick.from);
+    const to = run.findIndex((one) => one.hour === pick.to);
+    // Gone (taken meanwhile) or no longer back to back: let it go.
+    if (from < 0 || to < from) return null;
+    for (let index = from; index < to; index += 1) if (!joined(index)) return null;
+    return { from, to };
+  })();
+  const pickedHours = chosen ? run.slice(chosen.from, chosen.to + 1) : [];
+  // The picked game on each week: every hour of it free, back to back.
+  const pickedWeeks = dates.map((_, week) => {
+    const slots = pickedHours.map((one) => one.weeks[week] ?? null);
+    if (slots.length === 0 || slots.some((slot) => slot === null)) return null;
+    const game = slots as Slot[];
+    for (let index = 1; index < game.length; index += 1) {
+      if (game[index - 1]?.endsAt !== game[index]?.startsAt) return null;
+    }
+    return game;
+  });
+  const freeWeeks = pickedWeeks.filter(Boolean).length;
+  const short = chosen !== null && pickedHours.length < shortest;
+  const pickedPrice = (pickedWeeks.find(Boolean) ?? []).reduce((sum, slot) => sum + slot.price, 0);
+  const pickStart = pickedHours[0]?.hour ?? 0;
+  const pickLength = pickedHours.length;
+
+  // Where each free hour sits in the list, for finding the one under the finger.
+  const groupTops = useRef(new Map<number, number>());
+  const rowPlaces = useRef(new Map<number, { group: number; y: number; height: number }>());
+  const indexAt = (y: number) => {
+    let nearest = -1;
+    let distance = Infinity;
+    run.forEach((one, index) => {
+      const place = rowPlaces.current.get(one.hour);
+      if (!place) return;
+      const top = (groupTops.current.get(place.group) ?? 0) + place.y;
+      const away = y < top ? top - y : y > top + place.height ? y - (top + place.height) : 0;
+      if (away < distance) {
+        distance = away;
+        nearest = index;
+      }
+    });
+    return { index: nearest, on: distance === 0 };
+  };
+  const drag = useRef<{ anchor: number; last: number; from: number; to: number } | null>(null);
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .activateAfterLongPress(HOLD_MS)
+    .onStart((event) => {
+      const { index, on } = indexAt(event.y);
+      if (!on || index < 0) return;
+      const first = stretch(index, index);
+      drag.current = { anchor: index, last: index, ...first };
+      setDragging(true);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setPick(first);
+    })
+    .onUpdate((event) => {
+      const current = drag.current;
+      if (!current) return;
+      const { index } = indexAt(event.y);
+      if (index < 0 || index === current.last) return;
+      current.last = index;
+      const next = stretch(current.anchor, index);
+      // A tick each time the pick changes.
+      if (next.from !== current.from || next.to !== current.to) void Haptics.selectionAsync();
+      current.from = next.from;
+      current.to = next.to;
+      setPick(next);
+    })
+    .onFinalize(() => {
+      drag.current = null;
+      setDragging(false);
+    });
+  const tap = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((event, success) => {
+      if (!success) return;
+      const { index, on } = indexAt(event.y);
+      if (!on || index < 0) return;
+      void Haptics.selectionAsync();
+      // Tapping inside the pick lets it go.
+      if (chosen && index >= chosen.from && index <= chosen.to) {
+        setPick(null);
+        return;
+      }
+      const next = stretch(index, index);
+      if (next.to - next.from + 1 < shortest) {
+        hud.show(t("screens.hold.tooShort", { count: shortest }));
+        return;
+      }
+      setPick(next);
+    });
+  // The tap only counts once the hold has failed, i.e. the finger lifted before it.
+  const gesture = Gesture.Exclusive(pan, tap);
+  const placeGroup = (hour: number) => (event: LayoutChangeEvent) =>
+    groupTops.current.set(hour, event.nativeEvent.layout.y);
+  const placeRow = (hour: number) => (event: LayoutChangeEvent) => {
+    const { y, height } = event.nativeEvent.layout;
+    rowPlaces.current.set(hour, { group: hour, y, height });
+  };
 
   // Regulars already playing on the ground that weekday, at the hour they start.
   const playing = regulars.filter(
@@ -128,8 +257,8 @@ export default function NewRegular() {
       regular.ground.id === ground?.id,
   );
   const rows = [
-    ...times.map((time) => ({ hour: time.hour, time, regular: null })),
-    ...playing.map((regular) => ({ hour: regular.startHour, time: null, regular })),
+    ...run.map((one) => ({ hour: one.hour, free: one, regular: null })),
+    ...playing.map((regular) => ({ hour: regular.startHour, free: null, regular })),
   ].sort((a, b) => a.hour - b.hour || (a.regular ? -1 : 1));
   // Under each hour: its regulars, then its free time.
   const groups: { hour: number; rows: typeof rows }[] = [];
@@ -146,12 +275,12 @@ export default function NewRegular() {
     [asking, groundKey],
   );
   // "Tuesdays, 8 – 9 pm on Pitch 2".
-  const whenLabel = (hour: number) =>
-    t("screens.regulars.new.when", {
-      day: t(`screens.regulars.days.${String(weekday) as Weekday}`),
-      hours: `${hourLabel(t, hour)} – ${hourLabel(t, hour + length)}`,
-      ground: ground?.name ?? "",
-    });
+  const pickedSpan = `${hourLabel(t, pickStart)} – ${hourLabel(t, pickStart + pickLength)}`;
+  const whenLabel = t("screens.regulars.new.when", {
+    day: t(`screens.regulars.days.${String(weekday) as Weekday}`),
+    hours: pickedSpan,
+    ground: ground?.name ?? "",
+  });
   const title = t("screens.regulars.new.title");
   const letter = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "narrow" });
   const long = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "long" });
@@ -159,7 +288,35 @@ export default function NewRegular() {
   const weekdays = Array.from({ length: 7 }, (_, day) => new Date(Date.UTC(2026, 0, 4 + day)));
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        chosen ? (
+          <BottomBar
+            title={t("screens.hold.picked", { hours: pickedSpan, ground: ground?.name ?? "" })}
+            detail={
+              short
+                ? t("screens.hold.tooShort", { count: shortest })
+                : freeWeeks === 0
+                  ? t("screens.regulars.new.noWeek")
+                  : t("screens.regulars.new.pickedDetail", {
+                      price: money(pickedPrice),
+                      free: freeWeeks,
+                      count: dates.length,
+                    })
+            }
+          >
+            <BarButton
+              label={t("screens.book.next")}
+              primary
+              incomplete={short || freeWeeks === 0}
+              onPress={() => {
+                if (!short && freeWeeks > 0) setAsking(true);
+              }}
+            />
+          </BottomBar>
+        ) : undefined
+      }
+    >
       <NavBar
         flush
         start={
@@ -172,7 +329,7 @@ export default function NewRegular() {
           />
         }
       />
-      <FadingScroll scrollY={compact.scrollY}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging}>
         <Title
           small
           onTitleLayout={compact.onTitleLayout}
@@ -187,7 +344,10 @@ export default function NewRegular() {
               accessibilityRole="button"
               accessibilityLabel={long.format(date)}
               accessibilityState={{ selected: day === weekday }}
-              onPress={() => setWeekday(day)}
+              onPress={() => {
+                setPick(null);
+                setWeekday(day);
+              }}
               className={`size-10 items-center justify-center rounded-full active:opacity-70 ${day === weekday ? "bg-ink" : "bg-chip"}`}
             >
               <Text
@@ -210,7 +370,10 @@ export default function NewRegular() {
                 key={one.id}
                 label={one.name ?? ""}
                 on={one.id === ground?.id}
-                onPress={() => setPicked(one.id)}
+                onPress={() => {
+                  setPick(null);
+                  setPicked(one.id);
+                }}
               />
             ))}
           </ScrollView>
@@ -227,43 +390,54 @@ export default function NewRegular() {
                 dates: datesLabel(t, dates),
               })}
             </Text>
-            {times.length === 0 ? (
+            {run.length === 0 ? (
               <Text className="mt-4 text-body text-ink-2" style={{ maxWidth: "75%" }}>
                 {t("screens.regulars.new.none")}
               </Text>
             ) : null}
-            <View className="mt-3.5 gap-4">
-              {groups.map((group) => (
-                <View key={group.hour} className="flex-row">
-                  {/* When it starts in weight, when it ends in grey under it. */}
-                  <View className="w-14 pt-[7px]">
-                    <Text className="text-[15px] leading-5 font-semibold">
-                      {hourLabel(t, group.hour)}
-                    </Text>
-                    <Text className="text-[13px] leading-[17px] text-ink-3">
-                      {hourLabel(t, group.hour + (group.rows[0]?.regular?.slotCount ?? length))}
-                    </Text>
+            <GestureDetector gesture={gesture}>
+              <View className="mt-3.5 gap-4">
+                {groups.map((group) => (
+                  <View key={group.hour} className="flex-row" onLayout={placeGroup(group.hour)}>
+                    {/* When it starts in weight, when it ends in grey under it. */}
+                    <View className="w-14 pt-[7px]">
+                      <Text className="text-[15px] leading-5 font-semibold">
+                        {hourLabel(t, group.hour)}
+                      </Text>
+                      <Text className="text-[13px] leading-[17px] text-ink-3">
+                        {hourLabel(t, group.hour + (group.rows[0]?.regular?.slotCount ?? 1))}
+                      </Text>
+                    </View>
+                    <View className="flex-1 gap-4">
+                      {group.rows.map((row) =>
+                        row.regular ? (
+                          <RegularRow key={row.regular.id} regular={row.regular} />
+                        ) : row.free ? (
+                          <FreeHour
+                            key={`free-${row.hour}`}
+                            label={t("screens.move.zone", {
+                              ground: ground?.name ?? "",
+                              price: money(row.free.weeks.find(Boolean)?.price ?? 0),
+                            })}
+                            weeks={row.free.weeks.map(Boolean)}
+                            on={(() => {
+                              const index = run.indexOf(row.free);
+                              return chosen !== null && index >= chosen.from && index <= chosen.to;
+                            })()}
+                            onAccessibilityTap={() => {
+                              const index = run.indexOf(row.free);
+                              const next = stretch(index, index);
+                              if (next.to - next.from + 1 >= shortest) setPick(next);
+                            }}
+                            onLayout={placeRow(row.hour)}
+                          />
+                        ) : null,
+                      )}
+                    </View>
                   </View>
-                  <View className="flex-1 gap-4">
-                    {group.rows.map((row) =>
-                      row.regular ? (
-                        <RegularRow key={row.regular.id} regular={row.regular} />
-                      ) : row.time ? (
-                        <FreeTime
-                          key={`free-${row.hour}`}
-                          label={t("screens.move.zone", {
-                            ground: ground?.name ?? "",
-                            price: money(priceOf(row.time)),
-                          })}
-                          weeks={row.time.weeks.map(Boolean)}
-                          onPress={() => setAsking(row.time)}
-                        />
-                      ) : null,
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            </GestureDetector>
           </View>
         )}
       </FadingScroll>
@@ -272,13 +446,12 @@ export default function NewRegular() {
       <HoldFor
         venueId={venueId}
         target={target}
-        when={asking ? whenLabel(asking.hour) : ""}
+        when={asking ? whenLabel : ""}
         holdMinutes={null}
-        onClose={() => setAsking(null)}
+        onClose={() => setAsking(false)}
         onChoose={(choice) => {
-          const time = asking;
-          setAsking(null);
-          if (!time || !ground) return;
+          setAsking(false);
+          if (!chosen || !ground) return;
           router.push({
             pathname: "/regulars/confirm",
             params: {
@@ -289,12 +462,12 @@ export default function NewRegular() {
                   ? t(`screens.setup.grounds.sports.${ground.sport}`)
                   : t(`screens.setup.grounds.sizes.${ground.size}`),
               dayOfWeek: String(weekday),
-              startHour: String(time.hour),
-              slotCount: String(length),
-              price: String(priceOf(time)),
+              startHour: String(pickStart),
+              slotCount: String(pickLength),
+              price: String(pickedPrice),
               currency,
               dates: dates.join(","),
-              free: time.weeks.map((week) => (week ? "1" : "0")).join(","),
+              free: pickedWeeks.map((week) => (week ? "1" : "0")).join(","),
               name: choice.name,
               phone: choice.phone ?? "",
               customer: JSON.stringify(choice.customer),
@@ -308,38 +481,51 @@ export default function NewRegular() {
 
 type Weekday = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 
-// The game's price on its first free week.
-const priceOf = (time: Time) =>
-  (time.weeks.find(Boolean) ?? []).reduce((sum, slot) => sum + slot.price, 0);
-
-// A free weekly time: dashed in blue with its ground and price, and a dot a week ahead, filled
-// when that week is free.
-function FreeTime({
+// A free hour: dashed in blue with its ground and price, and a dot a week ahead, filled when it's
+// free that week; solid blue while picked.
+function FreeHour({
   label,
   weeks,
-  onPress,
+  on,
+  onAccessibilityTap,
+  onLayout,
 }: {
   label: string;
   weeks: boolean[];
-  onPress: () => void;
+  on: boolean;
+  onAccessibilityTap: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
 }) {
   return (
-    <Pressable
+    <View
+      accessible
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
-      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] border-dashed border-primary px-3.5 active:opacity-70 ${SOFT_FILL}`}
+      accessibilityState={{ selected: on }}
+      onAccessibilityTap={onAccessibilityTap}
+      onLayout={onLayout}
+      className={`h-[52px] flex-row items-center rounded-[10px] border-[1.5px] px-3.5 ${on ? "border-primary bg-primary" : `border-dashed border-primary ${SOFT_FILL}`}`}
     >
-      <Text className="flex-1 text-[14px] leading-[19px]">{label}</Text>
+      <Text className={`flex-1 text-[14px] leading-[19px] ${on ? "text-on-primary" : ""}`}>
+        {label}
+      </Text>
       <View className="flex-row gap-1.5">
         {weeks.map((free, index) => (
           <View
             key={index}
-            className={`size-[9px] rounded-full ${free ? "bg-primary" : "border border-ink-3"}`}
+            className={`size-[9px] rounded-full ${
+              free
+                ? on
+                  ? "bg-white"
+                  : "bg-primary"
+                : on
+                  ? "border border-white/60"
+                  : "border border-ink-3"
+            }`}
           />
         ))}
       </View>
-    </Pressable>
+    </View>
   );
 }
 
