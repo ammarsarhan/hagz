@@ -103,16 +103,19 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
   const barOf = (other: StaffBooking) =>
     other.status === "CONFIRMED" ? "bg-primary" : "bg-[#c9d6ff]";
 
-  const candidates = (others.data ?? [])
-    .filter(
-      (other) =>
-        other.id !== booking.id &&
-        MOVABLE.includes(other.status) &&
-        !other.hold &&
-        Date.parse(other.startsAt) > now &&
-        onDay(other.startsAt) &&
-        other.ground.id === groundId,
-    )
+  // Every booking on the ground this week it can trade with; the picked day's are listed, and
+  // each day with any gets a dot.
+  const swappable = (others.data ?? []).filter(
+    (other) =>
+      other.id !== booking.id &&
+      MOVABLE.includes(other.status) &&
+      !other.hold &&
+      Date.parse(other.startsAt) > now &&
+      other.ground.id === groundId,
+  );
+  const dots = new Set(swappable.map((other) => localDateOf(other.startsAt, timezone)));
+  const candidates = swappable
+    .filter((other) => onDay(other.startsAt))
     .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
 
   const refresh = () =>
@@ -220,6 +223,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
           }}
           grounds={grounds}
           groundId={groundId}
+          dots={dots}
           onGround={(id) => {
             setPartner(null);
             setGroundId(id);
@@ -257,7 +261,9 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
               </View>
             ) : null}
             {candidates.length === 0 ? (
-              <Text className="text-body text-ink-2">{t("screens.swap.none")}</Text>
+              <Text className="text-body text-ink-2" style={{ maxWidth: "75%" }}>
+                {t("screens.swap.none")}
+              </Text>
             ) : null}
             {candidates.map((candidate) => (
               <Pressable

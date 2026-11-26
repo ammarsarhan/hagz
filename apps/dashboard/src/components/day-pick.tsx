@@ -32,7 +32,10 @@ export function DayPickHeader({
   grounds,
   groundId,
   onGround,
+  dots = NO_DOTS,
 }: {
+  // Days with something to pick, a dot under each (Swap: bookings to trade with).
+  dots?: ReadonlySet<string>;
   weekStart: string;
   day: string;
   today: string;
@@ -48,7 +51,7 @@ export function DayPickHeader({
           start={weekStart}
           picked={day}
           today={today}
-          dots={NO_DOTS}
+          dots={dots}
           onPick={onDay}
           // Forward lands on the week's first day, back on its last.
           onWeek={(start) => onDay(start > weekStart ? start : addDays(start, 6))}
