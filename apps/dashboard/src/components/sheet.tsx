@@ -49,6 +49,9 @@ interface SheetProps {
   // A scrollable sheet's children that stick at its top once scrolled to it (a search box), by
   // their place among the sheet's children.
   stickyHeaderIndices?: number[];
+  // Without the close button's row, as the customer app's short lists of choices (its photo sheet):
+  // the grab handle, the backdrop and Android's back button still close it.
+  closeButton?: boolean;
   children: ReactNode;
 }
 
@@ -62,6 +65,7 @@ export function Sheet({
   onBack,
   backLabel,
   stickyHeaderIndices,
+  closeButton = true,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -165,20 +169,22 @@ export function Sheet({
               {/* A scrollable sheet keeps room under this row, so the list scrolls away beneath a gap
                   rather than straight under the title; so does one with back, whose button sits
                   over the title's start. */}
-              <View
-                className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable || onBack ? "mb-4" : ""}`}
-              >
-                {header ? (
-                  <View pointerEvents="none" className="absolute inset-x-12 items-center">
-                    {header}
-                  </View>
-                ) : null}
-                {onBack ? (
-                  <BackButton label={backLabel ?? closeLabel} onPress={onBack} />
-                ) : (
-                  <CloseButton label={closeLabel} onPress={onClose} />
-                )}
-              </View>
+              {closeButton || onBack ? (
+                <View
+                  className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable || onBack ? "mb-4" : ""}`}
+                >
+                  {header ? (
+                    <View pointerEvents="none" className="absolute inset-x-12 items-center">
+                      {header}
+                    </View>
+                  ) : null}
+                  {onBack ? (
+                    <BackButton label={backLabel ?? closeLabel} onPress={onBack} />
+                  ) : (
+                    <CloseButton label={closeLabel} onPress={onClose} />
+                  )}
+                </View>
+              ) : null}
               {scrollable ? (
                 <ScrollView
                   style={{ flexShrink: 1 }}
