@@ -76,11 +76,13 @@ interface GroundForGeneration {
   desired: DesiredSlot[];
 }
 
-// What a ground should have now: its desired slots, or none when it shouldn't have any.
+// What a ground should have now: its desired slots, or none when it shouldn't have any. `window`
+// narrows it to a few hours (slots a booking gave back, in releaseSlots).
 export const groundForGeneration = async (
   db: Tx | typeof prisma,
   groundId: string,
   now: Date,
+  window: { from: Date; to: Date } = generationWindow(now),
 ): Promise<GroundForGeneration | null> => {
   const ground = await db.ground.findUnique({
     where: { id: groundId },
@@ -105,7 +107,7 @@ export const groundForGeneration = async (
         schedule: ground.schedules.map((day) => fromStoredHours(day.dayOfWeek, day.hours)),
         prices: ground,
         timezone,
-        ...generationWindow(now),
+        ...window,
       })
     : [];
   return {
