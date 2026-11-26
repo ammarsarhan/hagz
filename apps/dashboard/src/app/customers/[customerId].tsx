@@ -227,7 +227,13 @@ export default function CustomerPage() {
               <View className="mt-6">
                 <Heading className="mb-3">{t("screens.customer.comingUp")}</Heading>
                 {upcoming.map((booking) => (
-                  <Game key={booking.id} booking={booking} venueId={venueId} upcoming />
+                  <Game
+                    key={booking.id}
+                    booking={booking}
+                    venueId={venueId}
+                    upcoming
+                    canConfirm={canBook}
+                  />
                 ))}
               </View>
             ) : null}
@@ -340,10 +346,13 @@ function Game({
   booking,
   venueId,
   upcoming = false,
+  canConfirm = false,
 }: {
   booking: Booking;
   venueId: string;
   upcoming?: boolean;
+  // Confirming a regular's week needs bookings: manage (view only: no Confirm, D14 625:430).
+  canConfirm?: boolean;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -388,7 +397,7 @@ function Game({
         </Text>
         <Text className="text-caption text-ink-2">{kindOf(booking, t)}</Text>
       </View>
-      {booking.status === "UNCONFIRMED" ? (
+      {canConfirm && booking.status === "UNCONFIRMED" ? (
         <Pressable
           accessibilityRole="button"
           hitSlop={8}
@@ -529,7 +538,7 @@ function DetailsSheet({
   const savedDigits = customer.phone ? localDigits(customer.phone) : "";
   const [name, setName] = useState(customer.name);
   const [digits, setDigits] = useState(savedDigits);
-  const [taken, setTaken] = useState<string | null>(null);
+  const [taken, setTaken] = useState<{ id: string; name: string } | null>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!visible) return;
@@ -552,7 +561,10 @@ function DetailsSheet({
     if (!result.ok) {
       const found = problem(result.error);
       if (found?.code === "CUSTOMER_EXISTS" && typeof found.customerId === "string") {
-        setTaken(found.customerId);
+        setTaken({
+          id: found.customerId,
+          name: typeof found.customerName === "string" ? found.customerName : "",
+        });
         return;
       }
       hud.show(hudMessage(result.error));
@@ -586,17 +598,27 @@ function DetailsSheet({
       />
       {taken ? (
         <View className="-mt-2 mb-4 flex-row items-center justify-between gap-3">
-          <Text className="flex-1 text-caption">{t("screens.customer.details.taken")}</Text>
+          <Text className="flex-1 text-caption">
+            {taken.name
+              ? t("screens.customer.details.takenBy", { name: taken.name })
+              : t("screens.customer.details.taken")}
+          </Text>
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => {
               onClose();
-              router.push(`/customers/${taken}`);
+              router.push(`/customers/${taken.id}`);
             }}
             className="active:opacity-60"
           >
-            <Text className="text-caption underline">{t("screens.customer.details.open")}</Text>
+            <Text className="text-caption underline">
+              {taken.name
+                ? t("screens.customer.details.openName", {
+                    name: taken.name.trim().split(/\s+/)[0] ?? taken.name,
+                  })
+                : t("screens.customer.details.open")}
+            </Text>
           </Pressable>
         </View>
       ) : (
