@@ -192,7 +192,7 @@ const ar: ArabicTranslations = {
         confirmed_other: "أكّد {{confirmed}} من {{count}} أسبوعًا",
         paused: "متوقف منذ {{date}}",
         menu: {
-          title: "المباراة الأسبوعية لـ {{name}}",
+          title: "المباراة الأسبوعية",
           change: "تغيير الموعد",
           changeBody: "الأسابيع المنتظرة تنتقل، والمؤكدة تبقى",
           pause: "إيقاف مؤقت",

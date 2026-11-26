@@ -25,7 +25,7 @@ import { Text } from "./text";
 
 // A regular's ⋯ and what it leads to (Figma D12 655:111, 655:233).
 //
-// - RegularMenu: "Youssef's weekly game", then a row for each thing to do, each with what it does
+// - RegularMenu: "Weekly game" centred by the close button, then a row for each thing to do, each with what it does
 //   in grey: Change the time, Pause (Resume when paused), Copy a confirm link, End the weekly game.
 // - StateSheet: Pause or End asked first, what follows on the step rail (the confirmed weeks stay,
 //   the waiting ones go back on sale, then resume any time, or not at all), the button in a bar.
@@ -77,16 +77,19 @@ export function RegularMenu({
       onClose={onClose}
       onHidden={onHidden}
       closeLabel={t("components.shared.nav.close")}
+      // Centred on the close button's row, short (user, 2026-11-26).
+      header={
+        <Text accessibilityRole="header" className="text-subtitle font-semibold">
+          {t(`${m}.title`)}
+        </Text>
+      }
     >
-      <Text accessibilityRole="header" className="mb-3 text-[22px] font-semibold leading-[1.27]">
-        {t(`${m}.title`, { name: firstName(regular.customer.name) })}
-      </Text>
       {rows.map((row, index) => (
         <Pressable
           key={row.action}
           accessibilityRole="button"
           onPress={() => onPick(row.action)}
-          className={`flex-row items-center py-2.5 active:opacity-60 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
+          className={`flex-row items-center py-4 active:opacity-60 ${index < rows.length - 1 ? "border-b border-border" : ""}`}
         >
           <View className="size-10 items-center justify-center rounded-full bg-chip">
             <row.icon size={20} color={colors.ink} strokeWidth={2} />

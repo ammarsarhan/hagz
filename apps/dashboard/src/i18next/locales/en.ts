@@ -170,7 +170,7 @@ const en = {
         confirmed_other: "confirmed {{confirmed}} of {{count}} weeks",
         paused: "paused since {{date}}",
         menu: {
-          title: "{{name}}'s weekly game",
+          title: "Weekly game",
           change: "Change the time",
           changeBody: "Waiting weeks move; confirmed ones stay",
           pause: "Pause",
