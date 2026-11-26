@@ -1,6 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
@@ -210,7 +211,7 @@ export default function NewRegular() {
             <Text className="text-[13px] leading-[17px] font-medium text-ink-2">
               {t("screens.regulars.new.dates", {
                 day: t(`screens.regulars.days.${String(weekday) as Weekday}`),
-                dates: datesLabel(dates),
+                dates: datesLabel(t, dates),
               })}
             </Text>
             {times.length === 0 ? (
@@ -264,7 +265,7 @@ const priceOf = (time: Time) =>
   (time.weeks.find(Boolean) ?? []).reduce((sum, slot) => sum + slot.price, 0);
 
 // "1, 8, 15 and 22 Dec"; "29 Dec, 5, 12 and 19 Jan" across a month's end.
-const datesLabel = (dates: readonly string[]) => {
+const datesLabel = (t: TFunction, dates: readonly string[]) => {
   const month = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", month: "short" });
   const parts = dates.map((date, index) => {
     const at = new Date(`${date}T12:00:00Z`);
@@ -272,7 +273,14 @@ const datesLabel = (dates: readonly string[]) => {
     const lastOfMonth = !next || next.slice(0, 7) !== date.slice(0, 7);
     return lastOfMonth ? `${at.getUTCDate()} ${month.format(at)}` : String(at.getUTCDate());
   });
-  return new Intl.ListFormat(intlLocale, { type: "conjunction" }).format(parts);
+  // Joined by hand: Hermes has no Intl.ListFormat.
+  const last = parts.at(-1) ?? "";
+  return parts.length < 2
+    ? last
+    : t("screens.regulars.new.and", {
+        list: parts.slice(0, -1).join(t("screens.regulars.new.comma")),
+        last,
+      });
 };
 
 // A free weekly time: dashed in blue with its ground and price, and a dot a week ahead, filled

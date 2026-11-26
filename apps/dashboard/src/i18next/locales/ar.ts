@@ -198,6 +198,8 @@ const ar: ArabicTranslations = {
           subtitle_few: "اختر اليوم والوقت. تُحجز {{count}} أسابيع مقدمًا.",
           subtitle_other: "اختر اليوم والوقت. يُحجز {{count}} أسبوعًا مقدمًا.",
           dates: "{{day}} · {{dates}}",
+          and: "{{list}} و{{last}}",
+          comma: "، ",
           none: "لا توجد أوقات متاحة في هذا الملعب في هذا اليوم.",
           weekly: "{{ground}} · أسبوعيًا",
         },

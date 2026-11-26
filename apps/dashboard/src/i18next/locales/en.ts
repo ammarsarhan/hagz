@@ -174,6 +174,8 @@ const en = {
           subtitle_one: "Pick the day and time. {{count}} week is reserved ahead.",
           subtitle_other: "Pick the day and time. {{count}} weeks are reserved ahead.",
           dates: "{{day}} · {{dates}}",
+          and: "{{list}} and {{last}}",
+          comma: ", ",
           none: "No free times on this ground that day.",
           weekly: "{{ground}} · weekly",
         },
