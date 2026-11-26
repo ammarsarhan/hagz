@@ -312,6 +312,36 @@ describe("regulars", () => {
     expect(changed.skippedWeeks).toEqual([]);
   });
 
+  it("a confirmed week moved off the time goes to the regular next in line", async () => {
+    const { venue, owner, regular, ground } = await weeklyGround();
+    const karimGame = await create(owner.id, venue.id, regular(karim, { slotCount: 1 }));
+    const omarGame = await create(owner.id, venue.id, regular(omar, { slotCount: 1 }));
+    expect(omarGame.reservations).toHaveLength(0);
+    const week = karimGame.reservations[0];
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${week?.id}/confirm`);
+    // Karim's first week moves an hour later; 8pm that week is Omar's now.
+    const later = new Date(Date.parse(week?.startsAt ?? "") + HOUR);
+    const res = await asStaff(owner.id, "POST", `/venues/${venue.id}/bookings/${week?.id}/move`, {
+      groundId: ground.id,
+      startsAt: later.toISOString(),
+      endsAt: new Date(later.getTime() + HOUR).toISOString(),
+    });
+    expect(res.status).toBe(200);
+    expect(
+      (await detail(owner.id, venue.id, omarGame.id)).reservations.map((booking) => [
+        booking.status,
+        booking.startsAt,
+      ]),
+    ).toEqual([["UNCONFIRMED", week?.startsAt]]);
+    // Karim keeps his moved game, and doesn't take 8pm back that week.
+    expect(
+      (await detail(owner.id, venue.id, karimGame.id)).reservations.map((booking) => [
+        booking.status,
+        booking.startsAt,
+      ])[0],
+    ).toEqual(["CONFIRMED", later.toISOString()]);
+  });
+
   it("a waiting week moved takes the deadline of its new time", async () => {
     const { venue, owner, regular, ground } = await weeklyGround();
     const made = await create(owner.id, venue.id, regular(karim, { slotCount: 1 }));

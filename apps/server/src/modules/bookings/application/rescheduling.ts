@@ -22,6 +22,7 @@ import {
 import { checkLength, checkRange, coversExactly, slotUnavailable } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
 import { lockBookings, newCode, venueBookingNotFound, withFreshCode } from "./booking-rows";
+import { topUpVenue } from "./regulars";
 import { followMove } from "./listings";
 
 // Moving and swapping bookings (PR 4.8, docs/rescheduling.md). A move never edits the booking: the
@@ -281,7 +282,7 @@ export const moveBooking = async (
   };
   checkRange(target.startsAt, target.endsAt, { now, minimumNotice: 0, horizonDays: HORIZON_DAYS });
 
-  return withFreshCode(() =>
+  const moved = await withFreshCode(() =>
     transaction(async (tx) => {
       const ids = body.holdId ? [bookingId, body.holdId] : [bookingId];
       const rows = await lockBookings(tx, ids, actor.venueId, movingSelect);
@@ -342,6 +343,9 @@ export const moveBooking = async (
       return id;
     }),
   );
+  // The time it left may be a regular's, next in line for it (user, 2026-11-26).
+  await topUpVenue(actor.venueId, clock);
+  return moved;
 };
 
 // Swaps two bookings' times: each takes the other's ground and time, keeping its own customer and
@@ -356,7 +360,7 @@ export const swapBookings = async (
   if (bookingId === withBookingId) throw sameBooking();
   const now = clock.now();
 
-  return withFreshCode(() =>
+  const swapped = await withFreshCode(() =>
     transaction(async (tx) => {
       const rows = await lockBookings(tx, [bookingId, withBookingId], actor.venueId, movingSelect);
       const a = rows.find((row) => row.id === bookingId);
@@ -399,4 +403,7 @@ export const swapBookings = async (
       return ids;
     }),
   );
+  // A swap can leave a week without a regular's game, for the next in line.
+  await topUpVenue(actor.venueId, clock);
+  return swapped;
 };
