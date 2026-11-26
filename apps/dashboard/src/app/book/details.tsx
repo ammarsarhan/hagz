@@ -33,6 +33,9 @@ type Params = {
   timezone: string;
   ground: string;
   kind: string;
+  // From a customer's page: who it's for, so Continue goes straight to the last look.
+  forId?: string;
+  forName?: string;
 };
 
 export default function BookingDetails() {
@@ -64,13 +67,26 @@ export default function BookingDetails() {
         <Button
           label={t("screens.book.continue")}
           disabled={!ready}
-          onPress={() =>
+          onPress={() => {
+            if (params.forId && params.forName) {
+              router.push({
+                pathname: "/book/confirm",
+                params: {
+                  ...params,
+                  total: String(total),
+                  note: note.trim(),
+                  name: params.forName,
+                  customer: JSON.stringify({ venueCustomerId: params.forId }),
+                },
+              });
+              return;
+            }
             setAsking({
               groundId: params.groundId,
               startsAt: params.startsAt,
               endsAt: params.endsAt,
-            })
-          }
+            });
+          }}
         />
       }
     >

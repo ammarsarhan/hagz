@@ -71,7 +71,13 @@ export function TimePick({
   subtitle?: string;
 }) {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ date?: string; groundId?: string }>();
+  // From a customer's page: who the booking is for, passed along so nobody is asked.
+  const params = useLocalSearchParams<{
+    date?: string;
+    groundId?: string;
+    forId?: string;
+    forName?: string;
+  }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const compact = useCompactTitle();
@@ -311,6 +317,7 @@ export function TimePick({
         timezone,
         ground: groundName(groundId),
         kind,
+        ...(params.forId && params.forName ? { forId: params.forId, forName: params.forName } : {}),
       },
     });
   };
