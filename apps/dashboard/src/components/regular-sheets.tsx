@@ -84,7 +84,7 @@ export function RegularMenu({
             key={row.action}
             title={row.title}
             body={row.body}
-            trailing={<row.icon size={20} color={colors.ink} strokeWidth={1.75} />}
+            leading={<row.icon size={20} color={colors.ink} strokeWidth={1.75} />}
             onPress={() => onPick(row.action)}
             divider={index < rows.length - 1}
           />

@@ -9,6 +9,7 @@ export function SettingsRow({
   title,
   body,
   bodyIcon,
+  leading,
   trailing,
   onPress,
   divider = true,
@@ -17,6 +18,8 @@ export function SettingsRow({
   body?: string;
   // A small sign before the grey line (the warning on a setting that's still required).
   bodyIcon?: ReactNode;
+  // An icon before the title, at the start side.
+  leading?: ReactNode;
   trailing?: ReactNode;
   // Without it the row isn't a button (a switch row handles its own taps).
   onPress?: () => void;
@@ -29,6 +32,7 @@ export function SettingsRow({
       onPress={onPress}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
+      {leading}
       <View className="flex-1">
         <Text className="text-[15px] font-medium leading-[1.33]">{title}</Text>
         {body ? (
