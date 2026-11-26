@@ -22,6 +22,7 @@ export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 // The calendar's pill back to now.
 export { default as IconArrowUp } from "@tabler/icons-react-native/IconArrowUp";
+export { default as IconArrowsExchange } from "@tabler/icons-react-native/IconArrowsExchange";
 export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";

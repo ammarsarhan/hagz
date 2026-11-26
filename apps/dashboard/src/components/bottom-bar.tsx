@@ -12,7 +12,8 @@ export function BottomBar({
   children,
 }: {
   title: string;
-  detail?: string;
+  // A string, or text with a link in it ("Both are told · Add a note").
+  detail?: ReactNode;
   children: ReactNode;
 }) {
   return (
