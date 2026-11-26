@@ -6117,6 +6117,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "venueCustomerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Who it's for, as the venue's customer (a regular's own bookings are found by it)."
+          },
           "expiresAt": {
             "type": [
               "string",
@@ -6180,6 +6185,7 @@
           "currency",
           "total",
           "createdAt",
+          "venueCustomerId",
           "expiresAt",
           "hold",
           "regular",

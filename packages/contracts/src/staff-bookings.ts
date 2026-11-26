@@ -30,6 +30,10 @@ export const StaffBookingsQuery = z
   .meta({ id: "StaffBookingsQuery" });
 
 export const StaffBooking = AdminBooking.extend({
+  venueCustomerId: z.uuid().meta({
+    description:
+      "Who it's for, as the venue's customer (a regular's own bookings are found by it).",
+  }),
   expiresAt: Instant.nullable().meta({
     description: "`PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.",
   }),

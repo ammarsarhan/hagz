@@ -18987,6 +18987,11 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             /**
+             * Format: uuid
+             * @description Who it's for, as the venue's customer (a regular's own bookings are found by it).
+             */
+            venueCustomerId: string;
+            /**
              * Format: date-time
              * @description `PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.
              */
