@@ -149,7 +149,7 @@ export default function VenueTab() {
       key: "booking",
       title: t(`${v}.bookingSettings`),
       body: t(`${v}.bookingSettingsBody`),
-      onPress: comingNext,
+      onPress: open("settings/booking"),
     },
     can("venue") && {
       key: "cancellations",
