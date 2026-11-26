@@ -770,7 +770,8 @@ function Row({
       // 64 at least, the bar its full height. The padding is inside, around the words: 4 pt, or 12
       // when the grounds run onto another line (three lines in all), so the row and its bar grow
       // with them (user: padding, not a gap between rows).
-      className="min-h-16 flex-row items-center active:opacity-70"
+      // A time gone by with nothing booked steps further back (user): faded as a whole.
+      className={`min-h-16 flex-row items-center active:opacity-70 ${row.kind === "free" && row.ended ? "opacity-40" : ""}`}
     >
       {hour === undefined ? (
         // Pulled out by its padding, so the hours line up with the other rows' either way.
