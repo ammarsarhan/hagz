@@ -118,10 +118,24 @@ export default function VenueTab() {
     is(RULES.venueForm) && {
       key: "profile",
       title: t(`${v}.profile`),
-      body: photos.data
-        ? t(`${v}.profileBody`, { count: ready.length })
-        : t(`${v}.profileBodyPlain`),
+      body: t(`${v}.profileBody`),
       onPress: open("details"),
+    },
+    is(RULES.venueForm) && {
+      key: "photos",
+      title: t(`${v}.photos`),
+      body: photos.data ? t(`${v}.photosBody`, { count: ready.length }) : t(`${v}.photosBodyPlain`),
+      onPress: open("photos"),
+    },
+    is(RULES.venueForm) && {
+      key: "amenities",
+      title: t(`${v}.amenities`),
+      body: !detail.data
+        ? t(`${v}.amenitiesBodyPlain`)
+        : detail.data.amenities.length === 0
+          ? t(`${v}.amenitiesBodyNone`)
+          : t(`${v}.amenitiesBody`, { count: detail.data.amenities.length }),
+      onPress: open("amenities"),
     },
     is(RULES.scheduleForm) && {
       key: "grounds",
