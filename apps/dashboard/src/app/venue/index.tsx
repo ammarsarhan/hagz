@@ -135,8 +135,8 @@ export default function VenueHome() {
       ) : null}
       <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
         {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons,
-            and 8 pt under them before the scroll (and its hairline), as a flush NavBar leaves. */}
-        <View className="mt-[13px] mb-2 h-10 flex-row items-center">
+            and 12 pt under them before the scroll (and its hairline). */}
+        <View className="mt-[13px] mb-3 h-10 flex-row items-center">
           <Text
             accessibilityRole="header"
             className="flex-1 text-title font-semibold tracking-[-0.4px]"
