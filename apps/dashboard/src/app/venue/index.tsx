@@ -346,8 +346,8 @@ function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
 function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; body: string }) {
   return (
     <View className="mt-6 flex-row items-center">
-      <View className="size-[52px] items-center justify-center rounded-full bg-chip">
-        <NoticeIcon size={22} color={colors.ink} strokeWidth={1.75} />
+      <View className="size-10 items-center justify-center rounded-full bg-chip">
+        <NoticeIcon size={18} color={colors.ink} strokeWidth={1.75} />
       </View>
       <View className="ms-3.5 flex-1">
         <Text className="text-subtitle font-medium">{title}</Text>
