@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  type ComponentRef,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useEffect, useRef, type ComponentRef, type ReactNode, type RefObject } from "react";
 import { Animated, ScrollView, View } from "react-native";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
