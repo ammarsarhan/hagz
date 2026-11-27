@@ -1743,6 +1743,13 @@ const en = {
           subtitle: "We sent a code on WhatsApp to {{phone}}.",
         },
       },
+      notifications: {
+        title: "Notifications",
+        empty: {
+          title: "No notifications yet",
+          body: "New requests, cancellations and changes to your team will show up here.",
+        },
+      },
       home: {
         title: "Home",
         scan: "Scan a code",

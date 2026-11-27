@@ -155,7 +155,10 @@ export default function VenueHome() {
             <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
           </HeaderButton>
           <View className="ms-2">
-            <HeaderButton label={t("screens.home.notifications")} onPress={comingNext}>
+            <HeaderButton
+              label={t("screens.home.notifications")}
+              onPress={() => push("/notifications")}
+            >
               <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
             </HeaderButton>
           </View>

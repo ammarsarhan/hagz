@@ -1896,6 +1896,13 @@ const ar: ArabicTranslations = {
           subtitle: "أرسلنا رمزًا على واتساب إلى {{phone}}.",
         },
       },
+      notifications: {
+        title: "الإشعارات",
+        empty: {
+          title: "لا إشعارات بعد",
+          body: "ستظهر هنا الطلبات الجديدة والإلغاءات والتغييرات على فريقك.",
+        },
+      },
       home: {
         title: "الرئيسية",
         scan: "مسح رمز",
