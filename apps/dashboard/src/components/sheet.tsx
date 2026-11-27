@@ -38,9 +38,13 @@ interface SheetProps {
   // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
   // its own under it.
   header?: ReactNode;
-  // A long list (the venue switcher): the panel stops at 75% of the screen and what's under the
-  // close row scrolls, only when it's more than fits. Shorter, it neither scrolls nor bounces.
+  // A long list (the venue switcher), or what follows a change that can run long (a ground's hours,
+  // deleting it, a regular's pause; user, 2026-11-27): the panel stops at 75% of the screen and
+  // what's under the close row scrolls, only when it's more than fits. Shorter, it neither scrolls
+  // nor bounces, and looks as it would unscrolled.
   scrollable?: boolean;
+  // Under a scrollable sheet's scrolling part, always in view: its buttons.
+  footer?: ReactNode;
   // A sheet reached from another (Who's it for? → Your customers): back on the start side, in
   // place of the close button, to that one. Android's back button goes back too; the backdrop
   // still closes.
@@ -66,6 +70,7 @@ export function Sheet({
   backLabel,
   stickyHeaderIndices,
   closeButton = true,
+  footer,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -171,7 +176,7 @@ export function Sheet({
                   over the title's start. */}
               {closeButton || onBack ? (
                 <View
-                  className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${scrollable || onBack ? "mb-4" : ""}`}
+                  className={`h-10 flex-row items-center ${onBack ? "justify-start" : "justify-end"} ${(scrollable && overflows) || onBack ? "mb-4" : ""}`}
                 >
                   {header ? (
                     <View pointerEvents="none" className="absolute inset-x-12 items-center">
@@ -200,6 +205,7 @@ export function Sheet({
               ) : (
                 children
               )}
+              {footer}
             </Pressable>
           </Animated.View>
         </KeyboardAvoidingView>

@@ -200,23 +200,26 @@ export function StateSheet({
         onHidden?.(answer);
       }}
       closeLabel={t("components.shared.nav.close")}
+      scrollable
+      footer={
+        <View className="mt-8 pt-3">
+          <BottomBar
+            title={
+              waiting.length > 0
+                ? t("screens.regulars.pause.barTitle", { count: waiting.length })
+                : t(`${s}.barTitlePlain`)
+            }
+            detail={t(`${s}.barBody`)}
+          >
+            <BarButton label={t(`${s}.button`)} primary busy={sending} onPress={() => void run()} />
+          </BottomBar>
+        </View>
+      }
     >
       <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
         {t(`${s}.title`, { name })}
       </Text>
       <StepRail gap={22} steps={steps} />
-      <View className="mt-8 pt-3">
-        <BottomBar
-          title={
-            waiting.length > 0
-              ? t("screens.regulars.pause.barTitle", { count: waiting.length })
-              : t(`${s}.barTitlePlain`)
-          }
-          detail={t(`${s}.barBody`)}
-        >
-          <BarButton label={t(`${s}.button`)} primary busy={sending} onPress={() => void run()} />
-        </BottomBar>
-      </View>
     </Sheet>
   );
 }
@@ -446,22 +449,30 @@ export function MoveSheet({
         onMoved();
       }}
       closeLabel={t("components.shared.nav.close")}
+      scrollable
+      footer={
+        <View className="mt-8 pt-3">
+          <BottomBar
+            title={t("screens.regulars.confirm.time", {
+              day,
+              hours: `${hourLabel(t, to.startHour)} – ${hourLabel(t, to.startHour + to.slotCount)}`,
+            })}
+            detail={[to.ground, to.price].filter(Boolean).join(" · ")}
+          >
+            <BarButton
+              label={t(`${c}.button`)}
+              primary
+              busy={sending}
+              onPress={() => void move()}
+            />
+          </BottomBar>
+        </View>
+      }
     >
       <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
         {t(`${c}.sheetTitle`, { day, hour: hourLabel(t, to.startHour) })}
       </Text>
       <StepRail gap={22} steps={steps} />
-      <View className="mt-8 pt-3">
-        <BottomBar
-          title={t("screens.regulars.confirm.time", {
-            day,
-            hours: `${hourLabel(t, to.startHour)} – ${hourLabel(t, to.startHour + to.slotCount)}`,
-          })}
-          detail={[to.ground, to.price].filter(Boolean).join(" · ")}
-        >
-          <BarButton label={t(`${c}.button`)} primary busy={sending} onPress={() => void move()} />
-        </BottomBar>
-      </View>
     </Sheet>
   );
 }

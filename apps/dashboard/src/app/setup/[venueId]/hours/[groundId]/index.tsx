@@ -415,6 +415,20 @@ function CopySheet({
         onHidden();
       }}
       closeLabel={t("components.shared.nav.close")}
+      scrollable
+      footer={
+        <View className="mt-6">
+          <Button
+            label={
+              picked.size === 0
+                ? t("screens.setup.hours.copyPick")
+                : t("screens.setup.hours.copyTo", { count: picked.size })
+            }
+            disabled={picked.size === 0}
+            onPress={copy}
+          />
+        </View>
+      }
     >
       <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
         {t("screens.setup.hours.copyTitle", { name })}
@@ -449,17 +463,6 @@ function CopySheet({
             </Pressable>
           );
         })}
-      </View>
-      <View className="mt-6">
-        <Button
-          label={
-            picked.size === 0
-              ? t("screens.setup.hours.copyPick")
-              : t("screens.setup.hours.copyTo", { count: picked.size })
-          }
-          disabled={picked.size === 0}
-          onPress={copy}
-        />
       </View>
     </Sheet>
   );

@@ -126,24 +126,27 @@ export function ScheduleChangeSheet({
       visible={visible}
       onClose={onClose}
       onHidden={onHidden}
+      scrollable
+      footer={
+        <View className="mt-8 flex-row gap-3">
+          <View className="flex-1">
+            <Button label={t(`${c}.cancel`)} variant="secondary" compact onPress={onClose} />
+          </View>
+          <View className="flex-1">
+            <Button
+              label={t(copying ? `${c}.copyConfirm` : `${c}.confirm`)}
+              compact
+              onPress={onConfirm}
+            />
+          </View>
+        </View>
+      }
       closeLabel={t("components.shared.nav.close")}
     >
       <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
         {title}
       </Text>
       <StepRail gap={22} steps={steps} />
-      <View className="mt-8 flex-row gap-3">
-        <View className="flex-1">
-          <Button label={t(`${c}.cancel`)} variant="secondary" compact onPress={onClose} />
-        </View>
-        <View className="flex-1">
-          <Button
-            label={t(copying ? `${c}.copyConfirm` : `${c}.confirm`)}
-            compact
-            onPress={onConfirm}
-          />
-        </View>
-      </View>
     </Sheet>
   );
 }
