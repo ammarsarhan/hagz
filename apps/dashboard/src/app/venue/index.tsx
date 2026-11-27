@@ -624,7 +624,7 @@ function TimeRow({
   );
 }
 
-// "Pitch 1 · until 11 pm · cash" today; "Pitch 2 · 4 – 6 pm · paid in the app" on a later day.
+// "Pitch 1 · Until 11 pm · Cash" today; "Pitch 2 · 4 – 6 pm · Paid in the app" on a later day.
 const gameLine = (game: Game, isToday: boolean, timezone: string, t: TFunction) =>
   [
     game.ground.name ?? "",

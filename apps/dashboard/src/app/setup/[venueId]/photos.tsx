@@ -5,7 +5,9 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, useWindowDimensions, View } from "react-native";
+import { Modal, Pressable, useWindowDimensions, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -23,7 +25,14 @@ import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
-import { IconCamera, IconPhoto, IconPhotoPlus, IconPlus, IconTrash } from "@/components/icons";
+import {
+  IconCamera,
+  IconPhoto,
+  IconPhotoPlus,
+  IconPlus,
+  IconTrash,
+  IconX,
+} from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -391,68 +400,115 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       </Sheet>
 
       {chosen ? (
-        // After a reference the user sent (a wallpaper preview): the title on the close button's
-        // row, the picture large with its chip in the corner, and the two actions side by side.
-        <Sheet
+        <PhotoViewer
+          photo={chosen}
+          number={ready.findIndex((photo) => photo.id === chosen.id) + 1}
+          isCover={ready[0]?.id === chosen.id}
           visible={actionsOpen}
           onClose={() => setActionsOpen(false)}
           onHidden={() => setChosen(null)}
-          closeLabel={t("components.shared.nav.close")}
-          header={
-            <View className="flex-row items-center gap-2">
-              <IconPhoto size={20} color={colors.ink} strokeWidth={1.75} />
-              <Text accessibilityRole="header" className="text-subtitle font-semibold">
-                {t("screens.setup.photos.photoNumber", {
-                  number: ready.findIndex((photo) => photo.id === chosen.id) + 1,
-                })}
-              </Text>
-            </View>
-          }
-        >
-          <View className="mb-4 mt-5">
-            <Image
-              source={{ uri: reachable(chosen.url) }}
-              contentFit="cover"
-              style={{ aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: colors.border }}
-            />
-            {ready[0]?.id === chosen.id ? (
-              <View className="absolute bottom-3 start-3 rounded-full bg-ink px-3 py-1.5">
-                <Text className="text-label font-semibold text-white">
-                  {t("screens.setup.photos.cover")}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              {/* Destructive without red (the staff app has none): grey, with a bin. */}
-              <Button
-                label={t("screens.setup.photos.removeShort")}
-                compact
-                variant="secondary"
-                icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
-                onPress={() => void remove(chosen)}
-              />
-            </View>
-            <View className="flex-1">
-              {ready[0]?.id === chosen.id ? (
-                <Button
-                  label={t("screens.setup.photos.done")}
-                  compact
-                  onPress={() => setActionsOpen(false)}
-                />
-              ) : (
-                <Button
-                  label={t("screens.setup.photos.setCover")}
-                  compact
-                  onPress={() => makeCover(chosen)}
-                />
-              )}
-            </View>
-          </View>
-        </Sheet>
+          onRemove={() => void remove(chosen)}
+          onCover={() => makeCover(chosen)}
+        />
       ) : null}
     </Screen>
+  );
+}
+
+// A tapped photo, full screen on black (user, 2026-11-27): its number at the top end, the picture
+// across the width at its own shape, cropped to at most 75% of the screen's height, and close,
+// Remove and Set as cover along the bottom. The cover has nothing to set, so Remove takes the room.
+function PhotoViewer({
+  photo,
+  number,
+  isCover,
+  visible,
+  onClose,
+  onHidden,
+  onRemove,
+  onCover,
+}: {
+  photo: Photo;
+  number: number;
+  isCover: boolean;
+  visible: boolean;
+  onClose: () => void;
+  onHidden: () => void;
+  onRemove: () => void;
+  onCover: () => void;
+}) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const screen = useWindowDimensions();
+  const [aspect, setAspect] = useState(4 / 3);
+  const height = Math.min(screen.width / aspect, screen.height * 0.75);
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      transparent
+      statusBarTranslucent
+      onRequestClose={onClose}
+      // iOS says when the fade has finished. Android has no onDismiss: the last photo stays mounted,
+      // hidden, until the next tap replaces it.
+      onDismiss={onHidden}
+    >
+      <StatusBar style="light" />
+      <View
+        className="flex-1 bg-black"
+        style={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }}
+      >
+        <View className="flex-row items-center justify-end gap-2 px-5">
+          {isCover ? (
+            <View className="rounded-full bg-white/15 px-3 py-1">
+              <Text className="text-label font-semibold text-white">
+                {t("screens.setup.photos.cover")}
+              </Text>
+            </View>
+          ) : null}
+          <Text accessibilityRole="header" className="text-subtitle font-semibold text-white">
+            {t("screens.setup.photos.photoNumber", { number })}
+          </Text>
+        </View>
+        <View className="flex-1 justify-center">
+          <Image
+            source={{ uri: reachable(photo.url) }}
+            contentFit="cover"
+            onLoad={({ source }) => {
+              if (source.width > 0 && source.height > 0) setAspect(source.width / source.height);
+            }}
+            style={{ width: screen.width, height }}
+          />
+        </View>
+        <View className="flex-row items-center gap-3 px-5">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("components.shared.nav.close")}
+            onPress={onClose}
+            hitSlop={8}
+            className="size-12 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+          >
+            <IconX size={22} color={colors.white} strokeWidth={2} />
+          </Pressable>
+          <View className="flex-1">
+            {/* Destructive without red (the staff app has none): quiet, with a bin. */}
+            <Button
+              label={t("screens.setup.photos.removeShort")}
+              compact
+              variant="inverseSecondary"
+              icon={<IconTrash size={17} color={colors.white} strokeWidth={2} />}
+              onPress={onRemove}
+            />
+          </View>
+          {isCover ? null : (
+            <View className="flex-1">
+              <Button label={t("screens.setup.photos.setCover")} compact onPress={onCover} />
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 

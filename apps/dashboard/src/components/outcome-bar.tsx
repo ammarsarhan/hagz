@@ -22,9 +22,10 @@ import { Text } from "./text";
 // the other outcome as a white pill on the right. A game is Played by itself once it ends; staff
 // can flip it to No show, and back, until 24 hours after the end (the API's MARK_WINDOW_HOURS).
 //
-// The flip shows at once (user, 2026-11-26: it felt unsmooth waiting on the server): a tick, the
-// mark rolling over to the other one and the pill sliding to its new width; back again, with the
-// error, if the server refuses.
+// The flip waits for the server (user, 2026-11-27, replacing the optimistic flip of 2026-11-26,
+// which showed a change and then took it back when refused): the pill spins while it's asked, and
+// only once it's saved comes the tick, the mark rolling over to the other one and the pill sliding
+// to its new width. Refused, nothing moves and the HUD says why.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 
@@ -51,26 +52,30 @@ export function OutcomeBar({
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
-  // The mark as tapped, until the server's answer says the same.
-  const [tapped, setTapped] = useState<boolean | null>(null);
-  const saved = booking.status === "COMPLETED";
-  if (tapped !== null && tapped === saved) setTapped(null);
-  const played = tapped ?? saved;
+  // The mark the server saved, shown before the booking's read again catches up with it.
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [sending, setSending] = useState(false);
+  const read = booking.status === "COMPLETED";
+  if (saved !== null && saved === read) setSaved(null);
+  const played = saved ?? read;
 
   const flip = async () => {
+    if (sending) return;
     const next = !played;
-    setTapped(next);
-    void Haptics.selectionAsync();
+    setSending(true);
     const result = await send(
       api.POST("/v1/staff/venues/{venueId}/bookings/{bookingId}/mark", {
         params: { path: { venueId, bookingId: booking.id } },
         body: { outcome: next ? "COMPLETED" : "NO_SHOW" },
       }),
     );
+    setSending(false);
     if (!result.ok) {
-      setTapped(null);
       hud.show(hudMessage(result.error));
+      return;
     }
+    setSaved(next);
+    void Haptics.selectionAsync();
     // The Calendar shows the mark too.
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
     await onChanged();
@@ -103,7 +108,7 @@ export function OutcomeBar({
       detail={t("screens.booking.outcome.until", { time: until })}
     >
       <Animated.View layout={LinearTransition.duration(ROLL_MS)}>
-        <BarButton label={otherText} onPress={() => void flip()} />
+        <BarButton label={otherText} busy={sending} onPress={() => void flip()} />
       </Animated.View>
     </BottomBar>
   );

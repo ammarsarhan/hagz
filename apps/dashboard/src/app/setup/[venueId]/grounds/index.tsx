@@ -9,7 +9,8 @@ import { MAXIMUM_GROUNDS } from "@hagz/contracts";
 import { Button } from "@/components/button";
 import { DeleteGroundSheet } from "@/components/delete-ground-sheet";
 import { useHud } from "@/components/hud";
-import { IconChevronRight, IconPlus } from "@/components/icons";
+import { IconChevronRight, IconLayoutGrid, IconPlus } from "@/components/icons";
+import { RoundButton } from "@/components/nav";
 import { SetupLoading } from "@/components/setup-loading";
 import { StepScreen } from "@/components/step-screen";
 import { SwipeRow, useSwipeRows } from "@/components/swipe-row";
@@ -23,7 +24,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
 import { guarded } from "@/components/guarded";
-import { RULES } from "@/lib/access";
+import { RULES, useCan } from "@/lib/access";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -60,6 +61,9 @@ function GroundsList({
   const queryClient = useQueryClient();
   const decimals = decimalsOf(currency);
   const rows = useSwipeRows();
+  // The layout is the venue's (venue: manage), the grounds the schedule's: the button shows only to
+  // whoever can open it.
+  const can = useCan();
   const tap = (ground: Ground) => {
     if (!rows.closeOpen()) push(`/setup/${venueId}/grounds/${ground.id}`);
   };
@@ -133,6 +137,15 @@ function GroundsList({
       title={t("screens.setup.grounds.title")}
       subtitle={t("screens.setup.grounds.subtitle")}
       footer={<Button label={t("screens.setup.grounds.done")} onPress={() => router.back()} />}
+      navEnd={
+        can(RULES.venueForm) ? (
+          <RoundButton
+            icon={IconLayoutGrid}
+            label={t("screens.setup.grounds.editLayout")}
+            onPress={() => push(`/setup/${venueId}/layout`)}
+          />
+        ) : undefined
+      }
     >
       {/* As in iOS lists: the rows span the screen, so a swipe opens Delete at its very edge, while
           the lines between them stay inset to the gutter. The lines sit between the rows rather

@@ -1,6 +1,6 @@
 import { Booking, StaffHome } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
-import { staffHome } from "@/modules/bookings/application/staff-home";
+import { bookablePieces, staffHome } from "@/modules/bookings/application/staff-home";
 import { ALL_PERMISSIONS } from "@/modules/venues";
 import { venueAccess } from "@/modules/venues/application/access";
 import { prisma } from "@/platform/db/prisma";
@@ -51,6 +51,37 @@ const aDay = async () => {
   const day = await localDay(setup.marketplace.id, setup.hours[0] ?? new Date());
   return { ...setup, request, game, day };
 };
+
+describe("free hours cut into games the ground allows", () => {
+  it("cuts a run at the longest game, from its start", () => {
+    expect(bookablePieces(6, 1, 3)).toEqual([3, 3]);
+    expect(bookablePieces(5, 1, 3)).toEqual([3, 2]);
+    expect(bookablePieces(2, 1, 3)).toEqual([2]);
+  });
+
+  it("evens out a last piece shorter than the shortest game, or leaves it out", () => {
+    expect(bookablePieces(7, 2, 3)).toEqual([3, 2, 2]);
+    expect(bookablePieces(4, 2, 2)).toEqual([2, 2]);
+    expect(bookablePieces(5, 2, 2)).toEqual([2, 2]);
+    expect(bookablePieces(1, 2, 3)).toEqual([]);
+  });
+
+  it("shows four open hours at three at most as three and one", async () => {
+    const { venue, ground, hours, marketplace } = await aGround();
+    await prisma.groundSettings.update({
+      where: { groundId: ground.id },
+      data: { minimumSlots: 1, maximumSlots: 3 },
+    });
+    const owner = await staffAt(venue.id);
+    const day = await localDay(marketplace.id, hours[0] ?? new Date());
+    const res = await asStaff(owner.id, "GET", `/venues/${venue.id}/home?date=${day}`);
+    const home = StaffHome.parse(await res.json());
+    expect(home.free.map((run) => [run.startsAt, run.endsAt, run.slotIds.length])).toEqual([
+      [hours[0]?.toISOString(), hours[3]?.toISOString(), 3],
+      [hours[3]?.toISOString(), new Date((hours[3]?.getTime() ?? 0) + HOUR).toISOString(), 1],
+    ]);
+  });
+});
 
 describe("the Home tab", () => {
   it("counts what waits on a later day, its next games, the cash to take and its open hours", async () => {

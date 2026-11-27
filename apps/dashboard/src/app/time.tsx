@@ -187,7 +187,12 @@ function TimePage() {
           ? `${groundName(groundId)} · ${moneyOf(total, currency)}`
           : t(`${p}.freeBar`, { price: moneyOf(total, currency) })
       }
-      detail={slots.length > 1 ? t(`${p}.oneBooking`) : t(`${p}.bookOrHold`)}
+      // One booking only if a game here can run that long; else Book picks its first hours.
+      detail={
+        slots.length > 1 && slots.length <= (ground?.maximumSlots ?? 3)
+          ? t(`${p}.oneBooking`)
+          : t(`${p}.bookOrHold`)
+      }
     >
       <View className="flex-row gap-2">
         <BarButton label={t(`${p}.hold`)} onPress={() => book("/hold")} />

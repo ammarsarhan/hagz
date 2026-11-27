@@ -131,8 +131,16 @@ export const Game = z
       .meta({
         description: "Joined players, first to join first, once you've joined (or for the booker).",
       }),
-    bookerPhone: z.string().nullable().meta({
-      description: "Once you've joined, until 24 hours after kick-off.",
+    bookerPhone: z
+      .string()
+      .nullable()
+      .meta({
+        description:
+          "Once you've joined, from 12 hours before kick-off until 24 hours after (user, 2026-11-27: " +
+          "joining only to collect numbers stops paying off).",
+      }),
+    bookerPhoneFrom: Instant.nullable().meta({
+      description: "For a joined player, when the booker's number shows; null for anyone else.",
     }),
   })
   .meta({ id: "Game" });

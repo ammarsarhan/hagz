@@ -1,5 +1,12 @@
-import { useEffect, useRef, type ComponentRef, type ReactNode, type RefObject } from "react";
-import { Animated, ScrollView, View } from "react-native";
+import {
+  useEffect,
+  useRef,
+  type ComponentRef,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { Animated, ScrollView, View, type RefreshControlProps } from "react-native";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
 // them. The gap under the nav bar is padding inside the scroll, so rows scroll right up to the close
@@ -10,6 +17,11 @@ import { Animated, ScrollView, View } from "react-native";
 //
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
+//
+// Pull to refresh, the page's top and its header together: pass usePullToRefresh's `control` as
+// `refreshControl` and feed its scroll value from `onOffset`; wrap the NavBar in an Animated.View
+// styled with `followPull(scrollY)` so it comes down with the pull, and put the hook's `spinner`
+// (made with `offset: 0`) before it, in the gap it leaves at the top.
 // The room left under the last row.
 const ROOM = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
@@ -31,6 +43,8 @@ export function FadingScroll({
   topLine = true,
   controller,
   onRoom,
+  refreshControl,
+  onOffset,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
@@ -41,6 +55,9 @@ export function FadingScroll({
   controller?: RefObject<ScrollController | null>;
   // How far it can scroll (content less its own height), whenever either changes.
   onRoom?: (room: number) => void;
+  refreshControl?: ReactElement<RefreshControlProps>;
+  // The scroll offset as it changes, on the JS side.
+  onOffset?: (y: number) => void;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
@@ -76,6 +93,7 @@ export function FadingScroll({
         ref={scroll}
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
+        refreshControl={refreshControl}
         // A form inside it: a tap on another field or a button works first time, keyboard up or not.
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -96,6 +114,7 @@ export function FadingScroll({
           useNativeDriver: true,
           listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
             size.current.y = event.nativeEvent.contentOffset.y;
+            onOffset?.(event.nativeEvent.contentOffset.y);
           },
         })}
       >
@@ -105,6 +124,19 @@ export function FadingScroll({
     </View>
   );
 }
+
+// The nav bar following a pull past the top, so the header comes down with the page.
+export const followPull = (scrollY: Animated.Value) => ({
+  transform: [
+    {
+      translateY: scrollY.interpolate({
+        inputRange: [-1000, 0],
+        outputRange: [1000, 0],
+        extrapolate: "clamp" as const,
+      }),
+    },
+  ],
+});
 
 // The line under the bar once anything has scrolled beneath it, fading in over the first 12 pt.
 // Exported for screens that scroll a list of their own (Customers), inside a full-width View.

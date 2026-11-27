@@ -32,7 +32,7 @@ An invite link joins without approval, for either kind. Admins create and revoke
 
 ## Community games
 
-The owner or an admin lists their own booking as a community game (decided on 2026-11-19: members can't, so a community's games are always its organizers'). It's an ordinary [listing](listings.md) with a `communityId`, following the same rules and money: prepaid, share to the booker, 10% joining fee at the venue.
+The owner or an admin lists their own booking as a community game (decided on 2026-11-19: members can't, so a community's games are always its organizers'). It's an ordinary [listing](listings.md) with a `communityId`, following the same rules and money: prepaid, the share and its 10% joining fee paid to the booker, who pays the fee to the venue.
 
 - **Members only** until `publicAt`, if the booker sets one (for example, "open to everyone 24 hours before kick-off if it isn't full"). From then on it's in the public feed as well. Without `publicAt` it stays members-only.
 - It shows on the community's page and in members' Games feed, marked with the community's name.

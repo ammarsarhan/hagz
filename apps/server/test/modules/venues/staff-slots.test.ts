@@ -91,7 +91,14 @@ describe("reading a day", () => {
     const res = await call(viewer.id, "GET", `${path}/slots`);
     expect(res.status).toBe(200);
     const day = VenueSlots.parse(await res.json());
-    expect(day.slots.map((s) => s.id)).toEqual(slots.slice(0, 3).map((s) => s.id));
+    // The nearest day with slots: today's hours not yet started (all three before 7 pm, fewer
+    // during the evening), else tomorrow's, so the test passes at any time of day.
+    const dayOf = (at: Date) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(at);
+    const first = slots[0]?.startsAt ?? new Date();
+    expect(day.slots.map((s) => s.id)).toEqual(
+      slots.filter((s) => dayOf(s.startsAt) === dayOf(first)).map((s) => s.id),
+    );
     // How long a booking there may run, for picking a stretch of them.
     expect(day.grounds[0]).toMatchObject({ minimumSlots: 1, maximumSlots: 3 });
 
@@ -130,7 +137,7 @@ describe("blocking", () => {
   });
 
   it("refuses another venue's slots, and ones that started", async () => {
-    const { owner, path, venueId, groundId } = await aLiveGround();
+    const { owner, path, venueId } = await aLiveGround();
     const other = await aLiveGround();
     const res = await call(owner.id, "POST", `${path}/slots/block`, {
       slotIds: [other.slots[0]?.id],
@@ -141,9 +148,23 @@ describe("blocking", () => {
       slotIds: [other.slots[0]?.id],
     });
 
+    // On a second ground with no hours, so the started slot can't clash with a generated one when
+    // the test runs between 7 and 10 pm.
+    const spare = await prisma.ground.create({
+      data: {
+        venueId,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 1,
+        basePrice: 60000,
+        settings: { create: { scheduleVersion: 1 } },
+      },
+    });
     const started = await prisma.groundSlot.create({
       data: {
-        groundId,
+        groundId: spare.id,
         venueId,
         startsAt: new Date(Date.now() - 10 * 60_000),
         endsAt: new Date(Date.now() + 50 * 60_000),

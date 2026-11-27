@@ -68,6 +68,15 @@ describe("shortErrorMessage", () => {
     expect(shortErrorMessage(problem("PAY_AT_VENUE_LIMIT"), "en")).toBe("Something went wrong");
   });
 
+  it("says why a game can't be marked a no-show, not that something went wrong", () => {
+    expect(shortErrorMessage(problem("CHECKED_IN"), "en")).toBe(
+      "They scanned in, so not a no-show",
+    );
+    expect(errorMessage(problem("MARK_WINDOW_CLOSED"), "en")).toBe(
+      "A game can be marked until 24 hours after it ends.",
+    );
+  });
+
   it("says something went wrong for anything else, and offline when there was no answer", () => {
     expect(shortErrorMessage(problem("SOMETHING_NEW"), "en")).toBe("Something went wrong");
     expect(shortErrorMessage(new TypeError("Network request failed"), "en")).toBe("You're offline");
