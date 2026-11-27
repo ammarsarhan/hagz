@@ -53,6 +53,8 @@ type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number 
 
 // Venues are in Egypt for now; the answer names the venue's own timezone.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
+// More room under the last row than other screens leave, over FadingScroll's own (user, 2026-11-27).
+const HOME_END = 16;
 // Check in shows on a game this close to kick-off, until it ends.
 const CHECK_IN_AHEAD = 30 * 60_000;
 
@@ -171,8 +173,8 @@ export default function VenueHome() {
               </View>
               {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
             </Animated.View>
-            {/* Room for the shift above, so the end can still be reached. */}
-            <View style={{ height: lift }} />
+            {/* Room for the shift above, so the end can still be reached, and Home's own extra room. */}
+            <View style={{ height: lift + HOME_END }} />
           </FadingScroll>
         ) : null}
       </Animated.View>
