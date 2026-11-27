@@ -57,6 +57,9 @@ type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number 
 
 // Venues are in Egypt for now; the answer names the venue's own timezone.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
+// The cards: 236 pt wide, 12 pt apart (Figma D21c).
+const CARD_WIDTH = 236;
+const CARD_GAP = 12;
 // Check in shows on a game this close to kick-off, until it ends.
 const CHECK_IN_AHEAD = 30 * 60_000;
 
@@ -195,11 +198,15 @@ function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number
 
   return (
     <View>
+      {/* Snaps card by card, each coming to rest on the 20 pt margin. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        snapToInterval={CARD_WIDTH + CARD_GAP}
+        decelerationRate="fast"
+        disableIntervalMomentum
         style={{ marginHorizontal: -20, marginTop: 16 }}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: CARD_GAP }}
       >
         {cards.map((card) => (
           <Card
@@ -372,7 +379,8 @@ function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
       accessibilityRole="button"
       accessibilityLabel={`${big} ${small}`}
       onPress={onPress}
-      className="h-[172px] w-[236px] justify-between rounded-[18px] bg-chip p-[18px] active:opacity-60"
+      style={{ width: CARD_WIDTH }}
+      className="h-[172px] justify-between rounded-[18px] bg-chip p-[18px] active:opacity-60"
     >
       <View className="size-[52px] items-center justify-center rounded-full bg-white">
         <CardIcon size={22} color={colors.ink} strokeWidth={1.75} />
