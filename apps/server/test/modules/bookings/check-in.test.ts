@@ -158,14 +158,10 @@ describe("the booker's code", () => {
 });
 
 describe("by name, undo, and marking", () => {
-  it("ticks someone in by name, undoes it, and keeps a checked-in booker from being a no-show", async () => {
+  it("ticks someone in by name, undoes it, and keeps a scanned booker from being a no-show", async () => {
     const { booker, booking, clock, actor } = await setup();
     const ticked = await manualCheckIn(actor, booking.id, booker.customer.id, clock(10));
     expect(ticked.person).toMatchObject({ role: "BOOKER", manual: true });
-
-    await expect(
-      markBooking(actor, booking.id, { outcome: "NO_SHOW" }, clock(20)),
-    ).rejects.toMatchObject({ code: "CHECKED_IN" });
 
     const stranger = await signedIn("+201005550013");
     await expect(
@@ -176,6 +172,33 @@ describe("by name, undo, and marking", () => {
     const row = await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } });
     expect(row).toMatchObject({ checkedInAt: null, checkedInById: null, checkedInManually: false });
     await markBooking(actor, booking.id, { outcome: "NO_SHOW" }, clock(20));
+  });
+
+  it("lets a booker ticked in by name be marked a no-show after check-in closes, clearing it", async () => {
+    const { booker, booking, clock, actor } = await setup();
+    await manualCheckIn(actor, booking.id, booker.customer.id, clock(5));
+    // An hour after it ended: check-in has closed, so this is the only way to correct the tick.
+    await markBooking(actor, booking.id, { outcome: "NO_SHOW" }, clock(120));
+    const row = await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(row).toMatchObject({
+      status: "NO_SHOW",
+      checkedInAt: null,
+      checkedInById: null,
+      checkedInManually: false,
+    });
+    const event = await prisma.bookingEvent.findFirstOrThrow({
+      where: { bookingId: booking.id, type: "NO_SHOW" },
+    });
+    expect(event.data).toMatchObject({ undidCheckIn: true });
+  });
+
+  it("keeps a booker who scanned their code from being a no-show", async () => {
+    const { booker, booking, clock, actor } = await setup();
+    const { code } = await bookerCode(booker.customer.id, booking.id, clock(0));
+    await scanCheckIn(actor, code, clock(0));
+    await expect(
+      markBooking(actor, booking.id, { outcome: "NO_SHOW" }, clock(120)),
+    ).rejects.toMatchObject({ code: "CHECKED_IN" });
   });
 });
 

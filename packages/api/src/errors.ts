@@ -378,8 +378,8 @@ const messages = {
   },
   // Marking a game played or a no-show (staff).
   CHECKED_IN: {
-    en: "They checked in at the venue, so this can't be a no-show.",
-    ar: "سجّل حضوره في الملعب، لذلك لا يمكن اعتباره غيابًا.",
+    en: "They scanned their code at the venue, so this can't be a no-show.",
+    ar: "مسح رمزه في الملعب، لذلك لا يمكن اعتباره غيابًا.",
   },
   BOOKING_NOT_STARTED: {
     en: "A game can be marked once it has kicked off.",
@@ -476,7 +476,7 @@ const short = {
   JOINING_LIMIT: { en: "Only {limit} games at once", ar: "{limit} مباريات فقط في نفس الوقت" },
   JOINING_COOL_OFF: { en: "Join again within a day", ar: "انضم مجددًا خلال يوم" },
   REGULAR_OVERLAPS: { en: "Already a regular at this time", ar: "منتظم بالفعل في هذا الوقت" },
-  CHECKED_IN: { en: "They checked in, so not a no-show", ar: "سجّل حضوره، فلا يُعد غيابًا" },
+  CHECKED_IN: { en: "They scanned in, so not a no-show", ar: "مسح رمزه، فلا يُعد غيابًا" },
   BOOKING_NOT_STARTED: { en: "Mark it once it kicks off", ar: "سجّلها بعد بدء المباراة" },
   MARK_WINDOW_CLOSED: { en: "Too late to change it", ar: "فات وقت تغييرها" },
   BOOKING_STATUS_CONFLICT: { en: "This booking has moved on", ar: "تغيّر هذا الحجز بالفعل" },

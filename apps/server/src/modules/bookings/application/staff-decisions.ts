@@ -175,29 +175,41 @@ export const markBooking = async (
       endsAt: true,
       customerId: true,
       checkedInAt: true,
+      checkedInManually: true,
     });
     if (!booking) throw venueBookingNotFound();
     if (booking.status === outcome) return;
-    // A scanned or ticked-in booker came; undo the check-in (while it's open) if it was a mistake.
-    if (outcome === "NO_SHOW" && booking.checkedInAt) {
+    // A booker who scanned their code came: that's final. One staff ticked in by name is only
+    // staff's word, so marking them a no-show corrects it and clears the check-in (user,
+    // 2026-11-27).
+    if (outcome === "NO_SHOW" && booking.checkedInAt && !booking.checkedInManually) {
       throw new AppError({
         code: "CHECKED_IN",
         status: 409,
-        detail: "They checked in at the venue, so this can't be a no-show.",
+        detail: "They scanned their code at the venue, so this can't be a no-show.",
       });
     }
+    const undoesCheckIn = outcome === "NO_SHOW" && booking.checkedInAt !== null;
     if (!canMove(booking.status, outcome)) throw invalidTransition(booking.status, outcome);
     if (booking.startsAt > now) throw notStarted();
     if (now.getTime() > booking.endsAt.getTime() + MARK_WINDOW_HOURS * 60 * 60_000) {
       throw markClosed();
     }
-    await tx.booking.update({ where: { id: booking.id }, data: { status: outcome } });
+    await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: outcome,
+        ...(undoesCheckIn
+          ? { checkedInAt: null, checkedInById: null, checkedInManually: false }
+          : {}),
+      },
+    });
     await tx.bookingEvent.create({
       data: {
         bookingId: booking.id,
         type: BOOKING_EVENTS[outcome],
         staffId: actor.staffId,
-        data: { from: booking.status },
+        data: { from: booking.status, ...(undoesCheckIn ? { undidCheckIn: true } : {}) },
       },
     });
     await refreshCustomerCounters(tx, [booking.customerId]);
