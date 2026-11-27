@@ -16,7 +16,10 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 //
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
-const FADE = 28;
+// How tall each edge's fade is (user, 2026-11-27: a little less than 28), and the room left under
+// the last row, which stays 28 so nothing moves.
+const FADE = 22;
+const ROOM = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
 // flush NavBar pads under itself.
 const NAV_GAP = 14;
@@ -90,7 +93,7 @@ export function FadingScroll({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: FADE }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: ROOM }}
         onLayout={(event) => {
           size.current.height = event.nativeEvent.layout.height;
           measure();
