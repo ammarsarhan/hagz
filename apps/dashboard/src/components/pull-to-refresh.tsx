@@ -82,5 +82,6 @@ export function usePullToRefresh({
     </Animated.View>
   );
 
-  return { control, spinner };
+  // Held down with the spinner showing: a list can stop scrolling until it's back (`scrollEnabled`).
+  return { control, spinner, refreshing: pulled };
 }

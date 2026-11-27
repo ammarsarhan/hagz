@@ -185,6 +185,8 @@ function RegularPage() {
       <FadingScroll
         scrollY={compact.scrollY}
         refreshControl={pull.control}
+        // Held still while the spinner shows, until the regular is back.
+        scrollEnabled={!pull.refreshing}
         onOffset={(y) => {
           pullY.value = y;
         }}
