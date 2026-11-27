@@ -674,6 +674,7 @@ const ar: ArabicTranslations = {
         you: "أنت",
         whoHeading: "من يلعب",
         bookerTitle: "{{name}}، صاحب الحجز",
+        phoneFrom: "يظهر رقم {{name}} من {{when}}، حفاظًا على خصوصية أصحاب الحجوزات.",
         call: "اتصل بـ {{name}}",
         whatsapp: "راسل {{name}} على واتساب",
         leaveLine: "يمكنك المغادرة حتى بداية المباراة.",

@@ -607,6 +607,8 @@ const en = {
         you: "you",
         whoHeading: "Who’s playing",
         bookerTitle: "{{name}}, the booker",
+        // Joined, more than 12 hours before kick-off.
+        phoneFrom: "{{name}}'s number shows from {{when}}, to protect bookers' privacy.",
         call: "Call {{name}}",
         whatsapp: "Message {{name}} on WhatsApp",
         leaveLine: "You can leave until kick-off.",
