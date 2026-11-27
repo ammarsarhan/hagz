@@ -103,9 +103,18 @@ export default function VenueHome() {
   const banner = venue?.status === "MAINTENANCE" && !dismissedPauses.has(venueId);
   const [bannerHeight, setBannerHeight] = useState(0);
   const lift = banner ? bannerHeight : 0;
+  // A short day can't scroll the whole banner away: it goes as far as the page scrolls, fading to
+  // white on the way, so no grey sliver is left with its words cut off.
+  const [room, setRoom] = useState(0);
+  const travel = Math.max(Math.min(lift, room), 1);
   const up = scrollY.interpolate({
-    inputRange: [0, Math.max(lift, 1)],
-    outputRange: [0, -lift],
+    inputRange: [0, travel],
+    outputRange: [0, -Math.min(lift, travel)],
+    extrapolate: "clamp",
+  });
+  const whiten = scrollY.interpolate({
+    inputRange: [0, travel],
+    outputRange: [0, 1],
     extrapolate: "clamp",
   });
   const down = Animated.multiply(up, -1);
@@ -116,7 +125,7 @@ export default function VenueHome() {
         <PausedBanner
           key={venueId}
           up={up}
-          lift={lift}
+          whiten={whiten}
           onHeight={setBannerHeight}
           onDismissed={() => {
             dismissedPauses.add(venueId);
@@ -146,7 +155,7 @@ export default function VenueHome() {
         </View>
 
         {canSee ? (
-          <FadingScroll scrollY={scrollY}>
+          <FadingScroll scrollY={scrollY} onRoom={setRoom}>
             <Animated.View style={{ transform: [{ translateY: down }] }}>
               <View className="flex-row gap-2">
                 <Chip
@@ -355,13 +364,14 @@ const dismissedPauses = new Set<string>();
 
 function PausedBanner({
   up,
-  lift,
+  whiten,
   onHeight,
   onDismissed,
 }: {
   // How far scrolling has carried it up (0 to -lift), on the native driver.
   up: Animated.AnimatedInterpolation<number>;
-  lift: number;
+  // 0 to 1 over the same scroll: the banner and the status bar fading to white.
+  whiten: Animated.AnimatedInterpolation<number>;
   onHeight: (height: number) => void;
   onDismissed: () => void;
 }) {
@@ -429,6 +439,13 @@ function PausedBanner({
             </Pressable>
           </View>
         </Animated.View>
+        {/* White over it as it scrolls, so a banner the page can't scroll all the way off is gone
+            all the same. Touches pass through to the × and Reopen. */}
+        <Animated.View
+          pointerEvents="none"
+          className="absolute inset-0 bg-white"
+          style={{ opacity: whiten }}
+        />
       </Animated.View>
 
       {/* The status bar, grey over the banner, whitening as it scrolls under or folds away. Drawn
@@ -441,11 +458,7 @@ function PausedBanner({
         <Animated.View
           className="absolute inset-0 bg-white"
           style={{
-            opacity: up.interpolate({
-              inputRange: [-Math.max(lift, 1), 0],
-              outputRange: [1, 0],
-              extrapolate: "clamp",
-            }),
+            opacity: whiten,
           }}
         />
         <Animated.View
