@@ -45,6 +45,9 @@ type Game = components["schemas"]["CheckInBooking"];
 
 // The design's camera dark, and the frame's size.
 const DARK = "#1b1c1f";
+// Round the frame the camera shows through, dimmed (user, 2026-11-27): staff see what they're
+// pointing at before it's in the frame, which stays clear.
+const DIM = "rgba(27, 28, 31, 0.65)";
 const FRAME = 244;
 const CORNER = 36;
 const LINE = 4;
@@ -156,10 +159,10 @@ function Scanner() {
 
   const allowed = permission?.granted === true;
   const refused = permission !== null && !permission.granted;
-  const shade = { backgroundColor: DARK };
+  const shade = { backgroundColor: DIM };
 
   return (
-    <View className="flex-1" style={shade}>
+    <View className="flex-1" style={{ backgroundColor: DARK }}>
       <StatusBar style="light" />
       {allowed ? (
         <CameraView
