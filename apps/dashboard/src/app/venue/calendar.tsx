@@ -231,7 +231,7 @@ function VenueCalendar() {
   const requests = pending.data?.length ?? 0;
   // The inbox is for venues that approve bookings themselves; one that confirms at once still shows
   // it while a request waits (made before the switch).
-  const showsInbox = requests > 0 || autoConfirm === false;
+  const showsInbox = canSeeBookings && (requests > 0 || autoConfirm === false);
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
   // Until this week's bookings and its free hours are both in. A read still showing the week before

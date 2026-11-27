@@ -20,7 +20,7 @@ import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { guarded } from "@/components/guarded";
-import { RULES } from "@/lib/access";
+import { RULES, useCan } from "@/lib/access";
 
 // Booking requests (Figma D7 round 3, 538:2), from the Calendar's inbox button: the app bookings
 // waiting for the venue's answer, grouped by the game's day ("Today", "Tomorrow", "Thu 26 Nov"),
@@ -52,6 +52,7 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
   // The back button stays put; the title scrolls up into the bar beside it, as on a booking.
   const compact = useCompactTitle();
   const title = t("screens.requests.title");
+  const canAnswer = useCan()(RULES.book);
 
   const days = useMemo(() => {
     const groups = new Map<string, StaffBooking[]>();
@@ -108,6 +109,8 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
                 <Request
                   key={request.id}
                   request={request}
+                  // View only: the requests, read-only, without the answers.
+                  answers={canAnswer}
                   onApprove={() => answer(request, "approve")}
                   onDecline={() => answer(request, "decline")}
                 />
@@ -135,10 +138,12 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
 // answers. A hairline under each.
 function Request({
   request,
+  answers,
   onApprove,
   onDecline,
 }: {
   request: StaffBooking;
+  answers: boolean;
   onApprove: () => void;
   onDecline: () => void;
 }) {
@@ -178,10 +183,12 @@ function Request({
               price: money(request.total),
             })}
       </Text>
-      <View className="mt-3.5 flex-row gap-3">
-        <Answer label={t("screens.requests.approve")} primary onPress={onApprove} />
-        <Answer label={t("screens.requests.decline")} onPress={onDecline} />
-      </View>
+      {answers ? (
+        <View className="mt-3.5 flex-row gap-3">
+          <Answer label={t("screens.requests.approve")} primary onPress={onApprove} />
+          <Answer label={t("screens.requests.decline")} onPress={onDecline} />
+        </View>
+      ) : null}
     </View>
   );
 }

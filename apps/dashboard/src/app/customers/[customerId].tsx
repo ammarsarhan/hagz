@@ -27,7 +27,7 @@ import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan } from "@/lib/when";
 import { push } from "@/lib/navigation";
 import { guarded } from "@/components/guarded";
-import { RULES } from "@/lib/access";
+import { allows, RULES } from "@/lib/access";
 
 // A customer (Figma D11 619:2, edits 661:2): who they are, then Call, WhatsApp and Book; the team's
 // note with Edit; their games still to come (a regular's week to confirm says Confirm) and the
@@ -54,6 +54,8 @@ function CustomerPage() {
   const venueId = venue?.id ?? "";
   const canEdit = venue?.permissions.customers === "manage";
   const canBook = venue?.permissions.bookings === "manage";
+  // A game opens its booking only for those who may see bookings.
+  const canSeeBookings = allows(venue?.permissions, RULES.booking);
   const compact = useCompactTitle();
   const [sheet, setSheet] = useState<"note" | "details" | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -236,6 +238,7 @@ function CustomerPage() {
                     venueId={venueId}
                     upcoming
                     canConfirm={canBook}
+                    canOpen={canSeeBookings}
                   />
                 ))}
               </View>
@@ -246,7 +249,12 @@ function CustomerPage() {
                 <Text className="text-body text-ink-2">{t("screens.customer.notPlayed")}</Text>
               ) : (
                 shownPlayed.map((booking) => (
-                  <Game key={booking.id} booking={booking} venueId={venueId} />
+                  <Game
+                    key={booking.id}
+                    booking={booking}
+                    venueId={venueId}
+                    canOpen={canSeeBookings}
+                  />
                 ))
               )}
               {!showAll && (played.length > SHOWN || bookings.hasNextPage) ? (
@@ -350,12 +358,14 @@ function Game({
   venueId,
   upcoming = false,
   canConfirm = false,
+  canOpen = true,
 }: {
   booking: Booking;
   venueId: string;
   upcoming?: boolean;
   // Confirming a regular's week needs bookings: manage (view only: no Confirm, D14 625:430).
   canConfirm?: boolean;
+  canOpen?: boolean;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -382,6 +392,7 @@ function Game({
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={!canOpen}
       onPress={() => push(`/booking/${booking.id}`)}
       className="mb-4 flex-row items-stretch active:opacity-60"
     >

@@ -21,6 +21,7 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { VenuePauseSheet } from "@/components/venue-pause-sheet";
 import { isRTL } from "@/lib/language";
 import { fetched, queries } from "@/lib/queries";
+import { allows, RULES, type Rule } from "@/lib/access";
 import { regularsQuery } from "@/lib/regulars";
 import { invitationsQuery, membersQuery } from "@/lib/team";
 import { paymentLabel } from "@/lib/settings";
@@ -47,6 +48,8 @@ export default function VenueTab() {
   const venueId = venue?.id ?? "";
   const can = (area: keyof NonNullable<typeof venue>["permissions"]) =>
     venue !== undefined && venue.permissions[area] !== "none";
+  // A row shows when its screen would open (lib/access.ts), so none leads to a no-access page.
+  const is = (rule: Rule) => allows(venue?.permissions, rule);
 
   const photos = useQuery({ ...queries.photos(venueId), enabled: can("venue") });
   const grounds = useQuery({ ...queries.grounds(venueId), enabled: can("schedule") });
@@ -91,13 +94,13 @@ export default function VenueTab() {
   })();
 
   const people = [
-    can("customers") && {
+    is(RULES.customers) && {
       key: "customers",
       title: t(`${v}.customers`),
       body: t(`${v}.customersBody`),
       onPress: () => push("/customers"),
     },
-    can("bookings") && {
+    is(RULES.regulars) && {
       key: "regulars",
       title: t(`${v}.regulars`),
       body: regulars.data
@@ -107,7 +110,7 @@ export default function VenueTab() {
         : t(`${v}.regularsBody`),
       onPress: () => push("/regulars"),
     },
-    can("staff") && {
+    is(RULES.team) && {
       key: "team",
       title: t(`${v}.team`),
       body: team,
@@ -115,7 +118,7 @@ export default function VenueTab() {
     },
   ];
   const place = [
-    can("venue") && {
+    is(RULES.venueForm) && {
       key: "profile",
       title: t(`${v}.profile`),
       body: photos.data
@@ -123,7 +126,7 @@ export default function VenueTab() {
         : t(`${v}.profileBodyPlain`),
       onPress: open("details"),
     },
-    can("schedule") && {
+    is(RULES.scheduleForm) && {
       key: "grounds",
       title: t(`${v}.grounds`),
       body:
@@ -132,7 +135,7 @@ export default function VenueTab() {
           : t(`${v}.groundsBody`, { count: groundCount }),
       onPress: open("grounds"),
     },
-    can("schedule") && {
+    is(RULES.scheduleForm) && {
       key: "hours",
       title: t(`${v}.hours`),
       body: t(`${v}.hoursBody`),
@@ -140,20 +143,20 @@ export default function VenueTab() {
     },
   ];
   const rules = [
-    can("venue") && {
+    is(RULES.bookingSettings) && {
       key: "booking",
       title: t(`${v}.bookingSettings`),
       body: t(`${v}.bookingSettingsBody`),
       onPress: open("settings/booking"),
     },
-    can("venue") && {
+    is(RULES.venueForm) && {
       key: "payments",
       title: t(`${v}.payments`),
       body: settings ? payment(t, settings) : t(`${v}.paymentsBody`),
       // Without its cancellation policy: the Venue tab has a row of its own for that.
       onPress: open("settings?from=venue"),
     },
-    can("venue") && {
+    is(RULES.venueForm) && {
       key: "cancellations",
       title: t(`${v}.cancellations`),
       body: settings?.cancellationPolicy

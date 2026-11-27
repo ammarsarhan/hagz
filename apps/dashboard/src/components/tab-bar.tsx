@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { Easing, runOnJS, withTiming, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { allows, RULES } from "@/lib/access";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { isRTL } from "@/lib/language";
@@ -33,6 +34,8 @@ const TABS = {
   payments: { icon: IconWallet, label: "payments" },
   account: { icon: IconUserCircle, label: "account" },
 } as const;
+
+const TAB_RULES = { calendar: RULES.calendar, payments: RULES.payments } as const;
 
 // How much of the screen the bar takes, from the bottom edge (Screen measures above it).
 export const useTabBarHeight = () => ROW + HAIRLINE + useSafeAreaInsets().bottom;
@@ -73,6 +76,9 @@ export function TabBar({
       {state.routes.map((route, index) => {
         const tab = TABS[route.name as keyof typeof TABS];
         if (!tab) return null;
+        // A tab whose screen wouldn't open isn't offered (Calendar, Payments).
+        const rule = TAB_RULES[route.name as keyof typeof TAB_RULES];
+        if (rule && !allows(venue?.permissions, rule)) return null;
         const focused = state.index === index;
         const Icon = tab.icon;
         const label = t(`components.tabs.${tab.label}`);
