@@ -2,9 +2,12 @@ import {
   bookingsAdminRoutes,
   bookingsCustomerRoutes,
   bookingsCheckInRoutes,
+  bookingsConfirmLinkRoutes,
   bookingsGameRoutes,
   bookingsRegularRoutes,
   bookingsStaffRoutes,
+  applyHoursChange,
+  groundRemoved,
 } from "@/modules/bookings";
 import {
   adminAuthRoutes,
@@ -23,6 +26,8 @@ import {
   venuesPublicRoutes,
   venuesCustomerRoutes,
   venuesStaffRoutes,
+  whenGroundRemoved,
+  whenHoursChange,
 } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
@@ -49,9 +54,13 @@ export const router = createRouter();
 
 // Hooks that let a lower module reach what another owns, without importing it: admin requests check
 // the admin is still active (identity owns their account), and an amenity made unplaceable leaves
-// every layout (venues owns layouts, and reads locations).
+// every layout (venues owns layouts, and reads locations), and deleting a ground reaches the
+// requests and regulars on it, and new hours reach the requests and regulars in the ones they close
+// (bookings owns them, and reads venues).
 checkAdminsWith(ensureAdminActive);
 whenAmenityUnplaceable(removeAmenityFromLayouts);
+whenGroundRemoved(groundRemoved);
+whenHoursChange(applyHoursChange);
 
 router.use(requestId);
 router.use(requestContext);
@@ -72,6 +81,7 @@ router.route("/v1", paymentsCustomerRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", bookingsStaffRoutes);
 router.route("/v1", bookingsRegularRoutes);
+router.route("/v1", bookingsConfirmLinkRoutes);
 router.route("/v1", bookingsGameRoutes);
 router.route("/v1", bookingsCheckInRoutes);
 router.route("/v1", venuesCustomerRoutes);

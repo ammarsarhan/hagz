@@ -6,6 +6,9 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Animated, Pressable, SectionList, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { TopHairline } from "@/components/fading-scroll";
+import { Empty } from "@/components/empty";
+import { NoCustomersArt } from "@/components/empty-art";
 import { NewCustomer, NoMatchArt, PAUSE_MS } from "@/components/hold-for";
 import { useHud } from "@/components/hud";
 import { IconChevronRight, IconPlus, IconSearch } from "@/components/icons";
@@ -19,6 +22,9 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { intlLocale, isRTL } from "@/lib/language";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // The venue's customers (Figma D11 557:2), from the Venue tab: A to Z under their first letters,
 // searched by name or number. Each row: the name (Walk-in for someone staff entered), how many
@@ -29,7 +35,7 @@ type Customer = components["schemas"]["VenueCustomer"];
 const PAGE = 50;
 const DAY_MS = 86_400_000;
 
-export default function Customers() {
+function Customers() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -165,9 +171,16 @@ export default function Customers() {
         </Text>
       </View>
     ) : (
-      <Text className="mt-4 text-body text-ink-2" style={{ maxWidth: "75%" }}>
-        {t("screens.customers.none")}
-      </Text>
+      <Empty
+        art={<NoCustomersArt scale={0.8} />}
+        title={t("screens.customers.noneTitle")}
+        body={t("screens.customers.none")}
+        action={
+          canAdd
+            ? { label: t("screens.customers.addButton"), onPress: () => setAdding(true) }
+            : undefined
+        }
+      />
     );
 
   return (
@@ -193,38 +206,41 @@ export default function Customers() {
           ) : undefined
         }
       />
-      <SectionList
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-        sections={searching ? [] : sections}
-        keyExtractor={(customer) => customer.id}
-        ListHeaderComponent={header}
-        ListEmptyComponent={empty}
-        ListFooterComponent={
-          list.isFetchingNextPage ? (
-            <ActivityIndicator className="my-6" color={colors.ink3} />
-          ) : undefined
-        }
-        stickySectionHeadersEnabled={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
-        }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: compact.scrollY } } }], {
-          // A plain list (its typing is simpler), so the title follows on the JS side.
-          useNativeDriver: false,
-        })}
-        scrollEventThrottle={16}
-        renderSectionHeader={({ section }) => (
-          <Text className="mt-5 text-label font-medium text-ink-2">{section.title}</Text>
-        )}
-        renderItem={({ item, index, section }) => (
-          <Row customer={item} last={index === section.data.length - 1} />
-        )}
-      />
+      {/* Full width, so the line under the bar spans the gutters, as on every other screen. */}
+      <View className="-mx-5 flex-1">
+        <SectionList
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          sections={searching ? [] : sections}
+          keyExtractor={(customer) => customer.id}
+          ListHeaderComponent={header}
+          ListEmptyComponent={empty}
+          ListFooterComponent={
+            list.isFetchingNextPage ? (
+              <ActivityIndicator className="my-6" color={colors.ink3} />
+            ) : undefined
+          }
+          stickySectionHeadersEnabled={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
+          }}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: compact.scrollY } } }], {
+            // A plain list (its typing is simpler), so the title follows on the JS side.
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
+          renderSectionHeader={({ section }) => (
+            <Text className="mt-5 text-label font-medium text-ink-2">{section.title}</Text>
+          )}
+          renderItem={({ item, index, section }) => (
+            <Row customer={item} last={index === section.data.length - 1} />
+          )}
+        />
+        <TopHairline scrollY={compact.scrollY} />
+      </View>
       <Sheet
         visible={adding}
         onClose={() => setAdding(false)}
@@ -261,7 +277,7 @@ function Row({ customer, last }: { customer: Customer; last: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/customers/${customer.id}`)}
+      onPress={() => push(`/customers/${customer.id}`)}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${last ? "" : "border-b border-border"}`}
     >
       <View className="flex-1">
@@ -315,3 +331,5 @@ const lastLabel = (at: string, t: TFunction) => {
     }).format(date),
   });
 };
+
+export default guarded(RULES.customers, Customers);

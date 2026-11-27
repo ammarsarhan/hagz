@@ -50,7 +50,7 @@ export const summarySelect = {
       marketplace: { select: { currency: true, timezone: true } },
     },
   },
-  ground: { select: { id: true, sport: true, size: true, ...names } },
+  ground: { select: { id: true, sport: true, size: true, status: true, ...names } },
   customer: { select: { name: true, phone: true } },
 } as const satisfies Prisma.BookingSelect;
 
@@ -73,6 +73,8 @@ export const presentSummary = (booking: SummaryRow): AdminBooking => ({
     name: groundName(booking.ground.translations),
     sport: booking.ground.sport,
     size: booking.ground.size,
+    // Removed by staff, gone or going (user, 2026-11-27: struck through in the admin web).
+    deleted: booking.ground.status === "REMOVING" || booking.ground.status === "DELETED",
   },
   customer: { name: booking.customer.name, phone: booking.customer.phone },
   source: booking.creatorId ? "STAFF" : "APP",

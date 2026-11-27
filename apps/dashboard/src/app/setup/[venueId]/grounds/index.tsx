@@ -1,11 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Fragment } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import type { components } from "@hagz/api";
 import { MAXIMUM_GROUNDS } from "@hagz/contracts";
 import { Button } from "@/components/button";
+import { DeleteGroundSheet } from "@/components/delete-ground-sheet";
 import { useHud } from "@/components/hud";
 import { IconChevronRight, IconPlus } from "@/components/icons";
 import { SetupLoading } from "@/components/setup-loading";
@@ -18,13 +20,18 @@ import { colors } from "@/lib/colors";
 import { groundLine, type Ground } from "@/lib/grounds";
 import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
-import { afterVenueWrite, queries } from "@/lib/queries";
+import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
 // left shows Delete, like any iOS list. "Add a ground" walks through the four screens under
 // [groundId]. Each change is saved as it's made, so Done only leaves.
-export default function SetupGrounds() {
+type GroundRemoval = components["schemas"]["GroundRemoval"];
+
+function SetupGrounds() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   const grounds = useQuery(queries.grounds(venueId));
@@ -54,54 +61,71 @@ function GroundsList({
   const decimals = decimalsOf(currency);
   const rows = useSwipeRows();
   const tap = (ground: Ground) => {
-    if (!rows.closeOpen()) router.push(`/setup/${venueId}/grounds/${ground.id}`);
+    if (!rows.closeOpen()) push(`/setup/${venueId}/grounds/${ground.id}`);
   };
 
-  // Asked first: the ground is kept on the server for booking history, but there's no bringing it
-  // back from the app. It leaves the list straight away; a failure puts it back and says why.
-  const remove = (ground: Ground, row: SwipeableMethods | null) => {
-    const close = () => {
+  // Asked first (user, 2026-11-27): a sheet says what it leaves behind (bookings still to come go
+  // ahead and keep it on the calendar, marked Deleted; its regulars end with it), and its Delete
+  // asks once more in a short native alert. The ground is kept on the server for booking history,
+  // but there's no bringing it back from the app. It leaves the list once the sheet has slid away;
+  // a failure puts it back and says why.
+  const [asking, setAsking] = useState<{
+    ground: Ground;
+    removal: GroundRemoval;
+    row: SwipeableMethods | null;
+  } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const confirmed = useRef(false);
+
+  const ask = async (ground: Ground, row: SwipeableMethods | null) => {
+    const preview = await send(
+      api.GET("/v1/staff/venues/{venueId}/grounds/{groundId}/removal", {
+        params: { path: { venueId, groundId: ground.id } },
+      }),
+    );
+    if (!preview.ok) {
+      hud.show(hudMessage(preview.error));
       row?.close();
       rows.forget();
-    };
-    Alert.alert(
-      t("screens.setup.grounds.deleteTitle", {
-        name: ground.name ?? t("screens.setup.grounds.unnamed"),
+      return;
+    }
+    confirmed.current = false;
+    setAsking({ ground, removal: preview.data, row });
+    setSheetOpen(true);
+  };
+
+  const remove = async (ground: Ground) => {
+    const key = queries.grounds(venueId).queryKey;
+    queryClient.setQueryData(key, (list) => list?.filter((g) => g.id !== ground.id));
+    const result = await send(
+      api.DELETE("/v1/staff/venues/{venueId}/grounds/{groundId}", {
+        params: { path: { venueId, groundId: ground.id } },
       }),
-      t("screens.setup.grounds.deleteBody"),
-      [
-        { text: t("screens.setup.grounds.cancel"), style: "cancel", onPress: close },
-        {
-          text: t("screens.setup.grounds.deleteConfirm"),
-          style: "destructive",
-          onPress: () => {
-            rows.forget();
-            void (async () => {
-              const key = queries.grounds(venueId).queryKey;
-              queryClient.setQueryData(key, (list) => list?.filter((g) => g.id !== ground.id));
-              const result = await send(
-                api.DELETE("/v1/staff/venues/{venueId}/grounds/{groundId}", {
-                  params: { path: { venueId, groundId: ground.id } },
-                }),
-              );
-              if (!result.ok) {
-                hud.show(hudMessage(result.error));
-                // Not deleted: the grounds come back as the server has them.
-                void afterVenueWrite(queryClient, venueId, { also: [key] });
-                return;
-              }
-              // Already out of the list; its week goes from the cache, and the checklist and the
-              // draft card follow.
-              queryClient.removeQueries({
-                queryKey: queries.schedule(venueId, ground.id).queryKey,
-                exact: true,
-              });
-              void afterVenueWrite(queryClient, venueId);
-            })();
-          },
-        },
-      ],
     );
+    if (!result.ok) {
+      hud.show(hudMessage(result.error));
+      // Not deleted: the grounds come back as the server has them.
+      void afterVenueWrite(queryClient, venueId, { also: [key] });
+      return;
+    }
+    // Already out of the list; its week goes from the cache, and the checklist and the draft card
+    // follow.
+    queryClient.removeQueries({
+      queryKey: queries.schedule(venueId, ground.id).queryKey,
+      exact: true,
+    });
+    void afterVenueWrite(queryClient, venueId);
+    // The calendar's weeks (the ground now shows faint there, or is gone), its declined requests and
+    // its regulars' let-go weeks and end dates.
+    void afterBookedChange(queryClient, venueId);
+  };
+
+  const sheetGone = () => {
+    if (!asking) return;
+    if (confirmed.current) void remove(asking.ground);
+    else asking.row?.close();
+    rows.forget();
+    setAsking(null);
   };
 
   return (
@@ -125,7 +149,7 @@ function GroundsList({
               })}
               onPress={() => tap(ground)}
               onOpen={rows.opened}
-              onDelete={(row) => remove(ground, row)}
+              onDelete={(row) => void ask(ground, row)}
             />
             <View className="mx-5 h-px bg-border" />
           </Fragment>
@@ -134,7 +158,7 @@ function GroundsList({
       {grounds.length < MAXIMUM_GROUNDS ? (
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push(`/setup/${venueId}/grounds/new`)}
+          onPress={() => push(`/setup/${venueId}/grounds/new`)}
           hitSlop={8}
           className="flex-row items-center gap-1.5 self-start py-4 active:opacity-60"
         >
@@ -143,6 +167,19 @@ function GroundsList({
             {t("screens.setup.grounds.add")}
           </Text>
         </Pressable>
+      ) : null}
+      {asking ? (
+        <DeleteGroundSheet
+          name={asking.ground.name ?? t("screens.setup.grounds.unnamed")}
+          removal={asking.removal}
+          visible={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onHidden={sheetGone}
+          onDelete={() => {
+            confirmed.current = true;
+            setSheetOpen(false);
+          }}
+        />
       ) : null}
     </StepScreen>
   );
@@ -189,3 +226,5 @@ function Row({
     </SwipeRow>
   );
 }
+
+export default guarded(RULES.scheduleForm, SetupGrounds);

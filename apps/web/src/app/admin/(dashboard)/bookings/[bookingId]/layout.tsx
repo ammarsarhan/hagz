@@ -64,7 +64,16 @@ function BookingFrame({ bookingId, children }: { bookingId: string; children: Re
               <Tag tone={statusTone(booking.status)}>{statusLabel[booking.status]}</Tag>
             </div>
             <p className="mt-1 text-body text-ink-2">
-              {[venueName, booking.ground.name].filter(Boolean).join(" · ")} ·{" "}
+              {venueName}
+              {booking.ground.name ? (
+                <>
+                  {" · "}
+                  <span className={booking.ground.deleted ? "line-through" : undefined}>
+                    {booking.ground.name}
+                  </span>
+                </>
+              ) : null}{" "}
+              ·{" "}
               <span className="tabular-nums">
                 {bookingTime(booking.startsAt, booking.endsAt, booking.timezone)}
               </span>

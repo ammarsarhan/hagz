@@ -241,3 +241,64 @@ export type ScheduleHour = z.infer<typeof ScheduleHour>;
 export type ScheduleDay = z.infer<typeof ScheduleDay>;
 export type WeekSchedule = z.infer<typeof WeekSchedule>;
 export type CopySchedule = z.infer<typeof CopySchedule>;
+
+// What removing a ground leaves behind (user, 2026-11-27), for the warning before it's removed.
+export const GroundRemoval = z
+  .object({
+    bookings: z.int().meta({
+      description:
+        "Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar.",
+    }),
+    requests: z.int().meta({
+      description: "Booking requests waiting for the venue on it: declined when it's removed.",
+    }),
+    lastEndsAt: z.iso.datetime().nullable().meta({
+      description: "When the last of them ends, and the ground goes for good; null with none.",
+    }),
+    regulars: z
+      .array(
+        z.object({
+          id: z.uuid(),
+          name: z.string().meta({ description: "The customer's first name." }),
+          lastWeek: z.iso.date().nullable().meta({
+            description:
+              "Its last confirmed week, which still happens as booked; null with none. The regular itself ends when it's removed.",
+          }),
+        }),
+      )
+      .meta({
+        description:
+          "Regulars on it, not ended: their waiting weeks are let go and each ends at once; confirmed weeks still happen.",
+      }),
+  })
+  .meta({ id: "GroundRemoval" });
+
+export type GroundRemoval = z.infer<typeof GroundRemoval>;
+
+// What a new week of hours would leave behind on a ground (user, 2026-11-27), for the warning
+// before it's saved. Only what falls in hours it would close counts.
+export const SchedulePreview = z
+  .object({
+    bookings: z.int().meta({
+      description:
+        "Bookings and holds still ahead in hours it closes, requests and regulars' waiting weeks aside: they go ahead as booked.",
+    }),
+    requests: z.int().meta({
+      description: "Booking requests waiting in hours it closes: declined when it's saved.",
+    }),
+    regulars: z
+      .array(
+        z.object({
+          id: z.uuid(),
+          name: z.string().meta({ description: "The customer's first name." }),
+          lastWeek: z.iso.date().nullable().meta({
+            description:
+              "Its last confirmed week, which still happens as booked; null with none. The regular ends when it's saved, its waiting weeks let go.",
+          }),
+        }),
+      )
+      .meta({ description: "Regulars whose weekly time it closes, wholly or in part." }),
+  })
+  .meta({ id: "SchedulePreview" });
+
+export type SchedulePreview = z.infer<typeof SchedulePreview>;

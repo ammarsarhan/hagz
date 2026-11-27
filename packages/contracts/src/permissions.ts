@@ -23,3 +23,16 @@ export const StaffPermissions = z
 export type PermissionLevel = z.infer<typeof PermissionLevel>;
 export type StaffPermissions = z.infer<typeof StaffPermissions>;
 export type PermissionArea = keyof StaffPermissions;
+
+// What a new venue's invitations offer (VenueSettings.defaultPermissions): front-desk work (the
+// calendar, customers, taking cash) without money, staff or the listing. Here so the staff app's
+// Invite starts from the same access the server would give.
+export const DEFAULT_INVITATION_PERMISSIONS: StaffPermissions = {
+  bookings: "manage",
+  customers: "manage",
+  schedule: "view",
+  payments: "manage",
+  finance: "none",
+  staff: "none",
+  venue: "view",
+};

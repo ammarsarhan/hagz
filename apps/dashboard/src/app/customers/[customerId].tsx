@@ -25,6 +25,9 @@ import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan } from "@/lib/when";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { allows, RULES } from "@/lib/access";
 
 // A customer (Figma D11 619:2, edits 661:2): who they are, then Call, WhatsApp and Book; the team's
 // note with Edit; their games still to come (a regular's week to confirm says Confirm) and the
@@ -44,13 +47,15 @@ const PLAYED = new Set(["COMPLETED", "NO_SHOW", "CONFIRMED"]);
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
-export default function CustomerPage() {
+function CustomerPage() {
   const { t } = useTranslation();
   const { customerId = "" } = useLocalSearchParams<{ customerId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const canEdit = venue?.permissions.customers === "manage";
   const canBook = venue?.permissions.bookings === "manage";
+  // A game opens its booking only for those who may see bookings.
+  const canSeeBookings = allows(venue?.permissions, RULES.booking);
   const compact = useCompactTitle();
   const [sheet, setSheet] = useState<"note" | "details" | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -184,7 +189,7 @@ export default function CustomerPage() {
               label={t("screens.customer.book")}
               primary
               onPress={() =>
-                router.push({
+                push({
                   pathname: "/book",
                   params: { forId: person.id, forName: person.name },
                 })
@@ -233,6 +238,7 @@ export default function CustomerPage() {
                     venueId={venueId}
                     upcoming
                     canConfirm={canBook}
+                    canOpen={canSeeBookings}
                   />
                 ))}
               </View>
@@ -243,7 +249,12 @@ export default function CustomerPage() {
                 <Text className="text-body text-ink-2">{t("screens.customer.notPlayed")}</Text>
               ) : (
                 shownPlayed.map((booking) => (
-                  <Game key={booking.id} booking={booking} venueId={venueId} />
+                  <Game
+                    key={booking.id}
+                    booking={booking}
+                    venueId={venueId}
+                    canOpen={canSeeBookings}
+                  />
                 ))
               )}
               {!showAll && (played.length > SHOWN || bookings.hasNextPage) ? (
@@ -347,12 +358,14 @@ function Game({
   venueId,
   upcoming = false,
   canConfirm = false,
+  canOpen = true,
 }: {
   booking: Booking;
   venueId: string;
   upcoming?: boolean;
   // Confirming a regular's week needs bookings: manage (view only: no Confirm, D14 625:430).
   canConfirm?: boolean;
+  canOpen?: boolean;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -371,6 +384,7 @@ function Game({
       }),
     );
     if (!result.ok) hud.show(hudMessage(result.error));
+    void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] });
     await queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
     setConfirming(false);
   };
@@ -378,7 +392,8 @@ function Game({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/booking/${booking.id}`)}
+      disabled={!canOpen}
+      onPress={() => push(`/booking/${booking.id}`)}
       className="mb-4 flex-row items-stretch active:opacity-60"
     >
       <View className="w-14">
@@ -608,7 +623,7 @@ function DetailsSheet({
             hitSlop={8}
             onPress={() => {
               onClose();
-              router.push(`/customers/${taken.id}`);
+              push(`/customers/${taken.id}`);
             }}
             className="active:opacity-60"
           >
@@ -635,3 +650,5 @@ function DetailsSheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.customers, CustomerPage);

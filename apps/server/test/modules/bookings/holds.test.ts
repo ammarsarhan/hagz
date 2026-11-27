@@ -101,6 +101,42 @@ describe("staff holds", () => {
     expect(await twice.json()).toMatchObject({ code: "HOLD_ALREADY_EXTENDED" });
   });
 
+  it("a new hold length is for holds made or extended from now on", async () => {
+    const { venue, ground, hours } = await aGround({ settings: { staffHoldMinutes: 10 } });
+    const owner = await staffAt(venue.id);
+    const customer = { name: "Karim", phone: "+201005551234" };
+    const before = await held(owner.id, venue.id, {
+      groundId: ground.id,
+      ...at(hours, 0, 1),
+      customer,
+    });
+    const changed = await asStaff(owner.id, "PATCH", `/venues/${venue.id}/booking-settings`, {
+      staffHoldMinutes: 30,
+    });
+    expect(changed.status).toBe(200);
+
+    // The hold already running keeps its deadline.
+    const kept = await prisma.booking.findUniqueOrThrow({ where: { id: before.id } });
+    expect(kept.expiresAt?.toISOString()).toBe(before.expiresAt);
+    // A new one runs for the new length, and so does an extension.
+    const after = await held(owner.id, venue.id, {
+      groundId: ground.id,
+      ...at(hours, 2, 3),
+      customer,
+    });
+    expect(
+      new Date(after.expiresAt ?? 0).getTime() - new Date(after.createdAt).getTime(),
+    ).toBeGreaterThanOrEqual(30 * 60_000 - 5_000);
+    const extended = StaffBookingDetail.parse(
+      await (
+        await asStaff(owner.id, "POST", `/venues/${venue.id}/holds/${before.id}/extend`)
+      ).json(),
+    );
+    expect(new Date(extended.expiresAt ?? 0).getTime()).toBe(
+      new Date(before.expiresAt ?? 0).getTime() + 30 * 60_000,
+    );
+  });
+
   it("releases a hold at once, or the sweep frees it when it runs out", async () => {
     const { venue, ground, hours } = await aGround();
     const owner = await staffAt(venue.id);

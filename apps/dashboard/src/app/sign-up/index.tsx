@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { useTranslation } from "react-i18next";
 import { isCompletePhone, toE164 } from "@/lib/phone";
+import { push } from "@/lib/navigation";
 
 // Sign up, step 1: the mobile number. The API answers the same whether or not it has an account
 // (no enumeration); an existing account only shows up after the code is confirmed.
@@ -34,7 +35,7 @@ export default function SignUpPhone() {
       else hud.show(hudMessage(result.error));
       return;
     }
-    router.push({
+    push({
       pathname: "/sign-up/code",
       params: { phone, resendAfter: String(result.data.resendAfter) },
     });

@@ -37,6 +37,7 @@ import { isRTL } from "@/lib/language";
 import { addressAt, type Coordinates, type Place } from "@/lib/places";
 import { areas, queries, reference } from "@/lib/queries";
 import { contactSupport, hasSupport } from "@/lib/support";
+import { push } from "@/lib/navigation";
 
 // Adding a venue, step 3 (Figma "Venue creation · 3 Find your venue", 282:2, "· 5 Adjust the pin",
 // 283:2 and "Confirm the area · B", 295:2): one full-screen map the owner never leaves, with the
@@ -297,7 +298,7 @@ export default function CreateVenuePlace() {
   // to the map once the draft exists, and closing the checklist lands on first run.
   const openSetup = (venueId: string) => {
     if (router.canDismiss()) router.dismissAll();
-    router.push({ pathname: "/setup/[venueId]", params: { venueId } });
+    push({ pathname: "/setup/[venueId]", params: { venueId } });
   };
 
   const create = async () => {

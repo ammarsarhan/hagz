@@ -180,6 +180,53 @@ describe("unblocking", () => {
     expect((await slot(a?.id ?? "")).status).toBe("AVAILABLE");
     expect(await queued()).toEqual([groundId]);
   });
+
+  it("keeps who closed them, when and why, until they open again", async () => {
+    const { owner, path, slots } = await aLiveGround();
+    const [a, b] = slots;
+    const firstName = (await prisma.staff.findUniqueOrThrow({ where: { id: owner.id } })).name
+      .trim()
+      .split(/\s+/)[0];
+    const closed = await call(owner.id, "POST", `${path}/slots/block`, {
+      slotIds: [a?.id, b?.id],
+      note: "  Floodlight repair ",
+    });
+    expect(closed.status).toBe(200);
+    const [first] = ChangedSlots.parse(await closed.json()).slots;
+    expect(first?.closed).toMatchObject({ note: "Floodlight repair", by: firstName });
+    const day = await call(owner.id, "GET", `${path}/slots?date=${first?.startsAt.slice(0, 10)}`);
+    expect(
+      VenueSlots.parse(await day.json()).slots.find((one) => one.id === a?.id)?.closed?.note,
+    ).toBe("Floodlight repair");
+
+    // The note changes; who closed them and when stay.
+    const noted = await call(owner.id, "PUT", `${path}/slots/note`, {
+      slotIds: [a?.id],
+      note: "Back Thursday",
+    });
+    expect(noted.status).toBe(200);
+    expect(ChangedSlots.parse(await noted.json()).slots[0]?.closed).toMatchObject({
+      note: "Back Thursday",
+      by: firstName,
+      at: first?.closed?.at,
+    });
+    expect(
+      await prisma.venueEvent.count({ where: { type: "SLOTS_NOTE_CHANGED", staffId: owner.id } }),
+    ).toBe(1);
+
+    // Opened again, it has none of it; a free slot has no note to change.
+    await call(owner.id, "POST", `${path}/slots/unblock`, { slotIds: [a?.id] });
+    expect(await slot(a?.id ?? "")).toMatchObject({
+      blockNote: null,
+      blockedById: null,
+      blockedAt: null,
+    });
+    const free = await call(owner.id, "PUT", `${path}/slots/note`, {
+      slotIds: [a?.id],
+      note: null,
+    });
+    expect(free.status).toBe(409);
+  });
 });
 
 describe("pricing by hand", () => {

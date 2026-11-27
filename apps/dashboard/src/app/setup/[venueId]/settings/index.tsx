@@ -16,6 +16,7 @@ import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, inputClass } from "@/components/field";
 import { GroupHeading } from "@/components/group-heading";
+import { NoticeSheet } from "@/components/notice-sheet";
 import { IconAlertTriangle, IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -34,28 +35,40 @@ import {
   DEFAULT_LOYALTY,
   LOYALTY_STAMPS,
   LOYALTY_WINDOWS,
-  NOTICE_CHOICES,
   PAYMENT_MODES,
   noticeLabel,
   paymentLabel,
-  type MinimumNotice,
   type PaymentMode,
 } from "@/lib/settings";
 import { useSaveSettings, type VenueDetail } from "@/lib/venue-edit";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Policy" (Figma "Payments · A Plain list", 326:2), laid out like the account screen's
 // groups (user, 2026-11-15): its headings and rows, each value on the grey line under its title. No
 // Save button. Each change is saved as it's made; the two choices with more to
 // them open sheets ("How players pay", 318:2, and when booking closes), and the cancellation policy
 // has screens of its own (settings/cancellation).
-export default function SetupSettings() {
-  const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
+function SetupSettings() {
+  const { venueId = "", from } = useLocalSearchParams<{ venueId: string; from?: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
-  return <SettingsList venueId={venueId} venue={venue.data} />;
+  return <SettingsList venueId={venueId} venue={venue.data} fromVenue={from === "venue"} />;
 }
 
-function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
+// From the Venue tab (Payments), how bookings are confirmed and when they close are on its Settings
+// page, and the cancellation policy has its own row (user, 2026-11-26). Setup's checklist item
+// keeps them all.
+function SettingsList({
+  venueId,
+  venue,
+  fromVenue,
+}: {
+  venueId: string;
+  venue: VenueDetail;
+  fromVenue: boolean;
+}) {
   const { t } = useTranslation();
   const compact = useCompactTitle();
   const save = useSaveSettings(venueId);
@@ -70,6 +83,10 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   const [loyaltyKey, setLoyaltyKey] = useState(0);
   const loyalty = settings.loyalty ?? DEFAULT_LOYALTY;
   const policy = settings.cancellationPolicy;
+  // Named as the Venue tab's row that opened it.
+  const title = fromVenue
+    ? t("screens.venueTab.payments")
+    : t("screens.setup.items.SETTINGS.title");
   // As on the account screen.
   const chevron = (
     <IconChevronRight
@@ -89,40 +106,49 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
             button={
               <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
             }
-            title={t("screens.setup.items.SETTINGS.title")}
+            title={title}
             style={compact.style}
           />
         }
       />
       <FadingScroll scrollY={compact.scrollY}>
         <Title
-          subtitle={t("screens.setup.settings.subtitle")}
+          subtitle={t(
+            fromVenue ? "screens.setup.settings.venueSubtitle" : "screens.setup.settings.subtitle",
+          )}
           onTitleLayout={compact.onTitleLayout}
         >
-          {t("screens.setup.items.SETTINGS.title")}
+          {title}
         </Title>
 
-        <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
-        <SettingsRow
-          title={t("screens.setup.settings.autoConfirm")}
-          body={t("screens.setup.settings.autoConfirmBody")}
-          trailing={
-            <Switch
-              accessibilityLabel={t("screens.setup.settings.autoConfirm")}
-              value={settings.autoConfirm}
-              onValueChange={(autoConfirm) => void save({ autoConfirm })}
-              trackColor={{ true: colors.primary }}
+        {/* From the Venue tab, these are on its Settings page (user, 2026-11-26). */}
+        {fromVenue ? null : (
+          <>
+            <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
+            <SettingsRow
+              title={t("screens.setup.settings.autoConfirm")}
+              body={t("screens.setup.settings.autoConfirmBody")}
+              trailing={
+                <Switch
+                  accessibilityLabel={t("screens.setup.settings.autoConfirm")}
+                  value={settings.autoConfirm}
+                  onValueChange={(autoConfirm) => void save({ autoConfirm })}
+                  trackColor={{ true: colors.primary }}
+                />
+              }
             />
-          }
-        />
-        <SettingsRow
-          title={t("screens.setup.settings.closes")}
-          body={noticeLabel(t, settings.minimumNotice)}
-          trailing={chevron}
-          onPress={() => setChoosingNotice(true)}
-        />
+            <SettingsRow
+              title={t("screens.setup.settings.closes")}
+              body={noticeLabel(t, settings.minimumNotice)}
+              trailing={chevron}
+              onPress={() => setChoosingNotice(true)}
+            />
+          </>
+        )}
 
-        <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.payments")}</GroupHeading>
+        <GroupHeading className={`mb-1 ${fromVenue ? "" : "mt-9"}`}>
+          {t("screens.setup.settings.payments")}
+        </GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.howPlayersPay")}
           body={paymentLabel(t, settings.paymentMode)}
@@ -147,25 +173,31 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           />
         </Collapse>
 
-        <GroupHeading className="mb-1 mt-9">
-          {t("screens.setup.settings.cancellations")}
-        </GroupHeading>
-        <SettingsRow
-          title={t("screens.setup.settings.policy")}
-          // Until one is chosen, its line says it's required, after a warning sign (ink: the staff
-          // app marks what's needed by icon and weight, not colour). It's the one setting review
-          // needs.
-          body={
-            policy
-              ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
-              : t("screens.setup.settings.policyRequired")
-          }
-          bodyIcon={
-            policy ? undefined : <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
-          }
-          trailing={chevron}
-          onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
-        />
+        {fromVenue ? null : (
+          <>
+            <GroupHeading className="mb-1 mt-9">
+              {t("screens.setup.settings.cancellations")}
+            </GroupHeading>
+            <SettingsRow
+              title={t("screens.setup.settings.policy")}
+              // Until one is chosen, its line says it's required, after a warning sign (ink: the staff
+              // app marks what's needed by icon and weight, not colour). It's the one setting review
+              // needs.
+              body={
+                policy
+                  ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
+                  : t("screens.setup.settings.policyRequired")
+              }
+              bodyIcon={
+                policy ? undefined : (
+                  <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
+                )
+              }
+              trailing={chevron}
+              onPress={() => push(`/setup/${venueId}/settings/cancellation`)}
+            />
+          </>
+        )}
 
         <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
         <SettingsRow
@@ -240,43 +272,6 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         }}
       />
     </Screen>
-  );
-}
-
-// When booking closes: one of a fixed list (NOTICE_CHOICES). Not drawn in Figma; a plain list of
-// the choices, like the cancellation policies, and choosing one saves it and closes the sheet.
-function NoticeSheet({
-  visible,
-  value,
-  onClose,
-  onChoose,
-}: {
-  visible: boolean;
-  value: MinimumNotice;
-  onClose: () => void;
-  onChoose: (minutes: MinimumNotice) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
-        {t("screens.setup.settings.closes")}
-      </Text>
-      <View accessibilityRole="radiogroup">
-        {NOTICE_CHOICES.map((minutes, i) => (
-          <Pressable
-            key={minutes}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: minutes === value }}
-            onPress={() => onChoose(minutes)}
-            className={`flex-row items-center gap-3 py-3.5 active:opacity-60 ${i === NOTICE_CHOICES.length - 1 ? "" : "border-b border-border"}`}
-          >
-            <Text className="flex-1 text-subtitle">{noticeLabel(t, minutes)}</Text>
-            <RadioMark selected={minutes === value} />
-          </Pressable>
-        ))}
-      </View>
-    </Sheet>
   );
 }
 
@@ -498,3 +493,5 @@ function LoyaltySheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.venueForm, SetupSettings);

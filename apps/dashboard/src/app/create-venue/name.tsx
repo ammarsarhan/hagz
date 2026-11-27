@@ -8,6 +8,7 @@ import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
+import { push } from "@/lib/navigation";
 
 // Adding a venue, step 2 (Figma "Venue creation · 2 Name", 280:3): the name players already know,
 // in whichever language the owner's app is in. The other language is written for them before the
@@ -29,7 +30,7 @@ export default function CreateVenueName() {
         <Button
           label={t("common.actions.continue")}
           disabled={typed.length < MIN}
-          onPress={() => router.push({ pathname: "/create-venue/place", params: { name: typed } })}
+          onPress={() => push({ pathname: "/create-venue/place", params: { name: typed } })}
         />
       }
     >

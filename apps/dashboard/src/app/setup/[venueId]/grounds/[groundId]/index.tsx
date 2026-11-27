@@ -1,5 +1,5 @@
 import type { Icon } from "@tabler/icons-react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { SIZES_BY_SPORT, SURFACES_BY_SPORT, surfaceFitsSport } from "@hagz/contracts";
@@ -18,6 +18,7 @@ import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useGroundFlow } from "@/lib/ground-flow";
 import { SPORTS, type GroundSport } from "@/lib/grounds";
+import { push } from "@/lib/navigation";
 
 // Adding a ground, 1 of 4 (Figma "Grounds · Add 1 Name, sport and size", 352:2). The sport and size
 // fix its footprint on the layout, so they come first. Only football comes in sizes; the others
@@ -44,7 +45,7 @@ export default function GroundBasics() {
         <Button
           label={t("common.actions.continue")}
           disabled={draft.name.trim() === ""}
-          onPress={() => router.push(`/setup/${venueId}/grounds/${groundId}/surface`)}
+          onPress={() => push(`/setup/${venueId}/grounds/${groundId}/surface`)}
         />
       }
     >

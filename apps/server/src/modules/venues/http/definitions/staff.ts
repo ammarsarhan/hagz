@@ -4,6 +4,8 @@ import {
   ChangedSlots,
   SetSlotPrice,
   SlotSelection,
+  BlockSlots,
+  BlockNoteChange,
   VenueSlots,
   VenueSlotsQuery,
   VenueLayout,
@@ -401,7 +403,7 @@ export const removeGround = createRoute({
   tags,
   summary: "Remove a ground",
   description:
-    "Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.",
+    "Needs `schedule: manage`. Booking requests waiting on it are declined first. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams },
@@ -458,7 +460,8 @@ export const putSchedule = createRoute({
   summary: "Set a ground's weekly hours",
   description:
     "Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; " +
-    "the last two need the ground to have that price. Hours past midnight belong in the next day.",
+    "the last two need the ground to have that price. Hours past midnight belong in the next day " +
+    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams, body: { required: true, ...json(WeekSchedule) } },
@@ -480,7 +483,8 @@ export const copySchedule = createRoute({
   summary: "Copy a ground's weekly hours to others",
   description:
     "Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own " +
-    "prices, so each must have the prices the copied tiers need.",
+    "prices, so each must have the prices the copied tiers need " +
+    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams, body: { required: true, ...json(CopySchedule) } },
@@ -669,6 +673,29 @@ export const restore = createRoute({
     ),
     404: problemResponse("VENUE_NOT_FOUND or MEMBER_NOT_FOUND"),
     409: problemResponse("NOTHING_TO_RESTORE: their permissions changed since the reset."),
+  },
+});
+
+export const removeMember = createRoute({
+  method: "delete",
+  path: "/staff/venues/{venueId}/members/{staffId}",
+  tags,
+  summary: "Remove someone from the staff",
+  description:
+    "Needs `staff: manage`. Never yourself or the owner, and only the owner can remove someone " +
+    "with more in an area than they have. Their account and their name on what they did stay; " +
+    "they're told.",
+  middleware: [requireStaff, requireVenueAccess("staff", "manage")] as const,
+  security,
+  request: { params: memberParams },
+  responses: {
+    204: { description: "Removed" },
+    401: unauthenticated,
+    403: problemResponse(
+      "PERMISSION_DENIED, CANNOT_REMOVE_YOURSELF, CANNOT_CHANGE_OWNER, or " +
+        "PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+    ),
+    404: problemResponse("VENUE_NOT_FOUND or MEMBER_NOT_FOUND"),
   },
 });
 
@@ -870,11 +897,11 @@ export const blockSlots = createRoute({
   summary: "Block slots",
   description:
     "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. " +
-    "All or nothing.",
+    "Who closed them, when, and an optional note for the team stay with them. All or nothing.",
   // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
-  request: { params: venueParams, body: { required: true, ...json(SlotSelection) } },
+  request: { params: venueParams, body: { required: true, ...json(BlockSlots) } },
   responses: {
     200: { description: "The slots after the change", ...json(ChangedSlots) },
     400: problemResponse("VALIDATION_FAILED"),
@@ -909,6 +936,28 @@ export const unblockSlots = createRoute({
   },
 });
 
+export const changeBlockNote = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/slots/note",
+  tags: slotsTags,
+  summary: "Change closed slots' note",
+  description:
+    "Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. " +
+    "All or nothing.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(BlockNoteChange) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    409: problemResponse("SLOT_UNAVAILABLE (with the `slotIds` that aren't closed)"),
+    422: slotStarted,
+  },
+});
 export const setSlotPrice = createRoute({
   method: "put",
   path: "/staff/venues/{venueId}/slots/price",

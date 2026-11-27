@@ -33,7 +33,6 @@ const ar: ArabicTranslations = {
         countdown: "إعادة إرسال الرمز بعد {{time}}",
         resend: "إعادة إرسال الرمز",
       },
-      comingSoon: "قريبًا.",
       venueLayout: {
         entrance: "المدخل",
         closed: "مغلق",
@@ -1033,7 +1032,6 @@ const ar: ArabicTranslations = {
         photoOf: "صورة {{name}}",
         photoOfVenue: "صورة الملعب",
         photoCount: "{{index}} / {{count}}",
-        bookingSoon: "الحجز متاح قريبًا",
         pricesVary: "الأسعار تختلف",
         paused: "متوقف",
         book: "احجز",

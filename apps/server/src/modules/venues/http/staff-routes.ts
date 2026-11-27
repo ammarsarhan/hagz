@@ -15,6 +15,7 @@ import {
   listMyVenues,
   changePermissions,
   restorePermissions,
+  removeStaffMember,
 } from "../application/members";
 import {
   putTranslation,
@@ -46,6 +47,7 @@ import { createVenue, venueSetup } from "../application/venue-setup";
 import {
   addSlots,
   blockSlots,
+  changeBlockNote,
   resetSlots,
   setSlotPrice,
   staffDaySlots,
@@ -168,6 +170,11 @@ export const venuesStaffRoutes = createRouter()
     const { staffId } = c.req.valid("param");
     return c.json(await restorePermissions(c.var.venue, staffId), 200);
   })
+  .openapi(route.removeMember, async (c) => {
+    const { staffId } = c.req.valid("param");
+    await removeStaffMember(c.var.venue, staffId);
+    return c.body(null, 204);
+  })
   .openapi(route.invite, async (c) => {
     const sent = await inviteStaff(c.var.venue, c.req.valid("json"), requestLanguage(c));
     return c.json(sent, 201);
@@ -210,6 +217,9 @@ export const venuesStaffRoutes = createRouter()
   )
   .openapi(route.unblockSlots, async (c) =>
     c.json(await unblockSlots(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.changeBlockNote, async (c) =>
+    c.json(await changeBlockNote(c.var.venue, c.req.valid("json")), 200),
   )
   .openapi(route.setSlotPrice, async (c) =>
     c.json(await setSlotPrice(c.var.venue, c.req.valid("json")), 200),

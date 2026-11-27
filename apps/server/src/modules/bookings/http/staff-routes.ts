@@ -11,10 +11,12 @@ import {
   venueBookingHistory,
 } from "../application/staff-bookings";
 import { approveBooking, declineBooking, markBooking } from "../application/staff-decisions";
+import { staffHome } from "../application/staff-home";
 import * as route from "./definitions/staff";
 
 // `pending` is registered before `{bookingId}`, which would otherwise match it.
 export const bookingsStaffRoutes = createRouter()
+  .openapi(route.home, async (c) => c.json(await staffHome(c.var.venue, c.req.valid("query")), 200))
   .openapi(route.listBookings, async (c) =>
     c.json({ data: await listVenueBookings(c.var.venue, c.req.valid("query")) }, 200),
   )

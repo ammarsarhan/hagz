@@ -40,6 +40,12 @@ export const localToday = (now: Date, timezone: string): Date => {
 
 export const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
+// The Sunday that starts a local day's calendar week, as the staff Calendar draws weeks. A regular
+// plays once a week: a game it already has in a week (confirmed, or moved there) stands for that
+// week, wherever and whenever it is.
+export const weekOf = (localDay: Date) =>
+  isoDate(new Date(localDay.getTime() - localDay.getUTCDay() * DAY_MS));
+
 type InstantOf = (
   date: { year: number; month: number; day: number },
   hour: number,
@@ -107,6 +113,71 @@ export interface ReservationOutcome {
   confirmed: boolean; // Has a CONFIRMED event.
   releasedBy: "STAFF" | "CUSTOMER" | "DEADLINE" | "REGULAR" | null;
 }
+
+// How one of its weeks went, for the regular's last-weeks dots: played, a no-show, let go in time
+// (or cancelled after confirming), or not answered by the deadline.
+export type WeekOutcome = "PLAYED" | "NO_SHOW" | "LET_GO" | "NOT_ANSWERED";
+
+// Its last `count` weeks that are settled, oldest first. A week still waiting, or confirmed and not
+// yet played, isn't settled; one released because the regular changed isn't its doing.
+export const lastWeeksOf = (
+  rows: readonly (ReservationOutcome & { startsAt: Date })[],
+  now: Date,
+  timezone: string,
+  count = 10,
+): { date: string; outcome: WeekOutcome }[] =>
+  rows
+    .flatMap((row) => {
+      // Only weeks already played or due: one let go for later isn't history yet.
+      if (row.startsAt > now) return [];
+      const outcome: WeekOutcome | null =
+        row.releasedBy === "REGULAR"
+          ? null
+          : row.releasedBy === "DEADLINE"
+            ? "NOT_ANSWERED"
+            : row.releasedBy !== null || (row.status === "CANCELLED" && row.confirmed)
+              ? "LET_GO"
+              : row.status === "NO_SHOW"
+                ? "NO_SHOW"
+                : row.confirmed &&
+                    row.startsAt <= now &&
+                    (row.status === "COMPLETED" || row.status === "CONFIRMED")
+                  ? "PLAYED"
+                  : null;
+      return outcome ? [{ startsAt: row.startsAt, outcome }] : [];
+    })
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .slice(-count)
+    .map((week) => ({ date: isoDate(localToday(week.startsAt, timezone)), outcome: week.outcome }));
+
+// Its weeks still to come, soonest first (user, 2026-11-27: the regular's page draws these as dots):
+// confirmed (a moved one too), waiting for a confirm, let go (by the regular or staff), or not
+// answered by the deadline. Weeks the system let go when its time changed, or that moved away
+// (their replacement is listed instead), aren't.
+export type ComingState = "CONFIRMED" | "WAITING" | "LET_GO" | "NOT_ANSWERED";
+
+export const comingWeeksOf = (
+  rows: readonly (ReservationOutcome & { startsAt: Date; endsAt: Date })[],
+  now: Date,
+  timezone: string,
+): { date: string; state: ComingState }[] =>
+  rows
+    .flatMap((row) => {
+      if (row.endsAt <= now || row.releasedBy === "REGULAR") return [];
+      const state: ComingState | null =
+        row.status === "CONFIRMED"
+          ? "CONFIRMED"
+          : row.status === "UNCONFIRMED"
+            ? "WAITING"
+            : row.status === "RELEASED"
+              ? row.releasedBy === "DEADLINE"
+                ? "NOT_ANSWERED"
+                : "LET_GO"
+              : null;
+      return state ? [{ startsAt: row.startsAt, state }] : [];
+    })
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .map((week) => ({ date: isoDate(localToday(week.startsAt, timezone)), state: week.state }));
 
 export const reliabilityOf = (rows: readonly ReservationOutcome[]): Reliability => {
   const counted = rows.filter((row) => row.releasedBy !== "REGULAR");

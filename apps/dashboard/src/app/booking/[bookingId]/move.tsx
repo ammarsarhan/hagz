@@ -27,6 +27,8 @@ import { useNow } from "@/lib/use-now";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Moving a booking (Figma D9: pick 605:2, confirm 600:2). The day as a list under the week strip
 // and the grounds, where the free times the booking fits wait dashed in blue, its own time dashed
@@ -42,7 +44,7 @@ type StaffBooking = components["schemas"]["StaffBooking"];
 
 const SOFT_FILL = "bg-[#f2f4ff]";
 
-export default function MoveBooking() {
+function MoveBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -75,11 +77,17 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const [holding, setHolding] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const holdId = useRef<string | null>(null);
+  // Every hold this screen has put on a time, kept after it's let go: the day is drawn as if they
+  // weren't there, so a picked time doesn't turn into a booking behind the sheet, and cancelling
+  // doesn't redraw it back (user, 2026-11-26).
+  const [ownHolds, setOwnHolds] = useState<string[]>([]);
 
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] }),
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] }),
+      // A regular's week keeps its regular: its page shows where it went.
+      queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] }),
     ]);
 
   const release = (id: string | null) => {
@@ -130,6 +138,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       return;
     }
     holdId.current = result.data.id;
+    setOwnHolds((ids) => [...ids, result.data.id]);
     setHeld({ target, hold: result.data });
     setAsking(true);
   };
@@ -139,9 +148,17 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   const targets = useMemo(
     () =>
       slots.data
-        ? moveTargets({ booking, slots: slots.data.slots, date: day, timezone, now, groundId })
+        ? moveTargets({
+            booking,
+            slots: slots.data.slots,
+            date: day,
+            timezone,
+            now,
+            groundId,
+            ownHolds,
+          })
         : [],
-    [slots.data, booking, day, timezone, now, groundId],
+    [slots.data, booking, day, timezone, now, groundId, ownHolds],
   );
   // The day's hours: the booking's own time, the others' bookings faded, and the free times it fits.
   const hours = useMemo(() => {
@@ -156,7 +173,12 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
         ? [{ kind: "own" as const, key: booking.id, startsAt: booking.startsAt }]
         : []),
       ...(others.data ?? [])
-        .filter((other) => other.id !== booking.id && onDay(other.startsAt, other.ground.id))
+        .filter(
+          (other) =>
+            other.id !== booking.id &&
+            !ownHolds.includes(other.id) &&
+            onDay(other.startsAt, other.ground.id),
+        )
         .map((other) => ({
           kind: "other" as const,
           key: other.id,
@@ -194,7 +216,7 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
       } else groups.push({ hour, end, items: [item] });
     }
     return groups;
-  }, [booking, others.data, targets, day, timezone, groundId]);
+  }, [booking, others.data, targets, day, timezone, groundId, ownHolds]);
 
   const oldSlots = booking.charges
     .filter((charge) => charge.type === "SLOT")
@@ -353,6 +375,18 @@ function Mover({ booking, venueId }: { booking: Booking; venueId: string }) {
   );
 }
 
+// The old time less the new one, on the same ground: none, one or two pieces, in order.
+function leftOver(booking: Booking, target: MoveTarget): [string, string][] {
+  if (target.groundId !== booking.ground.id) return [[booking.startsAt, booking.endsAt]];
+  const [start, end] = [Date.parse(booking.startsAt), Date.parse(booking.endsAt)];
+  const [from, to] = [Date.parse(target.startsAt), Date.parse(target.endsAt)];
+  if (to <= start || from >= end) return [[booking.startsAt, booking.endsAt]];
+  const pieces: [string, string][] = [];
+  if (from > start) pieces.push([booking.startsAt, target.startsAt]);
+  if (to < end) pieces.push([target.endsAt, booking.endsAt]);
+  return pieces;
+}
+
 function ConfirmMove({
   booking,
   venueId,
@@ -395,6 +429,9 @@ function ConfirmMove({
       ground,
     });
   const difference = target.price - oldSlots;
+  // Only the hours the new time leaves go back on sale (user, 2026-11-26): 8–10 pm moved to
+  // 9–11 pm frees 8–9 pm; moved inside a longer time on the same ground, nothing does.
+  const freed = leftOver(booking, target).map(([from, to]) => hoursSpan(from, to, timezone, t));
 
   const move = async () => {
     setSending(true);
@@ -462,12 +499,15 @@ function ConfirmMove({
         </View>
       </View>
 
-      <Text className="mt-4 mb-5 text-label text-ink-2">
-        {t("screens.move.backOnSale", {
-          hours: hoursSpan(booking.startsAt, booking.endsAt, timezone, t),
-          name,
-        })}
-      </Text>
+      {freed.length > 0 ? (
+        <Text className="mt-4 mb-5 text-label text-ink-2">
+          {freed.length === 1
+            ? t("screens.move.backOnSale", { hours: freed[0], name })
+            : t("screens.move.backOnSaleTwo", { first: freed[0], second: freed[1], name })}
+        </Text>
+      ) : (
+        <View className="mb-5" />
+      )}
 
       <View className="mb-2">
         <Field
@@ -482,3 +522,5 @@ function ConfirmMove({
     </Sheet>
   );
 }
+
+export default guarded(RULES.bookingChange, MoveBooking);

@@ -12,6 +12,7 @@ import { coversExactly } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
 import { bookingNotFound, lockBooking, moveChain, netPaid, withFreshCode } from "./booking-rows";
 import { cancelListings } from "./listings";
+import { topUpVenue } from "./regulars";
 import { claimTarget, movingSelect, retire, successor, type Moving } from "./rescheduling";
 
 // The player answering a move staff made (PR 4.8, docs/rescheduling.md "Rejecting a move"): accept
@@ -144,7 +145,7 @@ export const rejectMove = async (
   clock: Clock = systemClock,
 ): Promise<void> => {
   const now = clock.now();
-  await transaction(async (tx) => {
+  const venueId = await transaction(async (tx) => {
     const { booking } = await lockOpenMove(tx, customerId, bookingId, now);
     const { count } = await tx.booking.updateMany({
       where: { id: booking.id, status: booking.status },
@@ -165,7 +166,10 @@ export const rejectMove = async (
     await tx.bookingEvent.create({
       data: { bookingId: booking.id, type: BOOKING_EVENTS.MOVE_REJECTED, customerId },
     });
+    return booking.venueId;
   });
+  // Its time free again: maybe a regular's, next in line for it.
+  await topUpVenue(venueId, clock);
 };
 
 // Back to the original ground and time, at the original's charges, so it never costs more than
@@ -176,7 +180,7 @@ export const moveBack = async (
   clock: Clock = systemClock,
 ): Promise<string> => {
   const now = clock.now();
-  return withFreshCode(() =>
+  const back = await withFreshCode(() =>
     transaction(async (tx) => {
       const { booking, move } = await lockOpenMove(tx, customerId, bookingId, now);
       const original = move.from;
@@ -201,9 +205,13 @@ export const moveBack = async (
         target,
         { lines: original.charges, total: original.total, deposit: original.depositAmount },
         { type: "MOVE", groupId: null, staffId: null, accountId: customerId, reason: null },
+        now,
       );
       await releaseSlots(tx, [booking.id], now);
-      return id;
+      return { id, venueId: booking.venueId };
     }),
   );
+  // The time it moved back from is free again, maybe for a regular next in line.
+  await topUpVenue(back.venueId, clock);
+  return back.id;
 };

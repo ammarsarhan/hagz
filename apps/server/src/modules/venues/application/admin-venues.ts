@@ -20,6 +20,7 @@ import { driftOf } from "./slot-monitoring";
 import { venueLayout } from "./layout";
 import { listPhotos } from "./venue-media";
 import { pinOf } from "./venue-edit";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // The admin Venues table: every venue in any status, newest first, a page at a time. Ids are UUIDv7,
 // so ordering by id is ordering by creation, and the last id on a page is the cursor for the next.
@@ -41,7 +42,7 @@ export const adminVenueSelect = {
     where: { role: "OWNER" },
     select: { staff: { select: { id: true, name: true, phone: true } } },
   },
-  _count: { select: { grounds: { where: { status: { not: "DELETED" } } } } },
+  _count: { select: { grounds: { where: { status: { notIn: [...GONE_GROUNDS] } } } } },
 } as const satisfies Prisma.VenueSelect;
 
 type Row = Prisma.VenueGetPayload<{ select: typeof adminVenueSelect }>;

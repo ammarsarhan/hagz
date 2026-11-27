@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GroundSize, GroundSport } from "./grounds";
 import { CreateHold, StaffBooking } from "./staff-bookings";
 
 // Regulars (PR 4.5, docs/regulars.md): a customer's standing weekly time at a venue. Hagz keeps an
@@ -44,7 +45,13 @@ export const VenueRegular = z
       phone: z.string().nullable(),
       app: z.boolean(),
     }),
-    ground: z.object({ id: z.uuid(), name: z.string().nullable() }),
+    ground: z.object({
+      id: z.uuid(),
+      name: z.string().nullable(),
+      deleted: z.boolean().meta({
+        description: "Staff deleted it: the regular ends after its last confirmed week.",
+      }),
+    }),
     dayOfWeek: Time.dayOfWeek,
     startHour: Time.startHour,
     slotCount: Time.slotCount,
@@ -71,6 +78,28 @@ export const VenueRegularDetail = VenueRegular.extend({
     description:
       "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day.",
   }),
+  comingWeeks: z
+    .array(
+      z.object({
+        date: LocalDate,
+        state: z.enum(["CONFIRMED", "WAITING", "LET_GO", "NOT_ANSWERED"]),
+      }),
+    )
+    .meta({
+      description:
+        "Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed.",
+    }),
+  lastWeeks: z
+    .array(
+      z.object({
+        date: LocalDate,
+        outcome: z.enum(["PLAYED", "NO_SHOW", "LET_GO", "NOT_ANSWERED"]),
+      }),
+    )
+    .meta({
+      description:
+        "Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted.",
+    }),
 }).meta({ id: "VenueRegularDetail" });
 
 export const CreateRegular = z
@@ -157,6 +186,56 @@ export const SlotCandidates = z
   })
   .meta({ id: "SlotCandidates" });
 
+// A confirm link (docs/regulars.md "Reminders"): staff copy one for a waiting week and send it from
+// their own WhatsApp; the regular opens it on the web and confirms or lets the week go without
+// signing in.
+export const ConfirmLink = z
+  .object({
+    url: z.url().meta({ description: "Works once, until the week's deadline." }),
+    expiresAt: Instant.meta({ description: "The week's deadline." }),
+  })
+  .meta({ id: "ConfirmLink" });
+
+export const ReminderTokenBody = z
+  .object({ token: z.string().min(20).max(200) })
+  .meta({ id: "ReminderTokenBody", description: "The token from the link's #token=." });
+
+export const ReminderWeek = z
+  .object({
+    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "MISSED", "MOVED", "CHANGED"]).meta({
+      description:
+        "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. MOVED: the venue moved or swapped it; `movedTo` is where it is now. CHANGED: the venue let it go or cancelled it, or paused or ended the regular.",
+    }),
+    code: z.string().meta({
+      description: "The week's booking code, for the regular to quote to the venue.",
+      example: "K7Q2P9M4",
+    }),
+    name: z.string().meta({ description: "The regular's first name." }),
+    venue: z.object({
+      name: z.string().nullable(),
+      slug: z.string(),
+      area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
+    }),
+    ground: z.object({ name: z.string().nullable(), sport: GroundSport, size: GroundSize }),
+    startsAt: Instant,
+    endsAt: Instant,
+    deadline: Instant.nullable(),
+    timezone: z.string(),
+    movedTo: z
+      .object({
+        code: z.string(),
+        ground: z.object({ name: z.string().nullable() }),
+        startsAt: Instant,
+        endsAt: Instant,
+      })
+      .nullable()
+      .meta({ description: "MOVED: the week where it is now, after every move. Null otherwise." }),
+  })
+  .meta({ id: "ReminderWeek" });
+
+export type ConfirmLink = z.infer<typeof ConfirmLink>;
+export type ReminderTokenBody = z.infer<typeof ReminderTokenBody>;
+export type ReminderWeek = z.infer<typeof ReminderWeek>;
 export type RegularStatus = z.infer<typeof RegularStatus>;
 export type Reliability = z.infer<typeof Reliability>;
 export type VenueRegular = z.infer<typeof VenueRegular>;

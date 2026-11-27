@@ -19,6 +19,8 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingKey, bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A booking's history (Figma D17 642:469): every change, who made it and when, oldest first, under
 // its day. Each is a filled dot on the rail: what happened, then who (and anything they said) in
@@ -65,7 +67,7 @@ interface Entry {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-export default function BookingHistory() {
+function BookingHistory() {
   const { t } = useTranslation();
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
@@ -184,8 +186,12 @@ function describe(
   { next, fromShown }: { next?: Booking; fromShown: boolean },
 ): Entry | null {
   const at = event.createdAt;
-  const by = who(event, t);
   const player = firstName(booking.customer.name);
+  // A regular's week answered from a confirm link staff sent: the regular, by the link.
+  const by =
+    field(event, "via") === "LINK"
+      ? t("screens.history.events.fromLink", { name: player })
+      : who(event, t);
   switch (event.type) {
     case "CREATED": {
       if (field(event, "from") && fromShown) return null;
@@ -279,6 +285,16 @@ function describe(
           }
         : { at, label: t("screens.history.events.released"), detail: by };
     }
+    // The customer's own hold or booking taken up as a week of their new weekly game.
+    case "REGULAR_JOINED":
+      return {
+        at,
+        label: t("screens.history.events.regularJoined"),
+        detail:
+          field(event, "from") === "HELD"
+            ? t("screens.history.events.regularJoinedHold")
+            : undefined,
+      };
     case "REGULAR_CHANGED": {
       const reason = field(event, "reason");
       return {
@@ -288,7 +304,11 @@ function describe(
             ? "screens.history.events.regularPaused"
             : reason === "ENDED"
               ? "screens.history.events.regularEnded"
-              : "screens.history.events.regularChanged",
+              : reason === "REORDERED"
+                ? "screens.history.events.regularReordered"
+                : reason === "HORIZON"
+                  ? "screens.history.events.regularHorizon"
+                  : "screens.history.events.regularChanged",
         ),
         detail: t("screens.history.events.backOnSale"),
       };
@@ -317,3 +337,5 @@ function checkIns(booking: Booking, t: TFunction): Entry[] {
       : [],
   );
 }
+
+export default guarded(RULES.booking, BookingHistory);

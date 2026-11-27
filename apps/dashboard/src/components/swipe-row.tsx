@@ -56,6 +56,15 @@ export function SwipeRow({
 }) {
   const swipe = useRef<SwipeableMethods>(null);
   const [pressed, setPressed] = useState(false);
+  // A swipe never lights the row (user, 2026-11-27): the press delay alone isn't enough, since the
+  // row can be pressed before the finger has moved far enough to start the swipe, and a swipe that
+  // has started doesn't always end the press. So the highlight goes the moment a drag starts and
+  // stays off until that touch ends, even when the press only registers after the drag began.
+  const [swiping, setSwiping] = useState(false);
+  const dragged = () => {
+    setSwiping(true);
+    setPressed(false);
+  };
   return (
     <ReanimatedSwipeable
       ref={swipe}
@@ -67,6 +76,8 @@ export function SwipeRow({
       // The row is solid white, so the button behind it only shows as the row slides away.
       childrenContainerStyle={{ backgroundColor: colors.white }}
       onSwipeableWillOpen={() => onOpen(swipe.current)}
+      onSwipeableOpenStartDrag={dragged}
+      onSwipeableCloseStartDrag={dragged}
       // The platform's red, with a bin: the one place the staff app uses red outside errors, because
       // a swipe action that isn't red doesn't read as iOS's Delete.
       renderRightActions={() => (
@@ -95,8 +106,12 @@ export function SwipeRow({
         // next to className. The short delay keeps a swipe from lighting the row up at all.
         unstable_pressDelay={90}
         onPressIn={() => setPressed(true)}
-        onPressOut={() => setPressed(false)}
-        className={`flex-row items-center gap-3 px-5 py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
+        // The touch is over: the next one may light the row again.
+        onPressOut={() => {
+          setPressed(false);
+          setSwiping(false);
+        }}
+        className={`flex-row items-center gap-3 px-5 py-[15px] ${pressed && !swiping ? "bg-chip" : "bg-white"}`}
       >
         {children}
       </Pressable>

@@ -22,6 +22,7 @@ import {
 import { checkLength, checkRange, coversExactly, slotUnavailable } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
 import { lockBookings, newCode, venueBookingNotFound, withFreshCode } from "./booking-rows";
+import { topUpVenue } from "./regulars";
 import { followMove } from "./listings";
 
 // Moving and swapping bookings (PR 4.8, docs/rescheduling.md). A move never edits the booking: the
@@ -163,7 +164,9 @@ export interface Link {
 }
 
 // The booking that replaces `from` on the claimed slots: same customer, status, deadline, regular,
-// note and terms; the given charges. Run after `from` is retired, so the database's no-overlap
+// note and terms; the given charges. A regular's week still waiting for a confirm takes the deadline
+// of its new time instead (user, 2026-11-26): the venue's confirmationWindow before the new kick-off,
+// or the kick-off itself when that has already gone by. Run after `from` is retired, so the database's no-overlap
 // constraint doesn't see two live bookings on the same time.
 export const successor = async (
   tx: Tx,
@@ -172,8 +175,20 @@ export const successor = async (
   target: Target,
   price: { lines: readonly StoredCharge[]; total: number; deposit: number | null },
   link: Link,
+  now: Date,
 ): Promise<string> => {
   const actor = { staffId: link.staffId, customerId: link.accountId };
+  let expiresAt = from.expiresAt;
+  if (from.status === "UNCONFIRMED") {
+    const settings = await tx.venueSettings.findUnique({
+      where: { venueId: from.venueId },
+      select: { confirmationWindow: true },
+    });
+    const deadline = new Date(
+      target.startsAt.getTime() - (settings?.confirmationWindow ?? 24) * 3_600_000,
+    );
+    expiresAt = deadline > now ? deadline : target.startsAt;
+  }
   const { id } = await tx.booking.create({
     data: {
       venueId: from.venueId,
@@ -186,7 +201,7 @@ export const successor = async (
       startsAt: target.startsAt,
       endsAt: target.endsAt,
       note: from.note,
-      expiresAt: from.expiresAt,
+      expiresAt,
       total: price.total,
       depositAmount: price.deposit,
       paymentMode: from.paymentMode,
@@ -267,7 +282,7 @@ export const moveBooking = async (
   };
   checkRange(target.startsAt, target.endsAt, { now, minimumNotice: 0, horizonDays: HORIZON_DAYS });
 
-  return withFreshCode(() =>
+  const moved = await withFreshCode(() =>
     transaction(async (tx) => {
       const ids = body.holdId ? [bookingId, body.holdId] : [bookingId];
       const rows = await lockBookings(tx, ids, actor.venueId, movingSelect);
@@ -308,18 +323,29 @@ export const moveBooking = async (
         });
       }
       await retire(tx, booking);
-      const id = await successor(tx, booking, slots, target, repriced(booking, slots), {
-        type: "MOVE",
-        groupId: null,
-        staffId: actor.staffId,
-        accountId: null,
-        reason: body.reason ?? null,
-      });
+      const id = await successor(
+        tx,
+        booking,
+        slots,
+        target,
+        repriced(booking, slots),
+        {
+          type: "MOVE",
+          groupId: null,
+          staffId: actor.staffId,
+          accountId: null,
+          reason: body.reason ?? null,
+        },
+        now,
+      );
       // Whatever the old booking and the hold still hold, the move didn't take.
       await releaseSlots(tx, [...mayTake], now);
       return id;
     }),
   );
+  // The time it left may be a regular's, next in line for it (user, 2026-11-26).
+  await topUpVenue(actor.venueId, clock);
+  return moved;
 };
 
 // Swaps two bookings' times: each takes the other's ground and time, keeping its own customer and
@@ -334,7 +360,7 @@ export const swapBookings = async (
   if (bookingId === withBookingId) throw sameBooking();
   const now = clock.now();
 
-  return withFreshCode(() =>
+  const swapped = await withFreshCode(() =>
     transaction(async (tx) => {
       const rows = await lockBookings(tx, [bookingId, withBookingId], actor.venueId, movingSelect);
       const a = rows.find((row) => row.id === bookingId);
@@ -370,11 +396,14 @@ export const swapBookings = async (
       };
       const take = (from: Moving, target: Target) => {
         const slots = claimed.get(from.id) ?? [];
-        return successor(tx, from, slots, target, repriced(from, slots), link);
+        return successor(tx, from, slots, target, repriced(from, slots), link, now);
       };
       const ids: [string, string] = [await take(a, rangeOf(b)), await take(b, rangeOf(a))];
       await releaseSlots(tx, [a.id, b.id], now);
       return ids;
     }),
   );
+  // A swap can leave a week without a regular's game, for the next in line.
+  await topUpVenue(actor.venueId, clock);
+  return swapped;
 };

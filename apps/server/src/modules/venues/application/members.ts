@@ -1,6 +1,8 @@
 import type { StaffPermissions, StaffVenue, VenueMember } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Language, VenueRole } from "@/generated/prisma/enums";
+import { notifyStaff } from "@/modules/notifications";
+import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
@@ -8,6 +10,7 @@ import {
   PERMISSION_EVENTS,
   PERMISSIONS_CHANGED,
   RESTRICTED_AFTER_PASSWORD_RESET,
+  STAFF_REMOVED,
   type PermissionEventData,
 } from "../domain/events";
 import { nameIn, placeOf } from "../domain/names";
@@ -251,4 +254,55 @@ export const restorePermissions = (actor: VenueAccess, memberId: string) =>
       });
     }
     return previous;
+  });
+
+// Off the team, from the dashboard (user, 2026-11-27): as an admin's removal, but by someone who
+// manages staff here. Never yourself or the owner, and only the owner can remove someone with more
+// in an area than they have. Their membership goes; their account, and their name on what they did
+// here, stay. They're told.
+export const removeStaffMember = (
+  actor: VenueAccess,
+  memberId: string,
+  clock: Clock = systemClock,
+) =>
+  transaction(async (tx) => {
+    const { venueId, staffId: actorId } = actor;
+    if (memberId === actorId) {
+      throw forbidden("CANNOT_REMOVE_YOURSELF", "Ask someone else who manages staff.");
+    }
+    const locked = await tx.$queryRaw<LockedMembership[]>`
+    SELECT "staffId", role, permissions FROM "VenueMembership"
+    WHERE "venueId" = ${venueId}::uuid AND "staffId" IN (${actorId}::uuid, ${memberId}::uuid)
+    ORDER BY "staffId"
+    FOR UPDATE`;
+    const granter = locked.find((m) => m.staffId === actorId);
+    const member = locked.find((m) => m.staffId === memberId);
+    if (!granter) throw venueNotFound();
+    const granted = effectivePermissions(granter.role, granter.permissions);
+    if (!allows(granted.staff, "manage")) throw missingPermission("staff", "manage");
+    if (!member) {
+      throw new AppError({ code: "MEMBER_NOT_FOUND", status: 404, detail: "No such member here." });
+    }
+    if (member.role === "OWNER") {
+      throw forbidden("CANNOT_CHANGE_OWNER", "The owner can't be removed.");
+    }
+    const beyond = beyondGranter(granted, parsePermissions(member.permissions));
+    if (beyond.length > 0) throw permissionAboveYourOwn(beyond);
+
+    const { name } = await tx.staff.findUniqueOrThrow({
+      where: { id: memberId },
+      select: { name: true },
+    });
+    await tx.venueMembership.delete({
+      where: { venueId_staffId: { venueId, staffId: memberId } },
+    });
+    await tx.venueEvent.create({
+      data: {
+        venueId,
+        staffId: actorId,
+        type: STAFF_REMOVED,
+        data: { staffId: memberId, name, permissions: member.permissions ?? {} },
+      },
+    });
+    await notifyStaff(tx, [{ staffId: memberId, venueId, type: "STAFF_REMOVED", data: {} }], clock);
   });

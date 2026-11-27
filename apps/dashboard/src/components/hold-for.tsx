@@ -51,6 +51,8 @@ export const shownPhone = (phone: string) => {
 export interface Choice {
   customer: { venueCustomerId: string } | { name: string; phone: string };
   name: string;
+  // Their number, when there is one, to show with the name.
+  phone: string | null;
 }
 
 export function HoldFor({
@@ -111,10 +113,10 @@ export function HoldFor({
     else onClose();
   };
 
-  const hold = async (customer: Choice["customer"], name: string) => {
+  const hold = async (customer: Choice["customer"], name: string, phone: string | null) => {
     if (!target) return;
     if (onChoose) {
-      chosen.current = { customer, name };
+      chosen.current = { customer, name, phone };
       go("done");
       return;
     }
@@ -185,7 +187,9 @@ export function HoldFor({
         venueId={venueId}
         when={when}
         holding={holding}
-        onPick={(customer) => void hold({ venueCustomerId: customer.id }, customer.name)}
+        onPick={(customer) =>
+          void hold({ venueCustomerId: customer.id }, customer.name, customer.phone)
+        }
       />
 
       <Sheet {...sheet("new")} onBack={() => go("who")} backLabel={t("components.shared.nav.back")}>
@@ -194,7 +198,7 @@ export function HoldFor({
           holdMinutes={holdMinutes}
           holding={holding === "new"}
           label={onChoose ? t("screens.book.continue") : undefined}
-          onHold={(name, phone) => void hold({ name, phone }, name)}
+          onHold={(name, phone) => void hold({ name, phone }, name, phone)}
         />
       </Sheet>
     </>
@@ -310,7 +314,7 @@ function Customers({
             >
               <Avatar name={customer.name} size="row" />
               <View className="ms-3 flex-1">
-                <Text className="text-body">{customer.name}</Text>
+                <Text className="text-body font-medium">{customer.name}</Text>
                 <Text className="text-caption text-ink-2">
                   {[
                     customer.phone ? shownPhone(customer.phone) : null,

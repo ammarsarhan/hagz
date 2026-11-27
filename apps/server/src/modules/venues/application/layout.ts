@@ -6,13 +6,14 @@ import { VENUE_LAYOUT_CHANGED } from "../domain/events";
 import { defaultSize, validateLayout } from "../domain/layout";
 import type { VenueAccess } from "./access";
 import { lockForEdit } from "./venue-edit";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // The venue layout (PR 2.5), saved whole in one transaction so it's never half-valid. Part of
 // operations: editable while provisioning, locked in review.
 
 const placeable = (db: Tx | typeof prisma, venueId: string) =>
   db.ground.findMany({
-    where: { venueId, status: { not: "DELETED" } },
+    where: { venueId, status: { notIn: [...GONE_GROUNDS] } },
     orderBy: [{ position: "asc" }, { id: "asc" }],
     select: { id: true, sport: true, size: true },
   });
