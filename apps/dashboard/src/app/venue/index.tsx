@@ -571,7 +571,7 @@ function Heading({ title, link, onLink }: { title: string; link?: string; onLink
   );
 }
 
-// The hour in a grey disc (am or pm under it), two lines beside it, the amount at the end and an action under it.
+// The hour in a 46 pt grey disc (am or pm under it), two lines beside it (15 and 13 pt), the amount at the end and an action under it.
 function TimeRow({
   at,
   timezone,
@@ -596,25 +596,25 @@ function TimeRow({
   const start = clockOf(at, timezone);
   return (
     <Pressable onPress={onPress} className="mt-3 flex-row items-center py-1 active:opacity-60">
-      <View className="size-[52px] items-center justify-center rounded-full bg-chip">
-        <Text className="text-[14px] leading-[14px] font-semibold">{start.time}</Text>
-        <Text className="text-[11px] leading-[12px] text-ink-2">
+      <View className="size-[46px] items-center justify-center rounded-full bg-chip">
+        <Text className="text-[13px] leading-[13px] font-semibold">{start.time}</Text>
+        <Text className="text-[10px] leading-[11px] text-ink-2">
           {t(start.pm ? "screens.calendar.pm" : "screens.calendar.am")}
         </Text>
       </View>
-      <View className="ms-3.5 flex-1">
-        <Text className="text-subtitle font-medium" numberOfLines={1}>
+      <View className="ms-3 flex-1">
+        <Text className="text-[15px] leading-5 font-medium" numberOfLines={1}>
           {title}
         </Text>
-        <Text className="mt-0.5 text-label text-ink-2" numberOfLines={1}>
+        <Text className="mt-0.5 text-caption text-ink-2" numberOfLines={1}>
           {line}
         </Text>
       </View>
       <View className="ms-3 items-end">
-        <Text className="text-subtitle font-medium">{amount}</Text>
+        <Text className="text-[15px] leading-5 font-medium">{amount}</Text>
         {action ? (
           <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8}>
-            <Text className="mt-0.5 text-label font-medium underline">{action}</Text>
+            <Text className="mt-0.5 text-caption font-medium underline">{action}</Text>
           </Pressable>
         ) : null}
       </View>
