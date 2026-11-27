@@ -6079,6 +6079,11 @@
       "StaffHome": {
         "type": "object",
         "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
           "requests": {
             "type": "object",
             "properties": {
@@ -6485,6 +6490,7 @@
           }
         },
         "required": [
+          "timezone",
           "requests",
           "holds",
           "toMark",

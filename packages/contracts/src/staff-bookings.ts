@@ -83,6 +83,9 @@ const Waiting = z.object({
 
 export const StaffHome = z
   .object({
+    timezone: z
+      .string()
+      .meta({ description: "The venue's IANA timezone.", example: "Africa/Cairo" }),
     requests: Waiting.meta({
       description: "Waiting for approval: all of them for today, that day's for a later one.",
     }),
@@ -96,11 +99,9 @@ export const StaffHome = z
       description:
         "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`.",
     }),
-    next: z
-      .array(StaffBooking.extend({ checkedIn: z.boolean() }))
-      .meta({
-        description: "Up to three games yet to end, from the day's start (today: from now).",
-      }),
+    next: z.array(StaffBooking.extend({ checkedIn: z.boolean() })).meta({
+      description: "Up to three games yet to end, from the day's start (today: from now).",
+    }),
     free: z
       .array(
         z.object({

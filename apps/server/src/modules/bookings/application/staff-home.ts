@@ -106,6 +106,7 @@ export const staffHome = async (
 
   const terms = { now, paymentWindow: venue.settings?.paymentWindow ?? null };
   return {
+    timezone,
     requests,
     holds,
     toMark,

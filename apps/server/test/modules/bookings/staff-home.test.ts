@@ -54,12 +54,13 @@ const aDay = async () => {
 
 describe("the Home tab", () => {
   it("counts what waits on a later day, its next games, the cash to take and its open hours", async () => {
-    const { venue, hours, request, game, day } = await aDay();
+    const { marketplace, venue, hours, request, game, day } = await aDay();
     const owner = await staffAt(venue.id);
 
     const res = await asStaff(owner.id, "GET", `/venues/${venue.id}/home?date=${day}`);
     expect(res.status).toBe(200);
     const home = StaffHome.parse(await res.json());
+    expect(home.timezone).toBe(marketplace.timezone);
     expect(home.requests).toMatchObject({ count: 1, bookingId: request.id });
     expect(home.holds.count).toBe(0);
     expect(home.toMark.count).toBe(0);

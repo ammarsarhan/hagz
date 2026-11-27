@@ -19629,6 +19629,11 @@ export interface components {
             }[];
         };
         StaffHome: {
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
             /** @description Waiting for approval: all of them for today, that day's for a later one. */
             requests: {
                 count: number;
