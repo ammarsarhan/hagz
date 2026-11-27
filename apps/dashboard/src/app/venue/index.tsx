@@ -421,13 +421,15 @@ function PausedBanner({
             <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
             <Text className="ms-3 flex-1 text-label text-ink-2">
               <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
-              {t("screens.home.pausedBody")}
+              {`${t("screens.home.pausedBody")} `}
+              {/* The space stays outside, so only the word is underlined; no grey flash on tap. */}
               <Text
                 accessibilityRole="link"
+                suppressHighlighting
                 className="text-label font-medium text-ink underline"
                 onPress={() => router.navigate("/venue/manage")}
               >
-                {` ${t("screens.home.reopen")}`}
+                {t("screens.home.reopen")}
               </Text>
             </Text>
             <Pressable
