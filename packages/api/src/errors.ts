@@ -372,6 +372,10 @@ const messages = {
     en: "You can be in {limit} games at a time. Play or leave one first.",
     ar: "يمكنك المشاركة في {limit} مباريات في نفس الوقت. العب أو غادر واحدة أولًا.",
   },
+  JOINING_COOL_OFF: {
+    en: "You've left several games this week. You can join again within a day.",
+    ar: "غادرت عدة مباريات هذا الأسبوع. يمكنك الانضمام مجددًا خلال يوم.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -453,6 +457,7 @@ const short = {
   HOSTING_LIMIT: { en: "Only {limit} hosted games at once", ar: "{limit} مباريات فقط تستضيفها" },
   REJOIN_LIMIT: { en: "Joined {limit} times already", ar: "انضممت {limit} مرات بالفعل" },
   JOINING_LIMIT: { en: "Only {limit} games at once", ar: "{limit} مباريات فقط في نفس الوقت" },
+  JOINING_COOL_OFF: { en: "Join again within a day", ar: "انضم مجددًا خلال يوم" },
   REGULAR_OVERLAPS: { en: "Already a regular at this time", ar: "منتظم بالفعل في هذا الوقت" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;

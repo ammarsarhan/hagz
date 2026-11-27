@@ -12044,7 +12044,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, JOINING_LIMIT (with `limit`): in too many games at once, or REJOIN_LIMIT (with `limit`): joined this game too many times. */
+                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, GAME_CLASH: you have a game or a booking at this time, JOINING_LIMIT (with `limit`): in too many games at once, JOINING_COOL_OFF (with `until` and `leaves`): left too many games this week, so no joining until `until`, or REJOIN_LIMIT (with `limit`): joined this game too many times. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -20604,8 +20604,13 @@ export interface components {
                 /** @description This player is the one asking. */
                 you: boolean;
             }[] | null;
-            /** @description Once you've joined, until 24 hours after kick-off. */
+            /** @description Once you've joined, from 12 hours before kick-off until 24 hours after (user, 2026-11-27: joining only to collect numbers stops paying off). */
             bookerPhone: string | null;
+            /**
+             * Format: date-time
+             * @description For a joined player, when the booker's number shows; null for anyone else.
+             */
+            bookerPhoneFrom: string | null;
         };
         ListingRequest: {
             /** @description Players wanted, besides the booker; at most the ground's players less one. */

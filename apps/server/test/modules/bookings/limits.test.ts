@@ -2,6 +2,7 @@ import { Booking } from "@hagz/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { LIMITS } from "@/modules/bookings/application/limits";
+import { joinGame } from "@/modules/bookings/application/listings";
 import { aGround, at, book, signedIn } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { resetRedis } from "../../support/redis";
@@ -9,6 +10,7 @@ import { resetRedis } from "../../support/redis";
 // What a player can have on at once where nothing is paid up front: two bookings paid at the
 // venue, two games joined, two games hosted (application/limits.ts).
 
+const HOUR = 60 * 60_000;
 const kept = { ...LIMITS };
 beforeEach(async () => {
   await resetDatabase();
@@ -128,5 +130,31 @@ describe("games", () => {
     const fourth = await call(player.token, "POST", `/games/${game.id}/join`);
     expect(fourth.status).toBe(409);
     expect(await fourth.json()).toMatchObject({ code: "REJOIN_LIMIT", limit: 3 });
+  });
+
+  it("stops joining for a day after leaving three games in a week", async () => {
+    const { ground, hours } = await aGround();
+    const games: string[] = [];
+    const phones = ["+201005550011", "+201005550012", "+201005550013", "+201005550014"];
+    for (const [i, phone] of phones.entries()) {
+      const booker = await signedIn(phone);
+      games.push((await hosted(booker.token, ground.id, hours, i)).id ?? "");
+    }
+    const player = await signedIn();
+    // Two games left still lets them join; the third left starts the cool-off.
+    for (const game of games.slice(0, 3)) {
+      expect((await call(player.token, "POST", `/games/${game}/join`)).ok).toBe(true);
+      expect((await call(player.token, "POST", `/games/${game}/leave`)).ok).toBe(true);
+    }
+    const cooling = await call(player.token, "POST", `/games/${games[3]}/join`);
+    expect(cooling.status).toBe(409);
+    const problem = (await cooling.json()) as { code: string; until: string; leaves: number };
+    expect(problem).toMatchObject({ code: "JOINING_COOL_OFF", leaves: 3 });
+    const until = Date.parse(problem.until);
+    expect(until - Date.now()).toBeGreaterThan(23 * HOUR);
+    expect(until - Date.now()).toBeLessThanOrEqual(24 * HOUR);
+
+    // Once the day is up they can join again.
+    await joinGame(player.customer.id, games[3] ?? "", { now: () => new Date(until + 1000) });
   });
 });

@@ -14,6 +14,11 @@ import { AppError } from "@/platform/errors/app-error";
 // Not frozen only so tests about something else can lift them (test/support/bookings.ts).
 export const LIMITS = { payAtVenue: 2, joined: 2, hosted: 2 };
 
+// Joining and leaving again and again (user, 2026-11-27): this many games left within the window
+// means no joining for the cool-off after the last of them.
+export const COOL_OFF = { leaves: 3, windowHours: 7 * 24, hours: 24 };
+const HOUR_MS = 60 * 60_000;
+
 const STILL_ON = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"];
 
 const limitReached = (code: string, detail: string, limit: number) =>
@@ -77,4 +82,23 @@ export const checkJoined = async (tx: Tx, customerId: string, now: Date) => {
       LIMITS.joined,
     );
   }
+};
+
+// Before joining a game: not cooling off from leaving games over and over (COOL_OFF). Only games
+// the player left count: being removed by a booker isn't held against them here.
+export const checkCoolOff = async (tx: Tx, customerId: string, now: Date) => {
+  await lockAccount(tx, customerId);
+  const since = new Date(now.getTime() - COOL_OFF.windowHours * HOUR_MS);
+  const [row] = await tx.$queryRaw<{ n: number; last: Date | null }[]>`
+      SELECT count(*)::int AS n, max("leftAt") AS last FROM "ListingPlayer"
+      WHERE "customerId" = ${customerId}::uuid AND status = 'LEFT' AND "leftAt" > ${since}`;
+  if (!row?.last || row.n < COOL_OFF.leaves) return;
+  const until = new Date(row.last.getTime() + COOL_OFF.hours * HOUR_MS);
+  if (until <= now) return;
+  throw new AppError({
+    code: "JOINING_COOL_OFF",
+    status: 409,
+    detail: `You've left ${row.n} games this week, so you can join again from ${until.toISOString()}.`,
+    extensions: { until: until.toISOString(), leaves: row.n },
+  });
 };

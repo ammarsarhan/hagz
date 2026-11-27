@@ -27,7 +27,7 @@ import {
 } from "../domain/listings";
 import { bookingNotFound, lockBooking } from "./booking-rows";
 import { decodeCursor as decodePageCursor, encodeCursor as encodePageCursor } from "./cursor";
-import { checkHosted, checkJoined } from "./limits";
+import { checkCoolOff, checkHosted, checkJoined } from "./limits";
 
 // Open games (PR 4.7, docs/listings.md). A player lists their confirmed app booking as needing
 // players; others join from the feed or the share link. Joining, leaving and changing the number
@@ -360,6 +360,7 @@ export const joinGame = async (
       LIMIT 1`;
     if (clashes.length > 0) throw clash();
     await checkJoined(tx, customerId, now);
+    await checkCoolOff(tx, customerId, now);
     await tx.listingPlayer.upsert({
       where: { listingId_customerId: { listingId, customerId } },
       create: { listingId, customerId, joinedAt: now },
