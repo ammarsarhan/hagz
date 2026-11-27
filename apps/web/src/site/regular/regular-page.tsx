@@ -134,10 +134,13 @@ export function RegularPage({ locale }: { locale: Locale }) {
     weekday: "long",
   }).format(new Date(`${date}T12:00:00Z`));
   const start = timeOfDay(week.startsAt, week.timezone, locale);
-  const end = timeOfDay(week.endsAt, week.timezone, locale);
   // "8 – 9 pm", or "11 am – 1 pm" across noon.
-  const sameHalf = start.split(" ")[1] === end.split(" ")[1];
-  const hours = `${sameHalf ? start.split(" ")[0] : start} – ${end}`;
+  const hoursOf = (from: string, to: string) => {
+    const a = timeOfDay(from, week.timezone, locale);
+    const b = timeOfDay(to, week.timezone, locale);
+    return `${a.split(" ")[1] === b.split(" ")[1] ? a.split(" ")[0] : a} – ${b}`;
+  };
+  const hours = hoursOf(week.startsAt, week.endsAt);
   const kind =
     week.ground.size === "STANDARD"
       ? words.sports[week.ground.sport]
@@ -151,11 +154,23 @@ export function RegularPage({ locale }: { locale: Locale }) {
   const waiting = week.state === "WAITING";
   // The code kept left to right inside Arabic, so its # stays in front of it.
   const code = `\u2066#${week.code}\u2069`;
+  const { movedTo } = week;
   const line = {
     WAITING: words.regular.waiting(week.name, weekday, deadline, venue, code),
     CONFIRMED: words.regular.playing(venue, weekday, start),
     RELEASED: words.regular.letGo(weekday),
     MISSED: words.regular.missed(deadline, venue, code),
+    MOVED: movedTo
+      ? words.regular.moved(
+          venue,
+          words.shared.moment(
+            dayLabel(todayAt(week.timezone, new Date(movedTo.startsAt)), locale),
+            hoursOf(movedTo.startsAt, movedTo.endsAt),
+          ),
+          movedTo.ground.name,
+          `\u2066#${movedTo.code}\u2069`,
+        )
+      : words.regular.changed(venue, code),
     CHANGED: words.regular.changed(venue, code),
   }[week.state];
   const venuePage = pathIn(locale, links("").venue(week.venue.slug));

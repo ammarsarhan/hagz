@@ -235,6 +235,9 @@ const en = {
       `You’ve released this week’s booking, and the time is now open for others to book. Your weekly booking continues next ${weekday}.`,
     missed: (deadline: string, venue: string, code: string) =>
       `The confirmation deadline of ${deadline} has passed, so the time has been released for others to book. To play this week, please contact ${venue} and quote booking code ${code}.`,
+    // Moved or swapped by the venue: where it is now, and its new code.
+    moved: (venue: string, when: string, ground: string | null, code: string) =>
+      `${venue} has moved this week’s booking to ${when}${ground ? ` on ${ground}` : ""}. Its booking code is now ${code}.`,
     changed: (venue: string, code: string) =>
       `${venue} has changed the time of this week’s booking. For more information, please contact them and quote booking code ${code}.`,
     playingButton: "I’m playing",
@@ -497,6 +500,8 @@ const ar: Words = {
       `تم إلغاء حجزك لهذا الأسبوع، وأصبح الموعد متاحًا للحجز. يستمر حجزك الأسبوعي يوم ${weekday} القادم.`,
     missed: (deadline, venue, code) =>
       `انتهت مهلة التأكيد في ${deadline}، فأصبح الموعد متاحًا للحجز. للعب هذا الأسبوع، تواصل مع ${venue} واذكر رمز الحجز ${code}.`,
+    moved: (venue, when, ground, code) =>
+      `نقل ${venue} حجز هذا الأسبوع إلى ${when}${ground ? ` في ${ground}` : ""}. رمز الحجز الآن ${code}.`,
     changed: (venue, code) =>
       `قام ${venue} بتغيير موعد حجز هذا الأسبوع. لمزيد من المعلومات، تواصل معهم واذكر رمز الحجز ${code}.`,
     playingButton: "سألعب",
