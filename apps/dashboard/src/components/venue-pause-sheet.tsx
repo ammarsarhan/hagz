@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { afterVenueWrite, queries } from "@/lib/queries";
-import { BarButton, BottomBar } from "./bottom-bar";
+import { Button } from "./button";
 import { useHud } from "./hud";
 import { Sheet } from "./sheet";
 import { StepRail, type Step } from "./step-rail";
@@ -97,10 +97,9 @@ export function VenuePauseSheet({
       closeLabel={t("components.shared.nav.close")}
       scrollable
       footer={
-        <View className="mt-8 pt-3">
-          <BottomBar title={t(`${s}.barTitle`)} detail={t(`${s}.barBody`)}>
-            <BarButton label={t(`${s}.button`)} primary busy={sending} onPress={() => void run()} />
-          </BottomBar>
+        // Just the button, the sheet's full width (user, 2026-11-27): no bar over it.
+        <View className="mt-8">
+          <Button label={t(`${s}.button`)} loading={sending} onPress={() => void run()} />
         </View>
       }
     >
