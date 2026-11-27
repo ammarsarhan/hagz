@@ -838,7 +838,6 @@ const en = {
         closed: "Closed",
         closedByYou: "Closed by you",
         closedBy: "Closed by {{name}}",
-        modify: "Modify",
         // A free or closed time's sheets (Figma D16).
         timeSheet: {
           noteBody: "Only your team sees it",

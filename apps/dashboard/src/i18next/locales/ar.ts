@@ -931,7 +931,6 @@ const ar: ArabicTranslations = {
         closed: "مغلق",
         closedByYou: "أغلقته أنت",
         closedBy: "أغلقه {{name}}",
-        modify: "تعديل",
         timeSheet: {
           noteBody: "يراها فريقك فقط",
           priceTitle: "غيّر السعر",

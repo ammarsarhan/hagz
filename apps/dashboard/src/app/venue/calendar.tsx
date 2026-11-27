@@ -1,11 +1,9 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
-import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
-import { Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -355,15 +353,12 @@ export default function VenueCalendar() {
     },
   });
 
-  // Free and closed times (Figma D16, D19; user 2026-11-27). A tap or long press on one opens its
-  // own page; on one ground, holding a free time and dragging picks the free times back to back with
-  // it, and the pill by the + becomes Modify, which opens that page for all of them.
+  // Free and closed times (Figma D19; user 2026-11-27): a tap or long press on one opens its own page.
   const me = useQuery(queries.me).data;
   const canOpen =
     venue?.permissions.bookings === "manage" || venue?.permissions.schedule === "manage";
   const currency = slots.data?.currency ?? "EGP";
   const openSlots = (list: readonly Slot[]) => {
-    setDragPick(null);
     push({
       pathname: "/time",
       params: { date: day, slotIds: list.map((slot) => slot.id).join(",") },
@@ -374,109 +369,17 @@ export default function VenueCalendar() {
     if (row.kind === "free" || row.kind === "closed") openSlots(row.slots);
   };
 
-  // The free times picked by dragging (on one ground), by their rows' keys, in order.
-  const [dragPick, setDragPick] = useState<string[] | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const freeRun = useMemo(
-    () =>
-      groundId === null
-        ? []
-        : rows.filter(
-            (row): row is Extract<CalendarRow, { kind: "free" }> =>
-              row.kind === "free" && !row.ended,
-          ),
-    [rows, groundId],
-  );
-  const joined = (index: number) => freeRun[index + 1]?.startsAt === freeRun[index]?.endsAt;
-  const pickedRows = useMemo(() => {
-    if (!dragPick) return [];
-    const found = dragPick.map((key) => freeRun.find((row) => row.key === key));
-    return found.every(Boolean) ? (found as typeof freeRun) : [];
-  }, [dragPick, freeRun]);
-  const rowPlaces = useRef(new Map<string, { y: number; height: number }>());
-  const placeRow = useCallback((key: string, event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    rowPlaces.current.set(key, { y, height });
-  }, []);
-  const freeAt = (y: number) => {
-    let nearest = -1;
-    let distance = Infinity;
-    freeRun.forEach((row, index) => {
-      const place = rowPlaces.current.get(row.key);
-      if (!place) return;
-      const away =
-        y < place.y ? place.y - y : y > place.y + place.height ? y - (place.y + place.height) : 0;
-      if (away < distance) {
-        distance = away;
-        nearest = index;
-      }
-    });
-    return { index: nearest, on: distance === 0 };
-  };
-  // From the row held towards the one under the finger, as far as they run back to back.
-  const stretch = (anchor: number, toward: number) => {
-    let from = anchor;
-    let to = anchor;
-    while (to < toward && joined(to)) to += 1;
-    while (from > toward && joined(from - 1)) from -= 1;
-    return freeRun.slice(from, to + 1).map((row) => row.key);
-  };
-  const drag = useRef<{ anchor: number; last: number; keys: string[] } | null>(null);
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .activateAfterLongPress(250)
-    .onStart((event) => {
-      const { index, on } = freeAt(event.y);
-      const row = freeRun[index];
-      if (!on || !row || !canOpen) return;
-      drag.current = { anchor: index, last: index, keys: [row.key] };
-      setDragging(true);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setDragPick([row.key]);
-    })
-    .onUpdate((event) => {
-      const current = drag.current;
-      if (!current) return;
-      const { index } = freeAt(event.y);
-      if (index < 0 || index === current.last) return;
-      current.last = index;
-      void Haptics.selectionAsync();
-      current.keys = stretch(current.anchor, index);
-      setDragPick(current.keys);
-    })
-    .onFinalize(() => {
-      const keys = drag.current?.keys;
-      drag.current = null;
-      setDragging(false);
-      // Held without dragging: that one time's sheet, as a long press.
-      if (keys?.length === 1) {
-        setDragPick(null);
-        const row = freeRun.find((one) => one.key === keys[0]);
-        if (row) openTime(row);
-      }
-    });
-  const modify = () => {
-    if (pickedRows.length > 0) openSlots(pickedRows.flatMap((row) => row.slots));
-  };
-
   // The + asks first: a new booking or a hold, opened once its sheet has slid away.
   const [adding, setAdding] = useState(false);
   const added = useRef<AddAction | null>(null);
   const holdMinutes = useQuery(bookingSettingsQuery(venueId)).data?.staffHoldMinutes ?? null;
   // A booking opens its page; free and closed times wait for their own screens.
   const openRow = (row: CalendarRow) => {
-    // A tap lets a dragged pick go.
-    if (pickedRows.length > 0) {
-      setDragPick(null);
-      return;
-    }
     if (row.kind === "free" || row.kind === "closed") openTime(row);
     else push(`/booking/${row.booking.id}`);
   };
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
-  useEffect(() => setDragPick(null), [shown]);
-  const picking = pickedRows.length > 1;
   const showNow = day === today;
   useEffect(() => {
     if (!showNow || loading || dayFailure) nowY.value = -1;
@@ -509,7 +412,6 @@ export default function VenueCalendar() {
       <Animated.ScrollView
         ref={page}
         onScroll={onScroll}
-        scrollEnabled={!dragging}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical
@@ -669,32 +571,25 @@ export default function VenueCalendar() {
               </Animated.View>
             ))
           ) : (
-            // One ground: hold a free time and drag to pick those back to back with it.
-            <GestureDetector gesture={pan}>
-              <View className="gap-4">
-                {rows.map((row, index) => (
-                  <Animated.View
-                    key={`${shown}:${row.key}`}
-                    entering={staggered(index)}
-                    onLayout={(event) => {
-                      placeRow(row.key, event);
-                      if (index === nowRow) placedNow(event.nativeEvent.layout.y);
-                    }}
-                  >
-                    <Row
-                      row={row}
-                      timezone={timezone}
-                      ground={groundsOf(row)}
-                      currency={currency}
-                      current={index === nowRow}
-                      meId={me?.id}
-                      selected={pickedRows.some((one) => one.key === row.key)}
-                      onPress={() => openRow(row)}
-                    />
-                  </Animated.View>
-                ))}
-              </View>
-            </GestureDetector>
+            rows.map((row, index) => (
+              <Animated.View
+                key={`${shown}:${row.key}`}
+                entering={staggered(index)}
+                onLayout={
+                  index === nowRow ? (event) => placedNow(event.nativeEvent.layout.y) : undefined
+                }
+              >
+                <Row
+                  row={row}
+                  timezone={timezone}
+                  ground={groundsOf(row)}
+                  currency={currency}
+                  current={index === nowRow}
+                  meId={me?.id}
+                  onPress={() => openRow(row)}
+                />
+              </Animated.View>
+            ))
           )}
         </View>
       </Animated.ScrollView>
@@ -702,44 +597,23 @@ export default function VenueCalendar() {
       {pull.spinner}
 
       {/* Level with the +: centred on its 56 pt. */}
-      {picking ? (
-        // A few free times picked by dragging: Modify takes the pill's place (Figma D16).
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(180)}
-          pointerEvents="box-none"
-          className="absolute right-0 left-0 items-center"
-          style={{ bottom: FAB_GAP + (FAB - 40) / 2 }}
+      <Animated.View
+        pointerEvents={pastNow ? "box-none" : "none"}
+        className="absolute right-0 left-0 items-center"
+        style={[{ bottom: FAB_GAP + (FAB - 40) / 2 }, nowPillStyle]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.calendar.backToNow")}
+          onPress={backToNow}
+          className="h-10 flex-row items-center gap-1.5 rounded-full bg-ink px-4 active:opacity-80"
         >
-          <Pressable
-            accessibilityRole="button"
-            onPress={modify}
-            className="h-10 flex-row items-center rounded-full bg-ink px-4 active:opacity-80"
-          >
-            <Text className="text-label font-medium text-white">
-              {t("screens.calendar.modify")}
-            </Text>
-          </Pressable>
-        </Animated.View>
-      ) : (
-        <Animated.View
-          pointerEvents={pastNow ? "box-none" : "none"}
-          className="absolute right-0 left-0 items-center"
-          style={[{ bottom: FAB_GAP + (FAB - 40) / 2 }, nowPillStyle]}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.calendar.backToNow")}
-            onPress={backToNow}
-            className="h-10 flex-row items-center gap-1.5 rounded-full bg-ink px-4 active:opacity-80"
-          >
-            <IconArrowUp size={16} color={colors.white} strokeWidth={2} />
-            <Text className="text-label font-medium text-white">
-              {t("screens.calendar.backToNow")}
-            </Text>
-          </Pressable>
-        </Animated.View>
-      )}
+          <IconArrowUp size={16} color={colors.white} strokeWidth={2} />
+          <Text className="text-label font-medium text-white">
+            {t("screens.calendar.backToNow")}
+          </Text>
+        </Pressable>
+      </Animated.View>
 
       <LayoutAnimationConfig skipEntering>
         {pastDay ? null : (
@@ -887,7 +761,6 @@ function Row({
   currency,
   current = false,
   meId,
-  selected = false,
   onPress,
 }: {
   row: CalendarRow;
@@ -902,8 +775,6 @@ function Row({
   current?: boolean;
   // Who's signed in, so hours they closed say "Closed by you".
   meId?: string;
-  // Picked by dragging: blue, as one block with the others picked.
-  selected?: boolean;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
@@ -931,15 +802,13 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      // On All grounds, where there's no dragging, a long press opens the same sheet as a tap.
-      onLongPress={
-        hour !== undefined && (row.kind === "free" || row.kind === "closed") ? onPress : undefined
-      }
+      // A long press on a free or closed time opens its page, as a tap does.
+      onLongPress={row.kind === "free" || row.kind === "closed" ? onPress : undefined}
       // 64 at least, the bar its full height. The padding is inside, around the words: 4 pt, or 12
       // when the grounds run onto another line (three lines in all), so the row and its bar grow
       // with them (user: padding, not a gap between rows).
       // A time gone by with nothing booked steps further back (user): faded as a whole.
-      className={`min-h-16 flex-row items-center active:opacity-70 ${row.kind === "free" && row.ended ? "opacity-40" : ""} ${selected ? "-mx-2 rounded-xl bg-[#f2f4ff] px-2" : ""}`}
+      className={`min-h-16 flex-row items-center active:opacity-70 ${row.kind === "free" && row.ended ? "opacity-40" : ""}`}
     >
       {hour === undefined ? (
         // Pulled out by its padding, so the hours line up with the other rows' either way.
@@ -963,7 +832,7 @@ function Row({
         </View>
       ) : null}
       <View
-        className={`w-1.5 self-stretch rounded-[3px] ${selected ? "bg-primary" : row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
+        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
       />
       <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
         <Text
