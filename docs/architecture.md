@@ -379,7 +379,7 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 | 1. Identity (API ✅, UI next) | Phone OTP, sessions, refresh rotation, admin TOTP, rate limits, policy layer | Tenant-isolation and token-reuse tests pass |
 | 2. Venues and grounds | Reference data, venue creation and settings, media (R2), grounds and schedules, layout API, slot generation, go-live review, support tools | DST property tests pass; generation is idempotent; a venue reaches `LIVE` through admin review |
 | 3. Discovery | Venue page, guest browsing, search by area, distance or name with every filter and sort, favorites | Every search shape stays within its query-plan budget on launch-scale data |
-| 4. Bookings | Holds, state machine, charges, approval, expiry sweeper, venue customers and walk-ins | The 100-request race leaves exactly one booking |
+| 4. Bookings ✅ | Holds, state machine, charges, approval, expiry sweeper, venue customers and walk-ins | The 100-request race leaves exactly one booking |
 | 4b. Communities and tournaments | Open and closed communities, members-only games, venue and community tournaments with fixtures and results | Concurrent joins never pass a limit; brackets fill correctly through byes and walkovers |
 | 5. Payments | Paymob spike, provider adapter, webhooks, reconciliation, cash | Missing, duplicate and out-of-order webhook tests pass |
 | 6. Money out | Cancellations, refunds, ledger, commission, payouts, nightly audit | The audit shows no drift across randomized simulations |

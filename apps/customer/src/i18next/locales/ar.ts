@@ -108,6 +108,7 @@ const ar: ArabicTranslations = {
       tonight: "الليلة",
       tomorrow: "غدًا",
       whenAnyTime: "{{day}} · أي وقت",
+      whenFrom: "{{day}} · من {{time}}",
       whenRange: "{{day}} · {{range}}",
       sports: {
         FOOTBALL: "كرة القدم",
@@ -570,6 +571,7 @@ const ar: ArabicTranslations = {
         distance: "المسافة",
         within: "في حدود {{km}} كم",
         anywhere: "أي مكان",
+        inArea: "في {{name}}",
         price: "السعر",
         priceLine: "حصتك ورسوم الانضمام معًا.",
         anyPrice: "أي سعر",
@@ -672,6 +674,7 @@ const ar: ArabicTranslations = {
         you: "أنت",
         whoHeading: "من يلعب",
         bookerTitle: "{{name}}، صاحب الحجز",
+        phoneFrom: "يظهر رقم {{name}} من {{when}}، حفاظًا على خصوصية أصحاب الحجوزات.",
         call: "اتصل بـ {{name}}",
         whatsapp: "راسل {{name}} على واتساب",
         leaveLine: "يمكنك المغادرة حتى بداية المباراة.",
@@ -850,7 +853,12 @@ const ar: ArabicTranslations = {
           PLATFORM: "مدفوع أونلاين",
         },
         calendar: "أضف إلى التقويم",
-        calendarSoon: "الإضافة إلى التقويم قريبًا",
+        calendarTitle: "{{ground}} في {{venue}}",
+        calendarNotes: "حجز Hagz رقم {{code}}",
+        calendarNotesLink: "حجز Hagz رقم {{code}}: {{link}}",
+        calendarAdded: "أُضيف إلى تقويمك",
+        calendarDenied: "اسمح بالوصول إلى التقويم من الإعدادات لإضافته",
+        calendarFailed: "تعذّر فتح التقويم",
         share: "مشاركة",
         shareMessage: "{{ground}} في {{venue}}، {{when}}: {{link}}",
         view: "عرض الحجز",
@@ -924,6 +932,7 @@ const ar: ArabicTranslations = {
           cash: "الدفع نقدًا",
           online: "الدفع أونلاين",
           loyalty: "الولاء",
+          justFreed: "أصبح متاحًا للتو",
         },
         filtersSheet: {
           title: "الفلاتر",
@@ -996,6 +1005,7 @@ const ar: ArabicTranslations = {
         when: {
           title: "متى تريد أن تلعب؟",
           anyTime: "أي وقت",
+          from: "من {{time}}",
           barsHint: "الأعمدة تمثل الملاعب المتاحة كل ساعة",
         },
         card: {

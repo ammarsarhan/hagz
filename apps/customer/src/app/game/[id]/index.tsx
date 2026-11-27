@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SectionBreak } from "@/components/booking-sections";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconBrandWhatsapp, IconPhone, IconQrcode } from "@/components/icons";
+import { IconBrandWhatsapp, IconLock, IconPhone, IconQrcode } from "@/components/icons";
 import { RoundButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { Sheet } from "@/components/sheet";
@@ -29,6 +29,7 @@ import { COUNTRY_CODE, displayPhone, isolate } from "@/lib/phone";
 import {
   dayLabel,
   daysUntil,
+  deadlineLabel,
   hourAt,
   kindOf,
   listText,
@@ -468,6 +469,20 @@ function Joined({ game, onChange }: { game: Game; onChange: (game: Game) => void
           </View>
         ) : null}
       </View>
+      {/* Joined, more than 12 hours out: when the booker's number shows, and why it waits. */}
+      {!phone && game.bookerPhoneFrom && Date.parse(game.bookerPhoneFrom) > Date.now() ? (
+        <View className="mt-3 flex-row gap-2">
+          <View className="h-5 justify-center">
+            <IconLock size={16} color={colors.ink2} strokeWidth={1.75} />
+          </View>
+          <Text className="flex-1 text-label leading-5 text-ink-2">
+            {t("screens.game.phoneFrom", {
+              name: booker,
+              when: deadlineLabel(game.bookerPhoneFrom, game.timezone),
+            })}
+          </Text>
+        </View>
+      ) : null}
 
       <Where game={game} />
       <SectionBreak />

@@ -1,6 +1,6 @@
 # Listings
 
-A player who booked through the app can list their booking as needing players, and players without a team join it. The booking is always prepaid. Each player who joins owes the booker their share in cash, plus a 10% joining fee that the venue collects for Hagz (see [Money](#money)). Built in PR 4.7 of [plan.md](plan.md). Agreed on 2026-10-29; the money changed on 2026-11-19.
+A player who booked through the app can list their booking as needing players, and players without a team join it. The booking is always prepaid. Each player who joins pays the booker one amount in cash: their share with a 10% joining fee in it. The booker passes the fees to the venue, and Hagz takes them from the venue's payout (see [Money](#money)). Built in PR 4.7 of [plan.md](plan.md). Agreed on 2026-10-29; the money changed on 2026-11-19 and 2026-11-27.
 
 Open games share names, a note, and phone numbers once someone has joined. No chat. Communities can also list games for their members only (see [communities.md](communities.md)).
 
@@ -16,7 +16,11 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 - **Rescheduling:** if staff move the booking, the listing moves with it (new booking and start time) and joined players are told. See [rescheduling.md](rescheduling.md).
 - **Decided on 2026-11-22 (PR 4.7):** no minimum reliability to join in v1 (the booker sees the figure and can remove someone). Joining is also refused when it overlaps a booking of the player's own that's still on. A removed player can't rejoin that game; one who left can, while there's room. Joined players don't become the venue's customers.
 - **Built (2026-11-22):** a game asked for at checkout is stored `WAITING` and opens in the transaction that confirms the booking (approval, payment), or is cancelled with it (declined, expired). Players per ground: football 10 / 14 / 22, padel and tennis 4, basketball 10, volleyball 12 (`PLAYERS_BY_GROUND` in contracts). Any cancellation added later (6.1) must call `cancelListings` in its transaction.
-- **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person."*
+- **Decided on 2026-11-27 (against number harvesting and spot squatting):**
+  - **The booker's number shows from 12 hours before kick-off** (built 2026-11-27), not as soon as someone joins. Joining just to collect bookers' numbers and leaving stops paying off: you have to still be in the game 12 hours out. Before then a joined player sees the game, the other first names and when the number appears.
+  - **Limits on joining:** the existing at-once limit stays (2 games joined at once, `LIMITS.joined`, 2026-11-23), plus a cool-off after joining and leaving again and again: 3 games left within 7 days means no joining for 24 hours after the last of them (`COOL_OFF`, `JOINING_COOL_OFF` with `until`). Only games the player left count, not removals. **Built 2026-11-27**, with the 12-hour number (`bookerPhoneFrom` on `Game` says when it shows). Still to come: admins seeing accounts that join and leave a lot.
+  - **Ask to join** (the booker approves each player, and the number only ever goes to approved players) moves to Phase 4b as its own PR (4b.5 in [plan.md](plan.md)).
+- **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. You pay the booker in person, and the booker pays the venue the joining fee."*
 
 ## What people see
 
@@ -25,9 +29,9 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 | Venue, ground, sport, size, time | Yes | Yes |
 | Spots left, and the booker's note | Yes | Yes |
 | Booker's first name | Yes | Yes |
-| Share and joining fee ("60 EGP to Ahmed + 6 EGP at the venue") | Yes | Yes |
+| What to pay ("66 EGP to Ahmed at the venue", 60 share + 6 joining fee) | Yes | Yes |
 | Other joined players' first names | Count only | Yes |
-| The booker's phone number | No | Yes, until 24 hours after kick-off |
+| The booker's phone number | No | From 12 hours before kick-off until 24 hours after |
 
 The booker sees each joined player's first name, phone number, reliability figure, and when they joined. Phone numbers are only ever shared between the booker and a joined player, never between two joined players. Venue staff see the booking marked as an open game expecting n players (the joined count, which is final at kick-off, since nobody can join or leave after it), with their first names.
 
@@ -44,12 +48,14 @@ Agreed on 2026-11-19.
 - **The booker has prepaid the whole booking**, so the venue is never short, whoever turns up.
 - **The share** is the booking's total divided by the ground's player count, rounded up to a whole currency unit. It's copied onto the listing when it opens. Example: 600 EGP on a 5-a-side pitch (10 players) is 60 EGP each. The booker's own spot and any spots left unfilled stay paid for by the booker.
 - **The joining fee** is 10% of the share, rounded to a whole unit, and never less than the marketplace's minimum (5 EGP in Egypt; user, 2026-11-25): 6 EGP in the example, 5 EGP on a 40 EGP share. The rate is `Marketplace.joinFeeRate` (basis points, 1000 by default) and the minimum `Marketplace.joinFeeMinimum` (minor units); the fee is copied onto the listing. A rate of 0 turns the fee off, minimum and all.
-- **At the venue,** the joined player pays the booker their share (60 EGP) and pays the venue the joining fee (6 EGP). The game page and the join button show both amounts and who each one is paid to.
+- **At the venue** (changed 2026-11-27, user): the joined player pays **only the booker**, one amount: the share plus the joining fee (66 EGP). The booker keeps their share (60 EGP) and pays the venue the joining fee (6 EGP) out of what they collected, once for all the joined players who were checked in. The game page and the join button show the one amount and that it goes to the booker; the booker's view shows what they owe the venue.
+- **Hagz never handles a joined player's money,** and neither does the app: no paying in advance, and no booker confirming or accepting payments in the app (user, 2026-11-27). Whether a joined player paid the booker is between the two of them.
 - **The venue sees what to expect:** the booking is flagged "Open game: n players", with their names and the fee each one owes.
 - **Players check in at the venue** (changed 2026-11-22, replacing staff's arrived count and the booker's no-show reports). The booker of any app booking and each joined player show a QR code in the app, and staff scan it from 15 minutes before kick-off until 30 minutes after. The code changes every 30 seconds and each one works for 60, so a screenshot sent to a friend soon stops working. If someone's phone died, staff can tick them in by name (marked as manual), and they can undo a mistake while check-in is open. A player who leaves or is removed before kick-off is no longer checked in. Staff-entered and regular bookings have no check-in, because those players may not use the app.
+- **The venue keeps nothing from open games** (user, 2026-11-27): the booker keeps the shares, Hagz gets the joining fees from the venue, and the venue passes on all it was paid.
 - **The fee is for the players checked in.** Hagz takes that number × the joining fee out of the venue's balance (one `JOIN_FEE` ledger entry per game), settled at the next payout. It works the same way as commission on cash bookings.
 - **If staff check in none of the joined players, nothing is held against anyone ("unknown").** Every joined player counts for the fee, the same as before, and nobody gets a no-show. Skipping the scans saves the venue nothing. Admins see each venue's share of games where no joined player was checked in, and games where only the booker was.
-- **A booker who checked in can't be marked as a no-show** by staff. The check-in has to be undone first, while it's open.
+- **A booker who scanned their code can't be marked as a no-show** by staff: the scan is proof they came. A booker ticked in by name is only staff's word, so staff can mark them a no-show within the marking window (until 24 hours after the end), which clears the check-in and records `undidCheckIn` on the event (user, 2026-11-27). Before that, while check-in is open, a mistaken tick can also simply be undone.
 - **Only a game that took place is charged:** the fee is written when the booking is `COMPLETED`. If the venue marks the booking `NO_SHOW` or it's cancelled, there's no fee.
 - **A player who doesn't come pays nothing,** and Hagz accepts the loss: they're a small part of a booking that's already paid. Leaving or being removed costs nothing either, because nothing is paid in advance.
 
@@ -84,5 +90,5 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
 
 ## Open
 
-- Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to scan everyone.
-- VAT on the joining fee: it's Hagz's revenue, so Hagz charges VAT on it once registered (the accountant's question, with commission).
+- Settled 2026-11-27 (user): the venue keeps no part of the joining fee, and there's **no VAT on open games** (the share or the joining fee). The service fee in the booking's own total keeps its VAT.
+- Nothing else is open on the money.

@@ -372,6 +372,27 @@ const messages = {
     en: "You can be in {limit} games at a time. Play or leave one first.",
     ar: "يمكنك المشاركة في {limit} مباريات في نفس الوقت. العب أو غادر واحدة أولًا.",
   },
+  JOINING_COOL_OFF: {
+    en: "You've left several games this week. You can join again within a day.",
+    ar: "غادرت عدة مباريات هذا الأسبوع. يمكنك الانضمام مجددًا خلال يوم.",
+  },
+  // Marking a game played or a no-show (staff).
+  CHECKED_IN: {
+    en: "They scanned their code at the venue, so this can't be a no-show.",
+    ar: "مسح رمزه في الملعب، لذلك لا يمكن اعتباره غيابًا.",
+  },
+  BOOKING_NOT_STARTED: {
+    en: "A game can be marked once it has kicked off.",
+    ar: "يمكن تسجيل نتيجة المباراة بعد بدئها.",
+  },
+  MARK_WINDOW_CLOSED: {
+    en: "A game can be marked until 24 hours after it ends.",
+    ar: "يمكن تسجيل نتيجة المباراة حتى 24 ساعة بعد انتهائها.",
+  },
+  BOOKING_STATUS_CONFLICT: {
+    en: "This booking has already moved on.",
+    ar: "تغيّر هذا الحجز بالفعل.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -453,7 +474,12 @@ const short = {
   HOSTING_LIMIT: { en: "Only {limit} hosted games at once", ar: "{limit} مباريات فقط تستضيفها" },
   REJOIN_LIMIT: { en: "Joined {limit} times already", ar: "انضممت {limit} مرات بالفعل" },
   JOINING_LIMIT: { en: "Only {limit} games at once", ar: "{limit} مباريات فقط في نفس الوقت" },
+  JOINING_COOL_OFF: { en: "Join again within a day", ar: "انضم مجددًا خلال يوم" },
   REGULAR_OVERLAPS: { en: "Already a regular at this time", ar: "منتظم بالفعل في هذا الوقت" },
+  CHECKED_IN: { en: "They scanned in, so not a no-show", ar: "مسح رمزه، فلا يُعد غيابًا" },
+  BOOKING_NOT_STARTED: { en: "Mark it once it kicks off", ar: "سجّلها بعد بدء المباراة" },
+  MARK_WINDOW_CLOSED: { en: "Too late to change it", ar: "فات وقت تغييرها" },
+  BOOKING_STATUS_CONFLICT: { en: "This booking has moved on", ar: "تغيّر هذا الحجز بالفعل" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 

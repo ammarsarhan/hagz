@@ -2,6 +2,7 @@ import { Booking, Game, GamePage, StaffBookingDetail } from "@hagz/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { LIMITS } from "@/modules/bookings/application/limits";
+import { gameView } from "@/modules/bookings/application/listings";
 import { prisma } from "@/platform/db/prisma";
 import { aGround, asStaff, at, book, signedIn, staffAt } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
@@ -103,14 +104,23 @@ describe("joining", () => {
     const player = await signedIn("+201005550001");
     const joined = await join(player.token, gameId);
     expect(joined.status).toBe(200);
+    // The game is a day away: the booker's number waits until 12 hours before kick-off.
+    const phoneFrom = new Date(Date.parse(booking.startsAt) - 12 * 60 * 60_000);
     expect(Game.parse(await joined.json())).toMatchObject({
       playerCount: 1,
       spotsLeft: 0,
       joinable: false,
       me: { booker: false, status: "JOINED" },
       players: [{ firstName: "Ahmed", you: true }],
-      bookerPhone: "+201001234567",
+      bookerPhone: null,
+      bookerPhoneFrom: phoneFrom.toISOString(),
     });
+    const justBefore = { now: () => new Date(phoneFrom.getTime() - 1000) };
+    expect((await gameView(gameId, player.customer.id, "EN", justBefore)).bookerPhone).toBeNull();
+    const from = { now: () => phoneFrom };
+    expect((await gameView(gameId, player.customer.id, "EN", from)).bookerPhone).toBe(
+      "+201001234567",
+    );
     // The booker sees the same players, none of them themselves.
     const asBooker = Game.parse(await (await call(booker.token, "GET", `/games/${gameId}`)).json());
     expect(asBooker.players).toEqual([{ firstName: "Ahmed", you: false }]);
@@ -120,6 +130,7 @@ describe("joining", () => {
       me: null,
       players: null,
       bookerPhone: null,
+      bookerPhoneFrom: null,
       booker: { firstName: "Ahmed" },
     });
 

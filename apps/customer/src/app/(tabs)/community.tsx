@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -82,6 +82,16 @@ export default function CommunityTab() {
   const insets = useSafeAreaInsets();
   useHudAnchor(TAB_ROW + insets.bottom);
   const [tab, setTab] = useState<Tab>("discover");
+  // Home's Games See all: Find a game in Home's governorate, once per tap (`at`).
+  const preset = useLocalSearchParams<{ at?: string; area?: string; areaName?: string }>();
+  const presetApplied = useRef<string | undefined>(undefined);
+  const [area, setArea] = useState<{ at: string; id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (!preset.at || presetApplied.current === preset.at) return;
+    presetApplied.current = preset.at;
+    setTab("discover");
+    if (preset.area) setArea({ at: preset.at, id: preset.area, name: preset.areaName ?? "" });
+  }, [preset]);
   // Undefined while checking; false for a guest (Mine asks them to sign in).
   const [signedIn, setSignedIn] = useState<boolean | undefined>(undefined);
   useFocusEffect(
@@ -100,7 +110,7 @@ export default function CommunityTab() {
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <StatusBar style="dark" />
       {/* One list for both tabs, so the switcher stays put and slides as it's tapped. */}
-      <Games tab={tab} onTab={setTab} signedIn={signedIn} />
+      <Games tab={tab} onTab={setTab} signedIn={signedIn} area={area} />
     </View>
   );
 }
@@ -109,15 +119,23 @@ function Games({
   tab,
   onTab,
   signedIn,
+  area,
 }: {
   tab: Tab;
   onTab: (tab: Tab) => void;
   signedIn: boolean | undefined;
+  area: { at: string; id: string; name: string } | null;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const here = useHere();
   const [filters, setFilters] = useState<GameFilters>(NO_GAME_FILTERS);
+  // Each See all from Home starts the filters over in its area.
+  const [areaShown, setAreaShown] = useState<string | null>(null);
+  if (area && areaShown !== area.at) {
+    setAreaShown(area.at);
+    setFilters({ ...NO_GAME_FILTERS, area: { id: area.id, name: area.name } });
+  }
   const [games, setGames] = useState<Game[] | null>(null);
   // Joined: the games played, under the ones to come.
   const [played, setPlayed] = useState<Game[]>([]);
@@ -129,7 +147,7 @@ function Games({
   // Answers to an older ask (filters changed since) are dropped.
   const asked = useRef(0);
   const discover = tab === "discover";
-  const near = here && filters.radius !== null ? here : null;
+  const near = here && filters.radius !== null && !filters.area ? here : null;
   // Discover waits for the phone to say where it is (or that it can't); Mine, for whether they're
   // signed in, and a guest's Mine asks for nothing.
   const guest = !discover && signedIn === false;
