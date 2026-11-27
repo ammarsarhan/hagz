@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Animated, Easing, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone } from "@/components/bone";
+import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
 import { useHud } from "@/components/hud";
@@ -105,7 +106,8 @@ export default function VenueHome() {
   // The paused banner scrolls away first: as far as it's tall, the header and everything under it
   // rise with it (the content shifted back, so it still follows the finger), then the page scrolls
   // on as usual under the header in its place.
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const sections = useSectionTitle();
+  const scrollY = sections.scrollY;
   const [, setGone] = useState(0);
   const banner = venue?.status === "MAINTENANCE" && !dismissedPauses.has(venueId);
   const [bannerHeight, setBannerHeight] = useState(0);
@@ -126,6 +128,30 @@ export default function VenueHome() {
   });
   const down = Animated.multiply(up, -1);
 
+  // The title with its scan and bell beside it.
+  const header = (
+    <View className="h-10 flex-row items-center">
+      <Text
+        accessibilityRole="header"
+        className="flex-1 text-title font-semibold tracking-[-0.4px]"
+        numberOfLines={1}
+      >
+        {t("screens.home.title")}
+      </Text>
+      <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
+        <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
+      </HeaderButton>
+      <View className="ms-2">
+        <HeaderButton
+          label={t("screens.home.notifications")}
+          onPress={() => push("/notifications")}
+        >
+          <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
+        </HeaderButton>
+      </View>
+    </View>
+  );
+
   return (
     <Screen tabbed>
       {banner ? (
@@ -141,56 +167,38 @@ export default function VenueHome() {
         />
       ) : null}
       <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
-        {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons,
-            and 12 pt under them before the scroll's hairline once scrolled. */}
-        <View className="mt-[13px] mb-3 h-10 flex-row items-center">
-          <Text
-            accessibilityRole="header"
-            className="flex-1 text-title font-semibold tracking-[-0.4px]"
-            numberOfLines={1}
-          >
-            {t("screens.home.title")}
-          </Text>
-          <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
-            <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
-          </HeaderButton>
-          <View className="ms-2">
-            <HeaderButton
-              label={t("screens.home.notifications")}
-              onPress={() => push("/notifications")}
-            >
-              <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
-            </HeaderButton>
-          </View>
-        </View>
-
         {canSee ? (
-          <FadingScroll scrollY={scrollY} onRoom={setRoom}>
-            <Animated.View style={{ transform: [{ translateY: down }] }}>
-              {/* Up by what the header's 12 pt adds over 8, so at rest the chips sit where they
-                  did; only scrolled does the header keep the extra room. */}
-              <View className="-mt-1 flex-row gap-2">
-                <Chip
-                  label={t("screens.home.today")}
-                  on={!tomorrow}
-                  onPress={() => setTomorrow(false)}
-                />
-                <Chip
-                  label={t("screens.home.tomorrow")}
-                  on={tomorrow}
-                  onPress={() => setTomorrow(true)}
-                />
-              </View>
-              {home.data ? (
-                <Day home={home.data} date={date} isToday={!tomorrow} now={now} />
-              ) : (
-                <Loading />
-              )}
-            </Animated.View>
-            {/* Room for the shift above, so the end can still be reached. */}
-            <View style={{ height: lift }} />
-          </FadingScroll>
-        ) : null}
+          // As the Venue tab (user, 2026-11-27): no fixed bar; the title and its round buttons go
+          // up with the page, under a thin pinned strip that draws its hairline once anything has.
+          <PinnedTitle sections={sections}>
+            <FadingScroll scrollY={scrollY} topLine={false} onRoom={setRoom}>
+              <Animated.View style={{ transform: [{ translateY: down }] }}>
+                {header}
+                <View className="mt-2 flex-row gap-2">
+                  <Chip
+                    label={t("screens.home.today")}
+                    on={!tomorrow}
+                    onPress={() => setTomorrow(false)}
+                  />
+                  <Chip
+                    label={t("screens.home.tomorrow")}
+                    on={tomorrow}
+                    onPress={() => setTomorrow(true)}
+                  />
+                </View>
+                {home.data ? (
+                  <Day home={home.data} date={date} isToday={!tomorrow} now={now} />
+                ) : (
+                  <Loading />
+                )}
+              </Animated.View>
+              {/* Room for the shift above, so the end can still be reached. */}
+              <View style={{ height: lift }} />
+            </FadingScroll>
+          </PinnedTitle>
+        ) : (
+          <View className="mt-[13px]">{header}</View>
+        )}
       </Animated.View>
       {invitation.sheet}
     </Screen>
