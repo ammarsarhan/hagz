@@ -94,7 +94,7 @@ export function CompactTitle({
 //
 //   const sections = useSectionTitle();
 //   <PinnedTitle sections={sections}>
-//     <FadingScroll scrollY={sections.scrollY} topFade={0}>
+//     <FadingScroll scrollY={sections.scrollY} topLine={false}>
 //       <View onLayout={sections.onLayout("Details")}><SettingsHeading>Details</SettingsHeading></View>
 //     </FadingScroll>
 //   </PinnedTitle>

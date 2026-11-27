@@ -195,7 +195,7 @@ export default function VenueTab() {
     <Screen tabbed>
       <PinnedTitle sections={sections}>
         {/* A hairline under the bar, not a fade. */}
-        <FadingScroll scrollY={sections.scrollY} topFade={0}>
+        <FadingScroll scrollY={sections.scrollY} topLine={false}>
           <Title>{t(`${v}.title`)}</Title>
           <View className="mt-3 overflow-hidden rounded-[20px]" style={{ height: COVER_HEIGHT }}>
             {ready.length > 0 ? (
