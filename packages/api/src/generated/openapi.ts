@@ -19435,6 +19435,11 @@ export interface components {
             closed: {
                 /** @description For the venue's team; never shown to players. */
                 note: string | null;
+                /**
+                 * Format: uuid
+                 * @description Who closed it; null once they're gone.
+                 */
+                staffId: string | null;
                 /** @description First name of the staff member who closed it. */
                 by: string | null;
                 /** Format: date-time */

@@ -5871,6 +5871,14 @@
                 ],
                 "description": "For the venue's team; never shown to players."
               },
+              "staffId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "Who closed it; null once they're gone."
+              },
               "by": {
                 "type": [
                   "string",
@@ -5885,6 +5893,7 @@
             },
             "required": [
               "note",
+              "staffId",
               "by",
               "at"
             ],

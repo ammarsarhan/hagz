@@ -43,6 +43,10 @@ export const Slot = z
           .string()
           .nullable()
           .meta({ description: "For the venue's team; never shown to players." }),
+        staffId: z
+          .uuid()
+          .nullable()
+          .meta({ description: "Who closed it; null once they're gone." }),
         by: z
           .string()
           .nullable()
@@ -111,12 +115,10 @@ const BlockNote = z
   .max(200)
   .meta({ description: "Why it's closed, for the team." });
 
-export const BlockSlots = z
-  .object({ slotIds: SlotIds, note: BlockNote.optional() })
-  .meta({
-    id: "BlockSlots",
-    description: "Free slots of the venue that haven't started, to close.",
-  });
+export const BlockSlots = z.object({ slotIds: SlotIds, note: BlockNote.optional() }).meta({
+  id: "BlockSlots",
+  description: "Free slots of the venue that haven't started, to close.",
+});
 
 export const BlockNoteChange = z.object({ slotIds: SlotIds, note: BlockNote.nullable() }).meta({
   id: "BlockNoteChange",

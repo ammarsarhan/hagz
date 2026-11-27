@@ -22,12 +22,14 @@ export const slotSelect = {
   bookingId: true,
   blockNote: true,
   blockedAt: true,
+  blockedById: true,
   blockedBy: { select: { name: true } },
 } as const satisfies Prisma.GroundSlotSelect;
 
 export const presentSlot = ({
   blockNote,
   blockedAt,
+  blockedById,
   blockedBy,
   ...slot
 }: Prisma.GroundSlotGetPayload<{ select: typeof slotSelect }>): Slot => ({
@@ -39,6 +41,7 @@ export const presentSlot = ({
     slot.status === "BLOCKED" && blockedAt
       ? {
           note: blockNote,
+          staffId: blockedById,
           by: blockedBy ? (blockedBy.name.trim().split(/\s+/)[0] ?? blockedBy.name) : null,
           at: blockedAt.toISOString(),
         }
