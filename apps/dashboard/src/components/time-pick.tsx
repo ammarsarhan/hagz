@@ -83,6 +83,9 @@ export function TimePick({
     groundId?: string;
     forId?: string;
     forName?: string;
+    // From the calendar's free times (user, 2026-11-27): the first and last slot already picked.
+    from?: string;
+    to?: string;
   }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -104,7 +107,9 @@ export function TimePick({
   const [target, setTarget] = useState<HoldTarget | null>(null);
   const hud = useHud();
   // The pick, as its first and last free times (by id, so a refresh reordering nothing loses it).
-  const [pick, setPickIds] = useState<{ from: string; to: string } | null>(null);
+  const [pick, setPickIds] = useState<{ from: string; to: string } | null>(() =>
+    params.from && params.to ? { from: params.from, to: params.to } : null,
+  );
   const [dragging, setDragging] = useState(false);
 
   const timezone = slots.data?.timezone ?? FALLBACK_TIMEZONE;
