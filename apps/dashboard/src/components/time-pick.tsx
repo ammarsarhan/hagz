@@ -216,7 +216,9 @@ export function TimePick({
     // Gone (taken meanwhile) or no longer back to back: let it go.
     if (from < 0 || to < from) return null;
     for (let index = from; index < to; index += 1) if (!joined(index)) return null;
-    return { from, to };
+    // Handed a longer run than the ground allows (a free run from Home or a time's page, six hours
+    // where a game runs three at most): its first hours, as long as a game here may be.
+    return { from, to: Math.min(to, from + longest - 1) };
   })();
   const pickedSlots = chosen ? run.slice(chosen.from, chosen.to + 1) : [];
   const short = chosen !== null && pickedSlots.length < shortest;
