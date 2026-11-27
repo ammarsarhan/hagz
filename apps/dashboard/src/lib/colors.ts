@@ -17,6 +17,5 @@ export const colors = {
   grid: "#e6e8ec",
   // Animated backgrounds (a chosen option's tint, from white), which classes can't tween.
   white: "#ffffff",
-  chip: "#f2f3f5",
   blueTint: "#eef1fe",
 } as const;

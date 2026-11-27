@@ -3,17 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
 import type { ComponentType } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, View } from "react-native";
-import Animated, {
-  Easing,
-  interpolateColor,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import { Animated, Easing, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone } from "@/components/bone";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -103,45 +95,77 @@ export default function VenueHome() {
   useRefreshWhenShown(REFRESH);
   if (home.data && home.data.timezone !== timezone) setTimezone(home.data.timezone);
 
+  // The paused banner scrolls away first: as far as it's tall, the header and everything under it
+  // rise with it (the content shifted back, so it still follows the finger), then the page scrolls
+  // on as usual under the header in its place.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [, setGone] = useState(0);
+  const banner = venue?.status === "MAINTENANCE" && !dismissedPauses.has(venueId);
+  const [bannerHeight, setBannerHeight] = useState(0);
+  const lift = banner ? bannerHeight : 0;
+  const up = scrollY.interpolate({
+    inputRange: [0, Math.max(lift, 1)],
+    outputRange: [0, -lift],
+    extrapolate: "clamp",
+  });
+  const down = Animated.multiply(up, -1);
+
   return (
     <Screen tabbed>
-      {venue?.status === "MAINTENANCE" ? <PausedBanner key={venueId} venueId={venueId} /> : null}
-      {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons. */}
-      <View className="mt-[13px] h-10 flex-row items-center">
-        <Text
-          accessibilityRole="header"
-          className="flex-1 text-title font-semibold tracking-[-0.4px]"
-          numberOfLines={1}
-        >
-          {t("screens.home.title")}
-        </Text>
-        <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
-          <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
-        </HeaderButton>
-        <View className="ms-2">
-          <HeaderButton label={t("screens.home.notifications")} onPress={comingNext}>
-            <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
-          </HeaderButton>
-        </View>
-      </View>
-
-      {canSee ? (
-        <FadingScroll>
-          <View className="flex-row gap-2">
-            <Chip
-              label={t("screens.home.today")}
-              on={!tomorrow}
-              onPress={() => setTomorrow(false)}
-            />
-            <Chip
-              label={t("screens.home.tomorrow")}
-              on={tomorrow}
-              onPress={() => setTomorrow(true)}
-            />
-          </View>
-          {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
-        </FadingScroll>
+      {banner ? (
+        <PausedBanner
+          key={venueId}
+          up={up}
+          lift={lift}
+          onHeight={setBannerHeight}
+          onDismissed={() => {
+            dismissedPauses.add(venueId);
+            setGone((n) => n + 1);
+          }}
+        />
       ) : null}
+      <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
+        {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons. */}
+        <View className="mt-[13px] h-10 flex-row items-center">
+          <Text
+            accessibilityRole="header"
+            className="flex-1 text-title font-semibold tracking-[-0.4px]"
+            numberOfLines={1}
+          >
+            {t("screens.home.title")}
+          </Text>
+          <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
+            <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
+          </HeaderButton>
+          <View className="ms-2">
+            <HeaderButton label={t("screens.home.notifications")} onPress={comingNext}>
+              <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
+            </HeaderButton>
+          </View>
+        </View>
+
+        {canSee ? (
+          <FadingScroll scrollY={scrollY}>
+            <Animated.View style={{ transform: [{ translateY: down }] }}>
+              <View className="flex-row gap-2">
+                <Chip
+                  label={t("screens.home.today")}
+                  on={!tomorrow}
+                  onPress={() => setTomorrow(false)}
+                />
+                <Chip
+                  label={t("screens.home.tomorrow")}
+                  on={tomorrow}
+                  onPress={() => setTomorrow(true)}
+                />
+              </View>
+              {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
+            </Animated.View>
+            {/* Room for the shift above, so the end can still be reached. */}
+            <View style={{ height: lift }} />
+          </FadingScroll>
+        ) : null}
+      </Animated.View>
       {invitation.sheet}
     </Screen>
   );
@@ -320,71 +344,116 @@ function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; 
   );
 }
 
-// Paused (user, 2026-11-27): a grey banner the full width of the screen above the title, reaching
-// up behind the status bar so the bar is grey with it. It says players can't book, with Reopen (the
-// Venue tab's Availability switch) and an × that hides it for that venue until the app is next
-// opened: its words fade as it folds shut, the header easing up into place, while the grey behind the
-// status bar fades back to white.
+// Paused (user, 2026-11-27): a grey banner the full width of the screen above the title, with the
+// status bar grey above it. It says players can't book, with Reopen (the Venue tab's Availability
+// switch) and an × that hides it for that venue until the app is next opened. Scrolling carries it
+// up under the status bar, which turns white as it goes; dismissing folds it shut, its words fading
+// and the header easing up into place, while the status bar fades back to white.
 const dismissedPauses = new Set<string>();
-const FOLD = { duration: 320, easing: Easing.out(Easing.cubic) };
 
-function PausedBanner({ venueId }: { venueId: string }) {
+function PausedBanner({
+  up,
+  lift,
+  onHeight,
+  onDismissed,
+}: {
+  // How far scrolling has carried it up (0 to -lift), on the native driver.
+  up: Animated.AnimatedInterpolation<number>;
+  lift: number;
+  onHeight: (height: number) => void;
+  onDismissed: () => void;
+}) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [hidden, setHidden] = useState(() => dismissedPauses.has(venueId));
-  const open = useSharedValue(1);
-  const height = useSharedValue(0);
-  const frame = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(open.value, [0, 1], [colors.white, colors.chip]),
-  }));
-  // Its own height until measured, then folded by `open`.
-  const fold = useAnimatedStyle(() =>
-    height.value === 0 ? {} : { height: height.value * open.value, opacity: open.value },
-  );
-  if (hidden) return null;
+  const open = useRef(new Animated.Value(1)).current;
+  const [height, setHeight] = useState(0);
 
   const dismiss = () => {
-    dismissedPauses.add(venueId);
-    open.value = withTiming(0, FOLD, (done) => {
-      if (done) runOnJS(setHidden)(true);
+    Animated.timing(open, {
+      toValue: 0,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) onDismissed();
     });
   };
 
   return (
-    <Animated.View
-      style={[{ marginTop: -insets.top, paddingTop: insets.top, marginHorizontal: -20 }, frame]}
-    >
-      <Animated.View style={[{ overflow: "hidden" }, fold]}>
-        <View
-          className="flex-row items-center py-3 ps-5 pe-3"
-          onLayout={(event) => {
-            if (height.value === 0) height.value = event.nativeEvent.layout.height;
-          }}
+    <>
+      <Animated.View
+        style={{ marginHorizontal: -20, transform: [{ translateY: up }] }}
+        className="bg-chip"
+      >
+        <Animated.View
+          style={
+            height === 0
+              ? undefined
+              : {
+                  overflow: "hidden",
+                  height: Animated.multiply(open, height),
+                  opacity: open,
+                }
+          }
         >
-          <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
-          <Text className="ms-3 flex-1 text-label text-ink-2">
-            <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
-            {t("screens.home.pausedBody")}
-            <Text
-              accessibilityRole="link"
-              className="text-label font-medium text-ink underline"
-              onPress={() => router.navigate("/venue/manage")}
-            >
-              {` ${t("screens.home.reopen")}`}
-            </Text>
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("components.shared.nav.close")}
-            hitSlop={8}
-            onPress={dismiss}
-            className="ms-2 size-8 items-center justify-center active:opacity-60"
+          <View
+            className="flex-row items-center py-3 ps-5 pe-3"
+            onLayout={(event) => {
+              if (height !== 0) return;
+              setHeight(event.nativeEvent.layout.height);
+              onHeight(event.nativeEvent.layout.height);
+            }}
           >
-            <IconX size={18} color={colors.ink} strokeWidth={1.75} />
-          </Pressable>
-        </View>
+            <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
+            <Text className="ms-3 flex-1 text-label text-ink-2">
+              <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
+              {t("screens.home.pausedBody")}
+              <Text
+                accessibilityRole="link"
+                className="text-label font-medium text-ink underline"
+                onPress={() => router.navigate("/venue/manage")}
+              >
+                {` ${t("screens.home.reopen")}`}
+              </Text>
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("components.shared.nav.close")}
+              hitSlop={8}
+              onPress={dismiss}
+              className="ms-2 size-8 items-center justify-center active:opacity-60"
+            >
+              <IconX size={18} color={colors.ink} strokeWidth={1.75} />
+            </Pressable>
+          </View>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+
+      {/* The status bar, grey over the banner, whitening as it scrolls under or folds away. Drawn
+          after the banner, so the banner passes beneath it. */}
+      <View
+        pointerEvents="none"
+        className="absolute bg-chip"
+        style={{ top: -insets.top, height: insets.top, left: -20, right: -20 }}
+      >
+        <Animated.View
+          className="absolute inset-0 bg-white"
+          style={{
+            opacity: up.interpolate({
+              inputRange: [-Math.max(lift, 1), 0],
+              outputRange: [1, 0],
+              extrapolate: "clamp",
+            }),
+          }}
+        />
+        <Animated.View
+          className="absolute inset-0 bg-white"
+          style={{
+            opacity: open.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          }}
+        />
+      </View>
+    </>
   );
 }
 
