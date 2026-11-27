@@ -132,35 +132,39 @@ function VenueRow({
       ? t("components.venueSwitcher.owner")
       : t("components.venueSwitcher.member");
   const line = [venue.location, role].filter(Boolean).join(" · ");
+  // Paused: faded rather than labelled (user, 2026-11-27); still picked like any other.
+  const paused = venue.status === "MAINTENANCE";
 
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityHint={selected ? t("components.venueSwitcher.current") : undefined}
+      accessibilityHint={
+        [
+          selected ? t("components.venueSwitcher.current") : null,
+          paused ? t("components.venueSwitcher.paused") : null,
+        ]
+          .filter(Boolean)
+          .join(", ") || undefined
+      }
       onPress={onPress}
       className="flex-row items-center gap-3.5 py-2.5"
     >
-      <VenueCover venue={venue} size={52} radius={14} />
-      <View className="flex-1">
-        <View className="flex-row items-center gap-2">
-          <Text
-            className={`shrink text-subtitle ${selected ? "font-semibold" : "font-medium"}`}
-            numberOfLines={1}
-          >
-            {venue.name ?? t("components.venueSwitcher.untitled")}
+      <View className={`flex-1 flex-row items-center gap-3.5 ${paused ? "opacity-40" : ""}`}>
+        <VenueCover venue={venue} size={52} radius={14} />
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2">
+            <Text
+              className={`shrink text-subtitle ${selected ? "font-semibold" : "font-medium"}`}
+              numberOfLines={1}
+            >
+              {venue.name ?? t("components.venueSwitcher.untitled")}
+            </Text>
+          </View>
+          <Text className="text-label text-ink-2" numberOfLines={1}>
+            {line}
           </Text>
-          {venue.status === "MAINTENANCE" ? (
-            <View className="rounded-full bg-chip px-2 py-0.5">
-              <Text className="text-caption font-medium text-ink-2">
-                {t("components.venueSwitcher.paused")}
-              </Text>
-            </View>
-          ) : null}
         </View>
-        <Text className="text-label text-ink-2" numberOfLines={1}>
-          {line}
-        </Text>
       </View>
       {selected ? (
         <View className="size-6 items-center justify-center rounded-full bg-primary">
