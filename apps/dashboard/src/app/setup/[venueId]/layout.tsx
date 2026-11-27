@@ -1,7 +1,7 @@
 import type { components } from "@hagz/api";
 import type { EntranceSide, VenueLayoutView } from "@hagz/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -193,6 +193,20 @@ function LayoutView({
   const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
   const needsEntrance = plan.entrances.length === 0;
   const trayEmpty = unplaced.length === 0 && placeable.length === 0 && !needsEntrance;
+  // Every ground and an entrance have to be on the layout before it can be left (user, 2026-11-27):
+  // back, the swipe and Android's back all stop here and say what's still to place. Amenities are
+  // optional.
+  const missing = [
+    ...(unplaced.length > 0
+      ? [t("screens.setup.layout.missingGrounds", { count: unplaced.length })]
+      : []),
+    ...(needsEntrance ? [t("screens.setup.layout.missingEntrance")] : []),
+  ];
+  usePreventRemove(missing.length > 0, () =>
+    hud.show(
+      t("screens.setup.layout.finishFirst", { what: missing.join(t("screens.setup.layout.and")) }),
+    ),
+  );
   // 0 with things to place, 1 with none: the tray leaves, fading, scaling down and dropping a
   // little, and comes back the same way. Starts where it is, unanimated.
   const emptied = useSharedValue(trayEmpty ? 1 : 0);
