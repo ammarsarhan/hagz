@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, RefreshControl } from "react-native";
+import { ActivityIndicator, Platform, RefreshControl } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -52,9 +52,14 @@ export function usePullToRefresh({
     pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
   }, [pulled, pulling]);
 
-  const spinnerStyle = useAnimatedStyle(() => ({
-    opacity: Math.max(pulling.value, interpolate(-scrollY.value, [10, 60], [0, 1], "clamp")),
-  }));
+  // The spinner shows in the gap the pull opens above the list, so it follows that gap: scrolled
+  // back up while it's still loading (the list stays free to scroll), it fades out as it crosses
+  // the threshold and back in if pulled down again (user, 2026-11-27). iOS keeps the list down by
+  // the control's height while refreshing; Android draws no gap, so there it shows for the hold.
+  const spinnerStyle = useAnimatedStyle(() => {
+    const gap = interpolate(-scrollY.value, [10, 60], [0, 1], "clamp");
+    return { opacity: Platform.OS === "ios" ? gap : Math.max(pulling.value, gap) };
+  });
 
   const control = (
     <RefreshControl
@@ -82,6 +87,5 @@ export function usePullToRefresh({
     </Animated.View>
   );
 
-  // Held down with the spinner showing: a list can stop scrolling until it's back (`scrollEnabled`).
-  return { control, spinner, refreshing: pulled };
+  return { control, spinner };
 }
