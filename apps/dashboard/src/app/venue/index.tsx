@@ -345,7 +345,7 @@ function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
 // One quiet row in a grey disc: caught up.
 function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; body: string }) {
   return (
-    <View className="mt-4 flex-row items-center">
+    <View className="mt-6 flex-row items-center">
       <View className="size-[52px] items-center justify-center rounded-full bg-chip">
         <NoticeIcon size={22} color={colors.ink} strokeWidth={1.75} />
       </View>
