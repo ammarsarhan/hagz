@@ -15,6 +15,7 @@ import {
   listMyVenues,
   changePermissions,
   restorePermissions,
+  removeStaffMember,
 } from "../application/members";
 import {
   putTranslation,
@@ -168,6 +169,11 @@ export const venuesStaffRoutes = createRouter()
   .openapi(route.restore, async (c) => {
     const { staffId } = c.req.valid("param");
     return c.json(await restorePermissions(c.var.venue, staffId), 200);
+  })
+  .openapi(route.removeMember, async (c) => {
+    const { staffId } = c.req.valid("param");
+    await removeStaffMember(c.var.venue, staffId);
+    return c.body(null, 204);
   })
   .openapi(route.invite, async (c) => {
     const sent = await inviteStaff(c.var.venue, c.req.valid("json"), requestLanguage(c));

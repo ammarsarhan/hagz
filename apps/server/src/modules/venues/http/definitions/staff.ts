@@ -676,6 +676,29 @@ export const restore = createRoute({
   },
 });
 
+export const removeMember = createRoute({
+  method: "delete",
+  path: "/staff/venues/{venueId}/members/{staffId}",
+  tags,
+  summary: "Remove someone from the staff",
+  description:
+    "Needs `staff: manage`. Never yourself or the owner, and only the owner can remove someone " +
+    "with more in an area than they have. Their account and their name on what they did stay; " +
+    "they're told.",
+  middleware: [requireStaff, requireVenueAccess("staff", "manage")] as const,
+  security,
+  request: { params: memberParams },
+  responses: {
+    204: { description: "Removed" },
+    401: unauthenticated,
+    403: problemResponse(
+      "PERMISSION_DENIED, CANNOT_REMOVE_YOURSELF, CANNOT_CHANGE_OWNER, or " +
+        "PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+    ),
+    404: problemResponse("VENUE_NOT_FOUND or MEMBER_NOT_FOUND"),
+  },
+});
+
 const invitationParams = venueParams.extend({ invitationId: z.uuid() });
 
 export const invite = createRoute({
