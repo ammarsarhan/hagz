@@ -20632,9 +20632,24 @@ export interface components {
         CheckInResult: {
             /** Format: uuid */
             bookingId: string;
+            booking: components["schemas"]["CheckInBooking"];
             person: components["schemas"]["CheckInPerson"];
             /** @description They had already checked in; nothing changed. */
             already: boolean;
+        };
+        CheckInBooking: {
+            bookerFirstName: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /** @description The ground's name. */
+            ground: string | null;
         };
         ScanCheckIn: {
             /** @description What the QR code says. */

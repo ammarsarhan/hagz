@@ -66,8 +66,13 @@ describe("the booker's code", () => {
     });
 
     const early = await bookerCode(booker.customer.id, booking.id, clock(-20));
+    // Too early: the scanner is told which game, to say when it opens.
     await expect(scanCheckIn(actor, early.code, clock(-20))).rejects.toMatchObject({
       code: "CHECK_IN_CLOSED",
+      extensions: {
+        opensAt: new Date(new Date(booking.startsAt).getTime() - 15 * MINUTE).toISOString(),
+        booking: { startsAt: booking.startsAt, ground: "Pitch 1" },
+      },
     });
 
     const { code } = await bookerCode(booker.customer.id, booking.id, clock(-5));
@@ -76,6 +81,13 @@ describe("the booker's code", () => {
       bookingId: booking.id,
       already: false,
       person: { customerId: booker.customer.id, role: "BOOKER", manual: false },
+      booking: {
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        timezone: expect.any(String),
+        ground: "Pitch 1",
+        bookerFirstName: expect.any(String),
+      },
     });
     expect((await scanCheckIn(actor, code, clock(-4.5))).already).toBe(true);
 
@@ -243,5 +255,25 @@ describe("open games", () => {
     await leaveGame(one.customer.id, gameId, clock(-5));
     const player = await prisma.listingPlayer.findFirstOrThrow({ where: { listingId: gameId } });
     expect(player).toMatchObject({ status: "LEFT", checkedInAt: null });
+  });
+
+  it("names the player and the game when a code's player has left it", async () => {
+    const { booker, booking, clock, actor } = await setup();
+    const listed = await call(booker.token, "POST", `/bookings/${booking.id}/listing`, {
+      neededPlayers: 2,
+    });
+    const gameId = Booking.parse(await listed.json()).listing?.id ?? "";
+    const one = await signedIn("+201005550002");
+    await call(one.token, "POST", `/games/${gameId}/join`);
+    const { code } = await playerCode(one.customer.id, gameId, clock(-10));
+    const { leaveGame } = await import("@/modules/bookings/application/listings");
+    await leaveGame(one.customer.id, gameId, clock(-10));
+    await expect(scanCheckIn(actor, code, clock(-9.5))).rejects.toMatchObject({
+      code: "NOT_IN_BOOKING",
+      extensions: {
+        firstName: expect.any(String),
+        booking: { startsAt: booking.startsAt, ground: "Pitch 1" },
+      },
+    });
   });
 });

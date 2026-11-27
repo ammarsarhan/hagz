@@ -1,4 +1,5 @@
 import type {
+  CheckInBooking,
   CheckInCode,
   CheckInPerson,
   CheckInResult,
@@ -13,6 +14,7 @@ import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { checkInWindow, CODE_SECONDS, inCheckInWindow, REFRESH_SECONDS } from "../domain/check-in";
 import { firstName } from "../domain/listings";
+import { groundName } from "./admin-bookings";
 import { bookingNotFound, lockBooking, venueBookingNotFound } from "./booking-rows";
 
 // Checking in at the venue (user, 2026-11-22). The booker of an app booking and each joined
@@ -153,15 +155,27 @@ const bookingSelect = {
   creatorId: true,
   regularId: true,
   startsAt: true,
+  endsAt: true,
   checkedInAt: true,
   customer: { select: { customerId: true, customer: { select: { name: true } } } },
   listing: { select: { id: true } },
+  ground: { select: { translations: { select: { language: true, name: true } } } },
+  venue: { select: { marketplace: { select: { timezone: true } } } },
 } as const;
 
 type Locked = NonNullable<Awaited<ReturnType<typeof lockForCheckIn>>>;
 
 const lockForCheckIn = (tx: Tx, bookingId: string, venueId: string | null) =>
   lockBooking(tx, bookingId, venueId, bookingSelect);
+
+// What the scanner says about the booking: whose game, when, and on which ground.
+const summary = (booking: Locked): CheckInBooking => ({
+  bookerFirstName: firstName(booking.customer.customer?.name ?? ""),
+  startsAt: booking.startsAt.toISOString(),
+  endsAt: booking.endsAt.toISOString(),
+  timezone: booking.venue.marketplace.timezone,
+  ground: groundName(booking.ground.translations),
+});
 
 const checkOpen = (booking: Locked, now: Date) => {
   if (!takesCheckIns(booking) || booking.status !== "CONFIRMED") throw notCheckable();
@@ -188,6 +202,7 @@ const checkIn = async (
     const name = booking.customer.customer?.name ?? "";
     return {
       bookingId: booking.id,
+      booking: summary(booking),
       person: {
         customerId,
         firstName: firstName(name),
@@ -218,6 +233,7 @@ const checkIn = async (
   }
   return {
     bookingId: booking.id,
+    booking: summary(booking),
     person: {
       customerId,
       firstName: firstName(player.customer.name),
@@ -255,8 +271,33 @@ export const scanCheckIn = async (
     const booking = await lockForCheckIn(tx, bookingId, null);
     if (!booking) throw badCode();
     if (booking.venueId !== actor.venueId) throw otherVenue();
-    checkOpen(booking, now);
-    return checkIn(tx, actor, booking, claims.sub, false, now);
+    try {
+      checkOpen(booking, now);
+      return await checkIn(tx, actor, booking, claims.sub, false, now);
+    } catch (error) {
+      throw await withScanned(error, booking, claims.sub);
+    }
+  });
+};
+
+// A scan refused for its timing or a player no longer in the game says which game it was (and, for
+// the player, who), so the scanner can name them (Figma D13 errors).
+const withScanned = async (error: unknown, booking: Locked, customerId: string) => {
+  if (!(error instanceof AppError)) return error;
+  if (error.code !== "CHECK_IN_CLOSED" && error.code !== "NOT_IN_BOOKING") return error;
+  const person =
+    error.code === "NOT_IN_BOOKING"
+      ? await prisma.customer.findUnique({ where: { id: customerId }, select: { name: true } })
+      : null;
+  return new AppError({
+    code: error.code,
+    status: error.status,
+    detail: error.message,
+    extensions: {
+      ...error.extensions,
+      booking: summary(booking),
+      ...(person && { firstName: firstName(person.name) }),
+    },
   });
 };
 

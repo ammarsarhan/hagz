@@ -9114,6 +9114,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "booking": {
+            "$ref": "#/components/schemas/CheckInBooking"
+          },
           "person": {
             "$ref": "#/components/schemas/CheckInPerson"
           },
@@ -9124,8 +9127,44 @@
         },
         "required": [
           "bookingId",
+          "booking",
           "person",
           "already"
+        ]
+      },
+      "CheckInBooking": {
+        "type": "object",
+        "properties": {
+          "bookerFirstName": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "ground": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The ground's name."
+          }
+        },
+        "required": [
+          "bookerFirstName",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "ground"
         ]
       },
       "ScanCheckIn": {
