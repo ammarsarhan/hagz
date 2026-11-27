@@ -1,19 +1,76 @@
+import type { components } from "@hagz/api";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
+import type { TFunction } from "i18next";
+import type { ComponentType } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Bone } from "@/components/bone";
+import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
 import { useHud } from "@/components/hud";
-import { IconBell, IconScan } from "@/components/icons";
+import {
+  IconBell,
+  IconCash,
+  IconCheck,
+  IconHourglass,
+  IconInbox,
+  IconPlayerPause,
+  IconRepeat,
+  IconScan,
+} from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { useInvitationSheet } from "@/components/use-invitation-sheet";
+import { Chip } from "@/components/week-strip";
+import { addDays, clockOf, localDateOf } from "@/lib/calendar";
 import { colors } from "@/lib/colors";
-import { queries } from "@/lib/queries";
+import { useCurrentVenue } from "@/lib/current-venue";
+import { decimalsOf, formatAmount } from "@/lib/money";
+import { push } from "@/lib/navigation";
+import { api } from "@/lib/api";
+import { fetched, queries } from "@/lib/queries";
+import { useNow } from "@/lib/use-now";
+import { useRefreshWhenShown } from "@/lib/use-refresh";
+import { calendarKey, WEEK_REFRESH } from "@/lib/week-queries";
+import { hoursSpan, sentenceTime } from "@/lib/when";
 
-// The venue's Home tab (user, 2026-11-27: built up from its header). The title, then the Calendar's
-// round buttons on the same row: scanning a player's code, and notifications. Neither screen is
-// built yet. An invitation link opened while on a venue's team opens here, in the same sheet as on
-// first run.
+type Home = components["schemas"]["StaffHome"];
+type Game = Home["next"][number];
+type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+
+// The venue's Home tab (Figma D21c 739:2, user 2026-11-27): the title with scan and notifications,
+// Today and Tomorrow, then what needs someone as large grey cards, most urgent first (requests and
+// holds run out; games to mark; cash still to take, for those who see payments; regulars' weeks to
+// confirm), or one quiet row when nothing does. Then the next games, a game about to start offering
+// Check in, and the hours still free. A paused venue says so above it all, with the way to reopen.
+//
+// One read per day, asked again every minute and whenever the tab comes back into view, since what
+// players do in the app changes it from elsewhere.
+
+// Venues are in Egypt for now; the answer names the venue's own timezone.
+const FALLBACK_TIMEZONE = "Africa/Cairo";
+// Check in shows on a game this close to kick-off, until it ends.
+const CHECK_IN_AHEAD = 30 * 60_000;
+
+const homeQuery = (venueId: string, date: string, enabled: boolean) => ({
+  queryKey: calendarKey(venueId, "home", date),
+  queryFn: () =>
+    fetched(
+      api.GET("/v1/staff/venues/{venueId}/home", {
+        params: { path: { venueId }, query: { date } },
+      }),
+    ),
+  enabled,
+  refetchInterval: WEEK_REFRESH,
+});
+
+const REFRESH = [{ queryKey: ["staff", "venues"], predicate: isHome }];
+function isHome(query: { queryKey: readonly unknown[] }) {
+  return query.queryKey[3] === "home";
+}
+
 export default function VenueHome() {
   const { t } = useTranslation();
   const hud = useHud();
@@ -23,6 +80,18 @@ export default function VenueHome() {
     takeLinks: me.data !== undefined,
   });
   const comingNext = () => hud.show(t("common.comingNext"));
+  const { venue } = useCurrentVenue();
+  const venueId = venue?.id ?? "";
+  const permissions = venue?.permissions;
+  const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
+  const [tomorrow, setTomorrow] = useState(false);
+  const [timezone, setTimezone] = useState(FALLBACK_TIMEZONE);
+  const today = localDateOf(now, timezone);
+  const date = tomorrow ? addDays(today, 1) : today;
+  const canSee = permissions !== undefined && permissions.bookings !== "none";
+  const home = useQuery(homeQuery(venueId, date, venueId !== "" && canSee));
+  useRefreshWhenShown(REFRESH);
+  if (home.data && home.data.timezone !== timezone) setTimezone(home.data.timezone);
 
   return (
     <Screen tabbed>
@@ -44,7 +113,368 @@ export default function VenueHome() {
           </HeaderButton>
         </View>
       </View>
+
+      {canSee ? (
+        <FadingScroll>
+          <View className="flex-row gap-2">
+            <Chip
+              label={t("screens.home.today")}
+              on={!tomorrow}
+              onPress={() => setTomorrow(false)}
+            />
+            <Chip
+              label={t("screens.home.tomorrow")}
+              on={tomorrow}
+              onPress={() => setTomorrow(true)}
+            />
+          </View>
+          {venue?.status === "MAINTENANCE" ? <Paused /> : null}
+          {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
+        </FadingScroll>
+      ) : null}
       {invitation.sheet}
     </Screen>
+  );
+}
+
+function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number }) {
+  const { t } = useTranslation();
+  const { timezone } = home;
+  const cards = useCards(home);
+  const openCalendar = () => router.navigate("/venue/calendar");
+
+  return (
+    <View>
+      {cards.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -20, marginTop: 16 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+        >
+          {cards.map((card) => (
+            <Card
+              key={card.key}
+              icon={card.icon}
+              big={card.big}
+              small={card.small}
+              onPress={card.onPress}
+            />
+          ))}
+        </ScrollView>
+      ) : (
+        <Notice
+          icon={IconCheck}
+          title={t("screens.home.caughtUp")}
+          body={t("screens.home.caughtUpBody")}
+        />
+      )}
+
+      <Heading
+        title={t(isToday ? "screens.home.nextUp" : "screens.home.firstUp")}
+        link={t("screens.home.calendar")}
+        onLink={openCalendar}
+      />
+      {home.next.length === 0 ? (
+        <Text className="mt-3 text-body text-ink-2">
+          {t(isToday ? "screens.home.noMoreToday" : "screens.home.noneOnDay")}
+        </Text>
+      ) : (
+        home.next.map((game) => (
+          <GameRow key={game.id} game={game} isToday={isToday} now={now} timezone={timezone} />
+        ))
+      )}
+
+      {home.free.length > 0 ? (
+        <>
+          <Heading title={t(isToday ? "screens.home.freeTonight" : "screens.home.stillFree")} />
+          {home.free.map((run) => (
+            <TimeRow
+              key={`${run.groundId}-${run.startsAt}`}
+              hour={clockOf(run.startsAt, timezone).time}
+              title={run.groundName ?? ""}
+              line={hoursSpan(run.startsAt, run.endsAt, timezone, t)}
+              amount={money(run.price, run.currency)}
+              onPress={openCalendar}
+            />
+          ))}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+const money = (minor: number, currency: string) =>
+  `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
+
+interface CardProps {
+  key: string;
+  icon: Icon;
+  big: string;
+  small: string;
+  onPress: () => void;
+}
+
+// The cards in the order things run out: requests, holds, games to mark, cash, weeks to confirm.
+// With one booking behind a card it opens that booking; with more, the list or the Calendar.
+function useCards(home: Home): CardProps[] {
+  const { t } = useTranslation();
+  return useMemo(() => {
+    const cards: CardProps[] = [];
+    const booking = (id: string | null, elsewhere: () => void) => () =>
+      id ? push(`/booking/${id}`) : elsewhere();
+    const calendar = () => router.navigate("/venue/calendar");
+    const { requests, holds, toMark, weeks, cash, timezone } = home;
+    if (requests.count > 0)
+      cards.push({
+        key: "requests",
+        icon: IconInbox,
+        big: String(requests.count),
+        small: t("screens.home.requests", { count: requests.count }),
+        onPress: () => push("/requests"),
+      });
+    if (holds.count > 0 && holds.soonest)
+      cards.push({
+        key: "holds",
+        icon: IconHourglass,
+        big: String(holds.count),
+        small: t(holds.count === 1 ? "screens.home.holdEnds" : "screens.home.holdsEnd", {
+          time: sentenceTime(holds.soonest, timezone, t),
+        }),
+        onPress: booking(holds.bookingId, calendar),
+      });
+    if (toMark.count > 0)
+      cards.push({
+        key: "toMark",
+        icon: IconCheck,
+        big: String(toMark.count),
+        small: t("screens.home.toMark", { count: toMark.count }),
+        onPress: booking(toMark.bookingId, calendar),
+      });
+    if (cash && cash.count > 0)
+      cards.push({
+        key: "cash",
+        icon: IconCash,
+        big: money(cash.amount, cash.currency),
+        small: t("screens.home.cash", { count: cash.count }),
+        onPress: () => router.navigate("/venue/payments"),
+      });
+    if (weeks.count > 0)
+      cards.push({
+        key: "weeks",
+        icon: IconRepeat,
+        big: String(weeks.count),
+        small: t("screens.home.weeks", { count: weeks.count }),
+        onPress: booking(weeks.bookingId, () => push("/regulars")),
+      });
+    return cards;
+  }, [home, t]);
+}
+
+// A large grey card: its icon in a white disc, the count, what it counts.
+function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${big} ${small}`}
+      onPress={onPress}
+      className="h-[172px] w-[236px] justify-between rounded-[18px] bg-chip p-[18px] active:opacity-60"
+    >
+      <View className="size-[52px] items-center justify-center rounded-full bg-white">
+        <CardIcon size={22} color={colors.ink} strokeWidth={1.75} />
+      </View>
+      <View>
+        <Text className="text-[26px] font-semibold leading-8 tracking-[-0.3px]" numberOfLines={1}>
+          {big}
+        </Text>
+        <Text className="mt-1 text-[15px] leading-5 text-ink-2" numberOfLines={1}>
+          {small}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// One quiet row in a grey disc: caught up, or paused.
+function Notice({
+  icon: NoticeIcon,
+  title,
+  body,
+  link,
+  onLink,
+}: {
+  icon: Icon;
+  title: string;
+  body: string;
+  link?: string;
+  onLink?: () => void;
+}) {
+  return (
+    <View className="mt-4 flex-row items-center">
+      <View className="size-[52px] items-center justify-center rounded-full bg-chip">
+        <NoticeIcon size={22} color={colors.ink} strokeWidth={1.75} />
+      </View>
+      <View className="ms-3.5 flex-1">
+        <Text className="text-subtitle font-medium">{title}</Text>
+        <Text className="mt-0.5 text-label text-ink-2">
+          {body}
+          {link ? (
+            <Text className="text-label font-medium text-ink underline" onPress={onLink}>
+              {` ${link}`}
+            </Text>
+          ) : null}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// Paused: players can't book; Reopen goes to the Venue tab's Availability switch.
+function Paused() {
+  const { t } = useTranslation();
+  return (
+    <Notice
+      icon={IconPlayerPause}
+      title={t("screens.home.paused")}
+      body={t("screens.home.pausedBody")}
+      link={t("screens.home.reopen")}
+      onLink={() => router.navigate("/venue/manage")}
+    />
+  );
+}
+
+function Heading({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
+  return (
+    <View className="mt-8 mb-1 flex-row items-baseline">
+      <Text accessibilityRole="header" className="flex-1 text-[22px] font-semibold leading-7">
+        {title}
+      </Text>
+      {link ? (
+        <Pressable accessibilityRole="link" onPress={onLink} hitSlop={8}>
+          <Text className="text-[15px] font-medium underline">{link}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+// The hour in a grey disc, two lines beside it, the amount at the end and an action under it.
+function TimeRow({
+  hour,
+  title,
+  line,
+  amount,
+  action,
+  onAction,
+  onPress,
+}: {
+  hour: string;
+  title: string;
+  line: string;
+  amount: string;
+  action?: string;
+  onAction?: () => void;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} className="mt-3 flex-row items-center py-1 active:opacity-60">
+      <View className="size-[52px] items-center justify-center rounded-full bg-chip">
+        <Text className="text-[14px] font-semibold">{hour}</Text>
+      </View>
+      <View className="ms-3.5 flex-1">
+        <Text className="text-subtitle font-medium" numberOfLines={1}>
+          {title}
+        </Text>
+        <Text className="mt-0.5 text-label text-ink-2" numberOfLines={1}>
+          {line}
+        </Text>
+      </View>
+      <View className="ms-3 items-end">
+        <Text className="text-subtitle font-medium">{amount}</Text>
+        {action ? (
+          <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8}>
+            <Text className="mt-0.5 text-label font-medium underline">{action}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+// "Pitch 1 · until 11 pm · cash" today; "Pitch 2 · 4 – 6 pm · paid in the app" on a later day.
+const gameLine = (game: Game, isToday: boolean, timezone: string, t: TFunction) =>
+  [
+    game.ground.name ?? "",
+    isToday
+      ? t("screens.home.until", { time: sentenceTime(game.endsAt, timezone, t) })
+      : hoursSpan(game.startsAt, game.endsAt, timezone, t),
+    game.hold
+      ? t("screens.home.held")
+      : game.paymentMode === "PLATFORM"
+        ? t("screens.home.inApp")
+        : game.paymentMode === "DEPOSIT"
+          ? t("screens.home.deposit")
+          : t("screens.home.atVenue"),
+  ].join(" · ");
+
+function GameRow({
+  game,
+  isToday,
+  now,
+  timezone,
+}: {
+  game: Game;
+  isToday: boolean;
+  now: number;
+  timezone: string;
+}) {
+  const { t } = useTranslation();
+  const open = () => push(`/booking/${game.id}`);
+  // An app booking about to start, nobody checked in yet: Check in opens the booking, where the
+  // check-in is.
+  const checkIn =
+    isToday &&
+    game.source === "APP" &&
+    !game.hold &&
+    !game.checkedIn &&
+    Date.parse(game.startsAt) - now <= CHECK_IN_AHEAD &&
+    Date.parse(game.endsAt) > now;
+  return (
+    <TimeRow
+      hour={clockOf(game.startsAt, timezone).time}
+      title={
+        game.regular
+          ? t("screens.home.regular", { name: game.customer.name.split(" ")[0] })
+          : game.customer.name
+      }
+      line={gameLine(game, isToday, timezone, t)}
+      amount={money(game.total, game.currency)}
+      action={checkIn ? t("screens.home.checkIn") : undefined}
+      onAction={open}
+      onPress={open}
+    />
+  );
+}
+
+// The chips at once; the cards and rows as grey shapes in their places until the first answer.
+function Loading() {
+  return (
+    <View>
+      <View className="mt-4 flex-row gap-3">
+        {[0, 1].map((key) => (
+          <Bone key={key} className="h-[172px] w-[236px] rounded-[18px]" />
+        ))}
+      </View>
+      <Bone className="mt-9 h-[22px] w-[110px] rounded-md" />
+      {[0, 1, 2].map((key) => (
+        <View key={key} className="mt-4 flex-row items-center">
+          <Bone className="size-[52px] rounded-full" />
+          <View className="ms-3.5 flex-1 gap-2.5">
+            <Bone className="h-3.5 w-[150px] rounded" />
+            <Bone className="h-3 w-[200px] rounded" />
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
