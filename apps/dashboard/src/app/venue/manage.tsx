@@ -4,7 +4,7 @@ import { useFocusEffect } from "expo-router";
 import type { TFunction } from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Switch, View } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import { Bone } from "@/components/bone";
 import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
@@ -18,6 +18,7 @@ import { Title } from "@/components/title";
 import { api, reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
+import { VenuePauseSheet } from "@/components/venue-pause-sheet";
 import { isRTL } from "@/lib/language";
 import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
@@ -74,9 +75,12 @@ export default function VenueTab() {
 
   // The bar pinned above the scroll: each section's name once its heading goes under.
   const sections = useSectionTitle();
+  // Pausing or reopening, asked in a sheet first; the switch shows what's saved until it's done.
+  const [pausing, setPausing] = useState(false);
 
   if (!venue) return <Screen tabbed>{null}</Screen>;
 
+  const live = venue.status === "LIVE";
   const ready = photos.data?.filter((photo) => photo.status === "READY") ?? [];
   const photosLoading = can("venue") && photos.isPending;
   const groundCount = grounds.data?.length;
@@ -233,8 +237,39 @@ export default function VenueTab() {
           {group(t(`${v}.details`), place, true)}
           {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
           {group(t(`${v}.rules`), rules)}
+
+          {/* Taking bookings or paused (user, 2026-11-27): a switch that only asks; it moves
+              once the sheet's answer is saved. Only `venue: manage` can change it. */}
+          {can("venue") ? (
+            <>
+              <SettingsHeading>{t(`${v}.availability`)}</SettingsHeading>
+              <SettingsRow
+                title={t(`${v}.taking`)}
+                body={live ? t(`${v}.takingOn`) : t(`${v}.takingOff`)}
+                divider={false}
+                trailing={
+                  <Switch
+                    accessibilityLabel={t(`${v}.taking`)}
+                    value={live}
+                    disabled={venue.permissions.venue !== "manage"}
+                    onValueChange={() => setPausing(true)}
+                    trackColor={{ true: colors.primary }}
+                  />
+                }
+              />
+            </>
+          ) : null}
         </FadingScroll>
       </PinnedTitle>
+      <VenuePauseSheet
+        // Keyed by the action, so a sheet opened again starts fresh.
+        key={live ? "pause" : "resume"}
+        venueId={venueId}
+        name={venue.name ?? ""}
+        action={live ? "pause" : "resume"}
+        visible={pausing}
+        onClose={() => setPausing(false)}
+      />
     </Screen>
   );
 }
