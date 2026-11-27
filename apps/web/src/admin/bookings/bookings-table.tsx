@@ -55,7 +55,11 @@ const venue = helper.display({
           {venue.names.en ?? venue.names.ar ?? venue.slug}
         </span>
         {ground.name ? (
-          <span className="truncate text-caption text-ink-3">{ground.name}</span>
+          <span
+            className={`truncate text-caption text-ink-3${ground.deleted ? " line-through" : ""}`}
+          >
+            {ground.name}
+          </span>
         ) : null}
       </div>
     );
@@ -64,9 +68,15 @@ const venue = helper.display({
 const ground = helper.display({
   id: "ground",
   header: "Ground",
-  cell: ({ row }) => (
-    <span className="truncate text-ink-2">{row.original.ground.name ?? "Unnamed ground"}</span>
-  ),
+  // A ground staff deleted is struck through (user, 2026-11-27).
+  cell: ({ row }) => {
+    const { ground } = row.original;
+    return (
+      <span className={`truncate text-ink-2${ground.deleted ? " line-through" : ""}`}>
+        {ground.name ?? "Unnamed ground"}
+      </span>
+    );
+  },
 });
 const rest = [
   helper.display({
