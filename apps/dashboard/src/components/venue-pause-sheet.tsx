@@ -11,8 +11,8 @@ import { Sheet } from "./sheet";
 import { StepRail, type Step } from "./step-rail";
 import { Text } from "./text";
 
-// Pausing or reopening a live venue from the Venue tab's switch (user, 2026-11-27): the switch keeps
-// showing what's saved, and this sheet asks first, saying what follows on the step rail, the way a
+// Pausing or reopening a live venue from the Venue tab's switch (user, 2026-11-27): the switch takes
+// the tap greyed, as two-factor's does, and this sheet asks, saying what follows on the step rail, the way a
 // regular's Pause does. Paused, players can't book; the page stays up with a notice and bookings
 // already made still happen. Reopening needs a ground in use (the API says so otherwise).
 export function VenuePauseSheet({
@@ -21,12 +21,14 @@ export function VenuePauseSheet({
   action,
   visible,
   onClose,
+  onHidden,
 }: {
   venueId: string;
   name: string;
   action: "pause" | "resume";
   visible: boolean;
   onClose: () => void;
+  onHidden: () => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -91,6 +93,7 @@ export function VenuePauseSheet({
     <Sheet
       visible={visible}
       onClose={onClose}
+      onHidden={onHidden}
       closeLabel={t("components.shared.nav.close")}
       scrollable
       footer={

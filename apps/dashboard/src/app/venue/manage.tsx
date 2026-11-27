@@ -76,7 +76,10 @@ export default function VenueTab() {
   // The bar pinned above the scroll: each section's name once its heading goes under.
   const sections = useSectionTitle();
   // Pausing or reopening, asked in a sheet first; the switch shows what's saved until it's done.
-  const [pausing, setPausing] = useState(false);
+  // As two-factor's switch does (user, 2026-11-27): the tap shows at once, greyed while the sheet
+  // asks; saved, it stays; closed without, it goes back. `asked` lasts until the sheet has gone.
+  const [asked, setAsked] = useState<"pause" | "resume" | null>(null);
+  const [asking, setAsking] = useState(false);
 
   if (!venue) return <Screen tabbed>{null}</Screen>;
 
@@ -238,8 +241,8 @@ export default function VenueTab() {
           {group(t(`${v}.peopleHeading`), people, !place.some(Boolean))}
           {group(t(`${v}.rules`), rules)}
 
-          {/* Taking bookings or paused (user, 2026-11-27): a switch that only asks; it moves
-              once the sheet's answer is saved. Only `venue: manage` can change it. */}
+          {/* Taking bookings or paused (user, 2026-11-27): the switch takes the tap, greyed, and the
+              sheet asks; only `venue: manage` can change it. */}
           {can("venue") ? (
             <>
               <SettingsHeading>{t(`${v}.availability`)}</SettingsHeading>
@@ -250,9 +253,12 @@ export default function VenueTab() {
                 trailing={
                   <Switch
                     accessibilityLabel={t(`${v}.taking`)}
-                    value={live}
-                    disabled={venue.permissions.venue !== "manage"}
-                    onValueChange={() => setPausing(true)}
+                    value={asked === null ? live : asked === "resume"}
+                    disabled={asked !== null || venue.permissions.venue !== "manage"}
+                    onValueChange={(on) => {
+                      setAsked(on ? "resume" : "pause");
+                      setAsking(true);
+                    }}
                     trackColor={{ true: colors.primary }}
                   />
                 }
@@ -261,15 +267,17 @@ export default function VenueTab() {
           ) : null}
         </FadingScroll>
       </PinnedTitle>
-      <VenuePauseSheet
-        // Keyed by the action, so a sheet opened again starts fresh.
-        key={live ? "pause" : "resume"}
-        venueId={venueId}
-        name={venue.name ?? ""}
-        action={live ? "pause" : "resume"}
-        visible={pausing}
-        onClose={() => setPausing(false)}
-      />
+      {asked ? (
+        <VenuePauseSheet
+          venueId={venueId}
+          name={venue.name ?? ""}
+          action={asked}
+          visible={asking}
+          onClose={() => setAsking(false)}
+          // Gone: the switch shows what's saved again (the new status once read, else as it was).
+          onHidden={() => setAsked(null)}
+        />
+      ) : null}
     </Screen>
   );
 }
