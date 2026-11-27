@@ -90,7 +90,7 @@ export function CompactTitle({
 // then
 // each section's heading once it has gone under ("Details", "People", "Rules"), and back again
 // scrolling up. A new name rolls in the way the page is moving. A grey hairline under the bar
-// once anything has scrolled under it.
+// fades in as anything scrolls under it, and out again at the top.
 //
 //   const sections = useSectionTitle();
 //   <PinnedTitle sections={sections}>
@@ -112,19 +112,9 @@ export function useSectionTitle() {
     label: null,
     down: true,
   });
-  const [scrolled, setScrolled] = useState(false);
-  const shown = useRef<{ label: string | null; index: number; scrolled: boolean }>({
-    label: null,
-    index: -1,
-    scrolled: false,
-  });
+  const shown = useRef<{ label: string | null; index: number }>({ label: null, index: -1 });
 
   const pick = useCallback((y: number) => {
-    const under = y > 0;
-    if (under !== shown.current.scrolled) {
-      shown.current.scrolled = under;
-      setScrolled(under);
-    }
     const passed = [...ends.current.entries()]
       .sort((a, b) => a[1] - b[1])
       .filter(([, end]) => y >= end);
@@ -132,7 +122,7 @@ export function useSectionTitle() {
     const label = passed.at(-1)?.[0] ?? null;
     if (label === shown.current.label) return;
     const down = index > shown.current.index;
-    shown.current = { ...shown.current, label, index };
+    shown.current = { label, index };
     setCurrent({ label, down });
   }, []);
 
@@ -147,7 +137,7 @@ export function useSectionTitle() {
     ends.current.set(label, y + height);
   };
 
-  return { scrollY, current, scrolled, onLayout };
+  return { scrollY, current, onLayout };
 }
 
 export function PinnedTitle({
@@ -175,7 +165,7 @@ export function PinnedTitle({
       <View className="flex-1">{children}</View>
       <Reanimated.View
         // Full width, so the hairline runs edge to edge.
-        className={`absolute top-0 justify-center overflow-hidden border-b bg-white px-5 ${sections.scrolled ? "border-border" : "border-transparent"}`}
+        className="absolute top-0 justify-center overflow-hidden bg-white px-5"
         style={[{ left: -20, right: -20 }, grow]}
         // Screen readers get the headings themselves.
         accessibilityElementsHidden
@@ -196,6 +186,18 @@ export function PinnedTitle({
             </Reanimated.View>
           )}
         </View>
+        {/* The hairline, fading in over the first 12 pt scrolled under it and out on the way
+            back, as FadingScroll's does. */}
+        <Animated.View
+          className="absolute right-0 bottom-0 left-0 h-px bg-border"
+          style={{
+            opacity: sections.scrollY.interpolate({
+              inputRange: [0, 12],
+              outputRange: [0, 1],
+              extrapolate: "clamp",
+            }),
+          }}
+        />
       </Reanimated.View>
     </View>
   );
