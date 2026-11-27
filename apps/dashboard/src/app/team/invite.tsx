@@ -11,8 +11,6 @@ import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
 import { PhoneField } from "@/components/phone-field";
 import { Screen } from "@/components/screen";
-import { SettingsHeading } from "@/components/settings-row";
-import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
@@ -110,9 +108,9 @@ export default function Invite() {
           }}
           error={phoneError}
         />
-        <SettingsHeading tight>{t("screens.team.access")}</SettingsHeading>
-        <Text className="mb-1 text-caption text-ink-2">{t("screens.team.invite.accessBody")}</Text>
         <AccessEditor
+          first
+          hint={t("screens.team.invite.accessBody")}
           permissions={permissions}
           onChange={(area, level) => {
             if (!owner && mine && above(level, mine[area])) {

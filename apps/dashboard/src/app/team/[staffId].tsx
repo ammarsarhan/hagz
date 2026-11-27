@@ -195,8 +195,8 @@ function Editor({
           </>
         ) : null}
 
-        <SettingsHeading tight={!member.restorable}>{t("screens.team.access")}</SettingsHeading>
         <AccessEditor
+          first={!member.restorable}
           permissions={draft}
           onChange={
             editable
