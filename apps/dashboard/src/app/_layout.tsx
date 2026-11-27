@@ -39,6 +39,11 @@ export default function RootLayout() {
               name="setup/[venueId]/location"
               options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
             />
+            {/* The scanner comes up over whatever opened it, dark, and closes back down to it. */}
+            <Stack.Screen
+              name="scan"
+              options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
+            />
           </Stack>
         </HudProvider>
       </QueryClientProvider>
