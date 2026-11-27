@@ -22,6 +22,7 @@ import {
   joinFeeOf,
   maxNeeded,
   PHONE_HOURS_AFTER_START,
+  PHONE_HOURS_BEFORE_START,
   shareOf,
 } from "../domain/listings";
 import { bookingNotFound, lockBooking } from "./booking-rows";
@@ -450,7 +451,9 @@ const presentGame = (
   const account = booking.customer.customer;
   const isBooker = viewer !== null && account?.id === viewer.customerId;
   const joined = viewer?.status === "JOINED";
+  const phoneFrom = booking.startsAt.getTime() - PHONE_HOURS_BEFORE_START * HOUR_MS;
   const phoneUntil = booking.startsAt.getTime() + PHONE_HOURS_AFTER_START * HOUR_MS;
+  const phoneShown = joined && now.getTime() >= phoneFrom && now.getTime() < phoneUntil;
   return {
     id: row.id,
     status: row.status,
@@ -505,7 +508,8 @@ const presentGame = (
             you: player.customerId === viewer.customerId,
           }))
         : null,
-    bookerPhone: joined && now.getTime() < phoneUntil ? (account?.phone ?? null) : null,
+    bookerPhone: phoneShown ? (account?.phone ?? null) : null,
+    bookerPhoneFrom: joined ? new Date(phoneFrom).toISOString() : null,
   };
 };
 
