@@ -433,6 +433,11 @@ const en = {
         noteLabel: "Note (optional)",
         noteHint: "Why the times changed",
         done: "Done",
+        lengthTitle: "Swap different lengths?",
+        lengthPlays: "{{name}} plays {{now}}, not {{was}}",
+        hours_one: "{{count}} hour",
+        hours_other: "{{count}} hours",
+        cancel: "Cancel",
       },
       book: {
         title: "New booking",
