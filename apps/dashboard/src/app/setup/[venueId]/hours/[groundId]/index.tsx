@@ -36,6 +36,8 @@ import {
   type Ring,
 } from "@/lib/hours";
 import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A ground's week (Figma "E1 · Paint the week", 470:11): the whole week as a grid of hours. Tap an
 // hour or hold and drag across several, and the footer turns into what to mark them as ("E2 · Mark
@@ -47,7 +49,7 @@ import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
 // round button by back; the sheet, "Hours · Copy to other grounds", 357:2).
 type Mark = "BASE" | "PEAK" | "DISCOUNT" | "CLOSED";
 
-export default function GroundHours() {
+function GroundHours() {
   const { venueId = "", groundId = "" } = useLocalSearchParams<{
     venueId: string;
     groundId: string;
@@ -469,3 +471,5 @@ function CopySheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.scheduleForm, GroundHours);

@@ -22,6 +22,8 @@ import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -29,7 +31,7 @@ import { push } from "@/lib/navigation";
 // [groundId]. Each change is saved as it's made, so Done only leaves.
 type GroundRemoval = components["schemas"]["GroundRemoval"];
 
-export default function SetupGrounds() {
+function SetupGrounds() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   const grounds = useQuery(queries.grounds(venueId));
@@ -224,3 +226,5 @@ function Row({
     </SwipeRow>
   );
 }
+
+export default guarded(RULES.scheduleForm, SetupGrounds);

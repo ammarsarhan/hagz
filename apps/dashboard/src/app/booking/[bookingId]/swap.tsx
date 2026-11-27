@@ -30,6 +30,8 @@ import { useNow } from "@/lib/use-now";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan } from "@/lib/when";
 import { bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Swapping two bookings (Figma D9: pick 598:99, preview 598:199): the two trade times, each taking
 // the other's exact hours and ground, in one step (the API's swap). Picking: the day's bookings
@@ -46,7 +48,7 @@ const MOVABLE = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"];
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-export default function SwapBooking() {
+function SwapBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -611,3 +613,5 @@ function LengthSheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.bookingChange, SwapBooking);

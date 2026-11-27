@@ -19,6 +19,8 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingKey, bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A booking's history (Figma D17 642:469): every change, who made it and when, oldest first, under
 // its day. Each is a filled dot on the rail: what happened, then who (and anything they said) in
@@ -65,7 +67,7 @@ interface Entry {
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-export default function BookingHistory() {
+function BookingHistory() {
   const { t } = useTranslation();
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
@@ -335,3 +337,5 @@ function checkIns(booking: Booking, t: TFunction): Entry[] {
       : [],
   );
 }
+
+export default guarded(RULES.booking, BookingHistory);

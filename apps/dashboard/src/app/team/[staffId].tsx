@@ -27,13 +27,15 @@ import {
   type Member,
   type Permissions,
 } from "@/lib/team";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A member's access (Figma D20 726:109 and, after a password reset, 726:382): the seven areas with
 // None / View / Manage each. Save waits in a bar that says what changed, grey until something has.
 // A member a reset cut back to View shows when, with Give back in the bar while nothing's been
 // changed since. Your own access and the owner's are shown, not changed; and only the owner can
 // give more in an area than they have themselves.
-export default function TeamMember() {
+function TeamMember() {
   const { t } = useTranslation();
   const { staffId = "" } = useLocalSearchParams<{ staffId: string }>();
   const { venue } = useCurrentVenue();
@@ -239,3 +241,5 @@ function Editor({
     </Screen>
   );
 }
+
+export default guarded(RULES.team, TeamMember);

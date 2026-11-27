@@ -33,6 +33,8 @@ import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A booking, for staff (Figma D8, 535:2 and 530:2; its states in D17, 642:2): the code, the player
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
@@ -95,7 +97,7 @@ export const bookingQuery = (venueId: string, bookingId: string) => ({
   enabled: venueId !== "" && bookingId !== "",
 });
 
-export default function BookingPage() {
+function BookingPage() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -557,3 +559,5 @@ function Line({
     </View>
   );
 }
+
+export default guarded(RULES.booking, BookingPage);

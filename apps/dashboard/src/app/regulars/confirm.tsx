@@ -25,6 +25,8 @@ import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { datesLabel } from "@/lib/regulars";
 import { weekBookings } from "@/lib/week-queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A new weekly game's last look (Figma D12 656:93), after its time and who it's for: the time as a
 // dashed card (back is the way to change it; user, 2026-11-26: no Change on it), who it's for, the first and last week, and what
@@ -59,7 +61,7 @@ const FALLBACK_WINDOW = 24;
 const LAST_WEEKS = 52;
 const NO_END = -1;
 
-export default function ConfirmRegular() {
+function ConfirmRegular() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -431,3 +433,5 @@ function Change({ onPress }: { onPress: () => void }) {
     </Pressable>
   );
 }
+
+export default guarded(RULES.regularNew, ConfirmRegular);

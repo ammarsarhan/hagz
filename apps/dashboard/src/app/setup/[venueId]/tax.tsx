@@ -14,6 +14,8 @@ import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { queries } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Tax number" (Figma "Setup · Tax number", 433:86): optional, only for venues that charge
 // VAT. Digits and dashes, 5 to 20 of them (UpdateVenue), so Save waits for one the API takes. Clearing
@@ -21,7 +23,7 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 const TAX_NUMBER = /^[0-9-]{5,20}$/;
 const MAX = 20;
 
-export default function SetupTaxNumber() {
+function SetupTaxNumber() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
@@ -83,3 +85,5 @@ function TaxForm({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
     </Screen>
   );
 }
+
+export default guarded(RULES.venueForm, SetupTaxNumber);

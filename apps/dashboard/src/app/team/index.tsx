@@ -27,13 +27,15 @@ import {
   membersQuery,
   type Invitation,
 } from "@/lib/team";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 const HOUR = 3_600_000;
 
 // The venue's team (Figma D20 726:3), from the Venue tab: the owner, then staff with what each can
 // do in a line (and when a password reset cut it back), then invitations still waiting, each with
 // when it runs out and Withdraw. + invites someone. Changing anything needs `staff: manage`.
-export default function Team() {
+function Team() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -192,3 +194,5 @@ export default function Team() {
     </Screen>
   );
 }
+
+export default guarded(RULES.team, Team);

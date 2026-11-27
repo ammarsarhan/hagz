@@ -19,6 +19,8 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Booking requests (Figma D7 round 3, 538:2), from the Calendar's inbox button: the app bookings
 // waiting for the venue's answer, grouped by the game's day ("Today", "Tomorrow", "Thu 26 Nov"),
@@ -35,7 +37,7 @@ const REFRESHED: QueryFilters[] = [
   },
 ];
 
-export default function BookingRequests() {
+function BookingRequests() {
   const { venue } = useCurrentVenue();
   const requests = useQuery(bookingRequests(venue?.id ?? ""));
   useRefreshWhenShown(REFRESHED);
@@ -206,3 +208,5 @@ function Answer({
     </Pressable>
   );
 }
+
+export default guarded(RULES.requests, BookingRequests);

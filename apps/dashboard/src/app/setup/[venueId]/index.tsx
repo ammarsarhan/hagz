@@ -23,6 +23,8 @@ import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { afterVenueWrite, queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A draft venue's setup checklist (Figma "Venue creation · 7 Setup checklist (draft flow)", 285:2):
 // everything left to do before it can be sent for review, in any order, each item saved as it's
@@ -37,7 +39,7 @@ type SetupItem = components["schemas"]["SetupItem"];
 const RING = 60;
 const RING_WIDTH = 4;
 
-export default function VenueSetupScreen() {
+function VenueSetupScreen() {
   const { t } = useTranslation();
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const hud = useHud();
@@ -322,3 +324,5 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
     </View>
   );
 }
+
+export default guarded(RULES.venueForm, VenueSetupScreen);

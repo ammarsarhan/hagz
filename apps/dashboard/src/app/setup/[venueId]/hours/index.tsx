@@ -13,12 +13,14 @@ import { weekFromApi, weekSummary } from "@/lib/hours";
 import { isRTL } from "@/lib/language";
 import { queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Opening hours": each ground has its own week, so with more than one ground this
 // lists them, each with its week in a few words, and a tap opens that ground's week. With one
 // ground there's nothing to choose, and it goes straight there. (Not in Figma; the user chose a
 // list first, 2026-11-15.)
-export default function SetupHours() {
+function SetupHours() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const grounds = useQuery(queries.grounds(venueId));
   if (!grounds.data) return <SetupLoading query={grounds} />;
@@ -81,3 +83,5 @@ function HoursList({ venueId, grounds }: { venueId: string; grounds: Ground[] })
     </StepScreen>
   );
 }
+
+export default guarded(RULES.scheduleForm, SetupHours);

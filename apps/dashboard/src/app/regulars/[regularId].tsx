@@ -31,6 +31,8 @@ import { hoursSpan, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { datesJoin, regularQuery } from "@/lib/regulars";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A regular (Figma D12 655:2), from the Regulars list: who, their weekly time, ground and since
 // when; their number with Call and WhatsApp; the coming weeks as rows, each with the Calendar's bar
@@ -63,7 +65,7 @@ const DOT: Record<Detail["comingWeeks"][number]["state"], string> = {
 };
 const FALLBACK_HORIZON = 4;
 
-export default function RegularPage() {
+function RegularPage() {
   const { t } = useTranslation();
   const hud = useHud();
   const { regularId = "" } = useLocalSearchParams<{ regularId: string }>();
@@ -441,3 +443,5 @@ function WeekRow({
     </Pressable>
   );
 }
+
+export default guarded(RULES.regulars, RegularPage);

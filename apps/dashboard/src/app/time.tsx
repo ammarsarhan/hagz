@@ -23,6 +23,8 @@ import { push } from "@/lib/navigation";
 import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
 import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A time's own page (Figma D19 723:2; user 2026-11-27, in place of the calendar's sheets): one free
 // hour, a run picked by dragging, the same hour free on several grounds (picked with chips), or a
@@ -36,7 +38,7 @@ type Params = { date: string; slotIds: string };
 
 const TIER = { BASE: "normal", PEAK: "peak", DISCOUNT: "discount" } as const;
 
-export default function TimePage() {
+function TimePage() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<Params>();
   const { venue } = useCurrentVenue();
@@ -387,3 +389,5 @@ function Link({ label, detail, onPress }: { label: string; detail?: string; onPr
     </Pressable>
   );
 }
+
+export default guarded(RULES.time, TimePage);

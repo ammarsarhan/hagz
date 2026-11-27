@@ -24,6 +24,8 @@ import { colors } from "@/lib/colors";
 import { amountOf, cleanAmount, decimalsOf } from "@/lib/money";
 import { queries, reference } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Amenities" (Figma "Amenities · A Priced = dashed border", 333:2, and its price sheet,
 // 335:2): optional. Every option the marketplace offers is a pill; tapping one says the venue has
@@ -37,7 +39,7 @@ type Offered = { price: number | null; pricing: Pricing | null };
 const PRICINGS = ["PER_HOUR", "PER_BOOKING"] as const;
 type Charge = (typeof PRICINGS)[number];
 
-export default function SetupAmenities() {
+function SetupAmenities() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   const options = useQuery({
@@ -366,3 +368,5 @@ function PriceSheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.venueForm, SetupAmenities);

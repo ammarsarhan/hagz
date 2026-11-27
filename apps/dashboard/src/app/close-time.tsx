@@ -19,6 +19,8 @@ import { localDateOf } from "@/lib/calendar";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Closing free times (Figma D16 635:2, "Close a time"; user 2026-11-27): the time picked as a dashed
 // card with Change (back to the calendar), an optional note for the team, and a bar to Close. Nobody
@@ -34,7 +36,7 @@ type Params = {
   timezone: string;
 };
 
-export default function CloseTime() {
+function CloseTime() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<Params>();
   const { venue } = useCurrentVenue();
@@ -142,3 +144,5 @@ export default function CloseTime() {
     </Screen>
   );
 }
+
+export default guarded(RULES.closeTime, CloseTime);

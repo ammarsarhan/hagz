@@ -42,6 +42,8 @@ import { hourLabel } from "@/lib/hours";
 import { intlLocale, isRTL } from "@/lib/language";
 import { overlaps, regularsQuery, weeksDecided, type Regular } from "@/lib/regulars";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // The venue's regulars (Figma D12 653:3), from the Venue tab: their weekly games under the weekday,
 // Sundays first, each with its hours, who, the ground and how the weeks have gone. Regulars who
@@ -71,7 +73,7 @@ const EMPTY_IN = FadeIn.duration(320).delay(140);
 const SLIDE_MS = 180;
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-export default function Regulars() {
+function Regulars() {
   const { t } = useTranslation();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -629,3 +631,5 @@ const dateLabel = (at: string) => {
     ...(date.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }),
   }).format(date);
 };
+
+export default guarded(RULES.regulars, Regulars);

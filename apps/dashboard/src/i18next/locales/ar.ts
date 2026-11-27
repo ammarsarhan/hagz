@@ -12,6 +12,10 @@ const ar: ArabicTranslations = {
         payments: "المدفوعات",
         account: "الحساب",
       },
+      noAccess: {
+        title: "ليس ضمن صلاحياتك",
+        body: "اطلب ذلك من المسؤول عن فريق ملعبك إن كنت تحتاجه.",
+      },
       venueSwitcher: {
         title: "تبديل الملعب",
         close: "إغلاق",

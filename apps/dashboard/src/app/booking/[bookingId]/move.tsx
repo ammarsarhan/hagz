@@ -27,6 +27,8 @@ import { useNow } from "@/lib/use-now";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
 import { bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Moving a booking (Figma D9: pick 605:2, confirm 600:2). The day as a list under the week strip
 // and the grounds, where the free times the booking fits wait dashed in blue, its own time dashed
@@ -42,7 +44,7 @@ type StaffBooking = components["schemas"]["StaffBooking"];
 
 const SOFT_FILL = "bg-[#f2f4ff]";
 
-export default function MoveBooking() {
+function MoveBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -520,3 +522,5 @@ function ConfirmMove({
     </Sheet>
   );
 }
+
+export default guarded(RULES.bookingChange, MoveBooking);

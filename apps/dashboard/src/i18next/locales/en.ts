@@ -10,6 +10,10 @@ const en = {
         payments: "Payments",
         account: "Account",
       },
+      noAccess: {
+        title: "Not part of your access",
+        body: "Ask whoever runs your venue's team if you need this.",
+      },
       venueSwitcher: {
         title: "Switch venue",
         close: "Close",

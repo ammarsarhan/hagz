@@ -45,6 +45,8 @@ import { datesLabel, regularQuery, regularsQuery, type Regular } from "@/lib/reg
 import { useNow } from "@/lib/use-now";
 import { weekSlots } from "@/lib/week-queries";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A new weekly game, its first step (Figma D12 656:2): the weekday, then the ground (one at a time,
 // as on Move and Hold a time; user, 2026-11-26: no All grounds), then its free hours: each dashed in
@@ -97,7 +99,7 @@ interface Block {
   regulars: Regular[];
 }
 
-export default function NewRegular() {
+function NewRegular() {
   const { t } = useTranslation();
   const hud = useHud();
   const { venue } = useCurrentVenue();
@@ -868,3 +870,5 @@ function RegularRow({
     </View>
   );
 }
+
+export default guarded(RULES.regularNew, NewRegular);

@@ -27,6 +27,8 @@ import { queries } from "@/lib/queries";
 import { noticeLabel } from "@/lib/settings";
 import { useSaveSettings } from "@/lib/venue-edit";
 import type { components } from "@hagz/api";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Settings (Figma D18 "Booking settings", 645:3), from Venue › Rules: how bookings are confirmed
 // and when they close (moved here from Payments, user, 2026-11-26), holds, regulars, and who goes
@@ -52,7 +54,7 @@ const LAPSED_WEEKS = range(1, 12);
 // The week the timeline is drawn on: kick-off on a Sunday at 9 pm (Figma).
 const KICK_OFF = { day: 0, hour: 21 };
 
-export default function BookingSettings() {
+function BookingSettings() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const { t } = useTranslation();
   const compact = useCompactTitle();
@@ -418,3 +420,5 @@ function choices(steps: number[], saved: number, label: (count: number) => strin
     .sort((a, b) => a - b)
     .map((value) => ({ value, label: label(value) }));
 }
+
+export default guarded(RULES.bookingSettings, BookingSettings);

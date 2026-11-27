@@ -26,6 +26,8 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { displayPhone, isolate } from "@/lib/phone";
 import { hoursSpan } from "@/lib/when";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A customer (Figma D11 619:2, edits 661:2): who they are, then Call, WhatsApp and Book; the team's
 // note with Edit; their games still to come (a regular's week to confirm says Confirm) and the
@@ -45,7 +47,7 @@ const PLAYED = new Set(["COMPLETED", "NO_SHOW", "CONFIRMED"]);
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
-export default function CustomerPage() {
+function CustomerPage() {
   const { t } = useTranslation();
   const { customerId = "" } = useLocalSearchParams<{ customerId: string }>();
   const { venue } = useCurrentVenue();
@@ -637,3 +639,5 @@ function DetailsSheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.customers, CustomerPage);

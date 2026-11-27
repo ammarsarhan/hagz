@@ -21,6 +21,8 @@ import { intlLocale } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Who to call about a free time (Figma D10 612:281): the time on top, then the venue's customers
 // who fit it best and aren't booked then, from the API's Fill a slot, in its groups and order:
@@ -34,7 +36,7 @@ type Group = Candidate["group"];
 const GROUPS: Group[] = ["LAPSED_REGULAR", "ACTIVE_REGULAR", "OTHER"];
 const DAY_MS = 86_400_000;
 
-export default function WhoToCall() {
+function WhoToCall() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{
     slotId: string;
@@ -280,3 +282,5 @@ function Person({
     </View>
   );
 }
+
+export default guarded(RULES.book, WhoToCall);

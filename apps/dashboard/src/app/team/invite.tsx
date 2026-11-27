@@ -17,12 +17,14 @@ import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { isCompletePhone, toE164 } from "@/lib/phone";
 import { above, AREAS, afterTeamWrite, type Permissions } from "@/lib/team";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Inviting someone (Figma D20 726:245), from Team's +: their number, then their access, starting
 // from what the venue gives new staff (and, for a manager who isn't the owner, never more than
 // they have). Sent on WhatsApp; the link works for 48 hours. Send stays grey until the number is
 // whole.
-export default function Invite() {
+function Invite() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -124,3 +126,5 @@ export default function Invite() {
     </Screen>
   );
 }
+
+export default guarded(RULES.invite, Invite);

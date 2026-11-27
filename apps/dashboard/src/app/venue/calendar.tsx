@@ -60,6 +60,8 @@ import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
@@ -129,7 +131,7 @@ const REFRESHED: QueryFilters[] = [
   },
 ];
 
-export default function VenueCalendar() {
+function VenueCalendar() {
   const { t } = useTranslation();
   const hud = useHud();
   const { venue } = useCurrentVenue();
@@ -927,3 +929,5 @@ const standing = (row: CalendarRow, timezone: string, currency: string, t: T): s
     price,
   ];
 };
+
+export default guarded(RULES.calendar, VenueCalendar, { tabbed: true });

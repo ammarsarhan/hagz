@@ -23,6 +23,8 @@ import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
 import { intlLocale, isRTL } from "@/lib/language";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // The venue's customers (Figma D11 557:2), from the Venue tab: A to Z under their first letters,
 // searched by name or number. Each row: the name (Walk-in for someone staff entered), how many
@@ -33,7 +35,7 @@ type Customer = components["schemas"]["VenueCustomer"];
 const PAGE = 50;
 const DAY_MS = 86_400_000;
 
-export default function Customers() {
+function Customers() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -329,3 +331,5 @@ const lastLabel = (at: string, t: TFunction) => {
     }).format(date),
   });
 };
+
+export default guarded(RULES.customers, Customers);

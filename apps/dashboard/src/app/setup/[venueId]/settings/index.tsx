@@ -42,13 +42,15 @@ import {
 } from "@/lib/settings";
 import { useSaveSettings, type VenueDetail } from "@/lib/venue-edit";
 import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Policy" (Figma "Payments · A Plain list", 326:2), laid out like the account screen's
 // groups (user, 2026-11-15): its headings and rows, each value on the grey line under its title. No
 // Save button. Each change is saved as it's made; the two choices with more to
 // them open sheets ("How players pay", 318:2, and when booking closes), and the cancellation policy
 // has screens of its own (settings/cancellation).
-export default function SetupSettings() {
+function SetupSettings() {
   const { venueId = "", from } = useLocalSearchParams<{ venueId: string; from?: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
@@ -491,3 +493,5 @@ function LoyaltySheet({
     </Sheet>
   );
 }
+
+export default guarded(RULES.venueForm, SetupSettings);

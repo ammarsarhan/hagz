@@ -7,11 +7,13 @@ import { GroundFlowProvider, type GroundDraft } from "@/lib/ground-flow";
 import type { Ground } from "@/lib/grounds";
 import { amountOf, decimalsOf } from "@/lib/money";
 import { queries } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Adding a ground (`new`) or editing one (its id): four screens in a stack of their own, sharing one
 // draft that's sent from the last (lib/ground-flow.tsx). The list pushes this whole stack, so
 // finishing pops all four at once.
-export default function GroundFlowLayout() {
+function GroundFlowLayout() {
   const { venueId = "", groundId = "new" } = useLocalSearchParams<{
     venueId: string;
     groundId: string;
@@ -96,3 +98,5 @@ const nextName = (grounds: Ground[], name: (number: number) => string) => {
   while (taken.has(name(number))) number += 1;
   return name(number);
 };
+
+export default guarded(RULES.scheduleForm, GroundFlowLayout);
