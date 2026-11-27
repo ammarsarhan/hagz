@@ -6916,7 +6916,7 @@ export interface paths {
         };
         /**
          * Set a ground's weekly hours
-         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes keep the weeks already reserved and end after the last (`POST …/schedule/preview` says so first).
          */
         put: {
             parameters: {
@@ -7017,7 +7017,7 @@ export interface paths {
         put?: never;
         /**
          * Copy a ground's weekly hours to others
-         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes keep the weeks already reserved and end after the last (`POST …/schedule/preview` says so first).
          */
         post: {
             parameters: {

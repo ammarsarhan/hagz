@@ -73,4 +73,52 @@ describe("previewing a schedule change", () => {
     expect(await preview({ days: [] })).toEqual({ bookings: 1, requests: 1, regulars: [] });
     expect(await prisma.groundSchedule.count({ where: { groundId: ground.id } })).toBe(0);
   });
+
+  it("declines the requests in hours it closes on save, and leaves the bookings be", async () => {
+    const { venue, ground, hours } = await aGround({ settings: { autoConfirm: false } });
+    const owner = await staffAt(venue.id);
+    const request = Booking.parse(
+      await (
+        await book((await signedIn("+201001110021")).token, {
+          groundId: ground.id,
+          ...at(hours, 0, 1),
+        })
+      ).json(),
+    );
+    await prisma.venueSettings.update({
+      where: { venueId: venue.id },
+      data: { autoConfirm: true },
+    });
+    const booked = Booking.parse(
+      await (
+        await book((await signedIn("+201001110022")).token, {
+          groundId: ground.id,
+          ...at(hours, 2, 3),
+        })
+      ).json(),
+    );
+
+    const res = await asStaff(
+      owner.id,
+      "PUT",
+      `/venues/${venue.id}/grounds/${ground.id}/schedule`,
+      {
+        days: [],
+      },
+    );
+    expect(res.status).toBe(200);
+    const declined = await prisma.booking.findUniqueOrThrow({
+      where: { id: request.id },
+      include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+    expect(declined.status).toBe("CANCELLED");
+    expect(declined.events.at(-1)).toMatchObject({
+      type: "DECLINED",
+      staffId: owner.id,
+      data: { by: "SCHEDULE_CHANGED" },
+    });
+    expect((await prisma.booking.findUniqueOrThrow({ where: { id: booked.id } })).status).toBe(
+      "CONFIRMED",
+    );
+  });
 });

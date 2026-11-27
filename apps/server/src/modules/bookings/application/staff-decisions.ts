@@ -107,12 +107,12 @@ export const declineBooking = async (
   await transaction((tx) => declineIn(tx, actor, bookingId, now, reason ? { reason } : {}));
 };
 
-const declineIn = async (
+export const declineIn = async (
   tx: Tx,
   actor: VenueAccess,
   bookingId: string,
   now: Date,
-  data: { reason?: string; by?: "GROUND_REMOVED" },
+  data: { reason?: string; by?: "GROUND_REMOVED" | "SCHEDULE_CHANGED" },
 ) => {
   const booking = await lockPending(tx, actor, bookingId, "CANCELLED", now);
   await tx.booking.update({

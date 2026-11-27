@@ -565,7 +565,7 @@ const checkDates = (startsOn: Date, endsOn: Date | null, today: Date) => {
 const asDate = (text: string) => new Date(`${text}T00:00:00Z`);
 
 // The lock the top-up takes, taken first (before any row lock) wherever regulars are added or moved.
-const lockVenueRegulars = (tx: Tx, venueId: string) =>
+export const lockVenueRegulars = (tx: Tx, venueId: string) =>
   tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(${`regulars:${venueId}`}, 0))`;
 
 const alreadyRegular = () =>

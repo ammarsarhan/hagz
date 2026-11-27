@@ -227,6 +227,38 @@ describe("regulars", () => {
     });
     // Nothing was saved.
     expect(await prisma.groundSchedule.count({ where: { groundId: ground.id } })).toBe(0);
+
+    // Saved: the regular keeps its reserved weeks and ends after the last one.
+    const saved = await asStaff(
+      owner.id,
+      "PUT",
+      `/venues/${venue.id}/grounds/${ground.id}/schedule`,
+      week(21),
+    );
+    expect(saved.status).toBe(200);
+    const after = await detail(owner.id, venue.id, made.id);
+    expect(after).toMatchObject({ status: "ACTIVE", endsOn: last });
+    expect(after.reservations).toHaveLength(4);
+    // A regular with no week reserved ends at once.
+    const omarGame = await create(
+      owner.id,
+      venue.id,
+      regular(omar, { startHour: 18, slotCount: 1 }),
+    );
+    expect(omarGame.reservations).toHaveLength(0);
+    const evening = await asStaff(
+      owner.id,
+      "PUT",
+      `/venues/${venue.id}/grounds/${ground.id}/schedule`,
+      {
+        days: week(21).days.map((day) => ({
+          ...day,
+          hours: day.hours.filter(({ hour }) => !(day.dayOfWeek === weekday && hour === 18)),
+        })),
+      },
+    );
+    expect(evening.status).toBe(200);
+    expect((await detail(owner.id, venue.id, omarGame.id)).status).toBe("ENDED");
   });
 
   it("never gives one customer two regulars sharing an hour on a ground", async () => {

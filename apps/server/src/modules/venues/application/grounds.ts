@@ -387,6 +387,36 @@ const writeSchedule = async (tx: Tx, groundId: string, week: WeekSchedule) => {
   await bumpSchedule(tx, groundId);
 };
 
+// New hours that close some reach what's booked in them (user, 2026-11-27): waiting requests there
+// are declined, and regulars whose weekly time closes end after the weeks already reserved. That's
+// bookings' business, and bookings reads venues, so the composition root hands its hook over
+// (http/router.ts); it runs in the save's transaction with the hours the ground now has. Without
+// one, saving is refused rather than leave requests waiting in closed hours.
+type HoursHook = (
+  tx: Tx,
+  actor: VenueAccess,
+  groundId: string,
+  open: Set<number>,
+  now: Date,
+) => Promise<void>;
+let hoursChanged: HoursHook | undefined;
+
+export const whenHoursChange = (hook: HoursHook) => {
+  hoursChanged = hook;
+};
+
+const afterHours = async (tx: Tx, actor: VenueAccess, groundId: string, week: WeekSchedule) => {
+  if (!hoursChanged) throw new Error("No hours hook: http/router.ts sets one.");
+  const now = new Date();
+  await hoursChanged(
+    tx,
+    actor,
+    groundId,
+    await startsUnder(actor.venueId, groundId, week, now, tx),
+    now,
+  );
+};
+
 export const putSchedule = async (actor: VenueAccess, groundId: string, week: WeekSchedule) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
@@ -394,6 +424,7 @@ export const putSchedule = async (actor: VenueAccess, groundId: string, week: We
     checkScheduleAgainstPrices(week.days, ground);
     const previous = ground.schedules.length;
     await writeSchedule(tx, groundId, week);
+    await afterHours(tx, actor, groundId, week);
     await event(tx, actor, GROUND_SCHEDULE_CHANGED, {
       groundId,
       previousOpenDays: previous,
@@ -411,8 +442,9 @@ export const startsUnder = async (
   groundId: string,
   week: WeekSchedule,
   now: Date,
+  db: Tx | typeof prisma = prisma,
 ): Promise<Set<number>> => {
-  const ground = await prisma.ground.findFirst({
+  const ground = await db.ground.findFirst({
     where: { id: groundId, venueId, status: { notIn: [...GONE_GROUNDS] } },
     select: {
       basePrice: true,
@@ -454,6 +486,7 @@ export const copySchedule = async (actor: VenueAccess, groundId: string, input: 
         throw error;
       }
       await writeSchedule(tx, targetId, week);
+      await afterHours(tx, actor, targetId, week);
     }
     await event(tx, actor, GROUND_SCHEDULE_COPIED, { from: groundId, to: targets });
     return targets;

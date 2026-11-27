@@ -21,3 +21,4 @@ export { expireDueBookings } from "./application/expire-bookings";
 export { createRegular } from "./application/regulars";
 export { moveBooking } from "./application/rescheduling";
 export { declineBooking, declineWaitingOnGround } from "./application/staff-decisions";
+export { applyHoursChange } from "./application/schedule-preview";

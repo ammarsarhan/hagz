@@ -68,12 +68,15 @@ describe("hours a booking gives back", () => {
 
   it("go when the schedule has closed them", async () => {
     const { owner, request, path, ground, hours } = await aRequest();
+    // Closing the request's hour declines it on save (it's waiting in it), and the hour it gives
+    // back goes rather than staying on sale.
     const closed = await asStaff(owner.id, "PUT", `${path}/grounds/${ground.id}/schedule`, {
       days: [],
     });
     expect(closed.status).toBe(200);
-
-    await decline(owner.id, path, request.id);
+    expect((await prisma.booking.findUniqueOrThrow({ where: { id: request.id } })).status).toBe(
+      "CANCELLED",
+    );
     expect(
       await prisma.groundSlot.count({ where: { groundId: ground.id, startsAt: hours[0] } }),
     ).toBe(0);
