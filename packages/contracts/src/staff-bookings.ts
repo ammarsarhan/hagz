@@ -69,6 +69,53 @@ export const StaffBookingDetail = AdminBookingDetail.omit({ commissionRate: true
   })
   .meta({ id: "StaffBookingDetail" });
 
+// The Home tab (Figma D21c 739:2): what needs the staff member on a day, then what's next and what's
+// still free. Counts carry the one booking when there's exactly one, so a card can open it.
+export const StaffHomeQuery = z
+  .object({ date: LocalDate.meta({ description: "Today or a later day, venue-local." }) })
+  .meta({ id: "StaffHomeQuery" });
+
+const Waiting = z.object({
+  count: z.int().min(0),
+  soonest: Instant.nullable().meta({ description: "When the first of them runs out." }),
+  bookingId: z.uuid().nullable().meta({ description: "The booking, when there's just one." }),
+});
+
+export const StaffHome = z
+  .object({
+    requests: Waiting.meta({
+      description: "Waiting for approval: all of them for today, that day's for a later one.",
+    }),
+    holds: Waiting.meta({ description: "Staff holds on the day, still held." }),
+    toMark: Waiting.meta({
+      description:
+        "Today only: games that ended without a check-in, still open to marking as a no-show.",
+    }),
+    weeks: Waiting.meta({ description: "Regulars' weeks on the day still to confirm." }),
+    cash: z.object({ amount: z.int(), count: z.int(), currency: z.string() }).nullable().meta({
+      description:
+        "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`.",
+    }),
+    next: z
+      .array(StaffBooking.extend({ checkedIn: z.boolean() }))
+      .meta({
+        description: "Up to three games yet to end, from the day's start (today: from now).",
+      }),
+    free: z
+      .array(
+        z.object({
+          groundId: z.uuid(),
+          groundName: z.string().nullable(),
+          startsAt: Instant,
+          endsAt: Instant,
+          price: z.int().meta({ description: "The first hour's price, minor units." }),
+          currency: z.string(),
+        }),
+      )
+      .meta({ description: "Up to three runs of open hours on the day, soonest first." }),
+  })
+  .meta({ id: "StaffHome" });
+
 const Reason = z.string().trim().min(1).max(500);
 
 export const DeclineBooking = z
@@ -170,6 +217,8 @@ export const SharedBooking = z
 export type StaffBookingsQuery = z.infer<typeof StaffBookingsQuery>;
 export type StaffBooking = z.infer<typeof StaffBooking>;
 export type StaffBookingList = z.infer<typeof StaffBookingList>;
+export type StaffHomeQuery = z.infer<typeof StaffHomeQuery>;
+export type StaffHome = z.infer<typeof StaffHome>;
 export type StaffBookingDetail = z.infer<typeof StaffBookingDetail>;
 export type DeclineBooking = z.infer<typeof DeclineBooking>;
 export type MarkBooking = z.infer<typeof MarkBooking>;

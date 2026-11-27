@@ -6076,6 +6076,432 @@
         ],
         "description": "Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. Free slots from the schedule they overlap make way; any other overlap is refused."
       },
+      "StaffHome": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Waiting for approval: all of them for today, that day's for a later one."
+          },
+          "holds": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Staff holds on the day, still held."
+          },
+          "toMark": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Today only: games that ended without a check-in, still open to marking as a no-show."
+          },
+          "weeks": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Regulars' weeks on the day still to confirm."
+          },
+          "cash": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "count": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "count",
+              "currency"
+            ],
+            "description": "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`."
+          },
+          "next": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "timezone": {
+                  "type": "string",
+                  "description": "The venue's IANA timezone.",
+                  "example": "Africa/Cairo"
+                },
+                "venue": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "names": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "ar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "names"
+                  ]
+                },
+                "ground": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sport": {
+                      "$ref": "#/components/schemas/GroundSport"
+                    },
+                    "size": {
+                      "$ref": "#/components/schemas/GroundSize"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "sport",
+                    "size",
+                    "deleted"
+                  ]
+                },
+                "customer": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "phone"
+                  ]
+                },
+                "source": {
+                  "$ref": "#/components/schemas/BookingSource"
+                },
+                "currency": {
+                  "type": "string",
+                  "example": "EGP"
+                },
+                "total": {
+                  "type": "integer",
+                  "description": "Minor units, VAT included."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "venueCustomerId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Who it's for, as the venue's customer (a regular's own bookings are found by it)."
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "`PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go."
+                },
+                "hold": {
+                  "type": "boolean",
+                  "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+                },
+                "regular": {
+                  "type": "boolean",
+                  "description": "One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed)."
+                },
+                "openGame": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "players": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "players"
+                  ],
+                  "description": "An open game: how many players to expect besides the booker."
+                },
+                "paymentMode": {
+                  "$ref": "#/components/schemas/PaymentMode"
+                },
+                "deposit": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "`DEPOSIT`: the share paid online."
+                },
+                "paymentWindow": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "`PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise."
+                },
+                "checkedIn": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "status",
+                "startsAt",
+                "endsAt",
+                "timezone",
+                "venue",
+                "ground",
+                "customer",
+                "source",
+                "currency",
+                "total",
+                "createdAt",
+                "venueCustomerId",
+                "expiresAt",
+                "hold",
+                "regular",
+                "openGame",
+                "paymentMode",
+                "deposit",
+                "paymentWindow",
+                "checkedIn"
+              ]
+            },
+            "description": "Up to three games yet to end, from the day's start (today: from now)."
+          },
+          "free": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "groundId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "groundName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "price": {
+                  "type": "integer",
+                  "description": "The first hour's price, minor units."
+                },
+                "currency": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "groundId",
+                "groundName",
+                "startsAt",
+                "endsAt",
+                "price",
+                "currency"
+              ]
+            },
+            "description": "Up to three runs of open hours on the day, soonest first."
+          }
+        },
+        "required": [
+          "requests",
+          "holds",
+          "toMark",
+          "weeks",
+          "cash",
+          "next",
+          "free"
+        ]
+      },
+      "BookingSource": {
+        "type": "string",
+        "enum": [
+          "APP",
+          "STAFF"
+        ],
+        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
+      },
       "StaffBookingList": {
         "type": "object",
         "properties": {
@@ -6296,14 +6722,6 @@
           "deposit",
           "paymentWindow"
         ]
-      },
-      "BookingSource": {
-        "type": "string",
-        "enum": [
-          "APP",
-          "STAFF"
-        ],
-        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
       },
       "StaffBookingDetail": {
         "type": "object",
@@ -21711,6 +22129,85 @@
           },
           "422": {
             "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/home": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "The Home tab: what needs you on a day",
+        "description": "Requests, holds, games to mark and regulars' weeks waiting (today: all that wait; a later day: its own), cash still to take (with `payments: view`), then the next games and open hours.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Today or a later day, venue-local.",
+              "example": "2026-12-01"
+            },
+            "required": true,
+            "description": "Today or a later day, venue-local.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffHome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
             "content": {
               "application/problem+json": {
                 "schema": {

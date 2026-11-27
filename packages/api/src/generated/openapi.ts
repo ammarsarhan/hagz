@@ -9139,6 +9139,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The Home tab: what needs you on a day
+         * @description Requests, holds, games to mark and regulars' weeks waiting (today: all that wait; a later day: its own), cash still to take (with `payments: view`), then the next games and open hours.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Today or a later day, venue-local. */
+                    date: string;
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffHome"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/bookings": {
         parameters: {
             query?: never;
@@ -19557,6 +19628,157 @@ export interface components {
                 price: number;
             }[];
         };
+        StaffHome: {
+            /** @description Waiting for approval: all of them for today, that day's for a later one. */
+            requests: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Staff holds on the day, still held. */
+            holds: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Today only: games that ended without a check-in, still open to marking as a no-show. */
+            toMark: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Regulars' weeks on the day still to confirm. */
+            weeks: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`. */
+            cash: {
+                amount: number;
+                count: number;
+                currency: string;
+            } | null;
+            /** @description Up to three games yet to end, from the day's start (today: from now). */
+            next: {
+                /** Format: uuid */
+                id: string;
+                code: string;
+                status: components["schemas"]["BookingStatus"];
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /**
+                 * @description The venue's IANA timezone.
+                 * @example Africa/Cairo
+                 */
+                timezone: string;
+                venue: {
+                    /** Format: uuid */
+                    id: string;
+                    slug: string;
+                    names: {
+                        en: string | null;
+                        ar: string | null;
+                    };
+                };
+                ground: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string | null;
+                    sport: components["schemas"]["GroundSport"];
+                    size: components["schemas"]["GroundSize"];
+                    /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                    deleted: boolean;
+                };
+                customer: {
+                    name: string;
+                    phone: string | null;
+                };
+                source: components["schemas"]["BookingSource"];
+                /** @example EGP */
+                currency: string;
+                /** @description Minor units, VAT included. */
+                total: number;
+                /** Format: date-time */
+                createdAt: string;
+                /**
+                 * Format: uuid
+                 * @description Who it's for, as the venue's customer (a regular's own bookings are found by it).
+                 */
+                venueCustomerId: string;
+                /**
+                 * Format: date-time
+                 * @description `PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.
+                 */
+                expiresAt: string | null;
+                /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
+                hold: boolean;
+                /** @description One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed). */
+                regular: boolean;
+                /** @description An open game: how many players to expect besides the booker. */
+                openGame: {
+                    players: number;
+                } | null;
+                paymentMode: components["schemas"]["PaymentMode"];
+                /** @description `DEPOSIT`: the share paid online. */
+                deposit: number | null;
+                /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
+                paymentWindow: number | null;
+                checkedIn: boolean;
+            }[];
+            /** @description Up to three runs of open hours on the day, soonest first. */
+            free: {
+                /** Format: uuid */
+                groundId: string;
+                groundName: string | null;
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /** @description The first hour's price, minor units. */
+                price: number;
+                currency: string;
+            }[];
+        };
+        /**
+         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
+         * @enum {string}
+         */
+        BookingSource: "APP" | "STAFF";
         StaffBookingList: {
             data: components["schemas"]["StaffBooking"][];
         };
@@ -19627,11 +19849,6 @@ export interface components {
             /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
             paymentWindow: number | null;
         };
-        /**
-         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
-         * @enum {string}
-         */
-        BookingSource: "APP" | "STAFF";
         StaffBookingDetail: {
             /** Format: uuid */
             id: string;
