@@ -460,9 +460,7 @@ const en = {
           body: "They get a WhatsApp link to join your team.",
           phone: "Phone number",
           accessBody: "Your usual for new staff. Tap an area to change it.",
-          barTitle: "Send on WhatsApp",
-          barBody: "Works for 48 hours",
-          send: "Send",
+          send: "Send invite",
         },
       },
       venueTab: {
