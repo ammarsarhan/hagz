@@ -459,7 +459,7 @@ export const putSchedule = createRoute({
   description:
     "Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; " +
     "the last two need the ground to have that price. Hours past midnight belong in the next day " +
-    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).",
+    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams, body: { required: true, ...json(WeekSchedule) } },
@@ -482,7 +482,7 @@ export const copySchedule = createRoute({
   description:
     "Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own " +
     "prices, so each must have the prices the copied tiers need " +
-    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).",
+    "In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
   request: { params: groundParams, body: { required: true, ...json(CopySchedule) } },

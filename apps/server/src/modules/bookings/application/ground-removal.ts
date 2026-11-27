@@ -12,8 +12,8 @@ import { declineWaitingOnGround } from "./staff-decisions";
 // Deleting a ground and what's booked on it (user, 2026-11-27), by the rules for hours that close
 // (schedule-preview.ts): bookings and holds still to come go ahead and keep it on the calendar
 // until the last one ends; requests waiting on it are declined; its regulars let their waiting
-// (UNCONFIRMED) weeks go, keep the confirmed ones, and end after the last of them, or at once with
-// none. groundRemoval says so before (nothing written); groundRemoved does it, in the delete's
+// (UNCONFIRMED) weeks go and end there and then, leaving the regulars list, their confirmed weeks
+// still happening as booked (user, 2026-11-27). groundRemoval says so before (nothing written); groundRemoved does it, in the delete's
 // transaction, through venues' hook (http/router.ts). Removing itself is the venues module's
 // (DELETE /grounds/{groundId}).
 
@@ -121,15 +121,10 @@ export const groundRemoved = async (
   // Before any booking's row, as everywhere regulars change, so a top-up can't deadlock with it.
   await lockVenueRegulars(tx, actor.venueId);
   await declineWaitingOnGround(tx, actor, groundId, now);
-  const { timezone, regulars } = await endingRegulars(tx, actor.venueId, groundId, now);
+  const { regulars } = await endingRegulars(tx, actor.venueId, groundId, now);
   for (const regular of regulars) {
     await releaseWeeks(tx, regular.id, "GROUND_REMOVED", now);
-    await tx.venueRegular.update({
-      where: { id: regular.id },
-      // Its last confirmed week is its last; with none, it ends now.
-      data: regular.lastKept
-        ? { endsOn: localToday(regular.lastKept, timezone) }
-        : { endedAt: now },
-    });
+    // Only confirmed weeks are left, and no more come: it ends now (user, 2026-11-27).
+    await tx.venueRegular.update({ where: { id: regular.id }, data: { endedAt: now } });
   }
 };

@@ -6916,7 +6916,7 @@ export interface paths {
         };
         /**
          * Set a ground's weekly hours
-         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).
          */
         put: {
             parameters: {
@@ -7017,7 +7017,7 @@ export interface paths {
         put?: never;
         /**
          * Copy a ground's weekly hours to others
-         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).
          */
         post: {
             parameters: {
@@ -19729,7 +19729,7 @@ export interface components {
                 name: string;
                 /**
                  * Format: date
-                 * @description The last week confirmed, which still happens; null with none. It ends after it, its waiting weeks let go.
+                 * @description Its last confirmed week, which still happens as booked; null with none. The regular ends when it's saved, its waiting weeks let go.
                  */
                 lastWeek: string | null;
             }[];
@@ -19744,7 +19744,7 @@ export interface components {
              * @description When the last of them ends, and the ground goes for good; null with none.
              */
             lastEndsAt: string | null;
-            /** @description Regulars on it, not ended: their waiting weeks are let go, and each ends after its last confirmed week. */
+            /** @description Regulars on it, not ended: their waiting weeks are let go and each ends at once; confirmed weeks still happen. */
             regulars: {
                 /** Format: uuid */
                 id: string;
@@ -19752,7 +19752,7 @@ export interface components {
                 name: string;
                 /**
                  * Format: date
-                 * @description The last week confirmed, which still happens; null with none. It ends after it.
+                 * @description Its last confirmed week, which still happens as booked; null with none. The regular itself ends when it's removed.
                  */
                 lastWeek: string | null;
             }[];

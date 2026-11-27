@@ -187,15 +187,17 @@ describe("regulars", () => {
     const shown = (await calendar.json()) as { grounds: { id: string; removing: boolean }[] };
     expect(shown.grounds.find((one) => one.id === ground.id)?.removing).toBe(true);
 
-    // Karim keeps his confirmed week and ends after it; his waiting weeks went, not counted
-    // against him. Omar, with none, ends now.
+    // Karim's regular ends now, off the list; his confirmed week still happens as booked, and his
+    // waiting weeks went, not counted against him. Omar, with none, ends too.
     const karimAfter = await detail(owner.id, venue.id, karimGame.id);
     expect(karimAfter).toMatchObject({
-      status: "ACTIVE",
-      endsOn: secondWeek,
+      status: "ENDED",
+      endsOn: null,
       ground: { id: ground.id, deleted: true },
     });
-    expect(karimAfter.reservations.map((week) => week.id)).toEqual([second?.id]);
+    expect(karimAfter.reservations.map((week) => [week.id, week.status])).toEqual([
+      [second?.id, "CONFIRMED"],
+    ]);
     const letGo = await prisma.booking.findMany({
       where: { regularId: karimGame.id, status: "RELEASED" },
       include: { events: { orderBy: { createdAt: "asc" } } },
@@ -256,7 +258,7 @@ describe("regulars", () => {
     // Nothing was saved.
     expect(await prisma.groundSchedule.count({ where: { groundId: ground.id } })).toBe(0);
 
-    // Saved: the regular lets its waiting weeks go, keeps the confirmed one and ends after it.
+    // Saved: the regular lets its waiting weeks go and ends now; the confirmed week still happens.
     const saved = await asStaff(
       owner.id,
       "PUT",
@@ -265,8 +267,10 @@ describe("regulars", () => {
     );
     expect(saved.status).toBe(200);
     const after = await detail(owner.id, venue.id, made.id);
-    expect(after).toMatchObject({ status: "ACTIVE", endsOn: last });
-    expect(after.reservations.map((one) => one.id)).toEqual([third?.id]);
+    expect(after).toMatchObject({ status: "ENDED", endsOn: null });
+    expect(after.reservations.map((one) => [one.id, one.status])).toEqual([
+      [third?.id, "CONFIRMED"],
+    ]);
     const letGo = await prisma.booking.findMany({
       where: { regularId: made.id, status: "RELEASED" },
       include: { events: { orderBy: { createdAt: "asc" } } },

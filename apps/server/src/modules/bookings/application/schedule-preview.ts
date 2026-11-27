@@ -10,9 +10,9 @@ import { declineIn } from "./staff-decisions";
 
 // New hours on a ground and what's booked in the ones they close (user, 2026-11-27). Bookings and
 // holds still ahead in them go ahead as booked; requests waiting in them are declined; regulars
-// whose weekly time they close, wholly or in part, let their waiting (UNCONFIRMED) weeks go, keep
-// the confirmed ones, and end after the last of them, as when their ground is deleted
-// (ground-removal.ts). schedulePreview says so before saving (nothing written); applyHoursChange does it,
+// whose weekly time they close, wholly or in part, let their waiting (UNCONFIRMED) weeks go and end
+// there and then, leaving the regulars list; their confirmed weeks still happen as booked (user,
+// 2026-11-27), as when their ground is deleted (ground-removal.ts). schedulePreview says so before saving (nothing written); applyHoursChange does it,
 // in the save's transaction, through venues' hook (http/router.ts). The open hours are venues'
 // (startsUnder); the bookings and regulars are read here, the same way for both.
 
@@ -149,7 +149,7 @@ export const applyHoursChange = async (
 ): Promise<void> => {
   // Before any booking's row, as everywhere regulars change, so a top-up can't deadlock with it.
   await lockVenueRegulars(tx, actor.venueId);
-  const { timezone, hit, regulars } = await affected(tx, actor.venueId, groundId, open, now);
+  const { hit, regulars } = await affected(tx, actor.venueId, groundId, open, now);
   for (const booking of hit) {
     if (booking.status === "PENDING") {
       await declineIn(tx, actor, booking.id, now, { by: "SCHEDULE_CHANGED" });
@@ -157,12 +157,7 @@ export const applyHoursChange = async (
   }
   for (const regular of regulars) {
     await releaseWeeks(tx, regular.id, "SCHEDULE_CHANGED", now);
-    await tx.venueRegular.update({
-      where: { id: regular.id },
-      // Its last confirmed week is its last; with none, it ends now.
-      data: regular.lastReserved
-        ? { endsOn: localToday(regular.lastReserved, timezone) }
-        : { endedAt: now },
-    });
+    // Only confirmed weeks are left, and no more come: it ends now (user, 2026-11-27).
+    await tx.venueRegular.update({ where: { id: regular.id }, data: { endedAt: now } });
   }
 };

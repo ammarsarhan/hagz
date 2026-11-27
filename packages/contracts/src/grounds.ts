@@ -262,13 +262,13 @@ export const GroundRemoval = z
           name: z.string().meta({ description: "The customer's first name." }),
           lastWeek: z.iso.date().nullable().meta({
             description:
-              "The last week confirmed, which still happens; null with none. It ends after it.",
+              "Its last confirmed week, which still happens as booked; null with none. The regular itself ends when it's removed.",
           }),
         }),
       )
       .meta({
         description:
-          "Regulars on it, not ended: their waiting weeks are let go, and each ends after its last confirmed week.",
+          "Regulars on it, not ended: their waiting weeks are let go and each ends at once; confirmed weeks still happen.",
       }),
   })
   .meta({ id: "GroundRemoval" });
@@ -293,7 +293,7 @@ export const SchedulePreview = z
           name: z.string().meta({ description: "The customer's first name." }),
           lastWeek: z.iso.date().nullable().meta({
             description:
-              "The last week confirmed, which still happens; null with none. It ends after it, its waiting weeks let go.",
+              "Its last confirmed week, which still happens as booked; null with none. The regular ends when it's saved, its waiting weeks let go.",
           }),
         }),
       )
