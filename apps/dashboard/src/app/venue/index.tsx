@@ -6,6 +6,15 @@ import type { ComponentType } from "react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
+import Animated, {
+  Easing,
+  interpolateColor,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone } from "@/components/bone";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
@@ -311,42 +320,71 @@ function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; 
   );
 }
 
-// Paused (user, 2026-11-27): a grey banner the full width of the screen above the title, saying
-// players can't book, with Reopen (the Venue tab's Availability switch) and an × that hides it for
-// that venue until the app is next opened.
+// Paused (user, 2026-11-27): a grey banner the full width of the screen above the title, reaching
+// up behind the status bar so the bar is grey with it. It says players can't book, with Reopen (the
+// Venue tab's Availability switch) and an × that hides it for that venue until the app is next
+// opened: its words fade as it folds shut, the header easing up into place, while the grey behind the
+// status bar fades back to white.
 const dismissedPauses = new Set<string>();
+const FOLD = { duration: 320, easing: Easing.out(Easing.cubic) };
 
 function PausedBanner({ venueId }: { venueId: string }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [hidden, setHidden] = useState(() => dismissedPauses.has(venueId));
+  const open = useSharedValue(1);
+  const height = useSharedValue(0);
+  const frame = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(open.value, [0, 1], [colors.white, colors.chip]),
+  }));
+  // Its own height until measured, then folded by `open`.
+  const fold = useAnimatedStyle(() =>
+    height.value === 0 ? {} : { height: height.value * open.value, opacity: open.value },
+  );
   if (hidden) return null;
+
+  const dismiss = () => {
+    dismissedPauses.add(venueId);
+    open.value = withTiming(0, FOLD, (done) => {
+      if (done) runOnJS(setHidden)(true);
+    });
+  };
+
   return (
-    <View className="-mx-5 flex-row items-center bg-chip py-3 ps-5 pe-3">
-      <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
-      <Text className="ms-3 flex-1 text-label text-ink-2">
-        <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
-        {t("screens.home.pausedBody")}
-        <Text
-          accessibilityRole="link"
-          className="text-label font-medium text-ink underline"
-          onPress={() => router.navigate("/venue/manage")}
+    <Animated.View
+      style={[{ marginTop: -insets.top, paddingTop: insets.top, marginHorizontal: -20 }, frame]}
+    >
+      <Animated.View style={[{ overflow: "hidden" }, fold]}>
+        <View
+          className="flex-row items-center py-3 ps-5 pe-3"
+          onLayout={(event) => {
+            if (height.value === 0) height.value = event.nativeEvent.layout.height;
+          }}
         >
-          {` ${t("screens.home.reopen")}`}
-        </Text>
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("components.shared.nav.close")}
-        hitSlop={8}
-        onPress={() => {
-          dismissedPauses.add(venueId);
-          setHidden(true);
-        }}
-        className="ms-2 size-8 items-center justify-center active:opacity-60"
-      >
-        <IconX size={18} color={colors.ink} strokeWidth={1.75} />
-      </Pressable>
-    </View>
+          <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
+          <Text className="ms-3 flex-1 text-label text-ink-2">
+            <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
+            {t("screens.home.pausedBody")}
+            <Text
+              accessibilityRole="link"
+              className="text-label font-medium text-ink underline"
+              onPress={() => router.navigate("/venue/manage")}
+            >
+              {` ${t("screens.home.reopen")}`}
+            </Text>
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("components.shared.nav.close")}
+            hitSlop={8}
+            onPress={dismiss}
+            className="ms-2 size-8 items-center justify-center active:opacity-60"
+          >
+            <IconX size={18} color={colors.ink} strokeWidth={1.75} />
+          </Pressable>
+        </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
