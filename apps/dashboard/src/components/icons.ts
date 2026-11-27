@@ -24,6 +24,8 @@ export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconArrowUp } from "@tabler/icons-react-native/IconArrowUp";
 export { default as IconArrowsExchange } from "@tabler/icons-react-native/IconArrowsExchange";
 export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
+export { default as IconBell } from "@tabler/icons-react-native/IconBell";
+export { default as IconScan } from "@tabler/icons-react-native/IconScan";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 export { default as IconBuildingStadium } from "@tabler/icons-react-native/IconBuildingStadium";

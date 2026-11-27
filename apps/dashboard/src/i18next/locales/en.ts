@@ -1744,7 +1744,9 @@ const en = {
         },
       },
       home: {
-        title: "You're signed in",
+        title: "Home",
+        scan: "Scan a code",
+        notifications: "Notifications",
       },
       components: {
         title: "Components",

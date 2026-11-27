@@ -1897,7 +1897,9 @@ const ar: ArabicTranslations = {
         },
       },
       home: {
-        title: "تم تسجيل دخولك",
+        title: "الرئيسية",
+        scan: "مسح رمز",
+        notifications: "الإشعارات",
       },
       components: {
         title: "المكونات",
