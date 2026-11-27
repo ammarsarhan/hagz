@@ -425,6 +425,13 @@ const en = {
         },
         groups: { manage: "Can change", view: "Can see", none: "Hidden" },
         done: "Done",
+        remove: {
+          link: "Remove from the team",
+          linkBody: "Their access ends at once; their bookings stay.",
+          title: "Remove {{name}}?",
+          body: "{{name}} can't open this venue in the app any more. Bookings they made stay, and they're told.",
+          button: "Remove",
+        },
         tapArea: "Tap an area to change it",
         levelBodies: {
           none: "Hidden from them in the app",

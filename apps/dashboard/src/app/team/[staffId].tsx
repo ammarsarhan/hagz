@@ -2,14 +2,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Pressable } from "react-native";
 import { AccessEditor } from "@/components/access-editor";
 import { BarButton, BottomBar } from "@/components/bottom-bar";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
+import { RemoveMemberSheet } from "@/components/remove-member-sheet";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
+import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -82,6 +85,7 @@ function Editor({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Permissions>(member.permissions);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const changed = AREAS.filter((area) => draft[area] !== member.permissions[area]);
   const level = (value: Permissions[keyof Permissions]) => t(`screens.team.levels.${value}`);
 
@@ -211,7 +215,27 @@ function Editor({
               : undefined
           }
         />
+        {editable ? (
+          // Under the access, quiet: underlined, not a button (Figma D20 726:109).
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setRemoving(true)}
+            className="mt-8 self-start active:opacity-60"
+          >
+            <Text className="text-body font-medium underline">{t("screens.team.remove.link")}</Text>
+            <Text className="mt-0.5 text-caption text-ink-2">
+              {t("screens.team.remove.linkBody")}
+            </Text>
+          </Pressable>
+        ) : null}
       </FadingScroll>
+      <RemoveMemberSheet
+        venueId={venueId}
+        staffId={member.staffId}
+        name={member.name}
+        visible={removing}
+        onClose={() => setRemoving(false)}
+      />
     </Screen>
   );
 }
