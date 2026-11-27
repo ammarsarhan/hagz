@@ -559,12 +559,12 @@ function PausedBanner({
 function Heading({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
   return (
     <View className="mt-8 mb-1 flex-row items-baseline">
-      <Text accessibilityRole="header" className="flex-1 text-[22px] font-semibold leading-7">
+      <Text accessibilityRole="header" className="flex-1 text-[20px] font-semibold leading-[26px]">
         {title}
       </Text>
       {link ? (
         <Pressable accessibilityRole="link" onPress={onLink} hitSlop={8}>
-          <Text className="text-[15px] font-medium underline">{link}</Text>
+          <Text className="text-label font-medium underline">{link}</Text>
         </Pressable>
       ) : null}
     </View>
