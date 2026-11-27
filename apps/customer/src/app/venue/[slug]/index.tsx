@@ -69,8 +69,7 @@ import { push } from "@/lib/navigation";
 // As the photos scroll away a white bar fades in behind the back button, and the venue's name rises
 // into it beside the button as the big name goes under (the staff app's compact title). The tabs
 // stick under the bar the moment they reach it: they're moved on the UI thread with the scroll, so
-// they never lag behind it. Booking itself (the day and time sheet, the ground picker) comes next,
-// so Book says so for now.
+// they never lag behind it.
 
 const PHOTO_HEIGHT = 320;
 const BAR = 56;

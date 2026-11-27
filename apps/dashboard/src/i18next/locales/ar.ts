@@ -84,7 +84,6 @@ const ar: ArabicTranslations = {
         change: "تغيير",
         forgotPassword: "نسيت كلمة المرور؟",
       },
-      comingNext: "هذه الشاشة قادمة.",
       fields: {
         mobileNumber: "رقم الموبايل",
         fullName: "الاسم الكامل",

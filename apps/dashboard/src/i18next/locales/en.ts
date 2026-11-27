@@ -70,7 +70,6 @@ const en = {
         change: "Change",
         forgotPassword: "Forgot password?",
       },
-      comingNext: "This screen comes next.",
       fields: {
         mobileNumber: "Mobile number",
         fullName: "Full name",
