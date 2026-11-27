@@ -61,13 +61,13 @@ export function DeleteGroundSheet({
           },
         ]
       : []),
-    // Each regular on it, as when hours close (user, 2026-11-27): its waiting weeks go, and it
-    // ends after its last confirmed week, or now with none.
+    // Each regular on it, as when hours close (user, 2026-11-27): its waiting weeks go and it ends
+    // now; its confirmed weeks still happen.
     ...regulars.map((regular): Step => ({
-      label: regular.lastWeek
-        ? t(`${d}.regularEnds`, { name: regular.name, date: datesLabel(t, [regular.lastWeek]) })
-        : t(`${d}.regularEndsNow`, { name: regular.name }),
-      detail: regular.lastWeek ? t(`${d}.regularBody`) : t(`${d}.regularBodyNone`),
+      label: t(`${d}.regularEnds`, { name: regular.name }),
+      detail: regular.lastWeek
+        ? t(`${d}.regularBody`, { date: datesLabel(t, [regular.lastWeek]) })
+        : t(`${d}.regularBodyNone`),
       when: "",
       state: "now",
     })),

@@ -43,14 +43,10 @@ export const leavesSomething = (preview: SchedulePreview) =>
   preview.bookings > 0 || preview.requests > 0 || preview.regulars.length > 0;
 
 const regularStep = (t: TFunction, regular: SchedulePreview["regulars"][number]): Step => ({
-  label: regular.lastWeek
-    ? t("screens.setup.hours.change.regularEnds", {
-        name: regular.name,
-        date: datesLabel(t, [regular.lastWeek]),
-      })
-    : t("screens.setup.hours.change.regularEndsNow", { name: regular.name }),
+  // It ends when saved; its confirmed weeks still happen (user, 2026-11-27).
+  label: t("screens.setup.hours.change.regularEnds", { name: regular.name }),
   detail: regular.lastWeek
-    ? t("screens.setup.hours.change.regularBody")
+    ? t("screens.setup.hours.change.regularBody", { date: datesLabel(t, [regular.lastWeek]) })
     : t("screens.setup.hours.change.regularBodyNone"),
   when: "",
   state: "now",
