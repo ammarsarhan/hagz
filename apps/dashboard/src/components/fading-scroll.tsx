@@ -113,21 +113,27 @@ export function FadingScroll({
       >
         {children}
       </Animated.ScrollView>
-      {topLine ? (
-        <Animated.View
-          pointerEvents="none"
-          className="absolute top-0 right-0 left-0 h-px bg-hairline"
-          style={{
-            opacity: offset.interpolate({
-              inputRange: [0, 12],
-              outputRange: [0, 1],
-              extrapolate: "clamp",
-            }),
-          }}
-        />
-      ) : null}
+      {topLine ? <TopHairline scrollY={offset} /> : null}
       <BottomLine shown={edges.bottom} />
     </View>
+  );
+}
+
+// The line under the bar once anything has scrolled beneath it, fading in over the first 12 pt.
+// Exported for screens that scroll a list of their own (Customers), inside a full-width View.
+export function TopHairline({ scrollY }: { scrollY: Animated.Value }) {
+  return (
+    <Animated.View
+      pointerEvents="none"
+      className="absolute top-0 right-0 left-0 h-px bg-hairline"
+      style={{
+        opacity: scrollY.interpolate({
+          inputRange: [0, 12],
+          outputRange: [0, 1],
+          extrapolate: "clamp",
+        }),
+      }}
+    />
   );
 }
 

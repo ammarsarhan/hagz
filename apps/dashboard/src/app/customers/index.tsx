@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Animated, Pressable, SectionList, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { TopHairline } from "@/components/fading-scroll";
 import { Empty } from "@/components/empty";
 import { NoCustomersArt } from "@/components/empty-art";
 import { NewCustomer, NoMatchArt, PAUSE_MS } from "@/components/hold-for";
@@ -203,38 +204,41 @@ export default function Customers() {
           ) : undefined
         }
       />
-      <SectionList
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-        sections={searching ? [] : sections}
-        keyExtractor={(customer) => customer.id}
-        ListHeaderComponent={header}
-        ListEmptyComponent={empty}
-        ListFooterComponent={
-          list.isFetchingNextPage ? (
-            <ActivityIndicator className="my-6" color={colors.ink3} />
-          ) : undefined
-        }
-        stickySectionHeadersEnabled={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
-        }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: compact.scrollY } } }], {
-          // A plain list (its typing is simpler), so the title follows on the JS side.
-          useNativeDriver: false,
-        })}
-        scrollEventThrottle={16}
-        renderSectionHeader={({ section }) => (
-          <Text className="mt-5 text-label font-medium text-ink-2">{section.title}</Text>
-        )}
-        renderItem={({ item, index, section }) => (
-          <Row customer={item} last={index === section.data.length - 1} />
-        )}
-      />
+      {/* Full width, so the line under the bar spans the gutters, as on every other screen. */}
+      <View className="-mx-5 flex-1">
+        <SectionList
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          sections={searching ? [] : sections}
+          keyExtractor={(customer) => customer.id}
+          ListHeaderComponent={header}
+          ListEmptyComponent={empty}
+          ListFooterComponent={
+            list.isFetchingNextPage ? (
+              <ActivityIndicator className="my-6" color={colors.ink3} />
+            ) : undefined
+          }
+          stickySectionHeadersEnabled={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
+          }}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: compact.scrollY } } }], {
+            // A plain list (its typing is simpler), so the title follows on the JS side.
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
+          renderSectionHeader={({ section }) => (
+            <Text className="mt-5 text-label font-medium text-ink-2">{section.title}</Text>
+          )}
+          renderItem={({ item, index, section }) => (
+            <Row customer={item} last={index === section.data.length - 1} />
+          )}
+        />
+        <TopHairline scrollY={compact.scrollY} />
+      </View>
       <Sheet
         visible={adding}
         onClose={() => setAdding(false)}
