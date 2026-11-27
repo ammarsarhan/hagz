@@ -101,6 +101,8 @@ const en = {
       tomorrow: "Tomorrow",
       // The search bar's when: "Today · any time", "Fri 21 · 9–11 pm".
       whenAnyTime: "{{day}} · any time",
+      // Home's Free tonight: "Today · from 7 pm".
+      whenFrom: "{{day}} · from {{time}}",
       whenRange: "{{day}} · {{range}}",
       sports: {
         FOOTBALL: "Football",
@@ -840,6 +842,7 @@ const en = {
           cash: "Pay cash",
           online: "Pay online",
           loyalty: "Loyalty",
+          justFreed: "Just freed",
         },
         filtersSheet: {
           title: "Filters",
@@ -909,6 +912,7 @@ const en = {
         when: {
           title: "When do you want to play?",
           anyTime: "Any time",
+          from: "From {{time}}",
           barsHint: "Bars depict venues free each hour",
         },
         card: {

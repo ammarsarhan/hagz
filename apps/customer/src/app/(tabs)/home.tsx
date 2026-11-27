@@ -247,7 +247,9 @@ export default function Home() {
                 tonightIsTomorrow ? t("screens.home.tomorrowNight") : t("screens.home.tonight")
               }
               line={t("screens.home.fromHour", { place: inLine, time: hourLabel(fromHour) })}
-              onSeeAll={() => seeAll(tonight.date ? { date: tonight.date } : {})}
+              onSeeAll={() =>
+                seeAll({ ...(tonight.date ? { date: tonight.date } : {}), after: TONIGHT_FROM })
+              }
               {...venueRail(tonight, { wide: true })}
             />
           ) : null}
@@ -268,6 +270,7 @@ export default function Home() {
             <Rail
               title={t("screens.home.justFreed")}
               line={t("screens.home.justFreedLine")}
+              onSeeAll={() => seeAll({ justFreed: "true" })}
               {...venueRail(freed, { wide: true })}
             />
           ) : null}

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 import { intlLocale } from "@/lib/language";
 import {
+  hourLabel,
   hourRange,
   localDate,
   type SearchParams,
@@ -103,6 +104,7 @@ export function SearchWhen({
       ...params,
       ...(draft.date ? { date: draft.date } : {}),
       ...(draft.start ? { start: draft.start, hours: draft.hours } : {}),
+      ...(!draft.start && draft.after ? { after: draft.after } : {}),
     },
     visible,
   );
@@ -112,6 +114,8 @@ export function SearchWhen({
       ...previous,
       start: next ? `${String(next.from).padStart(2, "0")}:00` : null,
       hours: next ? next.to - next.from : 1,
+      // A run picked replaces Free tonight's "from"; none picked keeps it.
+      after: next ? undefined : previous.after,
     }));
 
   return (
@@ -150,7 +154,13 @@ export function SearchWhen({
 
       <View className="mt-8 flex-row items-baseline justify-between">
         <Text className="text-[20px] leading-[26px] font-semibold">
-          {run ? hourRange(run.from, run.to, " – ") : t("screens.search.when.anyTime")}
+          {run
+            ? hourRange(run.from, run.to, " – ")
+            : draft.after
+              ? t("screens.search.when.from", {
+                  time: hourLabel(Number(draft.after.slice(0, 2))),
+                })
+              : t("screens.search.when.anyTime")}
         </Text>
         {run ? (
           <Text className="text-label text-ink-2">

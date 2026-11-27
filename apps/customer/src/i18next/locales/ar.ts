@@ -108,6 +108,7 @@ const ar: ArabicTranslations = {
       tonight: "الليلة",
       tomorrow: "غدًا",
       whenAnyTime: "{{day}} · أي وقت",
+      whenFrom: "{{day}} · من {{time}}",
       whenRange: "{{day}} · {{range}}",
       sports: {
         FOOTBALL: "كرة القدم",
@@ -929,6 +930,7 @@ const ar: ArabicTranslations = {
           cash: "الدفع نقدًا",
           online: "الدفع أونلاين",
           loyalty: "الولاء",
+          justFreed: "أصبح متاحًا للتو",
         },
         filtersSheet: {
           title: "الفلاتر",
@@ -1001,6 +1003,7 @@ const ar: ArabicTranslations = {
         when: {
           title: "متى تريد أن تلعب؟",
           anyTime: "أي وقت",
+          from: "من {{time}}",
           barsHint: "الأعمدة تمثل الملاعب المتاحة كل ساعة",
         },
         card: {
