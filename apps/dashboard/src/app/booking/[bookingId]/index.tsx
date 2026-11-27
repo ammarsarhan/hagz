@@ -14,7 +14,9 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { HoldBar, HoldRing, ReleaseSheet } from "@/components/hold-parts";
 import { useHud } from "@/components/hud";
-import { IconBrandWhatsapp, IconDots, IconLockOpen, IconPhone } from "@/components/icons";
+import { IconBrandWhatsapp, IconDots, IconLockOpen, IconPhone, IconScan } from "@/components/icons";
+import { Button } from "@/components/button";
+import { colors } from "@/lib/colors";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { marksOutcome, MARK_WINDOW_MS, OutcomeBar } from "@/components/outcome-bar";
 import { Screen } from "@/components/screen";
@@ -41,12 +43,18 @@ import { RULES } from "@/lib/access";
 // what's been paid, and how and when it was booked.
 //
 // A staff hold (D9 606:76) shows its ring running down instead, Confirm in the bar, and Let it go
-// in ⋯. Still to come on this page: the Scan a code bar.
+// in ⋯. While check-in is open, Scan a code is pinned at the bottom.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 type Event = components["schemas"]["BookingHistoryEvent"];
 
 const HOUR = 3_600_000;
+
+// Check-in is open on it now.
+const checkInOpen = (booking: Booking, now: number) =>
+  booking.checkIn !== null &&
+  now >= Date.parse(booking.checkIn.opensAt) &&
+  now < Date.parse(booking.checkIn.closesAt);
 
 // A staff hold still running.
 const held = (booking: Booking): booking is Booking & { expiresAt: string } =>
@@ -261,6 +269,16 @@ function Page({
             deadline={moment(booking.expiresAt)}
             onChanged={refetch}
           />
+        ) : checkInOpen(booking, now) ? (
+          // Pinned while check-in is open (D8 535:2).
+          <View>
+            <View className="-mx-5 -mt-3 mb-3 h-px bg-border" />
+            <Button
+              label={t("screens.home.scan")}
+              icon={<IconScan size={20} color={colors.onPrimary} strokeWidth={1.75} />}
+              onPress={() => push("/scan")}
+            />
+          </View>
         ) : undefined
       }
     >
