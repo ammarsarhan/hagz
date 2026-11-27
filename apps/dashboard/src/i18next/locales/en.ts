@@ -456,7 +456,7 @@ const en = {
           button: "Give back",
         },
         invite: {
-          title: "Invite someone",
+          title: "Add invitation",
           body: "They get a WhatsApp link to join your team.",
           phone: "Phone number",
           accessBody: "Your usual for new staff. Tap an area to change it.",
