@@ -47,12 +47,12 @@ Roughly, a month with a baseline uses 2 to 4 EAS builds (Android for one or both
 ## Phase 0: Platform ✅
 Errors, logging, request ids, timeouts, health and shutdown, transactions, `Clock`, idempotency columns, test harness, OpenAPI docs, CI. Merged in #58 and #59.
 
-## Phase 1: Identity (API ✅, UI ✅ but 1.U2)
+## Phase 1: Identity ✅
 Customer and staff sign-up, sign-in, sessions, password reset and two-factor. Invite-only admins with TOTP. Staff invitations and the venue policy layer. Rate limits, including the global cap on sign-up codes. Merged in #60.
 
 ### Phase 1 UI
 
-The screens came first, because every later screen sits behind sign-in. 1.U0, 1.U1 and 1.U3 are built; 1.U2, the customer app's sign-in, opens Phase 3: it comes with the customer app's first native build, before the discovery screens.
+The screens came first, because every later screen sits behind sign-in. 1.U0, 1.U1, 1.U2 and 1.U3 are built. 1.U2, the customer app's sign-in, came with the customer app's first native build, before the discovery screens, and was signed off on the phone on 2026-11-27.
 
 | PR | Scope |
 |---|---|
