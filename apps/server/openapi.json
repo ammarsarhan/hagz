@@ -7138,7 +7138,7 @@
         "properties": {
           "bookings": {
             "type": "integer",
-            "description": "Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar."
+            "description": "Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar."
           },
           "requests": {
             "type": "integer",
@@ -7155,9 +7155,32 @@
           "regulars": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The customer's first name."
+                },
+                "lastWeek": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The last week confirmed, which still happens; null with none. It ends after it."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "lastWeek"
+              ]
             },
-            "description": "First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground."
+            "description": "Regulars on it, not ended: their waiting weeks are let go, and each ends after its last confirmed week."
           }
         },
         "required": [
@@ -7230,11 +7253,16 @@
                   "string",
                   "null"
                 ]
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: the regular ends after its last confirmed week."
               }
             },
             "required": [
               "id",
-              "name"
+              "name",
+              "deleted"
             ]
           },
           "dayOfWeek": {
@@ -7413,11 +7441,16 @@
                   "string",
                   "null"
                 ]
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: the regular ends after its last confirmed week."
               }
             },
             "required": [
               "id",
-              "name"
+              "name",
+              "deleted"
             ]
           },
           "dayOfWeek": {

@@ -267,14 +267,16 @@ export const updateGround = async (
 // marked removed, until finishRemovals sees its last booking end. Either way its free and blocked
 // slots go now, and past bookings keep naming it.
 //
-// Requests still waiting on it are declined first (user, 2026-11-27): that's bookings' business,
-// and bookings reads venues, so the composition root hands its hook over (http/router.ts). Without
-// one, removing is refused rather than leave requests waiting on a ground that's going.
-type WaitingHook = (tx: Tx, actor: VenueAccess, groundId: string, now: Date) => Promise<void>;
-let declineWaiting: WaitingHook | undefined;
+// What's booked on it is seen to first (user, 2026-11-27), as when hours close: requests waiting
+// on it are declined, and its regulars let their waiting weeks go and end after their last
+// confirmed one. That's bookings' business, and bookings reads venues, so the composition root
+// hands its hook over (http/router.ts). Without one, removing is refused rather than leave them
+// waiting on a ground that's going.
+type RemovalHook = (tx: Tx, actor: VenueAccess, groundId: string, now: Date) => Promise<void>;
+let onRemove: RemovalHook | undefined;
 
-export const whenGroundRemoved = (hook: WaitingHook) => {
-  declineWaiting = hook;
+export const whenGroundRemoved = (hook: RemovalHook) => {
+  onRemove = hook;
 };
 
 export const removeGround = async (actor: VenueAccess, groundId: string) => {
@@ -283,8 +285,8 @@ export const removeGround = async (actor: VenueAccess, groundId: string) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const row = await findGround(tx, actor.venueId, groundId);
     if (row.status === "ACTIVE") await refuseLastActive(tx, actor.venueId, groundId);
-    if (!declineWaiting) throw new Error("No ground removal hook: http/router.ts sets one.");
-    await declineWaiting(tx, actor, groundId, now);
+    if (!onRemove) throw new Error("No ground removal hook: http/router.ts sets one.");
+    await onRemove(tx, actor, groundId, now);
     const ahead = await bookedAhead(tx, groundId, now);
     await tx.ground.update({
       where: { id: groundId },

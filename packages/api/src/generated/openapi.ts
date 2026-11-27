@@ -19735,7 +19735,7 @@ export interface components {
             }[];
         };
         GroundRemoval: {
-            /** @description Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar. */
+            /** @description Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar. */
             bookings: number;
             /** @description Booking requests waiting for the venue on it: declined when it's removed. */
             requests: number;
@@ -19744,8 +19744,18 @@ export interface components {
              * @description When the last of them ends, and the ground goes for good; null with none.
              */
             lastEndsAt: string | null;
-            /** @description First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground. */
-            regulars: string[];
+            /** @description Regulars on it, not ended: their waiting weeks are let go, and each ends after its last confirmed week. */
+            regulars: {
+                /** Format: uuid */
+                id: string;
+                /** @description The customer's first name. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description The last week confirmed, which still happens; null with none. It ends after it.
+                 */
+                lastWeek: string | null;
+            }[];
         };
         VenueRegularList: {
             data: components["schemas"]["VenueRegular"][];
@@ -19765,6 +19775,8 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string | null;
+                /** @description Staff deleted it: the regular ends after its last confirmed week. */
+                deleted: boolean;
             };
             /** @description 0–6 from Sunday, in the venue's time. */
             dayOfWeek: number;
@@ -19828,6 +19840,8 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string | null;
+                /** @description Staff deleted it: the regular ends after its last confirmed week. */
+                deleted: boolean;
             };
             /** @description 0–6 from Sunday, in the venue's time. */
             dayOfWeek: number;

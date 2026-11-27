@@ -327,10 +327,10 @@ export const topUpAllVenues = async (clock: Clock = systemClock): Promise<number
 
 // Lets go of a regular's UNCONFIRMED reservations still to come (or those `keep` doesn't want) as
 // REGULAR_CHANGED, which never counts against it.
-const releaseWeeks = async (
+export const releaseWeeks = async (
   tx: Tx,
   regularId: string,
-  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED" | "HORIZON",
+  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED" | "HORIZON" | "GROUND_REMOVED",
   now: Date,
   keep: (startsAt: Date) => boolean = () => false,
 ) => {
@@ -490,7 +490,11 @@ const present = (
     phone: row.customer.phone,
     app: row.customer.customerId !== null,
   },
-  ground: { id: row.ground.id, name: groundName(row.ground.translations) },
+  ground: {
+    id: row.ground.id,
+    name: groundName(row.ground.translations),
+    deleted: row.ground.status === "REMOVING" || row.ground.status === "DELETED",
+  },
   dayOfWeek: row.dayOfWeek,
   startHour: row.startHour,
   slotCount: row.slotCount,

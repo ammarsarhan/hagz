@@ -7,7 +7,7 @@ import {
   bookingsRegularRoutes,
   bookingsStaffRoutes,
   applyHoursChange,
-  declineWaitingOnGround,
+  groundRemoved,
 } from "@/modules/bookings";
 import {
   adminAuthRoutes,
@@ -54,12 +54,12 @@ export const router = createRouter();
 
 // Hooks that let a lower module reach what another owns, without importing it: admin requests check
 // the admin is still active (identity owns their account), and an amenity made unplaceable leaves
-// every layout (venues owns layouts, and reads locations), and deleting a ground declines the
-// requests waiting on it, and new hours reach the requests and regulars in the ones they close
+// every layout (venues owns layouts, and reads locations), and deleting a ground reaches the
+// requests and regulars on it, and new hours reach the requests and regulars in the ones they close
 // (bookings owns them, and reads venues).
 checkAdminsWith(ensureAdminActive);
 whenAmenityUnplaceable(removeAmenityFromLayouts);
-whenGroundRemoved(declineWaitingOnGround);
+whenGroundRemoved(groundRemoved);
 whenHoursChange(applyHoursChange);
 
 router.use(requestId);

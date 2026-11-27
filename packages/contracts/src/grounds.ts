@@ -247,7 +247,7 @@ export const GroundRemoval = z
   .object({
     bookings: z.int().meta({
       description:
-        "Bookings and holds still ahead on it, requests aside: they go ahead, and keep it on the calendar.",
+        "Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar.",
     }),
     requests: z.int().meta({
       description: "Booking requests waiting for the venue on it: declined when it's removed.",
@@ -255,10 +255,21 @@ export const GroundRemoval = z
     lastEndsAt: z.iso.datetime().nullable().meta({
       description: "When the last of them ends, and the ground goes for good; null with none.",
     }),
-    regulars: z.array(z.string()).meta({
-      description:
-        "First names of the regulars on it, not ended: they keep their reserved weeks, get no more, and end with the ground.",
-    }),
+    regulars: z
+      .array(
+        z.object({
+          id: z.uuid(),
+          name: z.string().meta({ description: "The customer's first name." }),
+          lastWeek: z.iso.date().nullable().meta({
+            description:
+              "The last week confirmed, which still happens; null with none. It ends after it.",
+          }),
+        }),
+      )
+      .meta({
+        description:
+          "Regulars on it, not ended: their waiting weeks are let go, and each ends after its last confirmed week.",
+      }),
   })
   .meta({ id: "GroundRemoval" });
 

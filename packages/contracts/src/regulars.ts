@@ -45,7 +45,13 @@ export const VenueRegular = z
       phone: z.string().nullable(),
       app: z.boolean(),
     }),
-    ground: z.object({ id: z.uuid(), name: z.string().nullable() }),
+    ground: z.object({
+      id: z.uuid(),
+      name: z.string().nullable(),
+      deleted: z.boolean().meta({
+        description: "Staff deleted it: the regular ends after its last confirmed week.",
+      }),
+    }),
     dayOfWeek: Time.dayOfWeek,
     startHour: Time.startHour,
     slotCount: Time.slotCount,

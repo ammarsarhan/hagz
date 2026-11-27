@@ -139,6 +139,11 @@ describe("regulars", () => {
     });
     const karimGame = await create(owner.id, venue.id, regular(karim));
     const omarGame = await create(owner.id, venue.id, regular(omar));
+    expect(karimGame.reservations).toHaveLength(4);
+    expect(omarGame.reservations).toHaveLength(0);
+    // Karim confirms his second week; the other three wait.
+    const second = karimGame.reservations[1];
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${second?.id}/confirm`);
     await prisma.groundSlot.create({
       data: {
         groundId: ground.id,
@@ -150,24 +155,30 @@ describe("regulars", () => {
         scheduleVersion: 1,
       },
     });
+    const secondWeek = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(starts[1]);
 
+    // Waiting weeks aren't counted: they're let go.
     const preview = await asStaff(
       owner.id,
       "GET",
       `/venues/${venue.id}/grounds/${ground.id}/removal`,
     );
     expect(await preview.json()).toEqual({
-      bookings: 4,
+      bookings: 1,
       requests: 0,
-      lastEndsAt: new Date((starts[3]?.getTime() ?? 0) + 2 * HOUR).toISOString(),
-      regulars: ["Karim", "Omar"],
+      lastEndsAt: new Date((starts[1]?.getTime() ?? 0) + 2 * HOUR).toISOString(),
+      regulars: [
+        { id: karimGame.id, name: "Karim", lastWeek: secondWeek },
+        { id: omarGame.id, name: "Omar", lastWeek: null },
+      ],
     });
 
     const removed = await asStaff(owner.id, "DELETE", `/venues/${venue.id}/grounds/${ground.id}`);
     expect(removed.status).toBe(204);
     const kept = await prisma.ground.findUniqueOrThrow({ where: { id: ground.id } });
     expect(kept.status).toBe("REMOVING");
-    // Its free slot went; the reserved weeks' stay.
+    // Free slots went, the waiting weeks' with them; the confirmed week's stays.
+    expect(await prisma.groundSlot.count({ where: { groundId: ground.id } })).toBe(2);
     expect(await prisma.groundSlot.count({ where: { groundId: ground.id, bookingId: null } })).toBe(
       0,
     );
@@ -175,22 +186,36 @@ describe("regulars", () => {
     const calendar = await asStaff(owner.id, "GET", `/venues/${venue.id}/slots?date=${day}`);
     const shown = (await calendar.json()) as { grounds: { id: string; removing: boolean }[] };
     expect(shown.grounds.find((one) => one.id === ground.id)?.removing).toBe(true);
+
+    // Karim keeps his confirmed week and ends after it; his waiting weeks went, not counted
+    // against him. Omar, with none, ends now.
+    const karimAfter = await detail(owner.id, venue.id, karimGame.id);
+    expect(karimAfter).toMatchObject({
+      status: "ACTIVE",
+      endsOn: secondWeek,
+      ground: { id: ground.id, deleted: true },
+    });
+    expect(karimAfter.reservations.map((week) => week.id)).toEqual([second?.id]);
+    const letGo = await prisma.booking.findMany({
+      where: { regularId: karimGame.id, status: "RELEASED" },
+      include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+    expect(letGo).toHaveLength(3);
+    for (const week of letGo) {
+      expect(week.events.at(-1)).toMatchObject({
+        type: "REGULAR_CHANGED",
+        data: { reason: "GROUND_REMOVED" },
+      });
+    }
+    expect((await detail(owner.id, venue.id, omarGame.id)).status).toBe("ENDED");
+
     // No new regulars on it.
     const another = await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars`, {
       ...regular({ name: "Hany", phone: "+201005558888" }, { startHour: 22, slotCount: 1 }),
     });
     expect(another.status).toBe(409);
     expect(await another.json()).toMatchObject({ code: "GROUND_UNAVAILABLE" });
-
     expect(await finishRemovals()).toEqual({ finished: 0 });
-    await asStaff(owner.id, "POST", `/venues/${venue.id}/regulars/${karimGame.id}/end`);
-    expect(await finishRemovals()).toEqual({ finished: 1 });
-    expect((await prisma.ground.findUniqueOrThrow({ where: { id: ground.id } })).status).toBe(
-      "DELETED",
-    );
-    // The regular behind ends with the ground.
-    await topUpVenue(venue.id);
-    expect((await detail(owner.id, venue.id, omarGame.id)).status).toBe("ENDED");
   });
 
   it("previews a schedule change: the regulars whose weekly time it closes, and their weeks", async () => {
