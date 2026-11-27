@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, ScrollView, Switch, View } from "react-native";
+import { ActivityIndicator, Linking, Switch, View } from "react-native";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
+import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
+import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight, IconExternalLink, IconLogout } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
@@ -46,6 +48,9 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   const [codeSheet, setCodeSheet] = useState<{ enable: boolean; resendAfter: number } | null>(null);
   const [codeSheetOpen, setCodeSheetOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  // Scrolls as the Venue tab does (user, 2026-11-27): under a slim white bar that gets a hairline
+  // once anything is beneath it. No heading is told to the bar, so it stays plain.
+  const sections = useSectionTitle();
 
   useEffect(() => {
     if (isError) hud.show(hudMessage(error));
@@ -111,16 +116,17 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
 
   return (
     <Screen tabbed={tabbed}>
-      {/* The whole page scrolls, back button included. The scroll view reaches the screen edges and
-          puts the gutters back inside, so the round button's 4px overhang isn't clipped. */}
-      <ScrollView
-        // Scrolls (and bounces) even when everything fits, like the system's settings pages.
-        alwaysBounceVertical
-        showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-      >
-        {back}
+      {tabbed ? null : (
+        <NavBar
+          flush
+          start={
+            <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+          }
+        />
+      )}
+      <Page tabbed={tabbed} sections={sections}>
+        {/* Where it sat under the old spacer on the tab, so the avatar doesn't move. */}
+        {tabbed ? <View className="h-8" /> : null}
         <View className="items-center">
           <Avatar name={me.name} size="large" />
           <Text className="mt-3.5 text-[22px] font-semibold leading-[1.27]">{me.name}</Text>
@@ -198,7 +204,7 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
         <Text className="mt-3.5 text-center text-caption text-unit">
           {t("screens.account.version", { version: Constants.expoConfig?.version ?? "" })}
         </Text>
-      </ScrollView>
+      </Page>
 
       {codeSheet ? (
         <TwoFactorSheet
@@ -224,6 +230,28 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
 
       <SignOutSheet visible={signOutOpen} onClose={() => setSignOutOpen(false)} />
     </Screen>
+  );
+}
+
+// The scrolling page: on the tab, under the Venue tab's pinned bar; opened from first run, under
+// the back button's bar, with the shared hairline once it scrolls.
+function Page({
+  tabbed,
+  sections,
+  children,
+}: {
+  tabbed: boolean;
+  sections: ReturnType<typeof useSectionTitle>;
+  children: ReactNode;
+}) {
+  return tabbed ? (
+    <PinnedTitle sections={sections}>
+      <FadingScroll scrollY={sections.scrollY} topLine={false}>
+        {children}
+      </FadingScroll>
+    </PinnedTitle>
+  ) : (
+    <FadingScroll>{children}</FadingScroll>
   );
 }
 
