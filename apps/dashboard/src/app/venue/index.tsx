@@ -11,7 +11,6 @@ import { Bone } from "@/components/bone";
 import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
-import { useHud } from "@/components/hud";
 import {
   IconBallFootball,
   IconBell,
@@ -83,13 +82,11 @@ function isHome(query: { queryKey: readonly unknown[] }) {
 
 export default function VenueHome() {
   const { t } = useTranslation();
-  const hud = useHud();
   const me = useQuery(queries.me);
   const invitation = useInvitationSheet({
     phone: me.data?.phone.replace(/^\+20/, ""),
     takeLinks: me.data !== undefined,
   });
-  const comingNext = () => hud.show(t("common.comingNext"));
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const permissions = venue?.permissions;
@@ -138,10 +135,15 @@ export default function VenueHome() {
       >
         {t("screens.home.title")}
       </Text>
-      <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
-        <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
-      </HeaderButton>
-      <View className="ms-2">
+      {/* Scanning checks people in, so it's for those who manage bookings. */}
+      {permissions?.bookings === "manage" ? (
+        <View className="me-2">
+          <HeaderButton label={t("screens.home.scan")} onPress={() => push("/scan")}>
+            <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
+          </HeaderButton>
+        </View>
+      ) : null}
+      <View>
         <HeaderButton
           label={t("screens.home.notifications")}
           onPress={() => push("/notifications")}
