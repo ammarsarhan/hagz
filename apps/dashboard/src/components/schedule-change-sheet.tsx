@@ -64,6 +64,7 @@ const regularStep = (t: TFunction, regular: SchedulePreview["regulars"][number])
 export function ScheduleChangeSheet({
   title,
   copying = false,
+  lastOpen = false,
   preview,
   visible,
   onClose,
@@ -73,6 +74,8 @@ export function ScheduleChangeSheet({
   title: string;
   // Copying to other grounds: Copy, not Save.
   copying?: boolean;
+  // It closes the last hours open at a running venue: nothing's left to book (user, 2026-11-27).
+  lastOpen?: boolean;
   preview: SchedulePreview;
   visible: boolean;
   onClose: () => void;
@@ -84,6 +87,16 @@ export function ScheduleChangeSheet({
   const { bookings, requests, regulars } = preview;
 
   const steps: Step[] = [
+    ...(lastOpen
+      ? [
+          {
+            label: t(`${c}.lastOpen`),
+            detail: t(`${c}.lastOpenBody`),
+            when: "",
+            state: "now" as const,
+          },
+        ]
+      : []),
     ...(requests > 0
       ? [
           {

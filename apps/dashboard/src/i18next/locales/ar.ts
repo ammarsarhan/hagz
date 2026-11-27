@@ -1474,6 +1474,8 @@ const ar: ArabicTranslations = {
             copyTitle_few: "نسخ هذه المواعيد إلى {{count}} ملاعب؟",
             copyTitle_many: "نسخ هذه المواعيد إلى {{count}} ملعبًا؟",
             copyTitle_other: "نسخ هذه المواعيد إلى {{count}} ملعب؟",
+            lastOpen: "لا يوجد ملعب بمواعيد مفتوحة",
+            lastOpenBody: "لن يتمكن اللاعبون من حجز أي شيء في ملعبك حتى تفتح بعض المواعيد من جديد",
             requests_zero: "لا طلبات حجز معلّقة",
             requests_one: "يُرفض طلب حجز معلّق واحد",
             requests_two: "يُرفض طلبا حجز معلّقان",

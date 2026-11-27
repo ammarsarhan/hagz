@@ -54,6 +54,8 @@ export default function GroundHours() {
   }>();
   const grounds = useQuery(queries.grounds(venueId));
   const schedule = useQuery(queries.schedule(venueId, groundId));
+  const venue = useQuery(queries.venue(venueId));
+  if (!venue.data) return <SetupLoading query={venue} />;
   if (!grounds.data) return <SetupLoading query={grounds} />;
   if (!schedule.data) return <SetupLoading query={schedule} />;
   const ground = grounds.data.find((g) => g.id === groundId);
@@ -64,6 +66,7 @@ export default function GroundHours() {
       ground={ground}
       others={grounds.data.filter((g) => g.id !== groundId)}
       saved={ringFromApi(schedule.data)}
+      running={venue.data.status === "LIVE" || venue.data.status === "MAINTENANCE"}
     />
   );
 }
@@ -73,11 +76,14 @@ function WeekScreen({
   ground,
   others,
   saved,
+  running,
 }: {
   venueId: string;
   ground: Ground;
   others: Ground[];
   saved: Ring;
+  // Live or paused: players book it, so closing its last open hours is worth a warning.
+  running: boolean;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -114,6 +120,7 @@ function WeekScreen({
   const [warning, setWarning] = useState<{
     copyTo: string[] | null;
     preview: SchedulePreview;
+    lastOpen: boolean;
   } | null>(null);
   const [warningOpen, setWarningOpen] = useState(false);
   const confirmed = useRef(false);
@@ -130,10 +137,19 @@ function WeekScreen({
       setSaving(false);
       return hud.show(hudMessage(preview.error));
     }
-    if (!leavesSomething(preview.data)) return run();
+    // Saving no open hours on the venue's last ground that has some: nothing's left to book, so it
+    // asks even with nothing booked in them (user, 2026-11-27). Copying always copies open hours.
+    const lastOpen =
+      !copy &&
+      running &&
+      ground.status === "ACTIVE" &&
+      saved.some((tier) => tier !== null) &&
+      days.every((tier) => tier === null) &&
+      !others.some((other) => other.status === "ACTIVE" && other.openHours > 0);
+    if (!leavesSomething(preview.data) && !lastOpen) return run();
     setSaving(false);
     confirmed.current = false;
-    setWarning({ copyTo: copy ? groundIds : null, preview: preview.data });
+    setWarning({ copyTo: copy ? groundIds : null, preview: preview.data, lastOpen });
     setWarningOpen(true);
   };
 
@@ -261,6 +277,7 @@ function WeekScreen({
               : t("screens.setup.hours.change.title", { name })
           }
           copying={warning.copyTo !== null}
+          lastOpen={warning.lastOpen}
           preview={warning.preview}
           visible={warningOpen}
           onClose={() => setWarningOpen(false)}

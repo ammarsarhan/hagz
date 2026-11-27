@@ -1357,6 +1357,8 @@ const en = {
             title: "Save {{name}}'s new hours?",
             copyTitle_one: "Copy these hours to {{count}} ground?",
             copyTitle_other: "Copy these hours to {{count}} grounds?",
+            lastOpen: "No ground has open hours",
+            lastOpenBody: "Players can't book anything at your venue until you open some again",
             requests_one: "{{count}} waiting request is declined",
             requests_other: "{{count}} waiting requests are declined",
             requestsBody: "They're in hours that close. Nothing's paid while a request waits",
