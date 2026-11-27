@@ -3,6 +3,12 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LayoutAnimationConfig,
+  LinearTransition,
+} from "react-native-reanimated";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
@@ -26,6 +32,13 @@ import { RULES, useCan } from "@/lib/access";
 // waiting for the venue's answer, grouped by the game's day ("Today", "Tomorrow", "Thu 26 Nov"),
 // each with its deadline, hours, ground, price and how it's paid, and Approve and Decline side by
 // side. One whose deadline passes drops off on the minute, as the sweeper lets it go.
+//
+// An answered request stays until its sheet has gone, then fades out as the rows under it slide up
+// (user, 2026-11-27); a day left empty fades with it, and "none" fades in after the last.
+
+const LEAVE = FadeOut.duration(220);
+const MAKE_ROOM = LinearTransition.duration(220);
+const NONE_IN = FadeIn.duration(220).delay(220);
 
 const REFRESHED: QueryFilters[] = [
   {
@@ -54,9 +67,26 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
   const title = t("screens.requests.title");
   const canAnswer = useCan()(RULES.book);
 
+  // The request being answered, kept while its sheet slides away.
+  const [answering, setAnswering] = useState<{ request: StaffBooking; answer: Answer } | null>(
+    null,
+  );
+  const [open, setOpen] = useState(false);
+  const answer = (request: StaffBooking, kind: Answer) => {
+    setAnswering({ request, answer: kind });
+    setOpen(true);
+  };
+
   const days = useMemo(() => {
     const groups = new Map<string, StaffBooking[]>();
-    for (const request of requests) {
+    // Answered and already gone from the list: kept in its place until the sheet has slid away,
+    // so it leaves where it can be seen.
+    const answered = answering?.request;
+    const listed =
+      answered && !requests.some((request) => request.id === answered.id)
+        ? [...requests, answered]
+        : requests;
+    for (const request of listed) {
       if (request.expiresAt && Date.parse(request.expiresAt) <= now) continue;
       const day = localDateOf(request.startsAt, request.timezone);
       groups.set(day, [...(groups.get(day) ?? []), request]);
@@ -67,17 +97,7 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
         day,
         rows: rows.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
       }));
-  }, [requests, now]);
-
-  // The request being answered, kept while its sheet slides away.
-  const [answering, setAnswering] = useState<{ request: StaffBooking; answer: Answer } | null>(
-    null,
-  );
-  const [open, setOpen] = useState(false);
-  const answer = (request: StaffBooking, kind: Answer) => {
-    setAnswering({ request, answer: kind });
-    setOpen(true);
-  };
+  }, [requests, now, answering]);
 
   return (
     <Screen>
@@ -97,27 +117,38 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
         <Title onTitleLayout={compact.onTitleLayout} subtitle={t("screens.requests.subtitle")}>
           {title}
         </Title>
-        {days.length === 0 ? (
-          <Text className="text-body text-ink-2">{t("screens.requests.none")}</Text>
-        ) : (
-          days.map(({ day, rows }, index) => (
-            <View key={day} className={index === 0 ? "" : "mt-7"}>
-              <GroupHeading>
-                {relativeDay(day, now, rows[0]?.timezone ?? "Africa/Cairo", t)}
-              </GroupHeading>
-              {rows.map((request) => (
-                <Request
-                  key={request.id}
-                  request={request}
-                  // View only: the requests, read-only, without the answers.
-                  answers={canAnswer}
-                  onApprove={() => answer(request, "approve")}
-                  onDecline={() => answer(request, "decline")}
-                />
-              ))}
-            </View>
-          ))
-        )}
+        {/* Only changes animate, not what's there on arrival. */}
+        <LayoutAnimationConfig skipEntering>
+          {days.length === 0 ? (
+            <Animated.View entering={NONE_IN}>
+              <Text className="text-body text-ink-2">{t("screens.requests.none")}</Text>
+            </Animated.View>
+          ) : (
+            days.map(({ day, rows }, index) => (
+              <Animated.View
+                key={day}
+                exiting={LEAVE}
+                layout={MAKE_ROOM}
+                className={index === 0 ? "" : "mt-7"}
+              >
+                <GroupHeading>
+                  {relativeDay(day, now, rows[0]?.timezone ?? "Africa/Cairo", t)}
+                </GroupHeading>
+                {rows.map((request) => (
+                  <Animated.View key={request.id} exiting={LEAVE} layout={MAKE_ROOM}>
+                    <Request
+                      request={request}
+                      // View only: the requests, read-only, without the answers.
+                      answers={canAnswer}
+                      onApprove={() => answer(request, "approve")}
+                      onDecline={() => answer(request, "decline")}
+                    />
+                  </Animated.View>
+                ))}
+              </Animated.View>
+            ))
+          )}
+        </LayoutAnimationConfig>
       </FadingScroll>
       {answering ? (
         <RequestSheet
