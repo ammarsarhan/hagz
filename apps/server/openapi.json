@@ -5785,6 +5785,10 @@
                 "maximumSlots": {
                   "type": "integer",
                   "description": "The longest booking, in slots."
+                },
+                "removing": {
+                  "type": "boolean",
+                  "description": "Removed by staff with bookings still ahead: shown until the last one ends, closed to new bookings."
                 }
               },
               "required": [
@@ -5793,7 +5797,8 @@
                 "sport",
                 "size",
                 "minimumSlots",
-                "maximumSlots"
+                "maximumSlots",
+                "removing"
               ]
             }
           },
@@ -5852,6 +5857,47 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "closed": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "For the venue's team; never shown to players."
+              },
+              "staffId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "Who closed it; null once they're gone."
+              },
+              "by": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "First name of the staff member who closed it."
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "note",
+              "staffId",
+              "by",
+              "at"
+            ],
+            "description": "A BLOCKED slot closed by staff: why, who and when. Null otherwise."
           }
         },
         "required": [
@@ -5863,7 +5909,8 @@
           "price",
           "status",
           "isManual",
-          "bookingId"
+          "bookingId",
+          "closed"
         ]
       },
       "SlotStatus": {
@@ -5890,6 +5937,29 @@
           "slots"
         ]
       },
+      "BlockSlots": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Why it's closed, for the team."
+          }
+        },
+        "required": [
+          "slotIds"
+        ],
+        "description": "Free slots of the venue that haven't started, to close."
+      },
       "SlotSelection": {
         "type": "object",
         "properties": {
@@ -5907,6 +5977,33 @@
           "slotIds"
         ],
         "description": "Slots of the venue that haven't started."
+      },
+      "BlockNoteChange": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "Why it's closed, for the team."
+          }
+        },
+        "required": [
+          "slotIds",
+          "note"
+        ],
+        "description": "Closed slots of the venue that haven't started, and their note (null removes it)."
       },
       "SetSlotPrice": {
         "type": "object",
@@ -5978,6 +6075,531 @@
           "slots"
         ],
         "description": "Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. Free slots from the schedule they overlap make way; any other overlap is refused."
+      },
+      "StaffHome": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "requests": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Waiting for approval: all of them for today, that day's for a later one."
+          },
+          "holds": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Staff holds on the day, still held."
+          },
+          "toMark": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Today only: games that ended without a check-in, still open to marking as a no-show."
+          },
+          "weeks": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "soonest": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the first of them runs out."
+              },
+              "bookingId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The booking, when there's just one."
+              }
+            },
+            "required": [
+              "count",
+              "soonest",
+              "bookingId"
+            ],
+            "description": "Regulars' weeks on the day still to confirm."
+          },
+          "cash": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "count": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "count",
+              "currency"
+            ],
+            "description": "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`."
+          },
+          "games": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "next": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Today: the next game's start, null when none is left. A later day: its first."
+              }
+            },
+            "required": [
+              "count",
+              "next"
+            ],
+            "description": "The day's games: confirmed, still to confirm, played or no-show."
+          },
+          "booked": {
+            "type": "object",
+            "properties": {
+              "booked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "open": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "booked",
+              "open"
+            ],
+            "description": "The day's hours on live grounds: how many are booked or held, of all not closed by staff."
+          },
+          "checkIns": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "checkedIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "started": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "checkedIn",
+              "started"
+            ],
+            "description": "Today only: of the app games that have kicked off, how many have checked in. Null on a later day."
+          },
+          "takings": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "description": "What the day's games come to, however they're paid (minor units). Null without `payments: view`."
+          },
+          "next": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/BookingStatus"
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "timezone": {
+                  "type": "string",
+                  "description": "The venue's IANA timezone.",
+                  "example": "Africa/Cairo"
+                },
+                "venue": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "names": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "ar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "ar"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "names"
+                  ]
+                },
+                "ground": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sport": {
+                      "$ref": "#/components/schemas/GroundSport"
+                    },
+                    "size": {
+                      "$ref": "#/components/schemas/GroundSize"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "sport",
+                    "size",
+                    "deleted"
+                  ]
+                },
+                "customer": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "phone"
+                  ]
+                },
+                "source": {
+                  "$ref": "#/components/schemas/BookingSource"
+                },
+                "currency": {
+                  "type": "string",
+                  "example": "EGP"
+                },
+                "total": {
+                  "type": "integer",
+                  "description": "Minor units, VAT included."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "venueCustomerId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Who it's for, as the venue's customer (a regular's own bookings are found by it)."
+                },
+                "expiresAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "`PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go."
+                },
+                "hold": {
+                  "type": "boolean",
+                  "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+                },
+                "regular": {
+                  "type": "boolean",
+                  "description": "One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed)."
+                },
+                "openGame": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "players": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "players"
+                  ],
+                  "description": "An open game: how many players to expect besides the booker."
+                },
+                "paymentMode": {
+                  "$ref": "#/components/schemas/PaymentMode"
+                },
+                "deposit": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "`DEPOSIT`: the share paid online."
+                },
+                "paymentWindow": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "`PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise."
+                },
+                "checkedIn": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "status",
+                "startsAt",
+                "endsAt",
+                "timezone",
+                "venue",
+                "ground",
+                "customer",
+                "source",
+                "currency",
+                "total",
+                "createdAt",
+                "venueCustomerId",
+                "expiresAt",
+                "hold",
+                "regular",
+                "openGame",
+                "paymentMode",
+                "deposit",
+                "paymentWindow",
+                "checkedIn"
+              ]
+            },
+            "description": "Up to three games yet to end, from the day's start (today: from now)."
+          },
+          "free": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "groundId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "groundName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "slotIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "description": "The run's slots, in time order."
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "price": {
+                  "type": "integer",
+                  "description": "The first hour's price, minor units."
+                },
+                "currency": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "groundId",
+                "groundName",
+                "slotIds",
+                "startsAt",
+                "endsAt",
+                "price",
+                "currency"
+              ]
+            },
+            "description": "Up to three runs of open hours on the day, soonest first."
+          }
+        },
+        "required": [
+          "timezone",
+          "requests",
+          "holds",
+          "toMark",
+          "weeks",
+          "cash",
+          "games",
+          "booked",
+          "checkIns",
+          "takings",
+          "next",
+          "free"
+        ]
+      },
+      "BookingSource": {
+        "type": "string",
+        "enum": [
+          "APP",
+          "STAFF"
+        ],
+        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
       },
       "StaffBookingList": {
         "type": "object",
@@ -6075,13 +6697,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -6116,6 +6743,11 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "venueCustomerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Who it's for, as the venue's customer (a regular's own bookings are found by it)."
           },
           "expiresAt": {
             "type": [
@@ -6180,6 +6812,7 @@
           "currency",
           "total",
           "createdAt",
+          "venueCustomerId",
           "expiresAt",
           "hold",
           "regular",
@@ -6188,14 +6821,6 @@
           "deposit",
           "paymentWindow"
         ]
-      },
-      "BookingSource": {
-        "type": "string",
-        "enum": [
-          "APP",
-          "STAFF"
-        ],
-        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
       },
       "StaffBookingDetail": {
         "type": "object",
@@ -6279,13 +6904,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -7064,6 +7694,111 @@
           "nextCursor"
         ]
       },
+      "SchedulePreview": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "integer",
+            "description": "Bookings and holds still ahead in hours it closes, requests and regulars' waiting weeks aside: they go ahead as booked."
+          },
+          "requests": {
+            "type": "integer",
+            "description": "Booking requests waiting in hours it closes: declined when it's saved."
+          },
+          "regulars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The customer's first name."
+                },
+                "lastWeek": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Its last confirmed week, which still happens as booked; null with none. The regular ends when it's saved, its waiting weeks let go."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "lastWeek"
+              ]
+            },
+            "description": "Regulars whose weekly time it closes, wholly or in part."
+          }
+        },
+        "required": [
+          "bookings",
+          "requests",
+          "regulars"
+        ]
+      },
+      "GroundRemoval": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "integer",
+            "description": "Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar."
+          },
+          "requests": {
+            "type": "integer",
+            "description": "Booking requests waiting for the venue on it: declined when it's removed."
+          },
+          "lastEndsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the last of them ends, and the ground goes for good; null with none."
+          },
+          "regulars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The customer's first name."
+                },
+                "lastWeek": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "Its last confirmed week, which still happens as booked; null with none. The regular itself ends when it's removed."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "lastWeek"
+              ]
+            },
+            "description": "Regulars on it, not ended: their waiting weeks are let go and each ends at once; confirmed weeks still happen."
+          }
+        },
+        "required": [
+          "bookings",
+          "requests",
+          "lastEndsAt",
+          "regulars"
+        ]
+      },
       "VenueRegularList": {
         "type": "object",
         "properties": {
@@ -7127,11 +7862,16 @@
                   "string",
                   "null"
                 ]
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: the regular ends after its last confirmed week."
               }
             },
             "required": [
               "id",
-              "name"
+              "name",
+              "deleted"
             ]
           },
           "dayOfWeek": {
@@ -7310,11 +8050,16 @@
                   "string",
                   "null"
                 ]
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: the regular ends after its last confirmed week."
               }
             },
             "required": [
               "id",
-              "name"
+              "name",
+              "deleted"
             ]
           },
           "dayOfWeek": {
@@ -7384,6 +8129,62 @@
               "example": "2026-12-03"
             },
             "description": "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day."
+          },
+          "comingWeeks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "A calendar day in the venue's timezone.",
+                  "example": "2026-12-03"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "CONFIRMED",
+                    "WAITING",
+                    "LET_GO",
+                    "NOT_ANSWERED"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "state"
+              ]
+            },
+            "description": "Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed."
+          },
+          "lastWeeks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "A calendar day in the venue's timezone.",
+                  "example": "2026-12-03"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "PLAYED",
+                    "NO_SHOW",
+                    "LET_GO",
+                    "NOT_ANSWERED"
+                  ]
+                }
+              },
+              "required": [
+                "date",
+                "outcome"
+              ]
+            },
+            "description": "Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted."
           }
         },
         "required": [
@@ -7401,7 +8202,9 @@
           "reliability",
           "createdAt",
           "reservations",
-          "skippedWeeks"
+          "skippedWeeks",
+          "comingWeeks",
+          "lastWeeks"
         ]
       },
       "CreateRegular": {
@@ -7524,6 +8327,25 @@
           }
         },
         "description": "A new time or ground releases its unconfirmed weeks and reserves the new time; confirmed weeks stay."
+      },
+      "ConfirmLink": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Works once, until the week's deadline."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The week's deadline."
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ]
       },
       "SlotCandidates": {
         "type": "object",
@@ -7705,6 +8527,255 @@
           "OTHER"
         ],
         "description": "In priority order. A regular has a standing weekly time here, or played `regularBookings` games in the last `regularPeriod` weeks; lapsed when they haven't played for `lapsedAfter` weeks."
+      },
+      "BookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "required": [
+          "staffHoldMinutes",
+          "regularHorizon",
+          "confirmationWindow",
+          "lapsedAfter",
+          "regularBookings",
+          "regularPeriod"
+        ]
+      },
+      "UpdateBookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "description": "Only what's sent changes."
+      },
+      "ReminderWeek": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "CONFIRMED",
+              "RELEASED",
+              "MISSED",
+              "MOVED",
+              "CHANGED"
+            ],
+            "description": "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. MOVED: the venue moved or swapped it; `movedTo` is where it is now. CHANGED: the venue let it go or cancelled it, or paused or ended the regular."
+          },
+          "code": {
+            "type": "string",
+            "description": "The week's booking code, for the regular to quote to the venue.",
+            "example": "K7Q2P9M4"
+          },
+          "name": {
+            "type": "string",
+            "description": "The regular's first name."
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "slug": {
+                "type": "string"
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Maadi, Cairo"
+              }
+            },
+            "required": [
+              "name",
+              "slug",
+              "area"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "movedTo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "ground": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "code",
+              "ground",
+              "startsAt",
+              "endsAt"
+            ],
+            "description": "MOVED: the week where it is now, after every move. Null otherwise."
+          }
+        },
+        "required": [
+          "state",
+          "code",
+          "name",
+          "venue",
+          "ground",
+          "startsAt",
+          "endsAt",
+          "deadline",
+          "timezone",
+          "movedTo"
+        ]
+      },
+      "ReminderTokenBody": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "description": "The token from the link's #token=."
       },
       "GamePage": {
         "type": "object",
@@ -8043,6 +9114,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "booking": {
+            "$ref": "#/components/schemas/CheckInBooking"
+          },
           "person": {
             "$ref": "#/components/schemas/CheckInPerson"
           },
@@ -8053,8 +9127,44 @@
         },
         "required": [
           "bookingId",
+          "booking",
           "person",
           "already"
+        ]
+      },
+      "CheckInBooking": {
+        "type": "object",
+        "properties": {
+          "bookerFirstName": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "ground": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The ground's name."
+          }
+        },
+        "required": [
+          "bookerFirstName",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "ground"
         ]
       },
       "ScanCheckIn": {
@@ -8216,97 +9326,6 @@
             "description": "Staff's own note about the customer; never shown to them. Empty clears it."
           }
         }
-      },
-      "BookingSettings": {
-        "type": "object",
-        "properties": {
-          "staffHoldMinutes": {
-            "type": "integer",
-            "minimum": 5,
-            "maximum": 60,
-            "description": "How long a staff hold lasts."
-          },
-          "regularHorizon": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks of regulars' reservations kept ahead."
-          },
-          "confirmationWindow": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 168,
-            "description": "Hours before kick-off a regular's week must be confirmed."
-          },
-          "lapsedAfter": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks without a game before a regular counts as lapsed."
-          },
-          "regularBookings": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "description": "Games within `regularPeriod` weeks that make someone a regular."
-          },
-          "regularPeriod": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 26,
-            "description": "Weeks."
-          }
-        },
-        "required": [
-          "staffHoldMinutes",
-          "regularHorizon",
-          "confirmationWindow",
-          "lapsedAfter",
-          "regularBookings",
-          "regularPeriod"
-        ]
-      },
-      "UpdateBookingSettings": {
-        "type": "object",
-        "properties": {
-          "staffHoldMinutes": {
-            "type": "integer",
-            "minimum": 5,
-            "maximum": 60,
-            "description": "How long a staff hold lasts."
-          },
-          "regularHorizon": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks of regulars' reservations kept ahead."
-          },
-          "confirmationWindow": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 168,
-            "description": "Hours before kick-off a regular's week must be confirmed."
-          },
-          "lapsedAfter": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12,
-            "description": "Weeks without a game before a regular counts as lapsed."
-          },
-          "regularBookings": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "description": "Games within `regularPeriod` weeks that make someone a regular."
-          },
-          "regularPeriod": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 26,
-            "description": "Weeks."
-          }
-        },
-        "description": "Only what's sent changes."
       },
       "SystemStatus": {
         "type": "object",
@@ -10473,13 +11492,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -10614,13 +11638,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -18675,7 +19704,7 @@
           "Venue staff"
         ],
         "summary": "Remove a ground",
-        "description": "Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.",
+        "description": "Needs `schedule: manage`. Booking requests waiting on it are declined first. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.",
         "security": [
           {
             "staffBearer": []
@@ -18828,7 +19857,7 @@
           "Venue staff"
         ],
         "summary": "Set a ground's weekly hours",
-        "description": "Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.",
+        "description": "Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
         "security": [
           {
             "staffBearer": []
@@ -18944,7 +19973,7 @@
           "Venue staff"
         ],
         "summary": "Copy a ground's weekly hours to others",
-        "description": "Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.",
+        "description": "Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).",
         "security": [
           {
             "staffBearer": []
@@ -19772,6 +20801,75 @@
           },
           "409": {
             "description": "NOTHING_TO_RESTORE: their permissions changed since the reset.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members/{staffId}": {
+      "delete": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Remove someone from the staff",
+        "description": "Needs `staff: manage`. Never yourself or the owner, and only the owner can remove someone with more in an area than they have. Their account and their name on what they did stay; they're told.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, CANNOT_REMOVE_YOURSELF, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20671,7 +21769,7 @@
           "Venue slots"
         ],
         "summary": "Block slots",
-        "description": "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.",
+        "description": "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. Who closed them, when, and an optional note for the team stay with them. All or nothing.",
         "security": [
           {
             "staffBearer": []
@@ -20693,7 +21791,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SlotSelection"
+                "$ref": "#/components/schemas/BlockSlots"
               }
             }
           }
@@ -20858,6 +21956,113 @@
           },
           "409": {
             "description": "SLOT_UNAVAILABLE (with the `slotIds` that aren't blocked)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/note": {
+      "put": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Change closed slots' note",
+        "description": "Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. All or nothing.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockNoteChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE (with the `slotIds` that aren't closed)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21062,6 +22267,85 @@
           },
           "422": {
             "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/home": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "The Home tab: what needs you on a day",
+        "description": "Requests, holds, games to mark and regulars' weeks waiting (today: all that wait; a later day: its own), cash still to take (with `payments: view`), then the next games and open hours.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Today or a later day, venue-local.",
+              "example": "2026-12-01"
+            },
+            "required": true,
+            "description": "Today or a later day, venue-local.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffHome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -22540,6 +23824,168 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/preview": {
+      "post": {
+        "tags": [
+          "Grounds"
+        ],
+        "summary": "What a new week of hours would leave behind",
+        "description": "Needs `schedule: manage`. Saves nothing. Counts what falls in hours the week would close: bookings and holds still ahead (they go ahead), requests waiting (declined on save), and regulars whose weekly time it closes, wholly or in part (they keep the weeks already reserved and end after the last).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "groundId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeekSchedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What it would leave behind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulePreview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or GROUND_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/removal": {
+      "get": {
+        "tags": [
+          "Grounds"
+        ],
+        "summary": "What removing a ground leaves behind",
+        "description": "Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good), the requests waiting on it (declined when it's removed) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "groundId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What it leaves behind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroundRemoval"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or GROUND_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/staff/venues/{venueId}/regulars": {
       "get": {
         "tags": [
@@ -22690,7 +24136,7 @@
             }
           },
           "409": {
-            "description": "GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live.",
+            "description": "GROUND_UNAVAILABLE; REGULAR_OVERLAPS: the customer already has a regular sharing an hour of this one on this ground; or VENUE_STATUS_CONFLICT: the venue isn't live.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -22946,7 +24392,7 @@
             }
           },
           "409": {
-            "description": "REGULAR_ENDED or GROUND_UNAVAILABLE",
+            "description": "REGULAR_ENDED, GROUND_UNAVAILABLE or REGULAR_OVERLAPS",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23312,6 +24758,112 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/reservations/{bookingId}/link": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Copy a confirm link for a regular's week",
+        "description": "A fresh single-use link each time (only its hash is stored), for staff to send from their own WhatsApp. It confirms or lets the week go without signing in, until the week's deadline, and stops working once the week is answered. At most 10 an hour per week.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmLink"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RESERVATION_NOT_WAITING: not a regular's coming week, confirmed or still waiting.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "LINKS_UNAVAILABLE: no web address set in this environment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/staff/venues/{venueId}/reservations/{bookingId}/release": {
       "post": {
         "tags": [
@@ -23474,6 +25026,323 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND, or SLOT_NOT_FOUND: no such slot at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/booking-settings": {
+      "get": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Staff holds, regulars and Fill a slot settings",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT: no settings yet.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Change staff holds, regulars and Fill a slot settings",
+        "description": "Needs `venue: manage`. Only what's sent changes. A new hold length applies to holds made or extended from now on. A new confirmation window moves the deadline of every regular's week still waiting to it, unless that has already passed (the week keeps its deadline). A shorter horizon lets go of waiting weeks beyond it (confirmed ones stay); a longer one reserves the new weeks straight away.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/week": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "The week a confirm link is for",
+        "description": "Read-only (a POST so the token stays out of the URL). `state` says whether it can still be answered.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/confirm": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "Confirm the week",
+        "description": "Uses the link up. A link that can't answer any more returns the week with its `state` instead.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/confirm-links/release": {
+      "post": {
+        "tags": [
+          "Confirm links"
+        ],
+        "summary": "Let the week go",
+        "description": "Uses the link up; the time goes back on sale, or to the next regular in line. A link that can't answer any more returns the week with its `state` instead.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTokenBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The week, as it now is",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderWeek"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONFIRM_LINK_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25081,167 +26950,6 @@
           },
           "409": {
             "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/staff/venues/{venueId}/booking-settings": {
-      "get": {
-        "tags": [
-          "Venue settings"
-        ],
-        "summary": "Staff holds, regulars and Fill a slot settings",
-        "security": [
-          {
-            "staffBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "venueId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The settings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingSettings"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "VENUE_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VENUE_STATUS_CONFLICT: no settings yet.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Venue settings"
-        ],
-        "summary": "Change staff holds, regulars and Fill a slot settings",
-        "description": "Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.",
-        "security": [
-          {
-            "staffBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "venueId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBookingSettings"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The settings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingSettings"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "VENUE_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "VENUE_STATUS_CONFLICT",
             "content": {
               "application/problem+json": {
                 "schema": {

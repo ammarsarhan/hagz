@@ -87,6 +87,7 @@ export function WeeklyBar({
     );
     if (!result.ok) hud.show(hudMessage(result.error));
     void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] });
+    void queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] });
     await onChanged();
     setSending(false);
   };

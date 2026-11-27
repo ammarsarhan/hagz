@@ -2,7 +2,15 @@ import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LayoutAnimationConfig,
+  LinearTransition,
+} from "react-native-reanimated";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { RequestSheet, type Answer } from "@/components/request-sheets";
 import { BackButton, NavBar } from "@/components/nav";
@@ -17,11 +25,20 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES, useCan } from "@/lib/access";
 
 // Booking requests (Figma D7 round 3, 538:2), from the Calendar's inbox button: the app bookings
 // waiting for the venue's answer, grouped by the game's day ("Today", "Tomorrow", "Thu 26 Nov"),
 // each with its deadline, hours, ground, price and how it's paid, and Approve and Decline side by
 // side. One whose deadline passes drops off on the minute, as the sweeper lets it go.
+//
+// An answered request stays until its sheet has gone, then fades out as the rows under it slide up
+// (user, 2026-11-27); a day left empty fades with it, and "none" fades in after the last.
+
+const LEAVE = FadeOut.duration(220);
+const MAKE_ROOM = LinearTransition.duration(220);
+const NONE_IN = FadeIn.duration(220).delay(220);
 
 const REFRESHED: QueryFilters[] = [
   {
@@ -33,7 +50,7 @@ const REFRESHED: QueryFilters[] = [
   },
 ];
 
-export default function BookingRequests() {
+function BookingRequests() {
   const { venue } = useCurrentVenue();
   const requests = useQuery(bookingRequests(venue?.id ?? ""));
   useRefreshWhenShown(REFRESHED);
@@ -45,21 +62,10 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
   const { t } = useTranslation();
   // The minute, so a request past its deadline leaves and Today becomes tomorrow's Today.
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
-
-  const days = useMemo(() => {
-    const groups = new Map<string, StaffBooking[]>();
-    for (const request of requests) {
-      if (request.expiresAt && Date.parse(request.expiresAt) <= now) continue;
-      const day = localDateOf(request.startsAt, request.timezone);
-      groups.set(day, [...(groups.get(day) ?? []), request]);
-    }
-    return [...groups]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, rows]) => ({
-        day,
-        rows: rows.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
-      }));
-  }, [requests, now]);
+  // The back button stays put; the title scrolls up into the bar beside it, as on a booking.
+  const compact = useCompactTitle();
+  const title = t("screens.requests.title");
+  const canAnswer = useCan()(RULES.book);
 
   // The request being answered, kept while its sheet slides away.
   const [answering, setAnswering] = useState<{ request: StaffBooking; answer: Answer } | null>(
@@ -71,39 +77,79 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
     setOpen(true);
   };
 
+  const days = useMemo(() => {
+    const groups = new Map<string, StaffBooking[]>();
+    // Answered and already gone from the list: kept in its place until the sheet has slid away,
+    // so it leaves where it can be seen.
+    const answered = answering?.request;
+    const listed =
+      answered && !requests.some((request) => request.id === answered.id)
+        ? [...requests, answered]
+        : requests;
+    for (const request of listed) {
+      if (request.expiresAt && Date.parse(request.expiresAt) <= now) continue;
+      const day = localDateOf(request.startsAt, request.timezone);
+      groups.set(day, [...(groups.get(day) ?? []), request]);
+    }
+    return [...groups]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, rows]) => ({
+        day,
+        rows: rows.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
+      }));
+  }, [requests, now, answering]);
+
   return (
     <Screen>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-      >
-        <NavBar
-          start={
-            <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
-          }
-        />
-        <Title subtitle={t("screens.requests.subtitle")}>{t("screens.requests.title")}</Title>
-        {days.length === 0 ? (
-          <Text className="text-body text-ink-2">{t("screens.requests.none")}</Text>
-        ) : (
-          days.map(({ day, rows }, index) => (
-            <View key={day} className={index === 0 ? "" : "mt-7"}>
-              <GroupHeading>
-                {relativeDay(day, now, rows[0]?.timezone ?? "Africa/Cairo", t)}
-              </GroupHeading>
-              {rows.map((request) => (
-                <Request
-                  key={request.id}
-                  request={request}
-                  onApprove={() => answer(request, "approve")}
-                  onDecline={() => answer(request, "decline")}
-                />
-              ))}
-            </View>
-          ))
-        )}
-      </ScrollView>
+      <NavBar
+        flush
+        start={
+          <CompactTitle
+            button={
+              <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+            }
+            title={title}
+            style={compact.style}
+          />
+        }
+      />
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title onTitleLayout={compact.onTitleLayout} subtitle={t("screens.requests.subtitle")}>
+          {title}
+        </Title>
+        {/* Only changes animate, not what's there on arrival. */}
+        <LayoutAnimationConfig skipEntering>
+          {days.length === 0 ? (
+            <Animated.View entering={NONE_IN}>
+              <Text className="text-body text-ink-2">{t("screens.requests.none")}</Text>
+            </Animated.View>
+          ) : (
+            days.map(({ day, rows }, index) => (
+              <Animated.View
+                key={day}
+                exiting={LEAVE}
+                layout={MAKE_ROOM}
+                className={index === 0 ? "" : "mt-7"}
+              >
+                <GroupHeading>
+                  {relativeDay(day, now, rows[0]?.timezone ?? "Africa/Cairo", t)}
+                </GroupHeading>
+                {rows.map((request) => (
+                  <Animated.View key={request.id} exiting={LEAVE} layout={MAKE_ROOM}>
+                    <Request
+                      request={request}
+                      // View only: the requests, read-only, without the answers.
+                      answers={canAnswer}
+                      onApprove={() => answer(request, "approve")}
+                      onDecline={() => answer(request, "decline")}
+                    />
+                  </Animated.View>
+                ))}
+              </Animated.View>
+            ))
+          )}
+        </LayoutAnimationConfig>
+      </FadingScroll>
       {answering ? (
         <RequestSheet
           key={answering.request.id}
@@ -123,10 +169,12 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
 // answers. A hairline under each.
 function Request({
   request,
+  answers,
   onApprove,
   onDecline,
 }: {
   request: StaffBooking;
+  answers: boolean;
   onApprove: () => void;
   onDecline: () => void;
 }) {
@@ -166,10 +214,12 @@ function Request({
               price: money(request.total),
             })}
       </Text>
-      <View className="mt-3.5 flex-row gap-3">
-        <Answer label={t("screens.requests.approve")} primary onPress={onApprove} />
-        <Answer label={t("screens.requests.decline")} onPress={onDecline} />
-      </View>
+      {answers ? (
+        <View className="mt-3.5 flex-row gap-3">
+          <Answer label={t("screens.requests.approve")} primary onPress={onApprove} />
+          <Answer label={t("screens.requests.decline")} onPress={onDecline} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -196,3 +246,5 @@ function Answer({
     </Pressable>
   );
 }
+
+export default guarded(RULES.requests, BookingRequests);

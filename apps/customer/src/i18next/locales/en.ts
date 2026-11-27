@@ -34,7 +34,6 @@ const en = {
         countdown: "Resend code in {{time}}",
         resend: "Resend code",
       },
-      comingSoon: "Coming soon.",
       venueLayout: {
         entrance: "Entrance",
         closed: "Closed",
@@ -941,7 +940,6 @@ const en = {
         photoOf: "Photo of {{name}}",
         photoOfVenue: "Photo of the venue",
         photoCount: "{{index}} / {{count}}",
-        bookingSoon: "Booking opens soon",
         pricesVary: "Prices vary",
         paused: "Paused",
         book: "Book",

@@ -11,6 +11,12 @@ import type { ScrollController } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconCheck, IconCopy } from "@/components/icons";
 import { CloseButton, RoundButton } from "@/components/nav";
+import {
+  leavesSomething,
+  previewHours,
+  ScheduleChangeSheet,
+  type SchedulePreview,
+} from "@/components/schedule-change-sheet";
 import { SetupLoading } from "@/components/setup-loading";
 import { Sheet } from "@/components/sheet";
 import { StepScreen } from "@/components/step-screen";
@@ -29,7 +35,9 @@ import {
   type CellBlock,
   type Ring,
 } from "@/lib/hours";
-import { afterVenueWrite, queries } from "@/lib/queries";
+import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A ground's week (Figma "E1 · Paint the week", 470:11): the whole week as a grid of hours. Tap an
 // hour or hold and drag across several, and the footer turns into what to mark them as ("E2 · Mark
@@ -41,13 +49,15 @@ import { afterVenueWrite, queries } from "@/lib/queries";
 // round button by back; the sheet, "Hours · Copy to other grounds", 357:2).
 type Mark = "BASE" | "PEAK" | "DISCOUNT" | "CLOSED";
 
-export default function GroundHours() {
+function GroundHours() {
   const { venueId = "", groundId = "" } = useLocalSearchParams<{
     venueId: string;
     groundId: string;
   }>();
   const grounds = useQuery(queries.grounds(venueId));
   const schedule = useQuery(queries.schedule(venueId, groundId));
+  const venue = useQuery(queries.venue(venueId));
+  if (!venue.data) return <SetupLoading query={venue} />;
   if (!grounds.data) return <SetupLoading query={grounds} />;
   if (!schedule.data) return <SetupLoading query={schedule} />;
   const ground = grounds.data.find((g) => g.id === groundId);
@@ -58,6 +68,7 @@ export default function GroundHours() {
       ground={ground}
       others={grounds.data.filter((g) => g.id !== groundId)}
       saved={ringFromApi(schedule.data)}
+      running={venue.data.status === "LIVE" || venue.data.status === "MAINTENANCE"}
     />
   );
 }
@@ -67,11 +78,14 @@ function WeekScreen({
   ground,
   others,
   saved,
+  running,
 }: {
   venueId: string;
   ground: Ground;
   others: Ground[];
   saved: Ring;
+  // Live or paused: players book it, so closing its last open hours is worth a warning.
+  running: boolean;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -102,6 +116,82 @@ function WeekScreen({
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  // Asked first when the new hours close any with something in them (user, 2026-11-27): the
+  // server's preview, then a sheet of what follows, then a short native alert. Copying asks the same
+  // for the grounds it copies to, once its own sheet has slid away.
+  const [warning, setWarning] = useState<{
+    copyTo: string[] | null;
+    preview: SchedulePreview;
+    lastOpen: boolean;
+  } | null>(null);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const confirmed = useRef(false);
+  const copyTo = useRef<string[] | null>(null);
+
+  const warnOrRun = async (
+    groundIds: string[],
+    days: Ring,
+    run: () => Promise<void>,
+    copy: boolean,
+  ) => {
+    const preview = await previewHours(venueId, groundIds, ringToApi(days));
+    if (!preview.ok) {
+      setSaving(false);
+      return hud.show(hudMessage(preview.error));
+    }
+    // Saving no open hours on the venue's last ground that has some: nothing's left to book, so it
+    // asks even with nothing booked in them (user, 2026-11-27). Copying always copies open hours.
+    const lastOpen =
+      !copy &&
+      running &&
+      ground.status === "ACTIVE" &&
+      saved.some((tier) => tier !== null) &&
+      days.every((tier) => tier === null) &&
+      !others.some((other) => other.status === "ACTIVE" && other.openHours > 0);
+    if (!leavesSomething(preview.data) && !lastOpen) return run();
+    setSaving(false);
+    confirmed.current = false;
+    setWarning({ copyTo: copy ? groundIds : null, preview: preview.data, lastOpen });
+    setWarningOpen(true);
+  };
+
+  const trySave = async () => {
+    setSaving(true);
+    await warnOrRun([ground.id], ring, save, false);
+  };
+
+  const copyGone = () => {
+    const ids = copyTo.current;
+    copyTo.current = null;
+    if (ids) void warnOrRun(ids, saved, () => copyHours(ids), true);
+  };
+
+  const warningGone = () => {
+    const done = warning;
+    setWarning(null);
+    if (!done || !confirmed.current) return;
+    if (done.copyTo) void copyHours(done.copyTo);
+    else void save();
+  };
+
+  const copyHours = async (ids: string[]) => {
+    const result = await send(
+      api.POST("/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy", {
+        params: { path: { venueId, groundId: ground.id } },
+        body: { groundIds: ids },
+      }),
+    );
+    if (!result.ok) return hud.show(hudMessage(result.error));
+    // The grounds copied to: their weeks and open hours; this ground's own week is unchanged.
+    void afterVenueWrite(queryClient, venueId, {
+      also: [
+        queries.grounds(venueId).queryKey,
+        ...ids.map((id) => queries.schedule(venueId, id).queryKey),
+      ],
+    });
+    void afterBookedChange(queryClient, venueId);
+  };
+
   const save = async () => {
     setSaving(true);
     const result = await send(
@@ -118,6 +208,7 @@ function WeekScreen({
     // The grounds' open hours ("Not set" in the list), the checklist and the draft card follow. Not
     // this week (it's the answer) or any other ground's (unchanged).
     void afterVenueWrite(queryClient, venueId, { also: [queries.grounds(venueId).queryKey] });
+    void afterBookedChange(queryClient, venueId);
     router.back();
   };
 
@@ -155,7 +246,7 @@ function WeekScreen({
             label={t("screens.setup.hours.save")}
             disabled={!changed}
             loading={saving}
-            onPress={() => void save()}
+            onPress={() => void trySave()}
           />
         )
       }
@@ -176,7 +267,31 @@ function WeekScreen({
         name={name}
         others={others}
         onClose={() => setCopying(false)}
+        onCopy={(ids) => {
+          copyTo.current = ids;
+          setCopying(false);
+        }}
+        onHidden={copyGone}
       />
+      {warning ? (
+        <ScheduleChangeSheet
+          title={
+            warning.copyTo
+              ? t("screens.setup.hours.change.copyTitle", { count: warning.copyTo.length })
+              : t("screens.setup.hours.change.title", { name })
+          }
+          copying={warning.copyTo !== null}
+          lastOpen={warning.lastOpen}
+          preview={warning.preview}
+          visible={warningOpen}
+          onClose={() => setWarningOpen(false)}
+          onHidden={warningGone}
+          onConfirm={() => {
+            confirmed.current = true;
+            setWarningOpen(false);
+          }}
+        />
+      ) : null}
     </StepScreen>
   );
 }
@@ -270,6 +385,8 @@ function CopySheet({
   name,
   others,
   onClose,
+  onCopy,
+  onHidden,
 }: {
   visible: boolean;
   venueId: string;
@@ -277,12 +394,11 @@ function CopySheet({
   name: string;
   others: Ground[];
   onClose: () => void;
+  onCopy: (groundIds: string[]) => void;
+  onHidden: () => void;
 }) {
   const { t } = useTranslation();
-  const hud = useHud();
-  const queryClient = useQueryClient();
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [sending, setSending] = useState(false);
 
   const toggle = (id: string) => {
     const next = new Set(picked);
@@ -291,32 +407,32 @@ function CopySheet({
     setPicked(next);
   };
 
-  const copy = async () => {
-    setSending(true);
-    const result = await send(
-      api.POST("/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy", {
-        params: { path: { venueId, groundId: ground.id } },
-        body: { groundIds: [...picked] },
-      }),
-    );
-    setSending(false);
-    if (!result.ok) return hud.show(hudMessage(result.error));
-    // The grounds copied to: their weeks and open hours; this ground's own week is unchanged.
-    void afterVenueWrite(queryClient, venueId, {
-      also: [
-        queries.grounds(venueId).queryKey,
-        ...[...picked].map((id) => queries.schedule(venueId, id).queryKey),
-      ],
-    });
-    onClose();
-  };
+  // The screen copies, once this sheet has gone: it asks first when that closes busy hours.
+  const copy = () => onCopy([...picked]);
 
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
-      onHidden={() => setPicked(new Set())}
+      onHidden={() => {
+        setPicked(new Set());
+        onHidden();
+      }}
       closeLabel={t("components.shared.nav.close")}
+      scrollable
+      footer={
+        <View className="mt-6">
+          <Button
+            label={
+              picked.size === 0
+                ? t("screens.setup.hours.copyPick")
+                : t("screens.setup.hours.copyTo", { count: picked.size })
+            }
+            disabled={picked.size === 0}
+            onPress={copy}
+          />
+        </View>
+      }
     >
       <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
         {t("screens.setup.hours.copyTitle", { name })}
@@ -352,18 +468,8 @@ function CopySheet({
           );
         })}
       </View>
-      <View className="mt-6">
-        <Button
-          label={
-            picked.size === 0
-              ? t("screens.setup.hours.copyPick")
-              : t("screens.setup.hours.copyTo", { count: picked.size })
-          }
-          disabled={picked.size === 0}
-          loading={sending}
-          onPress={() => void copy()}
-        />
-      </View>
     </Sheet>
   );
 }
+
+export default guarded(RULES.scheduleForm, GroundHours);

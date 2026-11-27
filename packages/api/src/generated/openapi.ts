@@ -6705,7 +6705,7 @@ export interface paths {
         post?: never;
         /**
          * Remove a ground
-         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.
+         * @description Needs `schedule: manage`. Booking requests waiting on it are declined first. Kept for booking history, gone from the venue, its layout and its public page, and its free and blocked slots go. With bookings or holds still ahead it's `REMOVING`: they go ahead, it stays on staff's calendar (`removing` on the day's grounds) closed to new bookings, moves and regulars, and goes for good once the last one ends (checked every five minutes). `GET …/removal` says what it would leave behind.
          */
         delete: {
             parameters: {
@@ -6916,7 +6916,7 @@ export interface paths {
         };
         /**
          * Set a ground's weekly hours
-         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).
          */
         put: {
             parameters: {
@@ -7017,7 +7017,7 @@ export interface paths {
         put?: never;
         /**
          * Copy a ground's weekly hours to others
-         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end at once, their confirmed weeks still happening (`POST …/schedule/preview` says so first).
          */
         post: {
             parameters: {
@@ -7793,6 +7793,73 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/members/{staffId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove someone from the staff
+         * @description Needs `staff: manage`. Never yourself or the owner, and only the owner can remove someone with more in an area than they have. Their account and their name on what they did stay; they're told.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    staffId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, CANNOT_REMOVE_YOURSELF, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or MEMBER_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -8606,7 +8673,7 @@ export interface paths {
         put?: never;
         /**
          * Block slots
-         * @description Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.
+         * @description Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. Who closed them, when, and an optional note for the team stay with them. All or nothing.
          */
         post: {
             parameters: {
@@ -8619,7 +8686,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["SlotSelection"];
+                    "application/json": components["schemas"]["BlockSlots"];
                 };
             };
             responses: {
@@ -8787,6 +8854,105 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change closed slots' note
+         * @description Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. All or nothing.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlockNoteChange"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE (with the `slotIds` that aren't closed) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8967,6 +9133,77 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The Home tab: what needs you on a day
+         * @description Requests, holds, games to mark and regulars' weeks waiting (today: all that wait; a later day: its own), cash still to take (with `payments: view`), then the next games and open hours.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Today or a later day, venue-local. */
+                    date: string;
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffHome"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10179,6 +10416,148 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What a new week of hours would leave behind
+         * @description Needs `schedule: manage`. Saves nothing. Counts what falls in hours the week would close: bookings and holds still ahead (they go ahead), requests waiting (declined on save), and regulars whose weekly time it closes, wholly or in part (they keep the weeks already reserved and end after the last).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WeekSchedule"];
+                };
+            };
+            responses: {
+                /** @description What it would leave behind */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SchedulePreview"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/removal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What removing a ground leaves behind
+         * @description Needs `schedule: view`. Its bookings and holds still ahead (they go ahead; the ground stays on the calendar, closed to new bookings, until the last one ends, then goes for good), the requests waiting on it (declined when it's removed) and the regulars on it (they keep their reserved weeks, get no more, and end with the ground).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it leaves behind */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroundRemoval"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/regulars": {
         parameters: {
             query?: never;
@@ -10304,7 +10683,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live. */
+                /** @description GROUND_UNAVAILABLE; REGULAR_OVERLAPS: the customer already has a regular sharing an hour of this one on this ground; or VENUE_STATUS_CONFLICT: the venue isn't live. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -10521,7 +10900,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description REGULAR_ENDED or GROUND_UNAVAILABLE */
+                /** @description REGULAR_ENDED, GROUND_UNAVAILABLE or REGULAR_OVERLAPS */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -10855,6 +11234,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/reservations/{bookingId}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a confirm link for a regular's week
+         * @description A fresh single-use link each time (only its hash is stored), for staff to send from their own WhatsApp. It confirms or lets the week go without signing in, until the week's deadline, and stops working once the week is answered. At most 10 an hour per week.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The link */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConfirmLink"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RESERVATION_NOT_WAITING: not a regular's coming week, confirmed or still waiting. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LINKS_UNAVAILABLE: no web address set in this environment. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/reservations/{bookingId}/release": {
         parameters: {
             query?: never;
@@ -10998,6 +11473,328 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff holds, regulars and Fill a slot settings */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT: no settings yet. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change staff holds, regulars and Fill a slot settings
+         * @description Needs `venue: manage`. Only what's sent changes. A new hold length applies to holds made or extended from now on. A new confirmation window moves the deadline of every regular's week still waiting to it, unless that has already passed (the week keeps its deadline). A shorter horizon lets go of waiting weeks beyond it (confirmed ones stay); a longer one reserves the new weeks straight away.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateBookingSettings"];
+                };
+            };
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/confirm-links/week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The week a confirm link is for
+         * @description Read-only (a POST so the token stays out of the URL). `state` says whether it can still be answered.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReminderTokenBody"];
+                };
+            };
+            responses: {
+                /** @description The week, as it now is */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReminderWeek"];
+                    };
+                };
+                /** @description CONFIRM_LINK_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/confirm-links/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the week
+         * @description Uses the link up. A link that can't answer any more returns the week with its `state` instead.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReminderTokenBody"];
+                };
+            };
+            responses: {
+                /** @description The week, as it now is */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReminderWeek"];
+                    };
+                };
+                /** @description CONFIRM_LINK_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/confirm-links/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let the week go
+         * @description Uses the link up; the time goes back on sale, or to the next regular in line. A link that can't answer any more returns the week with its `state` instead.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReminderTokenBody"];
+                };
+            };
+            responses: {
+                /** @description The week, as it now is */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReminderWeek"];
+                    };
+                };
+                /** @description CONFIRM_LINK_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -12262,145 +13059,6 @@ export interface paths {
                     };
                 };
                 /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId` and `customerName`). */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/v1/staff/venues/{venueId}/booking-settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Staff holds, regulars and Fill a slot settings */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    venueId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The settings */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["BookingSettings"];
-                    };
-                };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_NOT_FOUND */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_STATUS_CONFLICT: no settings yet. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Change staff holds, regulars and Fill a slot settings
-         * @description Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    venueId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["UpdateBookingSettings"];
-                };
-            };
-            responses: {
-                /** @description The settings */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["BookingSettings"];
-                    };
-                };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_NOT_FOUND */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description VENUE_STATUS_CONFLICT */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -18889,6 +19547,8 @@ export interface components {
                 minimumSlots: number;
                 /** @description The longest booking, in slots. */
                 maximumSlots: number;
+                /** @description Removed by staff with bookings still ahead: shown until the last one ends, closed to new bookings. */
+                removing: boolean;
             }[];
             slots: components["schemas"]["Slot"][];
         };
@@ -18909,6 +19569,20 @@ export interface components {
             isManual: boolean;
             /** Format: uuid */
             bookingId: string | null;
+            /** @description A BLOCKED slot closed by staff: why, who and when. Null otherwise. */
+            closed: {
+                /** @description For the venue's team; never shown to players. */
+                note: string | null;
+                /**
+                 * Format: uuid
+                 * @description Who closed it; null once they're gone.
+                 */
+                staffId: string | null;
+                /** @description First name of the staff member who closed it. */
+                by: string | null;
+                /** Format: date-time */
+                at: string;
+            } | null;
         };
         /**
          * @description `HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff.
@@ -18918,9 +19592,21 @@ export interface components {
         ChangedSlots: {
             slots: components["schemas"]["Slot"][];
         };
+        /** @description Free slots of the venue that haven't started, to close. */
+        BlockSlots: {
+            slotIds: string[];
+            /** @description Why it's closed, for the team. */
+            note?: string;
+        };
         /** @description Slots of the venue that haven't started. */
         SlotSelection: {
             slotIds: string[];
+        };
+        /** @description Closed slots of the venue that haven't started, and their note (null removes it). */
+        BlockNoteChange: {
+            slotIds: string[];
+            /** @description Why it's closed, for the team. */
+            note: string | null;
         };
         /** @description The slots keep this price, and ignore weekly schedule changes, until reset to the schedule. A held or booked slot's booking keeps the price it was made at. */
         SetSlotPrice: {
@@ -18942,6 +19628,188 @@ export interface components {
                 price: number;
             }[];
         };
+        StaffHome: {
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /** @description Waiting for approval: all of them for today, that day's for a later one. */
+            requests: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Staff holds on the day, still held. */
+            holds: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Today only: games that ended without a check-in, still open to marking as a no-show. */
+            toMark: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Regulars' weeks on the day still to confirm. */
+            weeks: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description When the first of them runs out.
+                 */
+                soonest: string | null;
+                /**
+                 * Format: uuid
+                 * @description The booking, when there's just one.
+                 */
+                bookingId: string | null;
+            };
+            /** @description Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`. */
+            cash: {
+                amount: number;
+                count: number;
+                currency: string;
+            } | null;
+            /** @description The day's games: confirmed, still to confirm, played or no-show. */
+            games: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description Today: the next game's start, null when none is left. A later day: its first.
+                 */
+                next: string | null;
+            };
+            /** @description The day's hours on live grounds: how many are booked or held, of all not closed by staff. */
+            booked: {
+                booked: number;
+                open: number;
+            };
+            /** @description Today only: of the app games that have kicked off, how many have checked in. Null on a later day. */
+            checkIns: {
+                checkedIn: number;
+                started: number;
+            } | null;
+            /** @description What the day's games come to, however they're paid (minor units). Null without `payments: view`. */
+            takings: {
+                amount: number;
+                currency: string;
+            } | null;
+            /** @description Up to three games yet to end, from the day's start (today: from now). */
+            next: {
+                /** Format: uuid */
+                id: string;
+                code: string;
+                status: components["schemas"]["BookingStatus"];
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /**
+                 * @description The venue's IANA timezone.
+                 * @example Africa/Cairo
+                 */
+                timezone: string;
+                venue: {
+                    /** Format: uuid */
+                    id: string;
+                    slug: string;
+                    names: {
+                        en: string | null;
+                        ar: string | null;
+                    };
+                };
+                ground: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string | null;
+                    sport: components["schemas"]["GroundSport"];
+                    size: components["schemas"]["GroundSize"];
+                    /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                    deleted: boolean;
+                };
+                customer: {
+                    name: string;
+                    phone: string | null;
+                };
+                source: components["schemas"]["BookingSource"];
+                /** @example EGP */
+                currency: string;
+                /** @description Minor units, VAT included. */
+                total: number;
+                /** Format: date-time */
+                createdAt: string;
+                /**
+                 * Format: uuid
+                 * @description Who it's for, as the venue's customer (a regular's own bookings are found by it).
+                 */
+                venueCustomerId: string;
+                /**
+                 * Format: date-time
+                 * @description `PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.
+                 */
+                expiresAt: string | null;
+                /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
+                hold: boolean;
+                /** @description One week of a regular's weekly game (`UNCONFIRMED` until it's confirmed). */
+                regular: boolean;
+                /** @description An open game: how many players to expect besides the booker. */
+                openGame: {
+                    players: number;
+                } | null;
+                paymentMode: components["schemas"]["PaymentMode"];
+                /** @description `DEPOSIT`: the share paid online. */
+                deposit: number | null;
+                /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
+                paymentWindow: number | null;
+                checkedIn: boolean;
+            }[];
+            /** @description Up to three runs of open hours on the day, soonest first. */
+            free: {
+                /** Format: uuid */
+                groundId: string;
+                groundName: string | null;
+                /** @description The run's slots, in time order. */
+                slotIds: string[];
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /** @description The first hour's price, minor units. */
+                price: number;
+                currency: string;
+            }[];
+        };
+        /**
+         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
+         * @enum {string}
+         */
+        BookingSource: "APP" | "STAFF";
         StaffBookingList: {
             data: components["schemas"]["StaffBooking"][];
         };
@@ -18974,6 +19842,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 name: string;
@@ -18986,6 +19856,11 @@ export interface components {
             total: number;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description Who it's for, as the venue's customer (a regular's own bookings are found by it).
+             */
+            venueCustomerId: string;
             /**
              * Format: date-time
              * @description `PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.
@@ -19005,11 +19880,6 @@ export interface components {
             /** @description `PENDING` with something to pay online: the minutes the player would have to pay if it were approved now (the venue's payment window, never past kick-off). Null otherwise. */
             paymentWindow: number | null;
         };
-        /**
-         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
-         * @enum {string}
-         */
-        BookingSource: "APP" | "STAFF";
         StaffBookingDetail: {
             /** Format: uuid */
             id: string;
@@ -19039,6 +19909,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 /** Format: uuid */
@@ -19284,6 +20156,47 @@ export interface components {
             /** Format: uuid */
             nextCursor: string | null;
         };
+        SchedulePreview: {
+            /** @description Bookings and holds still ahead in hours it closes, requests and regulars' waiting weeks aside: they go ahead as booked. */
+            bookings: number;
+            /** @description Booking requests waiting in hours it closes: declined when it's saved. */
+            requests: number;
+            /** @description Regulars whose weekly time it closes, wholly or in part. */
+            regulars: {
+                /** Format: uuid */
+                id: string;
+                /** @description The customer's first name. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description Its last confirmed week, which still happens as booked; null with none. The regular ends when it's saved, its waiting weeks let go.
+                 */
+                lastWeek: string | null;
+            }[];
+        };
+        GroundRemoval: {
+            /** @description Bookings and holds still ahead on it, requests and regulars' waiting weeks aside: they go ahead, and keep it on the calendar. */
+            bookings: number;
+            /** @description Booking requests waiting for the venue on it: declined when it's removed. */
+            requests: number;
+            /**
+             * Format: date-time
+             * @description When the last of them ends, and the ground goes for good; null with none.
+             */
+            lastEndsAt: string | null;
+            /** @description Regulars on it, not ended: their waiting weeks are let go and each ends at once; confirmed weeks still happen. */
+            regulars: {
+                /** Format: uuid */
+                id: string;
+                /** @description The customer's first name. */
+                name: string;
+                /**
+                 * Format: date
+                 * @description Its last confirmed week, which still happens as booked; null with none. The regular itself ends when it's removed.
+                 */
+                lastWeek: string | null;
+            }[];
+        };
         VenueRegularList: {
             data: components["schemas"]["VenueRegular"][];
         };
@@ -19302,6 +20215,8 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string | null;
+                /** @description Staff deleted it: the regular ends after its last confirmed week. */
+                deleted: boolean;
             };
             /** @description 0–6 from Sunday, in the venue's time. */
             dayOfWeek: number;
@@ -19365,6 +20280,8 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string | null;
+                /** @description Staff deleted it: the regular ends after its last confirmed week. */
+                deleted: boolean;
             };
             /** @description 0–6 from Sunday, in the venue's time. */
             dayOfWeek: number;
@@ -19395,6 +20312,28 @@ export interface components {
             reservations: components["schemas"]["StaffBooking"][];
             /** @description Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day. */
             skippedWeeks: string[];
+            /** @description Its weeks still to come, soonest first: confirmed (moved ones too), waiting for a confirm, let go by the regular or staff, or not answered by the deadline. Weeks let go because its time changed aren't listed. */
+            comingWeeks: {
+                /**
+                 * Format: date
+                 * @description A calendar day in the venue's timezone.
+                 * @example 2026-12-03
+                 */
+                date: string;
+                /** @enum {string} */
+                state: "CONFIRMED" | "WAITING" | "LET_GO" | "NOT_ANSWERED";
+            }[];
+            /** @description Its last 10 settled weeks, oldest first: played, a no-show, let go in time (or cancelled after confirming), or not answered by the deadline. Weeks released because the regular changed aren't counted. */
+            lastWeeks: {
+                /**
+                 * Format: date
+                 * @description A calendar day in the venue's timezone.
+                 * @example 2026-12-03
+                 */
+                date: string;
+                /** @enum {string} */
+                outcome: "PLAYED" | "NO_SHOW" | "LET_GO" | "NOT_ANSWERED";
+            }[];
         };
         CreateRegular: {
             /** @description Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them). */
@@ -19443,6 +20382,18 @@ export interface components {
              * @example 2026-12-03
              */
             endsOn?: string | null;
+        };
+        ConfirmLink: {
+            /**
+             * Format: uri
+             * @description Works once, until the week's deadline.
+             */
+            url: string;
+            /**
+             * Format: date-time
+             * @description The week's deadline.
+             */
+            expiresAt: string;
         };
         SlotCandidates: {
             slot: {
@@ -19502,6 +20453,82 @@ export interface components {
          * @enum {string}
          */
         CandidateGroup: "LAPSED_REGULAR" | "ACTIVE_REGULAR" | "OTHER";
+        BookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings: number;
+            /** @description Weeks. */
+            regularPeriod: number;
+        };
+        /** @description Only what's sent changes. */
+        UpdateBookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes?: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon?: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow?: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter?: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings?: number;
+            /** @description Weeks. */
+            regularPeriod?: number;
+        };
+        ReminderWeek: {
+            /**
+             * @description WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. MOVED: the venue moved or swapped it; `movedTo` is where it is now. CHANGED: the venue let it go or cancelled it, or paused or ended the regular.
+             * @enum {string}
+             */
+            state: "WAITING" | "CONFIRMED" | "RELEASED" | "MISSED" | "MOVED" | "CHANGED";
+            /**
+             * @description The week's booking code, for the regular to quote to the venue.
+             * @example K7Q2P9M4
+             */
+            code: string;
+            /** @description The regular's first name. */
+            name: string;
+            venue: {
+                name: string | null;
+                slug: string;
+                /** @example Maadi, Cairo */
+                area: string | null;
+            };
+            ground: {
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: date-time */
+            deadline: string | null;
+            timezone: string;
+            /** @description MOVED: the week where it is now, after every move. Null otherwise. */
+            movedTo: {
+                code: string;
+                ground: {
+                    name: string | null;
+                };
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+            } | null;
+        };
+        /** @description The token from the link's #token=. */
+        ReminderTokenBody: {
+            token: string;
+        };
         GamePage: {
             data: components["schemas"]["Game"][];
             nextCursor: string | null;
@@ -19605,9 +20632,24 @@ export interface components {
         CheckInResult: {
             /** Format: uuid */
             bookingId: string;
+            booking: components["schemas"]["CheckInBooking"];
             person: components["schemas"]["CheckInPerson"];
             /** @description They had already checked in; nothing changed. */
             already: boolean;
+        };
+        CheckInBooking: {
+            bookerFirstName: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /** @description The ground's name. */
+            ground: string | null;
         };
         ScanCheckIn: {
             /** @description What the QR code says. */
@@ -19659,35 +20701,6 @@ export interface components {
             phone?: string | null;
             /** @description Staff's own note about the customer; never shown to them. Empty clears it. */
             note?: string;
-        };
-        BookingSettings: {
-            /** @description How long a staff hold lasts. */
-            staffHoldMinutes: number;
-            /** @description Weeks of regulars' reservations kept ahead. */
-            regularHorizon: number;
-            /** @description Hours before kick-off a regular's week must be confirmed. */
-            confirmationWindow: number;
-            /** @description Weeks without a game before a regular counts as lapsed. */
-            lapsedAfter: number;
-            /** @description Games within `regularPeriod` weeks that make someone a regular. */
-            regularBookings: number;
-            /** @description Weeks. */
-            regularPeriod: number;
-        };
-        /** @description Only what's sent changes. */
-        UpdateBookingSettings: {
-            /** @description How long a staff hold lasts. */
-            staffHoldMinutes?: number;
-            /** @description Weeks of regulars' reservations kept ahead. */
-            regularHorizon?: number;
-            /** @description Hours before kick-off a regular's week must be confirmed. */
-            confirmationWindow?: number;
-            /** @description Weeks without a game before a regular counts as lapsed. */
-            lapsedAfter?: number;
-            /** @description Games within `regularPeriod` weeks that make someone a regular. */
-            regularBookings?: number;
-            /** @description Weeks. */
-            regularPeriod?: number;
         };
         SystemStatus: {
             /** Format: date-time */
@@ -20377,6 +21390,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 name: string;
@@ -20419,6 +21434,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 /** Format: uuid */

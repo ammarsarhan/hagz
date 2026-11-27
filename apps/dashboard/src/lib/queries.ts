@@ -109,6 +109,17 @@ export const afterVenueWrite = (
     ),
   );
 
+// After a change that reaches what's booked on a ground (new hours, deleting it; user, 2026-11-27):
+// requests declined, regulars' waiting weeks let go and their end set, hours freed or closed. Every
+// screen showing them reads again: the calendar's slots and bookings, the requests, booking pages,
+// the regulars list and each regular's page, and customers' bookings.
+export const afterBookedChange = (queryClient: QueryClient, venueId: string) =>
+  Promise.all(
+    ["slots", "bookings", "regulars", "customers"].map((part) =>
+      queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, part] }),
+    ),
+  );
+
 // Reference data: the same for everyone and changed by admins only, so it's fetched once and kept
 // for the session rather than refetched behind every screen that needs it.
 const REFERENCE = { staleTime: Infinity, gcTime: Infinity } as const;

@@ -23,7 +23,14 @@ export interface Step {
 const LINE = 21;
 const GAP = 14;
 
-export function StepRail({ steps }: { steps: Step[] }) {
+export function StepRail({
+  steps,
+  gap = GAP,
+}: {
+  steps: Step[];
+  // More room between steps that each carry a grey line (Add regular's last look).
+  gap?: number;
+}) {
   return (
     <View>
       {steps.map((step, index) => {
@@ -34,7 +41,7 @@ export function StepRail({ steps }: { steps: Step[] }) {
           <View
             key={index}
             className="flex-row items-start"
-            style={{ paddingBottom: last ? 0 : GAP }}
+            style={{ paddingBottom: last ? 0 : gap }}
           >
             <View className="w-3.5 items-center self-stretch">
               {/* The rail into this dot and on to the next, under it: through the gap below too,
@@ -44,7 +51,7 @@ export function StepRail({ steps }: { steps: Step[] }) {
                   className="absolute w-px bg-border"
                   style={{
                     top: first ? LINE / 2 : 0,
-                    bottom: last ? undefined : -GAP,
+                    bottom: last ? undefined : -gap,
                     height: last ? LINE / 2 : undefined,
                   }}
                 />

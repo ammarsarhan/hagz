@@ -104,32 +104,58 @@ export const declineBooking = async (
   clock: Clock = systemClock,
 ): Promise<void> => {
   const now = clock.now();
-  await transaction(async (tx) => {
-    const booking = await lockPending(tx, actor, bookingId, "CANCELLED", now);
-    await tx.booking.update({
-      where: { id: booking.id },
-      data: { status: "CANCELLED", expiresAt: null },
-    });
-    await tx.cancellation.create({
-      data: {
-        bookingId: booking.id,
-        initiator: "VENUE",
-        reason: reason ?? null,
-        refundPercent: 100,
-        refundAmount: await netPaid(tx, [booking.id]),
-      },
-    });
-    await releaseSlots(tx, [booking.id], now);
-    await cancelListings(tx, [booking.id], now);
-    await tx.bookingEvent.create({
-      data: {
-        bookingId: booking.id,
-        type: BOOKING_EVENTS.DECLINED,
-        staffId: actor.staffId,
-        data: reason ? { reason } : {},
-      },
-    });
+  await transaction((tx) => declineIn(tx, actor, bookingId, now, reason ? { reason } : {}));
+};
+
+export const declineIn = async (
+  tx: Tx,
+  actor: VenueAccess,
+  bookingId: string,
+  now: Date,
+  data: { reason?: string; by?: "GROUND_REMOVED" | "SCHEDULE_CHANGED" },
+) => {
+  const booking = await lockPending(tx, actor, bookingId, "CANCELLED", now);
+  await tx.booking.update({
+    where: { id: booking.id },
+    data: { status: "CANCELLED", expiresAt: null },
   });
+  await tx.cancellation.create({
+    data: {
+      bookingId: booking.id,
+      initiator: "VENUE",
+      reason: data.reason ?? null,
+      refundPercent: 100,
+      refundAmount: await netPaid(tx, [booking.id]),
+    },
+  });
+  await releaseSlots(tx, [booking.id], now);
+  await cancelListings(tx, [booking.id], now);
+  await tx.bookingEvent.create({
+    data: { bookingId: booking.id, type: BOOKING_EVENTS.DECLINED, staffId: actor.staffId, data },
+  });
+};
+
+// Deleting a ground declines the requests still waiting on it (user, 2026-11-27), as staff
+// declining each would: nothing is paid while one waits, and its slots go (the ground is being
+// removed). Venues' removeGround calls it through its hook, in its own transaction, before it counts
+// what's still booked ahead (http/router.ts hands it over).
+export const declineWaitingOnGround = async (
+  tx: Tx,
+  actor: VenueAccess,
+  groundId: string,
+  now: Date,
+): Promise<void> => {
+  const waiting = await tx.booking.findMany({
+    where: {
+      venueId: actor.venueId,
+      groundId,
+      status: "PENDING",
+      expiresAt: { gt: now },
+    },
+    orderBy: { id: "asc" },
+    select: { id: true },
+  });
+  for (const { id } of waiting) await declineIn(tx, actor, id, now, { by: "GROUND_REMOVED" });
 };
 
 // Marks a confirmed game played or a no-show once it has kicked off, or corrects the mark, until

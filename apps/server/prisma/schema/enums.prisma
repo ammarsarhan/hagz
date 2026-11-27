@@ -110,6 +110,7 @@ enum GroundEnvironment {
 enum GroundStatus {
   ACTIVE
   MAINTENANCE // Temporarily unbookable.
+  REMOVING // Removed by staff with bookings still ahead: on the calendar until the last one ends, closed to new ones.
   DELETED // Kept for booking history.
 }
 

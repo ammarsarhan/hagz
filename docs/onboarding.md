@@ -118,6 +118,29 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 - A venue in `DRAFT`, `SUBMITTED`, `PROVISIONING` or `MAINTENANCE` can have no active grounds; the submit checklist asks for one separately.
 - Enforced in the API (PRs 2.4 and 2.7), not the database: the rule spans two tables and changes with the venue's status.
 
+### Deleting a ground
+
+A deleted ground is kept for booking history: past bookings still name it. What happens to the rest depends on what's still ahead (user, 2026-11-27):
+
+- **Booking requests waiting on it** are declined first, as staff declining each would (a venue cancellation; nothing is paid while one waits). Bookings owns them, so venues' `removeGround` calls bookings' `declineWaitingOnGround` through a hook set in `http/router.ts`.
+- **Nothing else booked ahead:** it's `DELETED` at once.
+- **Bookings or holds still ahead:** it's `REMOVING`. They go ahead as booked, and the ground stays on staff's calendar, its chip dashed and fainter, with no label (user, 2026-11-27). The admin web strikes its name through on bookings and in the Slots picker, and the staff app on its regulars. It takes no new bookings, moves, swaps or regulars (all of them need an `ACTIVE` ground) and leaves the venue, its layout, its public page, search and the pickers. Bookings on it can still be moved off it. Every five minutes a job (`removals`, with the slot checks) turns a `REMOVING` ground whose last booking has ended, moved or been cancelled into `DELETED`.
+- **Either way,** its free and blocked slots go straight away, and so does its layout tile. Slots a booking gives back later (cancelled, expired, moved off) go too, rather than show as free hours nobody can book (`releaseSlots`).
+- **Regulars on it**, by the rule for hours that close (user, 2026-11-27): their waiting (`UNCONFIRMED`) weeks are let go (`REGULAR_CHANGED`, reason `GROUND_REMOVED`, not counted against them), confirmed weeks still happen as booked, and each regular ends at once (`endedAt`), leaving the regulars list (user, 2026-11-27: with only confirmed weeks left and no more to come, it's over). Waiting weeks don't keep the ground: one whose regulars only had waiting weeks is gone straight away. The top-up still ends any regular left on a `DELETED` ground.
+- **The warning first:** the staff app reads `GET …/grounds/{groundId}/removal` (how many bookings are still ahead, how many requests wait, when the last booking ends, and each regular on it, which ends, with its last confirmed week, waiting weeks counted out). A sheet says what will happen, step by step, with Cancel and Delete; Delete asks once more in a short native alert.
+
+### Changing a ground's hours
+
+Saving a ground's weekly hours, or copying them to other grounds, reaches what's booked in the hours the new week closes (user, 2026-11-27). Hours it keeps open, or opens, change only free slots, as always.
+
+- **Bookings and holds** in closed hours go ahead as booked. The calendar shows them as usual.
+- **Booking requests waiting** in them are declined, as staff declining each would (a venue cancellation; nothing is paid while one waits), recorded `{by: "SCHEDULE_CHANGED"}`.
+- **Regulars whose weekly time closes**, wholly or in part, let their waiting (`UNCONFIRMED`) weeks go (`REGULAR_CHANGED`, reason `SCHEDULE_CHANGED`, not counted against them), and end at once, leaving the regulars list; their confirmed weeks still happen as booked (regulars.md). The same as deleting their ground (user, 2026-11-27).
+- **Hours a booking gives back later** (cancelled, declined, expired, moved off) are checked against the hours the ground has then, in the same transaction (`releaseSlots`): still open, they go back on sale at today's price; closed, they go. Before this they came back on sale at the old schedule until the five-minute check caught them, with a false "stale slots" alert. The same holds after a price change.
+- **How:** the declines and endings run in the save's own transaction through a hook, since bookings owns them and reads venues: venues' `whenHoursChange` is handed bookings' `applyHoursChange` in `http/router.ts`. It takes the regulars lock before any booking's row, as everywhere regulars change. Without the hook, saving is refused.
+- **The warning first:** `POST …/grounds/{groundId}/schedule/preview` takes the new week and says, without saving it, how many bookings and requests fall in the hours it closes and which regulars end (each with its last reserved week). Both use one function, so the warning and the save can't disagree. The staff app sums one preview per ground when copying; with nothing affected it saves straight away, otherwise a sheet says what follows, with Cancel and Save (or Copy); no second alert (user, 2026-11-27). Closing every hour of a live or paused venue's last ground with open hours (no other active ground has any) shows the sheet even with nothing booked, its first step "No ground has open hours": players can't book anything until some open again. It warns only; the venue stays live.
+- **Booking length** (shortest and longest) changes nothing already booked; only new bookings and new regulars follow it.
+
 ## Slugs and SEO
 
 - **Format:** 8 random characters, lowercase letters and digits without lookalikes (no `0`/`o`, `1`/`l`/`i`), e.g. `/venue/k7m2x9pq`. Generated at creation, retried on the rare clash with the unique index, stored in `Venue.slug`.

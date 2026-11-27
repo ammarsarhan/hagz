@@ -46,7 +46,16 @@ export type RowKind =
   "ended" | "confirmed" | "unconfirmed" | "request" | "hold" | "paying" | "closed";
 
 export type CalendarRow =
-  | { kind: "closed"; key: string; startsAt: string; endsAt: string; groundId: string }
+  // Closed by staff: back to back hours with the same note and closer in one row, with their slots.
+  | {
+      kind: "closed";
+      key: string;
+      startsAt: string;
+      endsAt: string;
+      groundId: string;
+      slots: Slot[];
+      closed: Slot["closed"];
+    }
   // Open slots nobody has: one row per time, naming every ground free then, and its prices' range.
   | {
       kind: "free";
@@ -57,6 +66,8 @@ export type CalendarRow =
       groundIds: string[];
       price: { from: number; to: number };
       ended: boolean;
+      // One per ground free then.
+      slots: Slot[];
     }
   | {
       kind: Exclude<RowKind, "closed">;
@@ -91,21 +102,33 @@ const closedStretches = (slots: readonly Slot[]) => {
   const blocked = slots
     .filter((slot) => slot.status === "BLOCKED")
     .sort((a, b) => a.groundId.localeCompare(b.groundId) || a.startsAt.localeCompare(b.startsAt));
-  const stretches: { groundId: string; startsAt: string; endsAt: string; first: string }[] = [];
+  const stretches: {
+    groundId: string;
+    startsAt: string;
+    endsAt: string;
+    first: string;
+    slots: Slot[];
+    closed: Slot["closed"];
+  }[] = [];
   for (const slot of blocked) {
     const last = stretches.at(-1);
     if (
       last &&
       last.groundId === slot.groundId &&
-      Date.parse(last.endsAt) === Date.parse(slot.startsAt)
-    )
+      Date.parse(last.endsAt) === Date.parse(slot.startsAt) &&
+      last.closed?.note === slot.closed?.note &&
+      last.closed?.by === slot.closed?.by
+    ) {
       last.endsAt = slot.endsAt;
-    else
+      last.slots.push(slot);
+    } else
       stretches.push({
         groundId: slot.groundId,
         startsAt: slot.startsAt,
         endsAt: slot.endsAt,
         first: slot.id,
+        slots: [slot],
+        closed: slot.closed,
       });
   }
   return stretches;
@@ -134,6 +157,7 @@ const freeHours = (slots: readonly Slot[], order: (id: string) => number, now: n
         to: Math.max(...group.map((slot) => slot.price)),
       },
       ended: Date.parse(first.endsAt) <= now,
+      slots: group,
     };
   });
 };
@@ -184,6 +208,8 @@ export const dayRows = ({
         startsAt: stretch.startsAt,
         endsAt: stretch.endsAt,
         groundId: stretch.groundId,
+        slots: stretch.slots,
+        closed: stretch.closed,
       })),
     ...freeHours(
       slots.filter(

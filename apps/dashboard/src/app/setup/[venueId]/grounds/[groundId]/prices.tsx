@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
@@ -6,6 +6,7 @@ import { MoneyField } from "@/components/money-field";
 import { StepScreen } from "@/components/step-screen";
 import { useGroundFlow, type GroundDraft } from "@/lib/ground-flow";
 import { minorOf } from "@/lib/money";
+import { push } from "@/lib/navigation";
 
 // Adding a ground, 3 of 4 (Figma "Grounds · Add 3 Prices", 368:2): per hour, in the marketplace's
 // currency. Only the normal price is needed; peak and discount are for the hours the owner marks
@@ -64,7 +65,7 @@ export default function GroundPrices() {
             const found = check(draft);
             setErrors(found);
             if (Object.keys(found).length === 0) {
-              router.push(`/setup/${venueId}/grounds/${groundId}/length`);
+              push(`/setup/${venueId}/grounds/${groundId}/length`);
             }
           }}
         />

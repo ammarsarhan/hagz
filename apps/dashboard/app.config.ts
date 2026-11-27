@@ -34,6 +34,10 @@ if (process.env.EAS_BUILD === "true") {
   }
 }
 
+// The camera's one permission line, for taking venue photos and scanning check-in codes.
+const CAMERA_PERMISSION =
+  "Hagz uses the camera to scan players' check-in codes and to take pictures of your venue.";
+
 // Xcode's user script sandboxing (on in the generated project) stops React Native's bundling script
 // writing the Mac's address into a device build (ip.txt, how the dev client finds Metro), so a build
 // for a plugged-in iPhone fails while a simulator build passes. Off for the app's own targets.
@@ -113,8 +117,18 @@ const config: ExpoConfig = {
       "expo-image-picker",
       {
         photosPermission: "Hagz uses your photos so you can add pictures of your venue.",
-        cameraPermission: "Hagz uses the camera so you can take pictures of your venue.",
+        cameraPermission: CAMERA_PERMISSION,
         microphonePermission: false,
+      },
+    ],
+    // Scanning players' check-in codes (Home's scan button). The camera reads QR codes itself; no
+    // microphone. Both camera plugins write the same permission line, so they share its words.
+    [
+      "expo-camera",
+      {
+        cameraPermission: CAMERA_PERMISSION,
+        microphonePermission: false,
+        recordAudioAndroid: false,
       },
     ],
     "expo-image",

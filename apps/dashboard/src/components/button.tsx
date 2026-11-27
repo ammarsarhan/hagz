@@ -31,6 +31,8 @@ interface ButtonProps {
   // Smaller, for pills that sit side by side in a sheet (the photo sheet's Remove / Set as cover):
   // 48 high with a 15pt label, instead of the screen's main 56 / 17.
   compact?: boolean;
+  // A compact button standing alone (an empty list's "Add regular"): wider padding around its label.
+  wide?: boolean;
 }
 
 export function Button({
@@ -41,6 +43,7 @@ export function Button({
   loading = false,
   icon,
   compact = false,
+  wide = false,
 }: ButtonProps) {
   const style = disabled ? { box: "bg-field", label: "text-ink-3" } : variants[variant];
   return (
@@ -53,7 +56,7 @@ export function Button({
         Keyboard.dismiss();
         onPress?.();
       }}
-      className={`${compact ? "h-12 px-4" : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${style.box}`}
+      className={`${compact ? `h-12 ${wide ? "px-6" : "px-4"}` : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${style.box}`}
     >
       {loading ? (
         <ActivityIndicator

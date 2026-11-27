@@ -102,6 +102,17 @@ const config: ExpoConfig = {
       },
     ],
     "expo-image",
+    // Add to calendar on a booking: write-only on iOS 17+ (the app never reads the calendar; the
+    // older key covers iOS 16), and no reminders.
+    [
+      "expo-calendar",
+      {
+        writeOnlyAccess: true,
+        writeOnlyCalendarPermission: "Hagz adds your bookings to your calendar.",
+        calendarPermission: "Hagz adds your bookings to your calendar.",
+        remindersPermission: false,
+      },
+    ],
     // react-native-maps' own plugin: Expo's built-in maps settings (ios.config.googleMapsApiKey,
     // android.config.googleMaps) are skipped once a package ships a plugin, so the keys go here. The
     // iOS key is also what adds Google's SDK to the Podfile.

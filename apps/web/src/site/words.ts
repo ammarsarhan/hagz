@@ -225,6 +225,30 @@ const en = {
     bookingMeta: (when: string) => `A game, ${when} · Hagz`,
     notFound: "Booking not found · Hagz",
   },
+  regular: {
+    meta: "Your weekly booking · Hagz",
+    waiting: (name: string, weekday: string, deadline: string, venue: string, code: string) =>
+      `${name}, please confirm your booking for ${weekday}. Reply by ${deadline}, or the time will be released for others to book. If you contact ${venue}, please quote booking code ${code}.`,
+    playing: (venue: string, weekday: string, time: string) =>
+      `Your booking is confirmed. ${venue} will see you on ${weekday} at ${time}.`,
+    letGo: (weekday: string) =>
+      `You’ve released this week’s booking, and the time is now open for others to book. Your weekly booking continues next ${weekday}.`,
+    missed: (deadline: string, venue: string, code: string) =>
+      `The confirmation deadline of ${deadline} has passed, so the time has been released for others to book. To play this week, please contact ${venue} and quote booking code ${code}.`,
+    // Moved or swapped by the venue: where it is now, and its new code.
+    moved: (venue: string, when: string, ground: string | null, code: string) =>
+      `${venue} has moved this week’s booking to ${when}${ground ? ` on ${ground}` : ""}. Its booking code is now ${code}.`,
+    changed: (venue: string, code: string) =>
+      `${venue} has changed the time of this week’s booking. For more information, please contact them and quote booking code ${code}.`,
+    playingButton: "I’m playing",
+    notThisWeek: "Not this week",
+    failed: "Something went wrong. Please try again.",
+    missingTitle: "This link is invalid",
+    missingLine: "Please ask the venue to send you a new link.",
+    errorTitle: "Something went wrong",
+    errorLine: "Please check your connection and open the link again.",
+    noAppLine: "Download the app to manage your weekly booking and book other times.",
+  },
 };
 
 export type Words = typeof en;
@@ -465,6 +489,29 @@ const ar: Words = {
     gameMeta: (name, when) => `مباراة ${name}، ${when} · حجز`,
     bookingMeta: (when) => `مباراة، ${when} · حجز`,
     notFound: "الحجز غير موجود · حجز",
+  },
+  regular: {
+    meta: "حجزك الأسبوعي · حجز",
+    waiting: (name, weekday, deadline, venue, code) =>
+      `${name}، يُرجى تأكيد حجزك يوم ${weekday} قبل ${deadline}، وإلا سيُتاح الموعد للحجز. وعند التواصل مع ${venue}، اذكر رمز الحجز ${code}.`,
+    playing: (venue, weekday, time) =>
+      `تم تأكيد حجزك. ${venue} بانتظارك يوم ${weekday} الساعة ${time}.`,
+    letGo: (weekday) =>
+      `تم إلغاء حجزك لهذا الأسبوع، وأصبح الموعد متاحًا للحجز. يستمر حجزك الأسبوعي يوم ${weekday} القادم.`,
+    missed: (deadline, venue, code) =>
+      `انتهت مهلة التأكيد في ${deadline}، فأصبح الموعد متاحًا للحجز. للعب هذا الأسبوع، تواصل مع ${venue} واذكر رمز الحجز ${code}.`,
+    moved: (venue, when, ground, code) =>
+      `نقل ${venue} حجز هذا الأسبوع إلى ${when}${ground ? ` في ${ground}` : ""}. رمز الحجز الآن ${code}.`,
+    changed: (venue, code) =>
+      `قام ${venue} بتغيير موعد حجز هذا الأسبوع. لمزيد من المعلومات، تواصل معهم واذكر رمز الحجز ${code}.`,
+    playingButton: "سألعب",
+    notThisWeek: "ليس هذا الأسبوع",
+    failed: "حدث خطأ. حاول مرة أخرى.",
+    missingTitle: "هذا الرابط غير صالح",
+    missingLine: "اطلب رابطًا جديدًا من الملعب.",
+    errorTitle: "حدث خطأ ما",
+    errorLine: "تحقق من اتصالك وافتح الرابط مرة أخرى.",
+    noAppLine: "حمّل التطبيق لإدارة حجزك الأسبوعي وحجز مواعيد أخرى.",
   },
 };
 

@@ -17,6 +17,9 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { amountOf, cleanAmount, decimalsOf, minorOf } from "@/lib/money";
 import { useNow } from "@/lib/use-now";
 import { hoursSpan, relativeDay } from "@/lib/when";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A new booking's price and note (Figma D10 614:2), right after its time: the time picked as a
 // dashed card with Change (back to the picker), the price filled in from its slots and open to the
@@ -38,7 +41,7 @@ type Params = {
   forName?: string;
 };
 
-export default function BookingDetails() {
+function BookingDetails() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<Params>();
   const { venue } = useCurrentVenue();
@@ -69,7 +72,7 @@ export default function BookingDetails() {
           disabled={!ready}
           onPress={() => {
             if (params.forId && params.forName) {
-              router.push({
+              push({
                 pathname: "/book/confirm",
                 params: {
                   ...params,
@@ -158,7 +161,7 @@ export default function BookingDetails() {
         onClose={() => setAsking(null)}
         onWhoToCall={() => {
           setAsking(null);
-          router.push({
+          push({
             pathname: "/book/who-to-call",
             params: {
               slotId: params.slotId,
@@ -173,7 +176,7 @@ export default function BookingDetails() {
         }}
         onChoose={(choice) => {
           setAsking(null);
-          router.push({
+          push({
             pathname: "/book/confirm",
             params: {
               ...params,
@@ -188,3 +191,5 @@ export default function BookingDetails() {
     </Screen>
   );
 }
+
+export default guarded(RULES.book, BookingDetails);

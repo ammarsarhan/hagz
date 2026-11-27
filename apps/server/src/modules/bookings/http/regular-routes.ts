@@ -1,7 +1,9 @@
+import { bookingSettings, updateBookingSettings } from "@/modules/venues";
 import { createRouter } from "@/platform/http/router";
 import {
   createRegular,
   endRegular,
+  followBookingSettings,
   listRegulars,
   orderRegulars,
   pauseRegular,
@@ -9,13 +11,28 @@ import {
   resumeRegular,
   updateRegular,
 } from "../application/regulars";
+import { createConfirmLink } from "../application/confirm-links";
+import { groundRemoval } from "../application/ground-removal";
+import * as removal from "./definitions/ground-removal";
+import * as preview from "./definitions/schedule-preview";
+import { schedulePreview } from "../application/schedule-preview";
 import { slotCandidates } from "../application/fill-slot";
 import { confirmReservation, releaseReservation } from "../application/reservations";
 import { staffBookingDetail } from "../application/staff-bookings";
+import * as settings from "./definitions/booking-settings";
 import * as route from "./definitions/regulars";
 
 // `order` is registered before `{regularId}` so it isn't read as an id.
 export const bookingsRegularRoutes = createRouter()
+  .openapi(preview.schedulePreview, async (c) =>
+    c.json(
+      await schedulePreview(c.var.venue, c.req.valid("param").groundId, c.req.valid("json")),
+      200,
+    ),
+  )
+  .openapi(removal.groundRemoval, async (c) =>
+    c.json(await groundRemoval(c.var.venue, c.req.valid("param").groundId), 200),
+  )
   .openapi(route.listRegulars, async (c) => c.json(await listRegulars(c.var.venue), 200))
   .openapi(route.orderRegulars, async (c) =>
     c.json(await orderRegulars(c.var.venue, c.req.valid("json")), 200),
@@ -46,6 +63,9 @@ export const bookingsRegularRoutes = createRouter()
     await confirmReservation({ staff: c.var.venue }, bookingId);
     return c.json(await staffBookingDetail(c.var.venue.venueId, bookingId), 200);
   })
+  .openapi(route.confirmLink, async (c) =>
+    c.json(await createConfirmLink(c.var.venue, c.req.valid("param").bookingId), 201),
+  )
   .openapi(route.releaseReservation, async (c) => {
     const { bookingId } = c.req.valid("param");
     await releaseReservation({ staff: c.var.venue }, bookingId);
@@ -56,4 +76,15 @@ export const bookingsRegularRoutes = createRouter()
       await slotCandidates(c.var.venue, c.req.valid("param").slotId, c.req.valid("query")),
       200,
     ),
-  );
+  )
+  .openapi(settings.getBookingSettings, async (c) =>
+    c.json(await bookingSettings(c.var.venue), 200),
+  )
+  .openapi(settings.updateBookingSettings, async (c) => {
+    const { previous, settings: next } = await updateBookingSettings(
+      c.var.venue,
+      c.req.valid("json"),
+    );
+    await followBookingSettings(c.var.venue.venueId, previous, next);
+    return c.json(next, 200);
+  });

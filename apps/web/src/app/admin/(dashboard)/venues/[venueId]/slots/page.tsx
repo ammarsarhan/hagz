@@ -107,6 +107,11 @@ const dayStart = (used: Set<number>) => {
   return best.end;
 };
 
+// A ground staff deleted, still here until its last booking ends, is struck through (user,
+// 2026-11-27). A native <option> takes no text-decoration, so the strike is in the text: a
+// combining long stroke after each character.
+const struck = (text: string) => [...text].map((char) => `${char}\u0336`).join("");
+
 export default function VenueSlotsTab() {
   const { venueId } = useParams<{ venueId: string }>();
   // The Sunday the week shown starts on: unknown until the first read says which day to open on.
@@ -370,14 +375,18 @@ function Planner({
                 onChange={(event) => setPicked(event.target.value)}
                 className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3.5 outline-none"
               >
-                {grounds.map((one) => (
-                  <option key={one.id} value={one.id}>
-                    {one.name ?? "Ground"} ·{" "}
-                    {one.size === "STANDARD"
+                {grounds.map((one) => {
+                  const label = `${one.name ?? "Ground"} · ${
+                    one.size === "STANDARD"
                       ? sportLabel[one.sport]
-                      : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`}
-                  </option>
-                ))}
+                      : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`
+                  }`;
+                  return (
+                    <option key={one.id} value={one.id}>
+                      {one.removing ? struck(label) : label}
+                    </option>
+                  );
+                })}
               </select>
               <IconChevronDown
                 size={16}

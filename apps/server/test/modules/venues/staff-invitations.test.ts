@@ -182,6 +182,16 @@ describe("sending an invitation", () => {
     expect((await problem(res)).code).toBe("ALREADY_A_MEMBER");
   });
 
+  it("refuses the inviter's own number, the owner's included", async () => {
+    const { venue, owner, manager } = await venueWithStaff();
+    for (const staff of [owner, manager]) {
+      const res = await invite(staff.id, venue.id, { phone: staff.phone });
+      expect(res.status).toBe(409);
+      expect((await problem(res)).code).toBe("ALREADY_A_MEMBER");
+    }
+    expect(await prisma.venueInvitation.count()).toBe(0);
+  });
+
   it("replaces an earlier invitation to the same number", async () => {
     const { venue, owner } = await venueWithStaff();
     await invite(owner.id, venue.id, { phone: INVITEE });

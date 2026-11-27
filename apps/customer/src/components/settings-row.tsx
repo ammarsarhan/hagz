@@ -8,12 +8,15 @@ import { Text } from "./text";
 export function SettingsRow({
   title,
   body,
+  leading,
   trailing,
   onPress,
   divider = true,
 }: {
   title: string;
   body?: string;
+  // An icon before the title, at the start side (a sheet's choices).
+  leading?: ReactNode;
   trailing?: ReactNode;
   onPress?: () => void;
   divider?: boolean;
@@ -25,6 +28,7 @@ export function SettingsRow({
       onPress={onPress}
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
+      {leading}
       <View className="flex-1">
         <Text className="text-[15px] leading-[1.33] font-medium">{title}</Text>
         {body ? <Text className="mt-0.5 text-caption text-ink-2">{body}</Text> : null}

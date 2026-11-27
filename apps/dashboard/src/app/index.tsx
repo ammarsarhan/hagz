@@ -1,4 +1,4 @@
-import { Redirect, router } from "expo-router";
+import { Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Animated, FlatList, I18nManager, useWindowDimensions, View } from "react-native";
@@ -8,7 +8,7 @@ import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { useTranslation } from "react-i18next";
-import { getSignedInTarget } from "@/lib/navigation";
+import { getSignedInTarget, push } from "@/lib/navigation";
 import { isRTL } from "@/lib/language";
 
 // Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
@@ -94,12 +94,12 @@ function Onboarding() {
           <Button
             label={t("common.actions.createAccount")}
             variant="inverse"
-            onPress={() => router.push("/sign-up")}
+            onPress={() => push("/sign-up")}
           />
           <Button
             label={t("common.actions.signIn")}
             variant="inverseSecondary"
-            onPress={() => router.push("/sign-in")}
+            onPress={() => push("/sign-in")}
           />
         </View>
       </SafeAreaView>

@@ -14,7 +14,9 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { HoldBar, HoldRing, ReleaseSheet } from "@/components/hold-parts";
 import { useHud } from "@/components/hud";
-import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
+import { IconBrandWhatsapp, IconDots, IconLockOpen, IconPhone, IconScan } from "@/components/icons";
+import { Button } from "@/components/button";
+import { colors } from "@/lib/colors";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { marksOutcome, MARK_WINDOW_MS, OutcomeBar } from "@/components/outcome-bar";
 import { Screen } from "@/components/screen";
@@ -32,18 +34,27 @@ import { isolate } from "@/lib/phone";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hoursSpan, relativeDay, sentenceTime } from "@/lib/when";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A booking, for staff (Figma D8, 535:2 and 530:2; its states in D17, 642:2): the code, the player
 // as the title, when and where, their phone with call and WhatsApp, the price line by line with
 // what's been paid, and how and when it was booked.
 //
 // A staff hold (D9 606:76) shows its ring running down instead, Confirm in the bar, and Let it go
-// in ⋯. Still to come on this page: the Scan a code bar.
+// in ⋯. While check-in is open, Scan a code is pinned at the bottom.
 
 type Booking = components["schemas"]["StaffBookingDetail"];
 type Event = components["schemas"]["BookingHistoryEvent"];
 
 const HOUR = 3_600_000;
+
+// Check-in is open on it now.
+const checkInOpen = (booking: Booking, now: number) =>
+  booking.checkIn !== null &&
+  now >= Date.parse(booking.checkIn.opensAt) &&
+  now < Date.parse(booking.checkIn.closesAt);
 
 // A staff hold still running.
 const held = (booking: Booking): booking is Booking & { expiresAt: string } =>
@@ -94,7 +105,7 @@ export const bookingQuery = (venueId: string, bookingId: string) => ({
   enabled: venueId !== "" && bookingId !== "",
 });
 
-export default function BookingPage() {
+function BookingPage() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -159,7 +170,6 @@ function Page({
   const { t } = useTranslation();
   const hud = useHud();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
-  const comingNext = () => hud.show(t("common.comingNext"));
   const compact = useCompactTitle();
   // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
   const [menu, setMenu] = useState(false);
@@ -259,6 +269,16 @@ function Page({
             deadline={moment(booking.expiresAt)}
             onChanged={refetch}
           />
+        ) : checkInOpen(booking, now) ? (
+          // Pinned while check-in is open (D8 535:2).
+          <View>
+            <View className="-mx-5 -mt-3 mb-3 h-px bg-border" />
+            <Button
+              label={t("screens.home.scan")}
+              icon={<IconScan size={20} color={colors.onPrimary} strokeWidth={1.75} />}
+              onPress={() => push("/scan")}
+            />
+          </View>
         ) : undefined
       }
     >
@@ -277,9 +297,11 @@ function Page({
         }
         end={
           movable ? (
+            // A hold's button opens one thing, letting it go, so it says so: an open lock, not ⋯
+            // (user, 2026-11-26).
             <RoundButton
-              icon={IconDots}
-              label={t("screens.booking.more")}
+              icon={holding ? IconLockOpen : IconDots}
+              label={holding ? t("screens.booking.hold.release") : t("screens.booking.more")}
               onPress={() => (holding ? setReleasing(true) : setMenu(true))}
             />
           ) : undefined
@@ -430,7 +452,7 @@ function Page({
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push(`/booking/${booking.id}/history`)}
+            onPress={() => push(`/booking/${booking.id}/history`)}
             hitSlop={8}
             className="mt-3 self-start active:opacity-70"
           >
@@ -462,7 +484,7 @@ function Page({
         visible={menu}
         onClose={() => setMenu(false)}
         onHidden={() => {
-          if (picked.current) router.push(`/booking/${booking.id}/${picked.current}`);
+          if (picked.current) push(`/booking/${booking.id}/${picked.current}`);
           picked.current = null;
         }}
         onPick={(action) => {
@@ -555,3 +577,5 @@ function Line({
     </View>
   );
 }
+
+export default guarded(RULES.booking, BookingPage);

@@ -41,9 +41,23 @@ export const CheckInPerson = z
   })
   .meta({ id: "CheckInPerson" });
 
+// The booking a check-in was for, as the scanner names it: "Mostafa's game · 7 – 9 pm · Pitch 1".
+export const CheckInBooking = z
+  .object({
+    bookerFirstName: z.string(),
+    startsAt: Instant,
+    endsAt: Instant,
+    timezone: z
+      .string()
+      .meta({ description: "The venue's IANA timezone.", example: "Africa/Cairo" }),
+    ground: z.string().nullable().meta({ description: "The ground's name." }),
+  })
+  .meta({ id: "CheckInBooking" });
+
 export const CheckInResult = z
   .object({
     bookingId: z.uuid(),
+    booking: CheckInBooking,
     person: CheckInPerson,
     already: z.boolean().meta({ description: "They had already checked in; nothing changed." }),
   })
@@ -68,6 +82,7 @@ export type CheckInWindow = z.infer<typeof CheckInWindow>;
 export type CheckInCode = z.infer<typeof CheckInCode>;
 export type ScanCheckIn = z.infer<typeof ScanCheckIn>;
 export type CheckInPerson = z.infer<typeof CheckInPerson>;
+export type CheckInBooking = z.infer<typeof CheckInBooking>;
 export type CheckInResult = z.infer<typeof CheckInResult>;
 export type ManualCheckIn = z.infer<typeof ManualCheckIn>;
 export type StaffCheckIn = z.infer<typeof StaffCheckIn>;

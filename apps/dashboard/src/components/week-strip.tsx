@@ -179,8 +179,19 @@ function Day({
 }
 
 // A ground filter. Picking it fades its ink fill and white words in over the outlined one, as the
-// strip's days do.
-export function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+// strip's days do. `removed`: a ground being removed, dashed and fainter, with no label (user,
+// 2026-11-27).
+export function Chip({
+  label,
+  on,
+  onPress,
+  removed = false,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  removed?: boolean;
+}) {
   const picked = useSharedValue(on ? 1 : 0);
   useEffect(() => {
     picked.value = withTiming(on ? 1 : 0, { duration: 200 });
@@ -192,13 +203,15 @@ export function Chip({ label, on, onPress }: { label: string; on: boolean; onPre
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className="h-[34px] justify-center rounded-full border border-border px-4"
+      className={`h-[34px] justify-center rounded-full border px-4 ${removed ? "border-dashed border-ink-3" : "border-border"}`}
     >
-      <Text className="text-label font-medium text-ink">{label}</Text>
+      <Text className={`text-label font-medium ${removed ? "text-ink-3" : "text-ink"}`}>
+        {label}
+      </Text>
       {/* Over the border too: an absolute child is placed inside it. */}
       <Animated.View
         pointerEvents="none"
-        className="absolute items-center justify-center rounded-full bg-ink"
+        className={`absolute items-center justify-center rounded-full ${removed ? "bg-ink-3" : "bg-ink"}`}
         style={[{ top: -1, bottom: -1, start: -1, end: -1 }, fillStyle]}
       >
         <Text className="text-label font-medium text-white">{label}</Text>

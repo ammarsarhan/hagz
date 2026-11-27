@@ -1,8 +1,8 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
@@ -30,6 +30,7 @@ import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
 import { QuietDayArt } from "@/components/quiet-day-art";
+import { HeaderButton } from "@/components/header-button";
 import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
@@ -46,6 +47,7 @@ import {
   weekOf,
   weekStartOf,
   type CalendarRow,
+  type Slot,
   type StaffBooking,
 } from "@/lib/calendar";
 import { bookingRequests } from "@/lib/booking-requests";
@@ -59,6 +61,9 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
 import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
 // strip with the picked day in an ink disc and a dot under each day with bookings, the grounds as chips, and
@@ -128,7 +133,7 @@ const REFRESHED: QueryFilters[] = [
   },
 ];
 
-export default function VenueCalendar() {
+function VenueCalendar() {
   const { t } = useTranslation();
   const hud = useHud();
   const { venue } = useCurrentVenue();
@@ -143,6 +148,14 @@ export default function VenueCalendar() {
   const today = localDateOf(now, timezone);
   // Null until a day is tapped: today, whichever day that is.
   const [picked, setPicked] = useState<string | null>(null);
+  // Opened on a day from elsewhere (Home's links): picked once, then the param is cleared so coming
+  // back to the tab later doesn't jump to it again.
+  const { date: asked } = useLocalSearchParams<{ date?: string }>();
+  useEffect(() => {
+    if (!asked || !/^\d{4}-\d{2}-\d{2}$/.test(asked)) return;
+    setPicked(asked);
+    router.setParams({ date: undefined });
+  }, [asked]);
   const day = picked ?? today;
   const [groundId, setGroundId] = useState<string | null>(null);
   const weekStart = weekStartOf(day);
@@ -189,12 +202,15 @@ export default function VenueCalendar() {
   };
 
   // The grounds in the venue's order: the slots know them all; without the schedule, the ones that
-  // have bookings this week.
+  // have bookings this week. A removed ground with bookings still ahead stays, its chip faint, until its
+  // last one ends (user, 2026-11-27).
   const grounds = useMemo(() => {
-    if (slots.data) return slots.data.grounds.map(({ id, name }) => ({ id, name }));
+    if (slots.data) {
+      return slots.data.grounds.map(({ id, name, removing }) => ({ id, name, removing }));
+    }
     const seen = new Map<string, string | null>();
     for (const booking of bookings.data ?? []) seen.set(booking.ground.id, booking.ground.name);
-    return [...seen].map(([id, name]) => ({ id, name }));
+    return [...seen].map(([id, name]) => ({ id, name, removing: false }));
   }, [slots.data, bookings.data]);
 
   const rows = useMemo(
@@ -210,14 +226,22 @@ export default function VenueCalendar() {
       }),
     [day, timezone, bookings.data, slots.data, grounds, groundId, now],
   );
+  // A day's dot means bookings on it; with a ground picked, bookings on that ground (user,
+  // 2026-11-27), so a day with none there has no dot.
   const dots = useMemo(
-    () => bookingDays([...(bookings.data ?? []), ...around, ...(pending.data ?? [])], timezone),
-    [bookings.data, around, pending.data, timezone],
+    () =>
+      bookingDays(
+        [...(bookings.data ?? []), ...around, ...(pending.data ?? [])].filter(
+          (booking) => groundId === null || booking.ground.id === groundId,
+        ),
+        timezone,
+      ),
+    [bookings.data, around, pending.data, timezone, groundId],
   );
   const requests = pending.data?.length ?? 0;
   // The inbox is for venues that approve bookings themselves; one that confirms at once still shows
   // it while a request waits (made before the switch).
-  const showsInbox = requests > 0 || autoConfirm === false;
+  const showsInbox = canSeeBookings && (requests > 0 || autoConfirm === false);
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
 
   // Until this week's bookings and its free hours are both in. A read still showing the week before
@@ -341,15 +365,30 @@ export default function VenueCalendar() {
     },
   });
 
-  const comingNext = () => hud.show(t("common.comingNext"));
+  // Free and closed times (Figma D19; user 2026-11-27): a tap or long press on one opens its own page.
+  const me = useQuery(queries.me).data;
+  const canOpen =
+    venue?.permissions.bookings === "manage" || venue?.permissions.schedule === "manage";
+  const currency = slots.data?.currency ?? "EGP";
+  const openSlots = (list: readonly Slot[]) => {
+    push({
+      pathname: "/time",
+      params: { date: day, slotIds: list.map((slot) => slot.id).join(",") },
+    });
+  };
+  const openTime = (row: CalendarRow) => {
+    if (Date.parse(row.endsAt) <= now || !canOpen) return;
+    if (row.kind === "free" || row.kind === "closed") openSlots(row.slots);
+  };
+
   // The + asks first: a new booking or a hold, opened once its sheet has slid away.
   const [adding, setAdding] = useState(false);
   const added = useRef<AddAction | null>(null);
   const holdMinutes = useQuery(bookingSettingsQuery(venueId)).data?.staffHoldMinutes ?? null;
   // A booking opens its page; free and closed times wait for their own screens.
   const openRow = (row: CalendarRow) => {
-    if (row.kind === "free" || row.kind === "closed") comingNext();
-    else router.push(`/booking/${row.booking.id}`);
+    if (row.kind === "free" || row.kind === "closed") openTime(row);
+    else push(`/booking/${row.booking.id}`);
   };
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
@@ -398,25 +437,25 @@ export default function VenueCalendar() {
           <View className="flex-1" />
           {showsInbox ? (
             <Animated.View entering={INBOX_IN} exiting={INBOX_OUT} layout={MAKE_ROOM}>
-              <RoundButton
+              <HeaderButton
                 label={
                   requests > 0
                     ? t("screens.calendar.requestsWaiting", { count: requests })
                     : t("screens.calendar.requests")
                 }
-                onPress={() => router.push("/requests")}
+                onPress={() => push("/requests")}
                 badge={requests}
               >
                 <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
-              </RoundButton>
+              </HeaderButton>
             </Animated.View>
           ) : null}
           <LayoutAnimationConfig skipEntering>
             {pastDay ? null : (
               <Animated.View entering={PLUS_IN} className="ms-2">
-                <RoundButton label={t("screens.calendar.add")} onPress={() => setAdding(true)}>
+                <HeaderButton label={t("screens.calendar.add")} onPress={() => setAdding(true)}>
                   <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
-                </RoundButton>
+                </HeaderButton>
               </Animated.View>
             )}
           </LayoutAnimationConfig>
@@ -450,6 +489,7 @@ export default function VenueCalendar() {
                 label={ground.name ?? ""}
                 on={groundId === ground.id}
                 onPress={() => setGroundId(ground.id)}
+                removed={ground.removing}
               />
             ))}
           </ScrollView>
@@ -534,7 +574,8 @@ export default function VenueCalendar() {
                       hour={group.hour}
                       timezone={timezone}
                       ground={groundsOf(row)}
-                      currency={slots.data?.currency ?? "EGP"}
+                      currency={currency}
+                      meId={me?.id}
                       onPress={() => openRow(row)}
                     />
                   ))}
@@ -554,8 +595,9 @@ export default function VenueCalendar() {
                   row={row}
                   timezone={timezone}
                   ground={groundsOf(row)}
-                  currency={slots.data?.currency ?? "EGP"}
+                  currency={currency}
                   current={index === nowRow}
+                  meId={me?.id}
                   onPress={() => openRow(row)}
                 />
               </Animated.View>
@@ -653,48 +695,13 @@ export default function VenueCalendar() {
           const action = added.current;
           added.current = null;
           if (action)
-            router.push({
+            push({
               pathname: action === "hold" ? "/hold" : "/book",
               params: { date: day, ...(groundId ? { groundId } : {}) },
             });
         }}
       />
     </View>
-  );
-}
-
-// A round grey 40 pt button by the title, with an optional red count on its corner (none at 0).
-function RoundButton({
-  label,
-  onPress,
-  badge = 0,
-  children,
-}: {
-  label: string;
-  onPress: () => void;
-  badge?: number;
-  children: ReactNode;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={4}
-      className="size-10 items-center justify-center rounded-full bg-chip active:opacity-70"
-    >
-      {children}
-      {badge > 0 ? (
-        <View
-          className="absolute h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red px-1"
-          style={{ top: -5, end: -6 }}
-        >
-          <Text className="text-[11px] leading-[14px] font-semibold text-white">
-            {badge > 99 ? "99+" : badge}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
   );
 }
 
@@ -730,6 +737,7 @@ function Row({
   ground,
   currency,
   current = false,
+  meId,
   onPress,
 }: {
   row: CalendarRow;
@@ -740,8 +748,10 @@ function Row({
   timezone: string;
   ground: string;
   currency: string;
-  // The row under way now: its hours column in baby blue.
+  // The row under way now: its hours in blue.
   current?: boolean;
+  // Who's signed in, so hours they closed say "Closed by you".
+  meId?: string;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
@@ -750,7 +760,11 @@ function Row({
   const timing = hour === undefined ? null : timingIn(row, hour, timezone, t);
   const title =
     row.kind === "closed"
-      ? t("screens.calendar.closed")
+      ? row.closed?.staffId && row.closed.staffId === meId
+        ? t("screens.calendar.closedByYou")
+        : row.closed?.by
+          ? t("screens.calendar.closedBy", { name: row.closed.by })
+          : t("screens.calendar.closed")
       : row.kind === "free"
         ? t("screens.calendar.free")
         : row.booking.customer.name;
@@ -765,6 +779,8 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      // A long press on a free or closed time opens its page, as a tap does.
+      onLongPress={row.kind === "free" || row.kind === "closed" ? onPress : undefined}
       // 64 at least, the bar its full height. The padding is inside, around the words: 4 pt, or 12
       // when the grounds run onto another line (three lines in all), so the row and its bar grow
       // with them (user: padding, not a gap between rows).
@@ -773,20 +789,19 @@ function Row({
     >
       {hour === undefined ? (
         // Pulled out by its padding, so the hours line up with the other rows' either way.
-        <View className={`-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1 ${current ? NOW_TINT : ""}`}>
+        // The row under way: just its hours in blue, no tint behind (user, 2026-11-26).
+        <View className="-ms-2 me-1 w-16 rounded-lg py-1 ps-2 pe-1">
           <Text
-            className={`leading-5 ${current ? `text-label font-semibold ${NOW_TEXT}` : `text-body ${ended ? "text-ink-3" : "font-semibold"}`}`}
+            className={`text-body leading-5 ${current ? `font-semibold ${NOW_TEXT}` : ended ? "text-ink-3" : "font-semibold"}`}
             numberOfLines={1}
           >
             {hourLabel(row.startsAt, timezone, t)}
           </Text>
-          <Text
-            className={`leading-[13px] ${current ? `text-[10px] ${NOW_TEXT}` : "text-[11px] text-ink-3"}`}
-          >
+          <Text className={`text-[11px] leading-[13px] ${current ? NOW_TEXT : "text-ink-3"}`}>
             {t("screens.calendar.to")}
           </Text>
           <Text
-            className={`leading-[17px] ${current ? `text-[12px] ${NOW_TEXT}` : "text-caption text-ink-3"}`}
+            className={`text-caption leading-[17px] ${current ? NOW_TEXT : "text-ink-3"}`}
             numberOfLines={1}
           >
             {hourLabel(row.endsAt, timezone, t)}
@@ -856,7 +871,8 @@ const priced = (minor: number, currency: string) =>
   `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
 
 const standing = (row: CalendarRow, timezone: string, currency: string, t: T): string[] => {
-  if (row.kind === "closed") return [];
+  // Its note for the team, when it has one.
+  if (row.kind === "closed") return row.closed?.note ? [row.closed.note] : [];
   if (row.kind === "free")
     return row.ended
       ? []
@@ -888,3 +904,5 @@ const standing = (row: CalendarRow, timezone: string, currency: string, t: T): s
     price,
   ];
 };
+
+export default guarded(RULES.calendar, VenueCalendar, { tabbed: true });

@@ -42,6 +42,7 @@ import {
 } from "./access";
 import { presentStaffVenue, staffVenueSelect } from "./members";
 import { staffManagersOf } from "./staff-managers";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // Staff join a venue only by invitation (decided 2026-10-24). A member who manages staff enters a phone
 // number and the permissions to give; the invitee gets a WhatsApp message with a link that opens the
@@ -406,7 +407,7 @@ const presentReceived = async (
         select: { staff: { select: { name: true } } },
       },
       _count: {
-        select: { memberships: true, grounds: { where: { status: { not: "DELETED" } } } },
+        select: { memberships: true, grounds: { where: { status: { notIn: [...GONE_GROUNDS] } } } },
       },
     },
   });

@@ -14,6 +14,8 @@ import {
   StaffBookingDetail,
   StaffBookingList,
   StaffBookingsQuery,
+  StaffHome,
+  StaffHomeQuery,
   SwapBookings,
   SwappedBookings,
 } from "@hagz/contracts";
@@ -58,6 +60,23 @@ export const listBookings = createRoute({
   request: { params: venueParams, query: StaffBookingsQuery },
   responses: {
     200: { description: "The bookings", ...json(StaffBookingList) },
+    ...common,
+    404: notFound,
+  },
+});
+
+export const home = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/home",
+  tags,
+  summary: "The Home tab: what needs you on a day",
+  description:
+    "Requests, holds, games to mark and regulars' weeks waiting (today: all that wait; a later day: its own), cash still to take (with `payments: view`), then the next games and open hours.",
+  middleware: [requireStaff, requireVenueAccess("bookings", "view")] as const,
+  security,
+  request: { params: venueParams, query: StaffHomeQuery },
+  responses: {
+    200: { description: "The day", ...json(StaffHome) },
     ...common,
     404: notFound,
   },

@@ -5,7 +5,6 @@ import {
   updateVenueCustomer,
   venueCustomerDetail,
 } from "../application/customer-list";
-import { bookingSettings, updateBookingSettings } from "../application/booking-settings";
 import * as route from "./definitions/customers";
 
 export const venuesCustomerRoutes = createRouter()
@@ -23,8 +22,4 @@ export const venuesCustomerRoutes = createRouter()
       await updateVenueCustomer(c.var.venue, c.req.valid("param").customerId, c.req.valid("json")),
       200,
     ),
-  )
-  .openapi(route.getBookingSettings, async (c) => c.json(await bookingSettings(c.var.venue), 200))
-  .openapi(route.updateBookingSettings, async (c) =>
-    c.json(await updateBookingSettings(c.var.venue, c.req.valid("json")), 200),
   );

@@ -9,6 +9,7 @@ import {
 } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Language } from "@/generated/prisma/enums";
+import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import { enqueueGeneration } from "./slot-generation";
 import { transaction, type Tx } from "@/platform/db/transaction";
@@ -28,8 +29,10 @@ import {
   tiersIn,
   toStoredHours,
   type GroundFields,
+  GONE_GROUNDS,
 } from "../domain/grounds";
 import { nameIn } from "../domain/names";
+import { desiredSlots, generationWindow } from "../domain/slots";
 import type { VenueAccess } from "./access";
 import { lockForEdit } from "./venue-edit";
 import { afterFootprintChange } from "./layout-hooks";
@@ -101,9 +104,14 @@ const present = (row: Row, language: Language): Ground => ({
   ),
 });
 
-export const listGrounds = async (venueId: string, language: Language): Promise<Ground[]> => {
+// The venue's grounds; with `removing`, also those removed with bookings still ahead (the calendar).
+export const listGrounds = async (
+  venueId: string,
+  language: Language,
+  { removing = false }: { removing?: boolean } = {},
+): Promise<Ground[]> => {
   const rows = await prisma.ground.findMany({
-    where: { venueId, status: { not: "DELETED" } },
+    where: { venueId, status: removing ? { not: "DELETED" } : { notIn: [...GONE_GROUNDS] } },
     orderBy: [{ position: "asc" }, { id: "asc" }],
     select,
   });
@@ -112,7 +120,7 @@ export const listGrounds = async (venueId: string, language: Language): Promise<
 
 const findGround = async (tx: Tx, venueId: string, groundId: string) => {
   const ground = await tx.ground.findFirst({
-    where: { id: groundId, venueId, status: { not: "DELETED" } },
+    where: { id: groundId, venueId, status: { notIn: [...GONE_GROUNDS] } },
     select,
   });
   if (!ground) throw groundNotFound();
@@ -142,7 +150,7 @@ export const createGround = async (
   const id = await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const count = await tx.ground.count({
-      where: { venueId: actor.venueId, status: { not: "DELETED" } },
+      where: { venueId: actor.venueId, status: { notIn: [...GONE_GROUNDS] } },
     });
     if (count >= MAXIMUM_GROUNDS) throw groundLimitReached();
     const last = await tx.ground.findFirst({
@@ -253,18 +261,77 @@ export const updateGround = async (
   return present(updated, language);
 };
 
+// Removing a ground (user, 2026-11-27): with nothing booked ahead it's gone at once; with bookings
+// still to come it's REMOVING: closed to new bookings, moves and regulars (they all need an ACTIVE
+// ground), gone from the venue, its layout and its public page, but kept on staff's calendar,
+// marked removed, until finishRemovals sees its last booking end. Either way its free and blocked
+// slots go now, and past bookings keep naming it.
+//
+// What's booked on it is seen to first (user, 2026-11-27), as when hours close: requests waiting
+// on it are declined, and its regulars let their waiting weeks go and end after their last
+// confirmed one. That's bookings' business, and bookings reads venues, so the composition root
+// hands its hook over (http/router.ts). Without one, removing is refused rather than leave them
+// waiting on a ground that's going.
+type RemovalHook = (tx: Tx, actor: VenueAccess, groundId: string, now: Date) => Promise<void>;
+let onRemove: RemovalHook | undefined;
+
+export const whenGroundRemoved = (hook: RemovalHook) => {
+  onRemove = hook;
+};
+
 export const removeGround = async (actor: VenueAccess, groundId: string) => {
+  const now = new Date();
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const row = await findGround(tx, actor.venueId, groundId);
     if (row.status === "ACTIVE") await refuseLastActive(tx, actor.venueId, groundId);
-    await tx.ground.update({ where: { id: groundId }, data: { status: "DELETED" } });
-    // A deleted ground leaves the layout (docs: layout rules).
+    if (!onRemove) throw new Error("No ground removal hook: http/router.ts sets one.");
+    await onRemove(tx, actor, groundId, now);
+    const ahead = await bookedAhead(tx, groundId, now);
+    await tx.ground.update({
+      where: { id: groundId },
+      data: { status: ahead ? "REMOVING" : "DELETED" },
+    });
+    await tx.groundSlot.deleteMany({
+      where: { groundId, bookingId: null, endsAt: { gt: now } },
+    });
+    // A removed ground leaves the layout (docs: layout rules).
     await tx.venueLayoutItem.deleteMany({ where: { groundId } });
-    await event(tx, actor, GROUND_REMOVED, { groundId });
+    await event(tx, actor, GROUND_REMOVED, { groundId, bookingsAhead: ahead });
   });
-  // Its free slots go.
+  // Generation marks it as having nothing to generate.
   await enqueueGeneration([groundId]);
+};
+
+// Whether any booking or hold still holds one of its slots ahead.
+const bookedAhead = async (tx: Tx, groundId: string, now: Date) =>
+  (await tx.groundSlot.count({
+    where: { groundId, bookingId: { not: null }, endsAt: { gt: now } },
+  })) > 0;
+
+// The removal job (every five minutes with the slot checks): a REMOVING ground whose last booking
+// has ended (or moved away, or been cancelled) is DELETED. Says how many.
+export const finishRemovals = async (clock: Clock = systemClock): Promise<{ finished: number }> => {
+  const now = clock.now();
+  const removing = await prisma.ground.findMany({
+    where: { status: "REMOVING" },
+    select: { id: true },
+  });
+  let finished = 0;
+  for (const { id } of removing) {
+    const done = await transaction(async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Ground" WHERE id = ${id}::uuid AND status = 'REMOVING' FOR UPDATE`;
+      if (locked.length === 0 || (await bookedAhead(tx, id, now))) return false;
+      await tx.ground.update({ where: { id }, data: { status: "DELETED" } });
+      await tx.groundSlot.deleteMany({
+        where: { groundId: id, bookingId: null, endsAt: { gt: now } },
+      });
+      return true;
+    });
+    if (done) finished += 1;
+  }
+  return { finished };
 };
 
 export const reorderGrounds = async (
@@ -276,7 +343,7 @@ export const reorderGrounds = async (
     await lockForEdit(tx, actor.venueId, "operations");
     const current = (
       await tx.ground.findMany({
-        where: { venueId: actor.venueId, status: { not: "DELETED" } },
+        where: { venueId: actor.venueId, status: { notIn: [...GONE_GROUNDS] } },
         orderBy: [{ position: "asc" }, { id: "asc" }],
         select: { id: true },
       })
@@ -302,7 +369,7 @@ export const reorderGrounds = async (
 
 export const groundSchedule = async (venueId: string, groundId: string): Promise<WeekSchedule> => {
   const ground = await prisma.ground.findFirst({
-    where: { id: groundId, venueId, status: { not: "DELETED" } },
+    where: { id: groundId, venueId, status: { notIn: [...GONE_GROUNDS] } },
     select: {
       schedules: { orderBy: { dayOfWeek: "asc" }, select: { dayOfWeek: true, hours: true } },
     },
@@ -322,6 +389,36 @@ const writeSchedule = async (tx: Tx, groundId: string, week: WeekSchedule) => {
   await bumpSchedule(tx, groundId);
 };
 
+// New hours that close some reach what's booked in them (user, 2026-11-27): waiting requests there
+// are declined, and regulars whose weekly time closes end after the weeks already reserved. That's
+// bookings' business, and bookings reads venues, so the composition root hands its hook over
+// (http/router.ts); it runs in the save's transaction with the hours the ground now has. Without
+// one, saving is refused rather than leave requests waiting in closed hours.
+type HoursHook = (
+  tx: Tx,
+  actor: VenueAccess,
+  groundId: string,
+  open: Set<number>,
+  now: Date,
+) => Promise<void>;
+let hoursChanged: HoursHook | undefined;
+
+export const whenHoursChange = (hook: HoursHook) => {
+  hoursChanged = hook;
+};
+
+const afterHours = async (tx: Tx, actor: VenueAccess, groundId: string, week: WeekSchedule) => {
+  if (!hoursChanged) throw new Error("No hours hook: http/router.ts sets one.");
+  const now = new Date();
+  await hoursChanged(
+    tx,
+    actor,
+    groundId,
+    await startsUnder(actor.venueId, groundId, week, now, tx),
+    now,
+  );
+};
+
 export const putSchedule = async (actor: VenueAccess, groundId: string, week: WeekSchedule) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
@@ -329,6 +426,7 @@ export const putSchedule = async (actor: VenueAccess, groundId: string, week: We
     checkScheduleAgainstPrices(week.days, ground);
     const previous = ground.schedules.length;
     await writeSchedule(tx, groundId, week);
+    await afterHours(tx, actor, groundId, week);
     await event(tx, actor, GROUND_SCHEDULE_CHANGED, {
       groundId,
       previousOpenDays: previous,
@@ -337,6 +435,34 @@ export const putSchedule = async (actor: VenueAccess, groundId: string, week: We
   });
   await enqueueGeneration([groundId]);
   return groundSchedule(actor.venueId, groundId);
+};
+
+// The hours a ground would be open under `week`, from now to the slot horizon, as start instants,
+// for bookings' schedule preview: what a change would leave behind, before it's saved.
+export const startsUnder = async (
+  venueId: string,
+  groundId: string,
+  week: WeekSchedule,
+  now: Date,
+  db: Tx | typeof prisma = prisma,
+): Promise<Set<number>> => {
+  const ground = await db.ground.findFirst({
+    where: { id: groundId, venueId, status: { notIn: [...GONE_GROUNDS] } },
+    select: {
+      basePrice: true,
+      peakPrice: true,
+      discountPrice: true,
+      venue: { select: { marketplace: { select: { timezone: true } } } },
+    },
+  });
+  if (!ground) throw groundNotFound();
+  const slots = desiredSlots({
+    schedule: week.days,
+    prices: ground,
+    timezone: ground.venue.marketplace.timezone,
+    ...generationWindow(now),
+  });
+  return new Set(slots.map((slot) => slot.startsAt.getTime()));
 };
 
 // Copies the hours and their tiers; each ground keeps its own prices, so each must have the prices
@@ -362,6 +488,7 @@ export const copySchedule = async (actor: VenueAccess, groundId: string, input: 
         throw error;
       }
       await writeSchedule(tx, targetId, week);
+      await afterHours(tx, actor, targetId, week);
     }
     await event(tx, actor, GROUND_SCHEDULE_COPIED, { from: groundId, to: targets });
     return targets;
