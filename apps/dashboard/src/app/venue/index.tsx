@@ -12,7 +12,11 @@ import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
 import { useHud } from "@/components/hud";
 import {
+  IconBallFootball,
   IconBell,
+  IconCalendar,
+  IconCircleCheck,
+  IconWallet,
   IconCash,
   IconCheck,
   IconHourglass,
@@ -186,35 +190,27 @@ export default function VenueHome() {
 function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number }) {
   const { t } = useTranslation();
   const { timezone } = home;
-  const cards = useCards(home);
+  const cards = useCards(home, isToday);
   const openCalendar = () => router.navigate("/venue/calendar");
 
   return (
     <View>
-      {cards.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -20, marginTop: 16 }}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-        >
-          {cards.map((card) => (
-            <Card
-              key={card.key}
-              icon={card.icon}
-              big={card.big}
-              small={card.small}
-              onPress={card.onPress}
-            />
-          ))}
-        </ScrollView>
-      ) : (
-        <Notice
-          icon={IconCheck}
-          title={t("screens.home.caughtUp")}
-          body={t("screens.home.caughtUpBody")}
-        />
-      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginHorizontal: -20, marginTop: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+      >
+        {cards.map((card) => (
+          <Card
+            key={card.key}
+            icon={card.icon}
+            big={card.big}
+            small={card.small}
+            onPress={card.onPress}
+          />
+        ))}
+      </ScrollView>
 
       <Heading
         title={t(isToday ? "screens.home.nextUp" : "screens.home.firstUp")}
@@ -264,7 +260,7 @@ interface CardProps {
 
 // The cards in the order things run out: requests, holds, games to mark, cash, weeks to confirm.
 // With one booking behind a card it opens that booking; with more, the list or the Calendar.
-function useCards(home: Home): CardProps[] {
+function useCards(home: Home, isToday: boolean): CardProps[] {
   const { t } = useTranslation();
   return useMemo(() => {
     const cards: CardProps[] = [];
@@ -314,8 +310,59 @@ function useCards(home: Home): CardProps[] {
         small: t("screens.home.weeks", { count: weeks.count }),
         onPress: booking(weeks.bookingId, () => push("/regulars")),
       });
+
+    // Then the day at a glance, always there, so the row is never empty: its games, how full it
+    // is, today's check-ins so far, and (seeing payments) what it comes to.
+    const { games, booked, checkIns, takings } = home;
+    cards.push({
+      key: "games",
+      icon: IconBallFootball,
+      big: String(games.count),
+      small:
+        games.count === 0
+          ? t(isToday ? "screens.home.gamesNoneToday" : "screens.home.gamesNone")
+          : games.next
+            ? t(isToday ? "screens.home.gamesNext" : "screens.home.gamesFirst", {
+                count: games.count,
+                time: sentenceTime(games.next, timezone, t),
+              })
+            : t("screens.home.gamesStarted", { count: games.count }),
+      onPress: calendar,
+    });
+    cards.push({
+      key: "booked",
+      icon: IconCalendar,
+      big: booked.open === 0 ? "–" : `${Math.round((booked.booked / booked.open) * 100)}%`,
+      small:
+        booked.open === 0
+          ? t("screens.home.noHours")
+          : t(isToday ? "screens.home.bookedToday" : "screens.home.bookedTomorrow"),
+      onPress: calendar,
+    });
+    if (checkIns)
+      cards.push({
+        key: "checkIns",
+        icon: IconCircleCheck,
+        big:
+          checkIns.started === 0
+            ? "0"
+            : t("screens.home.checkedInOf", {
+                checkedIn: checkIns.checkedIn,
+                started: checkIns.started,
+              }),
+        small: t("screens.home.checkedIn"),
+        onPress: calendar,
+      });
+    if (takings)
+      cards.push({
+        key: "takings",
+        icon: IconWallet,
+        big: money(takings.amount, takings.currency),
+        small: t(isToday ? "screens.home.takingsToday" : "screens.home.takingsTomorrow"),
+        onPress: () => router.navigate("/venue/payments"),
+      });
     return cards;
-  }, [home, t]);
+  }, [home, isToday, t]);
 }
 
 // A large grey card: its icon in a white disc, the count, what it counts.
@@ -339,21 +386,6 @@ function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
         </Text>
       </View>
     </Pressable>
-  );
-}
-
-// One quiet row in a grey disc: caught up.
-function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; body: string }) {
-  return (
-    <View className="mt-6 flex-row items-center">
-      <View className="size-10 items-center justify-center rounded-full bg-chip">
-        <NoticeIcon size={18} color={colors.ink} strokeWidth={1.75} />
-      </View>
-      <View className="ms-3.5 flex-1">
-        <Text className="text-subtitle font-medium">{title}</Text>
-        <Text className="mt-0.5 text-label text-ink-2">{body}</Text>
-      </View>
-    </View>
   );
 }
 
