@@ -3,11 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
 import type { ComponentType } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, Easing, Pressable, ScrollView, View } from "react-native";
+import Reanimated, {
+  Easing as ReEasing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone } from "@/components/bone";
+import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { HeaderButton } from "@/components/header-button";
 import { useHud } from "@/components/hud";
@@ -105,7 +112,12 @@ export default function VenueHome() {
   // The paused banner scrolls away first: as far as it's tall, the header and everything under it
   // rise with it (the content shifted back, so it still follows the finger), then the page scrolls
   // on as usual under the header in its place.
-  const scrollY = useRef(new Animated.Value(0)).current;
+  // Scrolled like the other tabs (user, 2026-11-27): the title row, with its scan and bell, goes up
+  // with the page, the pinned bar then says "Home" small, and scanning moves to a round button
+  // floating over the bottom corner.
+  const sections = useSectionTitle();
+  const scrollY = sections.scrollY;
+  const scrolledPast = sections.current.label !== null;
   const [, setGone] = useState(0);
   const banner = venue?.status === "MAINTENANCE" && !dismissedPauses.has(venueId);
   const [bannerHeight, setBannerHeight] = useState(0);
@@ -126,6 +138,29 @@ export default function VenueHome() {
   });
   const down = Animated.multiply(up, -1);
 
+  const header = (
+    <View className="h-10 flex-row items-center">
+      <Text
+        accessibilityRole="header"
+        className="flex-1 text-title font-semibold tracking-[-0.4px]"
+        numberOfLines={1}
+      >
+        {t("screens.home.title")}
+      </Text>
+      <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
+        <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
+      </HeaderButton>
+      <View className="ms-2">
+        <HeaderButton
+          label={t("screens.home.notifications")}
+          onPress={() => push("/notifications")}
+        >
+          <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
+        </HeaderButton>
+      </View>
+    </View>
+  );
+
   return (
     <Screen tabbed>
       {banner ? (
@@ -141,59 +176,90 @@ export default function VenueHome() {
         />
       ) : null}
       <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
-        {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons,
-            and 12 pt under them before the scroll's hairline once scrolled. */}
-        <View className="mt-[13px] mb-3 h-10 flex-row items-center">
-          <Text
-            accessibilityRole="header"
-            className="flex-1 text-title font-semibold tracking-[-0.4px]"
-            numberOfLines={1}
-          >
-            {t("screens.home.title")}
-          </Text>
-          <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
-            <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
-          </HeaderButton>
-          <View className="ms-2">
-            <HeaderButton
-              label={t("screens.home.notifications")}
-              onPress={() => push("/notifications")}
-            >
-              <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
-            </HeaderButton>
-          </View>
-        </View>
-
         {canSee ? (
-          <FadingScroll scrollY={scrollY} onRoom={setRoom}>
-            <Animated.View style={{ transform: [{ translateY: down }] }}>
-              {/* Up by what the header's 12 pt adds over 8, so at rest the chips sit where they
-                  did; only scrolled does the header keep the extra room. */}
-              <View className="-mt-1 flex-row gap-2">
-                <Chip
-                  label={t("screens.home.today")}
-                  on={!tomorrow}
-                  onPress={() => setTomorrow(false)}
-                />
-                <Chip
-                  label={t("screens.home.tomorrow")}
-                  on={tomorrow}
-                  onPress={() => setTomorrow(true)}
-                />
-              </View>
-              {home.data ? (
-                <Day home={home.data} date={date} isToday={!tomorrow} now={now} />
-              ) : (
-                <Loading />
-              )}
-            </Animated.View>
-            {/* Room for the shift above, so the end can still be reached. */}
-            <View style={{ height: lift }} />
-          </FadingScroll>
-        ) : null}
+          <PinnedTitle sections={sections}>
+            {/* A hairline under the bar, not a fade. */}
+            <FadingScroll scrollY={scrollY} topLine={false} onRoom={setRoom}>
+              <Animated.View style={{ transform: [{ translateY: down }] }}>
+                <View className="mb-2" onLayout={sections.onLayout(t("screens.home.title"))}>
+                  {header}
+                </View>
+                <View className="flex-row gap-2">
+                  <Chip
+                    label={t("screens.home.today")}
+                    on={!tomorrow}
+                    onPress={() => setTomorrow(false)}
+                  />
+                  <Chip
+                    label={t("screens.home.tomorrow")}
+                    on={tomorrow}
+                    onPress={() => setTomorrow(true)}
+                  />
+                </View>
+                {home.data ? (
+                  <Day home={home.data} date={date} isToday={!tomorrow} now={now} />
+                ) : (
+                  <Loading />
+                )}
+              </Animated.View>
+              {/* Room for the shift above, so the end can still be reached. */}
+              <View style={{ height: lift }} />
+            </FadingScroll>
+          </PinnedTitle>
+        ) : (
+          <View className="mt-[13px]">{header}</View>
+        )}
       </Animated.View>
+      {canSee ? (
+        <ScanButton shown={scrolledPast} label={t("screens.home.scan")} onPress={comingNext} />
+      ) : null}
       {invitation.sheet}
     </Screen>
+  );
+}
+
+// Scanning, once the title row's button has scrolled away: a round blue button over the bottom
+// corner, fading in and out with it.
+function ScanButton({
+  shown,
+  label,
+  onPress,
+}: {
+  shown: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  const opacity = useSharedValue(0);
+  useEffect(() => {
+    opacity.value = withTiming(shown ? 1 : 0, {
+      duration: 200,
+      easing: ReEasing.out(ReEasing.cubic),
+    });
+  }, [shown, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Reanimated.View
+      pointerEvents={shown ? "auto" : "none"}
+      className="absolute end-5 bottom-4"
+      style={style}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityElementsHidden={!shown}
+        onPress={onPress}
+        className="size-14 items-center justify-center rounded-full bg-primary active:opacity-80"
+        style={{
+          shadowColor: "#000",
+          shadowOpacity: 0.16,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+        }}
+      >
+        <IconScan size={24} color={colors.onPrimary} strokeWidth={1.75} />
+      </Pressable>
+    </Reanimated.View>
   );
 }
 
