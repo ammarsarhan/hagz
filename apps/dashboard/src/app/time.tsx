@@ -209,10 +209,7 @@ export default function TimePage() {
         }
       />
       <FadingScroll scrollY={compact.scrollY}>
-        <Text
-          className="text-label font-medium tracking-[0.4px]"
-          onLayout={compact.onTitleLayout}
-        >
+        <Text className="text-label font-medium tracking-[0.4px]" onLayout={compact.onTitleLayout}>
           {status}
         </Text>
         <Text
