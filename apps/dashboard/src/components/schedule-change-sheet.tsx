@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import type { components } from "@hagz/api";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
@@ -60,7 +60,7 @@ const regularStep = (t: TFunction, regular: SchedulePreview["regulars"][number])
 // sheet with what follows on the step rail, as deleting a ground: waiting requests in those hours
 // are declined, bookings in them go ahead, regulars whose time closes keep their reserved weeks and
 // end after the last, then new bookings follow the new hours. Cancel and Save side by side; Save
-// asks once more, natively and briefly.
+// saves, with no second alert (user, 2026-11-27).
 export function ScheduleChangeSheet({
   title,
   copying = false,
@@ -108,12 +108,6 @@ export function ScheduleChangeSheet({
     { label: t(`${c}.after`), detail: t(`${c}.afterBody`), when: "", state: "next" },
   ];
 
-  const ask = () =>
-    Alert.alert(t(copying ? `${c}.copyAlertTitle` : `${c}.alertTitle`), t(`${c}.alertBody`), [
-      { text: t(`${c}.cancel`), style: "cancel" },
-      { text: t(copying ? `${c}.copyConfirm` : `${c}.confirm`), onPress: onConfirm },
-    ]);
-
   return (
     <Sheet
       visible={visible}
@@ -130,7 +124,11 @@ export function ScheduleChangeSheet({
           <Button label={t(`${c}.cancel`)} variant="secondary" compact onPress={onClose} />
         </View>
         <View className="flex-1">
-          <Button label={t(copying ? `${c}.copyConfirm` : `${c}.confirm`)} compact onPress={ask} />
+          <Button
+            label={t(copying ? `${c}.copyConfirm` : `${c}.confirm`)}
+            compact
+            onPress={onConfirm}
+          />
         </View>
       </View>
     </Sheet>
