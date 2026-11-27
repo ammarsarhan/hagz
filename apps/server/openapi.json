@@ -6080,13 +6080,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -6290,13 +6295,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -10759,13 +10769,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {
@@ -10900,13 +10915,18 @@
               },
               "size": {
                 "$ref": "#/components/schemas/GroundSize"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Staff deleted it: gone, or still on their calendar until its last booking ends."
               }
             },
             "required": [
               "id",
               "name",
               "sport",
-              "size"
+              "size",
+              "deleted"
             ]
           },
           "customer": {

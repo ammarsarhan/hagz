@@ -19397,6 +19397,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 name: string;
@@ -19467,6 +19469,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 /** Format: uuid */
@@ -20906,6 +20910,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 name: string;
@@ -20948,6 +20954,8 @@ export interface components {
                 name: string | null;
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
+                /** @description Staff deleted it: gone, or still on their calendar until its last booking ends. */
+                deleted: boolean;
             };
             customer: {
                 /** Format: uuid */
