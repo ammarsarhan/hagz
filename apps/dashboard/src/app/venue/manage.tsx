@@ -22,6 +22,7 @@ import { VenuePauseSheet } from "@/components/venue-pause-sheet";
 import { isRTL } from "@/lib/language";
 import { fetched, queries } from "@/lib/queries";
 import { regularsQuery } from "@/lib/regulars";
+import { invitationsQuery, membersQuery } from "@/lib/team";
 import { paymentLabel } from "@/lib/settings";
 import { push } from "@/lib/navigation";
 
@@ -52,26 +53,8 @@ export default function VenueTab() {
   const detail = useQuery({ ...queries.venue(venueId), enabled: can("venue") });
   // Regulars are read with bookings: view, as the API asks.
   const regulars = useQuery({ ...regularsQuery(venueId), enabled: can("bookings") });
-  const members = useQuery({
-    queryKey: ["staff", "venues", venueId, "members"],
-    queryFn: async () =>
-      (
-        await fetched(
-          api.GET("/v1/staff/venues/{venueId}/members", { params: { path: { venueId } } }),
-        )
-      ).data,
-    enabled: can("staff"),
-  });
-  const invited = useQuery({
-    queryKey: ["staff", "venues", venueId, "invitations"],
-    queryFn: async () =>
-      (
-        await fetched(
-          api.GET("/v1/staff/venues/{venueId}/invitations", { params: { path: { venueId } } }),
-        )
-      ).data,
-    enabled: can("staff"),
-  });
+  const members = useQuery({ ...membersQuery(venueId), enabled: can("staff") });
+  const invited = useQuery({ ...invitationsQuery(venueId), enabled: can("staff") });
 
   // The bar pinned above the scroll: each section's name once its heading goes under.
   const sections = useSectionTitle();
@@ -124,7 +107,12 @@ export default function VenueTab() {
         : t(`${v}.regularsBody`),
       onPress: () => push("/regulars"),
     },
-    can("staff") && { key: "team", title: t(`${v}.team`), body: team, onPress: comingNext },
+    can("staff") && {
+      key: "team",
+      title: t(`${v}.team`),
+      body: team,
+      onPress: () => push("/team"),
+    },
   ];
   const place = [
     can("venue") && {
