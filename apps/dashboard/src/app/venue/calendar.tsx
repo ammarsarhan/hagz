@@ -29,6 +29,7 @@ import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
 import { OfflineArt } from "@/components/offline-art";
 import { QuietDayArt } from "@/components/quiet-day-art";
+import { HeaderButton } from "@/components/header-button";
 import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
@@ -427,7 +428,7 @@ function VenueCalendar() {
           <View className="flex-1" />
           {showsInbox ? (
             <Animated.View entering={INBOX_IN} exiting={INBOX_OUT} layout={MAKE_ROOM}>
-              <RoundButton
+              <HeaderButton
                 label={
                   requests > 0
                     ? t("screens.calendar.requestsWaiting", { count: requests })
@@ -437,15 +438,15 @@ function VenueCalendar() {
                 badge={requests}
               >
                 <IconInbox size={20} color={colors.ink} strokeWidth={1.75} />
-              </RoundButton>
+              </HeaderButton>
             </Animated.View>
           ) : null}
           <LayoutAnimationConfig skipEntering>
             {pastDay ? null : (
               <Animated.View entering={PLUS_IN} className="ms-2">
-                <RoundButton label={t("screens.calendar.add")} onPress={() => setAdding(true)}>
+                <HeaderButton label={t("screens.calendar.add")} onPress={() => setAdding(true)}>
                   <IconPlus size={20} color={colors.ink} strokeWidth={1.75} />
-                </RoundButton>
+                </HeaderButton>
               </Animated.View>
             )}
           </LayoutAnimationConfig>
@@ -692,41 +693,6 @@ function VenueCalendar() {
         }}
       />
     </View>
-  );
-}
-
-// A round grey 40 pt button by the title, with an optional red count on its corner (none at 0).
-function RoundButton({
-  label,
-  onPress,
-  badge = 0,
-  children,
-}: {
-  label: string;
-  onPress: () => void;
-  badge?: number;
-  children: ReactNode;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={4}
-      className="size-10 items-center justify-center rounded-full bg-chip active:opacity-70"
-    >
-      {children}
-      {badge > 0 ? (
-        <View
-          className="absolute h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red px-1"
-          style={{ top: -5, end: -6 }}
-        >
-          <Text className="text-[11px] leading-[14px] font-semibold text-white">
-            {badge > 99 ? "99+" : badge}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
   );
 }
 
