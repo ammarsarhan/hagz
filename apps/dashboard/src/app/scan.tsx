@@ -254,7 +254,8 @@ function Corners() {
     <>
       {(["top", "bottom"] as const).map((y) =>
         (["left", "right"] as const).map((x) => (
-          <View key={`${y}${x}`}>
+          // Each corner's box fills the frame, so `bottom: 0` is the frame's bottom.
+          <View key={`${y}${x}`} style={StyleSheet.absoluteFill}>
             <View className={bar} style={{ [y]: 0, [x]: 2, width: CORNER, height: LINE }} />
             <View className={bar} style={{ [y]: 2, [x]: 0, width: LINE, height: CORNER }} />
           </View>
