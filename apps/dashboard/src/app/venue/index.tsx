@@ -181,7 +181,11 @@ export default function VenueHome() {
                   onPress={() => setTomorrow(true)}
                 />
               </View>
-              {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
+              {home.data ? (
+                <Day home={home.data} date={date} isToday={!tomorrow} now={now} />
+              ) : (
+                <Loading />
+              )}
             </Animated.View>
             {/* Room for the shift above, so the end can still be reached. */}
             <View style={{ height: lift }} />
@@ -193,11 +197,32 @@ export default function VenueHome() {
   );
 }
 
-function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number }) {
+function Day({
+  home,
+  date,
+  isToday,
+  now,
+}: {
+  home: Home;
+  date: string;
+  isToday: boolean;
+  now: number;
+}) {
   const { t } = useTranslation();
   const { timezone } = home;
-  const cards = useCards(home, isToday);
-  const openCalendar = () => router.navigate("/venue/calendar");
+  const cards = useCards(home, date, isToday);
+  const openCalendar = () => calendarOn(date);
+  const { venue } = useCurrentVenue();
+  // A free time opens its own page, as from the Calendar, for those who can act on it.
+  const canOpenTime =
+    venue?.permissions.bookings === "manage" || venue?.permissions.schedule === "manage";
+  const openRun = (run: Home["free"][number]) =>
+    canOpenTime
+      ? push({
+          pathname: "/time",
+          params: { date: localDateOf(run.startsAt, timezone), slotIds: run.slotIds.join(",") },
+        })
+      : openCalendar();
 
   return (
     <View>
@@ -248,7 +273,7 @@ function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number
               title={run.groundName ?? ""}
               line={hoursSpan(run.startsAt, run.endsAt, timezone, t)}
               amount={money(run.price, run.currency)}
-              onPress={openCalendar}
+              onPress={() => openRun(run)}
             />
           ))}
         </>
@@ -256,6 +281,10 @@ function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number
     </View>
   );
 }
+
+// The Calendar tab, on the day Home is showing.
+const calendarOn = (date: string) =>
+  router.navigate({ pathname: "/venue/calendar", params: { date } });
 
 const money = (minor: number, currency: string) =>
   `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
@@ -270,13 +299,13 @@ interface CardProps {
 
 // The cards in the order things run out: requests, holds, games to mark, cash, weeks to confirm.
 // With one booking behind a card it opens that booking; with more, the list or the Calendar.
-function useCards(home: Home, isToday: boolean): CardProps[] {
+function useCards(home: Home, date: string, isToday: boolean): CardProps[] {
   const { t } = useTranslation();
   return useMemo(() => {
     const cards: CardProps[] = [];
     const booking = (id: string | null, elsewhere: () => void) => () =>
       id ? push(`/booking/${id}`) : elsewhere();
-    const calendar = () => router.navigate("/venue/calendar");
+    const calendar = () => calendarOn(date);
     const { requests, holds, toMark, weeks, cash, timezone } = home;
     if (requests.count > 0)
       cards.push({
@@ -372,7 +401,7 @@ function useCards(home: Home, isToday: boolean): CardProps[] {
         onPress: () => router.navigate("/venue/payments"),
       });
     return cards;
-  }, [home, isToday, t]);
+  }, [home, date, isToday, t]);
 }
 
 // A large grey card: its icon in a white disc, the count, what it counts.
