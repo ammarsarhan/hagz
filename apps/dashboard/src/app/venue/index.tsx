@@ -135,7 +135,7 @@ export default function VenueHome() {
       ) : null}
       <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
         {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons,
-            and 12 pt under them before the scroll (and its hairline). */}
+            and 12 pt under them before the scroll's hairline once scrolled. */}
         <View className="mt-[13px] mb-3 h-10 flex-row items-center">
           <Text
             accessibilityRole="header"
@@ -157,7 +157,9 @@ export default function VenueHome() {
         {canSee ? (
           <FadingScroll scrollY={scrollY} onRoom={setRoom}>
             <Animated.View style={{ transform: [{ translateY: down }] }}>
-              <View className="flex-row gap-2">
+              {/* Up by what the header's 12 pt adds over 8, so at rest the chips sit where they
+                  did; only scrolled does the header keep the extra room. */}
+              <View className="-mt-1 flex-row gap-2">
                 <Chip
                   label={t("screens.home.today")}
                   on={!tomorrow}
