@@ -101,7 +101,7 @@ Done 2026-11-22: a guest finds a venue and sees its free times in the app, and o
 **Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`: Pause on the venue's Settings tab).
 **Done when:** every search shape stays inside its query-plan and latency budget on the seeded launch-scale data, and a guest can find a venue and see its free times in the app.
 
-## Phase 4: Bookings
+## Phase 4: Bookings ✅
 
 | PR | Scope |
 |---|---|
@@ -116,7 +116,7 @@ Done 2026-11-22: a guest finds a venue and sees its free times in the app, and o
 
 **Screens:** customer app: Home, the feed of rails the app opens on (Nearby, Free tonight, Top rated, Instant confirmation, Within budget, New on Hagz, Saved venues, Play again, Most booked this week, Just freed, Games needing players; built here because half of them need bookings), the layout-first booking flow, my bookings (with accepting, rejecting or moving back a booking staff moved), listings (feed, join, leave). Dashboard: the calendar (open games flagged with their expected players; QR check-in replaced recording how many came), approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/booking/[code]`).
 **Admin slice:** look up any booking and its events (built 2026-11-22: Bookings in the rail, a table with status tabs, search by code, customer, phone or venue, and Show more; a row opens the booking's page with Details, Payments and History tabs, times in the venue's timezone).
-**Done when:** the 100-request race leaves exactly one booking, and a customer books and staff manage it end to end in the apps.
+**Done when:** the 100-request race leaves exactly one booking, and a customer books and staff manage it end to end in the apps. **Done 2026-11-27:** the full flow walked through on both phones (user).
 
 ## Phase 4b: Communities and tournaments
 
