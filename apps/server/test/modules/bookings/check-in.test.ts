@@ -58,7 +58,7 @@ const setup = async () => {
 
 describe("the booker's code", () => {
   it("is scanned in the window, once, and shows on both sides", async () => {
-    const { booker, booking, clock, actor, owner, venue } = await setup();
+    const { booker, booking, clock, actor, owner, venue, marketplace } = await setup();
     expect(booking.checkIn).toMatchObject({
       opensAt: new Date(new Date(booking.startsAt).getTime() - 15 * MINUTE).toISOString(),
       closesAt: new Date(new Date(booking.startsAt).getTime() + 30 * MINUTE).toISOString(),
@@ -84,9 +84,9 @@ describe("the booker's code", () => {
       booking: {
         startsAt: booking.startsAt,
         endsAt: booking.endsAt,
-        timezone: expect.any(String),
+        timezone: marketplace.timezone,
         ground: "Pitch 1",
-        bookerFirstName: expect.any(String),
+        bookerFirstName: booker.customer.name.split(" ")[0],
       },
     });
     expect((await scanCheckIn(actor, code, clock(-4.5))).already).toBe(true);
@@ -271,7 +271,7 @@ describe("open games", () => {
     await expect(scanCheckIn(actor, code, clock(-9.5))).rejects.toMatchObject({
       code: "NOT_IN_BOOKING",
       extensions: {
-        firstName: expect.any(String),
+        firstName: one.customer.name.split(" ")[0],
         booking: { startsAt: booking.startsAt, ground: "Pitch 1" },
       },
     });
