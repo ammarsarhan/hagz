@@ -26,6 +26,8 @@ export { default as IconArrowsExchange } from "@tabler/icons-react-native/IconAr
 export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
 export { default as IconBell } from "@tabler/icons-react-native/IconBell";
 export { default as IconScan } from "@tabler/icons-react-native/IconScan";
+export { default as IconHourglass } from "@tabler/icons-react-native/IconHourglass";
+export { default as IconRepeat } from "@tabler/icons-react-native/IconRepeat";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 export { default as IconBuildingStadium } from "@tabler/icons-react-native/IconBuildingStadium";
