@@ -10,9 +10,10 @@ import { Animated, ScrollView, View } from "react-native";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
 // them. The gap under the nav bar is padding inside the scroll, so rows scroll right up to the close
-// button. Each edge shows a hairline while there's more past it, the customer app's way (user,
-// 2026-11-27, in place of fades that washed buttons into gradients): the top one fades in over the
-// first 12 pt scrolled. Full width, so the lines span the gutters too.
+// button. A hairline under the bar fades in over the first 12 pt scrolled, the customer app's way
+// (user, 2026-11-27, in place of fades that washed buttons into gradients). None at the bottom: the
+// tab bar and the bars pinned under a screen draw their own (one here doubled them). Full width, so
+// the line spans the gutters too.
 //
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
@@ -48,7 +49,6 @@ export function FadingScroll({
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
   const size = useRef({ height: 0, content: 0, y: 0 });
-  const [edges, setEdges] = useState({ top: false, bottom: false });
   const frame = useRef<ComponentRef<typeof View>>(null);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const windowTop = useRef(0);
@@ -74,13 +74,6 @@ export function FadingScroll({
     };
   }, [controller]);
 
-  const measure = () => {
-    const { height, content, y } = size.current;
-    const top = y > 1;
-    const bottom = y + height < content - 1;
-    setEdges((now) => (now.top === top && now.bottom === bottom ? now : { top, bottom }));
-  };
-
   return (
     <View ref={frame} className="-mx-5 flex-1">
       <Animated.ScrollView
@@ -94,27 +87,23 @@ export function FadingScroll({
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: ROOM }}
         onLayout={(event) => {
           size.current.height = event.nativeEvent.layout.height;
-          measure();
           frame.current?.measureInWindow((_, y) => {
             windowTop.current = y;
           });
         }}
         onContentSizeChange={(_, height) => {
           size.current.content = height;
-          measure();
         }}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
           useNativeDriver: true,
           listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
             size.current.y = event.nativeEvent.contentOffset.y;
-            measure();
           },
         })}
       >
         {children}
       </Animated.ScrollView>
       {topLine ? <TopHairline scrollY={offset} /> : null}
-      <BottomLine shown={edges.bottom} />
     </View>
   );
 }
@@ -133,25 +122,6 @@ export function TopHairline({ scrollY }: { scrollY: Animated.Value }) {
           extrapolate: "clamp",
         }),
       }}
-    />
-  );
-}
-
-// The bottom edge's hairline, while there's more below.
-function BottomLine({ shown }: { shown: boolean }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: shown ? 1 : 0,
-      duration: 160,
-      useNativeDriver: true,
-    }).start();
-  }, [shown, opacity]);
-  return (
-    <Animated.View
-      pointerEvents="none"
-      className="absolute right-0 bottom-0 left-0 h-px bg-hairline"
-      style={{ opacity }}
     />
   );
 }
