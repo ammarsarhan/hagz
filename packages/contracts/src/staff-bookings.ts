@@ -131,6 +131,7 @@ export const StaffHome = z
         z.object({
           groundId: z.uuid(),
           groundName: z.string().nullable(),
+          slotIds: z.array(z.uuid()).meta({ description: "The run's slots, in time order." }),
           startsAt: Instant,
           endsAt: Instant,
           price: z.int().meta({ description: "The first hour's price, minor units." }),

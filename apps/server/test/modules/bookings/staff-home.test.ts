@@ -76,6 +76,7 @@ describe("the Home tab", () => {
     expect(home.free).toEqual([
       expect.objectContaining({
         groundName: "Pitch 1",
+        slotIds: [expect.any(String)],
         startsAt: hours[1]?.toISOString(),
         endsAt: hours[2]?.toISOString(),
         price: 40_000,

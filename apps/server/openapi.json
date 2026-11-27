@@ -6541,6 +6541,14 @@
                     "null"
                   ]
                 },
+                "slotIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "description": "The run's slots, in time order."
+                },
                 "startsAt": {
                   "type": "string",
                   "format": "date-time"
@@ -6560,6 +6568,7 @@
               "required": [
                 "groundId",
                 "groundName",
+                "slotIds",
                 "startsAt",
                 "endsAt",
                 "price",

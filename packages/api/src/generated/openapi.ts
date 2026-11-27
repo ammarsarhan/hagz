@@ -19794,6 +19794,8 @@ export interface components {
                 /** Format: uuid */
                 groundId: string;
                 groundName: string | null;
+                /** @description The run's slots, in time order. */
+                slotIds: string[];
                 /** Format: date-time */
                 startsAt: string;
                 /** Format: date-time */

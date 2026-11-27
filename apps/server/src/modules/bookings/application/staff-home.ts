@@ -191,6 +191,7 @@ const openHours = async (venueId: string, start: Date, to: Date, currency: strin
     },
     orderBy: [{ groundId: "asc" }, { startsAt: "asc" }],
     select: {
+      id: true,
       groundId: true,
       startsAt: true,
       endsAt: true,
@@ -203,11 +204,13 @@ const openHours = async (venueId: string, start: Date, to: Date, currency: strin
   for (const slot of slots) {
     if (last?.groundId === slot.groundId && last.endsAt === slot.startsAt.toISOString()) {
       last.endsAt = slot.endsAt.toISOString();
+      last.slotIds.push(slot.id);
       continue;
     }
     last = {
       groundId: slot.groundId,
       groundName: groundName(slot.ground.translations),
+      slotIds: [slot.id],
       startsAt: slot.startsAt.toISOString(),
       endsAt: slot.endsAt.toISOString(),
       price: slot.price,
