@@ -129,6 +129,18 @@ A deleted ground is kept for booking history: past bookings still name it. What 
 - **Regulars on it** keep the weeks already reserved and get no new ones. Once the ground is `DELETED`, the next top-up ends them.
 - **The warning first:** the staff app reads `GET …/grounds/{groundId}/removal` (how many bookings are still ahead, how many requests wait, when the last booking ends, and the first names of the regulars on it). A sheet says what will happen, step by step, with Cancel and Delete; Delete asks once more in a short native alert.
 
+### Changing a ground's hours
+
+Saving a ground's weekly hours, or copying them to other grounds, reaches what's booked in the hours the new week closes (user, 2026-11-27). Hours it keeps open, or opens, change only free slots, as always.
+
+- **Bookings and holds** in closed hours go ahead as booked. The calendar shows them as usual.
+- **Booking requests waiting** in them are declined, as staff declining each would (a venue cancellation; nothing is paid while one waits), recorded `{by: "SCHEDULE_CHANGED"}`.
+- **Regulars whose weekly time closes**, wholly or in part, keep the weeks already reserved and end after the last one; with none reserved they end at once (regulars.md).
+- **Hours a booking gives back later** (cancelled, declined, expired, moved off) are checked against the hours the ground has then, in the same transaction (`releaseSlots`): still open, they go back on sale at today's price; closed, they go. Before this they came back on sale at the old schedule until the five-minute check caught them, with a false "stale slots" alert. The same holds after a price change.
+- **How:** the declines and endings run in the save's own transaction through a hook, since bookings owns them and reads venues: venues' `whenHoursChange` is handed bookings' `applyHoursChange` in `http/router.ts`. It takes the regulars lock before any booking's row, as everywhere regulars change. Without the hook, saving is refused.
+- **The warning first:** `POST …/grounds/{groundId}/schedule/preview` takes the new week and says, without saving it, how many bookings and requests fall in the hours it closes and which regulars end (each with its last reserved week). Both use one function, so the warning and the save can't disagree. The staff app sums one preview per ground when copying; with nothing affected it saves straight away, otherwise a sheet says what follows, with Cancel and Save (or Copy), then a short native alert.
+- **Booking length** (shortest and longest) changes nothing already booked; only new bookings and new regulars follow it.
+
 ## Slugs and SEO
 
 - **Format:** 8 random characters, lowercase letters and digits without lookalikes (no `0`/`o`, `1`/`l`/`i`), e.g. `/venue/k7m2x9pq`. Generated at creation, retried on the rare clash with the unique index, stored in `Venue.slug`.
