@@ -514,6 +514,7 @@ const ar: ArabicTranslations = {
           venue: "الملف والقواعد",
         },
         groups: { manage: "يمكنه التعديل", view: "يمكنه العرض", none: "مخفي" },
+        done: "تم",
         tapArea: "اضغط على قسم لتغييره",
         levelBodies: {
           none: "مخفي عنه في التطبيق",

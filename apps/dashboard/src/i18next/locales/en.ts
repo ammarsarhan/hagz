@@ -424,6 +424,7 @@ const en = {
           venue: "Profile and rules",
         },
         groups: { manage: "Can change", view: "Can see", none: "Hidden" },
+        done: "Done",
         tapArea: "Tap an area to change it",
         levelBodies: {
           none: "Hidden from them in the app",
