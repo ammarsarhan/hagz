@@ -126,7 +126,6 @@ export default function RegularPage() {
       month: "short",
     }).format(new Date(one.pausedAt));
   })();
-  const comingNext = () => hud.show(t("common.comingNext"));
   const time = t(`${p}.time`, {
     day: t(`screens.regulars.days.${String(one.dayOfWeek) as Weekday}`),
     hours: `${hourLabel(t, one.startHour)} – ${hourLabel(t, one.startHour + one.slotCount)}`,
@@ -275,7 +274,6 @@ export default function RegularPage() {
             push({ pathname: "/regulars/new", params: { regularId: one.id } });
           } else if (action === "resume") void resume();
           else if (action === "link") void copyLink(one);
-          else if (action) comingNext();
         }}
       />
       {sheet ? (

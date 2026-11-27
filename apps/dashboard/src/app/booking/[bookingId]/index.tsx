@@ -160,7 +160,6 @@ function Page({
   const { t } = useTranslation();
   const hud = useHud();
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
-  const comingNext = () => hud.show(t("common.comingNext"));
   const compact = useCompactTitle();
   // The ⋯ menu: for bookings still to be played, before kick-off (the API's MOVABLE).
   const [menu, setMenu] = useState(false);

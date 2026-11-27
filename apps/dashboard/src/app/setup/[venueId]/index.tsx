@@ -193,8 +193,8 @@ export default function VenueSetupScreen() {
   );
 }
 
-// The items with a screen so far, and where it is. The rest arrive with their slice of Phase 2.
-const SCREENS: Partial<Record<SetupItem["key"], string>> = {
+// Where each item's screen is.
+const SCREENS: Record<SetupItem["key"], string> = {
   DETAILS: "details",
   LOCATION: "location",
   PHOTOS: "photos",
@@ -226,12 +226,7 @@ function Group({
           key={item.key}
           item={item}
           last={index === items.length - 1}
-          // An item without its screen yet says so rather than opening something half-built.
-          onPress={() => {
-            const screen = SCREENS[item.key];
-            if (!screen) return hud.show(t("common.comingNext"));
-            push(`/setup/${venueId}/${screen}`);
-          }}
+          onPress={() => push(`/setup/${venueId}/${SCREENS[item.key]}`)}
         />
       ))}
     </>
