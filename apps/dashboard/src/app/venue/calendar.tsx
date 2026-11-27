@@ -1,4 +1,5 @@
 import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -147,6 +148,14 @@ function VenueCalendar() {
   const today = localDateOf(now, timezone);
   // Null until a day is tapped: today, whichever day that is.
   const [picked, setPicked] = useState<string | null>(null);
+  // Opened on a day from elsewhere (Home's links): picked once, then the param is cleared so coming
+  // back to the tab later doesn't jump to it again.
+  const { date: asked } = useLocalSearchParams<{ date?: string }>();
+  useEffect(() => {
+    if (!asked || !/^\d{4}-\d{2}-\d{2}$/.test(asked)) return;
+    setPicked(asked);
+    router.setParams({ date: undefined });
+  }, [asked]);
   const day = picked ?? today;
   const [groundId, setGroundId] = useState<string | null>(null);
   const weekStart = weekStartOf(day);
