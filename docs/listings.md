@@ -16,6 +16,10 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 - **Rescheduling:** if staff move the booking, the listing moves with it (new booking and start time) and joined players are told. See [rescheduling.md](rescheduling.md).
 - **Decided on 2026-11-22 (PR 4.7):** no minimum reliability to join in v1 (the booker sees the figure and can remove someone). Joining is also refused when it overlaps a booking of the player's own that's still on. A removed player can't rejoin that game; one who left can, while there's room. Joined players don't become the venue's customers.
 - **Built (2026-11-22):** a game asked for at checkout is stored `WAITING` and opens in the transaction that confirms the booking (approval, payment), or is cancelled with it (declined, expired). Players per ground: football 10 / 14 / 22, padel and tennis 4, basketball 10, volleyball 12 (`PLAYERS_BY_GROUND` in contracts). Any cancellation added later (6.1) must call `cancelListings` in its transaction.
+- **Decided on 2026-11-27 (against number harvesting and spot squatting; not built yet):**
+  - **The booker's number shows from 12 hours before kick-off**, not as soon as someone joins. Joining just to collect bookers' numbers and leaving stops paying off: you have to still be in the game 12 hours out. Before then a joined player sees the game, the other first names and when the number appears.
+  - **Limits on joining:** at most 3 upcoming games joined at once, and a cool-off after joining and leaving again and again (starting values: 3 games left within 7 days means no joining for 24 hours). Admins see accounts that join and leave a lot.
+  - **Ask to join** (the booker approves each player, and the number only ever goes to approved players) moves to Phase 4b as its own PR (4b.5 in [plan.md](plan.md)).
 - **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person."*
 
 ## What people see
@@ -27,7 +31,7 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 | Booker's first name | Yes | Yes |
 | Share and joining fee ("60 EGP to Ahmed + 6 EGP at the venue") | Yes | Yes |
 | Other joined players' first names | Count only | Yes |
-| The booker's phone number | No | Yes, until 24 hours after kick-off |
+| The booker's phone number | No | From 12 hours before kick-off until 24 hours after |
 
 The booker sees each joined player's first name, phone number, reliability figure, and when they joined. Phone numbers are only ever shared between the booker and a joined player, never between two joined players. Venue staff see the booking marked as an open game expecting n players (the joined count, which is final at kick-off, since nobody can join or leave after it), with their first names.
 
