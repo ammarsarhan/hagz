@@ -1,4 +1,4 @@
-import { useQueries, useQuery, useQueryClient, type QueryFilters } from "@tanstack/react-query";
+import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
@@ -35,18 +35,8 @@ import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
-import {
-  ClosedTimeSheet,
-  FreeTimeSheet,
-  NoteSheet,
-  PriceSheet,
-  moneyOf,
-  type ClosedAction,
-  type FreeAction,
-} from "@/components/time-sheets";
 import { Chip, WeekStrip } from "@/components/week-strip";
-import { api } from "@/lib/api";
-import { hudMessage, send } from "@/lib/api-errors";
+import { hudMessage } from "@/lib/api-errors";
 import {
   addDays,
   bookingDays,
@@ -70,7 +60,7 @@ import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
-import { dayLabel, hourLabel, hoursSpan, sentenceTime } from "@/lib/when";
+import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
@@ -365,144 +355,23 @@ export default function VenueCalendar() {
     },
   });
 
-  // Free and closed times (Figma D16, user 2026-11-27). A tap or long press on one opens its sheet;
-  // on one ground, holding a free time and dragging picks the free times back to back with it, and
-  // the pill by the + becomes Modify, which opens the same sheet for all of them.
-  const queryClient = useQueryClient();
+  // Free and closed times (Figma D16, D19; user 2026-11-27). A tap or long press on one opens its
+  // own page; on one ground, holding a free time and dragging picks the free times back to back with
+  // it, and the pill by the + becomes Modify, which opens that page for all of them.
   const me = useQuery(queries.me).data;
-  const canBook = venue?.permissions.bookings === "manage";
-  const canClose = venue?.permissions.schedule === "manage";
+  const canOpen =
+    venue?.permissions.bookings === "manage" || venue?.permissions.schedule === "manage";
   const currency = slots.data?.currency ?? "EGP";
-  type Target =
-    | { kind: "free"; runs: { groundId: string; slots: Slot[] }[] }
-    | { kind: "closed"; slots: Slot[]; closed: Slot["closed"] };
-  const [target, setTarget] = useState<Target | null>(null);
-  const [targetGround, setTargetGround] = useState("");
-  const [sheet, setSheet] = useState<"free" | "closed" | "price" | "note" | null>(null);
-  const [busy, setBusy] = useState(false);
-  const next = useRef<FreeAction | ClosedAction | null>(null);
-  const targetSlots =
-    target === null
-      ? []
-      : target.kind === "closed"
-        ? target.slots
-        : ((target.runs.find((run) => run.groundId === targetGround) ?? target.runs[0])?.slots ??
-          []);
-  const priceText = (list: readonly Slot[]) => {
-    const prices = list.map((slot) => slot.price);
-    const from = Math.min(...prices);
-    const to = Math.max(...prices);
-    return from === to
-      ? moneyOf(from, currency)
-      : t("screens.calendar.priceRange", {
-          from: formatAmount(from, decimalsOf(currency)),
-          to: moneyOf(to, currency),
-        });
-  };
-  const timeTitle = (list: readonly Slot[]) => {
-    const [first] = list;
-    const last = list.at(-1);
-    if (!first || !last) return "";
-    return `${hoursSpan(first.startsAt, last.endsAt, timezone, t)} · ${groundName(first.groundId)}`;
+  const openSlots = (list: readonly Slot[]) => {
+    setDragPick(null);
+    push({
+      pathname: "/time",
+      params: { date: day, slotIds: list.map((slot) => slot.id).join(",") },
+    });
   };
   const openTime = (row: CalendarRow) => {
-    if (Date.parse(row.endsAt) <= now) return;
-    if (row.kind === "free" && (canBook || canClose)) {
-      setTarget({
-        kind: "free",
-        runs: row.slots.map((slot) => ({ groundId: slot.groundId, slots: [slot] })),
-      });
-      setTargetGround(row.groundIds[0] ?? row.groundId);
-      setSheet("free");
-    } else if (row.kind === "closed" && canClose) {
-      setTarget({ kind: "closed", slots: row.slots, closed: row.closed });
-      setSheet("closed");
-    }
-  };
-  const afterSlots = () =>
-    queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] });
-  const write = async (call: ReturnType<typeof send>) => {
-    setBusy(true);
-    const result = await call;
-    setBusy(false);
-    if (!result.ok) {
-      hud.show(hudMessage(result.error));
-      return false;
-    }
-    await afterSlots();
-    return true;
-  };
-  const slotIds = targetSlots.map((slot) => slot.id);
-  const savePrice = async (price: number) => {
-    const done = await write(
-      send(
-        api.PUT("/v1/staff/venues/{venueId}/slots/price", {
-          params: { path: { venueId } },
-          body: { slotIds, price },
-        }),
-      ),
-    );
-    if (done) {
-      setDragPick(null);
-      setSheet(null);
-    }
-  };
-  const saveNote = async (note: string | null) => {
-    if (
-      await write(
-        send(
-          api.PUT("/v1/staff/venues/{venueId}/slots/note", {
-            params: { path: { venueId } },
-            body: { slotIds, note },
-          }),
-        ),
-      )
-    )
-      setSheet(null);
-  };
-  const reopen = () =>
-    void write(
-      send(
-        api.POST("/v1/staff/venues/{venueId}/slots/unblock", {
-          params: { path: { venueId } },
-          body: { slotIds },
-        }),
-      ),
-    );
-  // What a sheet's row leads to, once the sheet has slid away.
-  const afterSheet = () => {
-    const action = next.current;
-    next.current = null;
-    if (action === null) return;
-    const [first] = targetSlots;
-    const last = targetSlots.at(-1);
-    if (!first || !last) return;
-    if (action === "book" || action === "hold") {
-      setDragPick(null);
-      push({
-        pathname: action === "hold" ? "/hold" : "/book",
-        params: { date: day, groundId: first.groundId, from: first.id, to: last.id },
-      });
-    } else if (action === "close") {
-      setDragPick(null);
-      push({
-        pathname: "/close-time",
-        params: {
-          slotIds: slotIds.join(","),
-          startsAt: first.startsAt,
-          endsAt: last.endsAt,
-          ground: groundName(first.groundId),
-          price: String(targetSlots.reduce((sum, slot) => sum + slot.price, 0)),
-          currency,
-          timezone,
-        },
-      });
-    } else if (action === "reopen") reopen();
-    else setSheet(action);
-  };
-  const pickAction = (action: FreeAction | ClosedAction) => {
-    next.current = action;
-    setSheet(null);
+    if (Date.parse(row.endsAt) <= now || !canOpen) return;
+    if (row.kind === "free" || row.kind === "closed") openSlots(row.slots);
   };
 
   // The free times picked by dragging (on one ground), by their rows' keys, in order.
@@ -559,7 +428,7 @@ export default function VenueCalendar() {
     .onStart((event) => {
       const { index, on } = freeAt(event.y);
       const row = freeRun[index];
-      if (!on || !row || !(canBook || canClose)) return;
+      if (!on || !row || !canOpen) return;
       drag.current = { anchor: index, last: index, keys: [row.key] };
       setDragging(true);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -587,18 +456,7 @@ export default function VenueCalendar() {
       }
     });
   const modify = () => {
-    if (pickedRows.length === 0) return;
-    setTarget({
-      kind: "free",
-      runs: [
-        {
-          groundId: pickedRows[0]?.groundId ?? "",
-          slots: pickedRows.flatMap((row) => row.slots),
-        },
-      ],
-    });
-    setTargetGround(pickedRows[0]?.groundId ?? "");
-    setSheet("free");
+    if (pickedRows.length > 0) openSlots(pickedRows.flatMap((row) => row.slots));
   };
 
   // The + asks first: a new booking or a hold, opened once its sheet has slid away.
@@ -956,59 +814,6 @@ export default function VenueCalendar() {
               params: { date: day, ...(groundId ? { groundId } : {}) },
             });
         }}
-      />
-      <FreeTimeSheet
-        title={timeTitle(targetSlots)}
-        count={targetSlots.length}
-        price={priceText(targetSlots)}
-        holdMinutes={holdMinutes}
-        canBook={canBook}
-        canClose={canClose}
-        grounds={
-          target?.kind === "free"
-            ? target.runs.map((run) => ({ id: run.groundId, name: groundName(run.groundId) }))
-            : []
-        }
-        groundId={targetGround}
-        onGround={setTargetGround}
-        visible={sheet === "free"}
-        onClose={() => setSheet(null)}
-        onHidden={afterSheet}
-        onPick={pickAction}
-      />
-      <ClosedTimeSheet
-        title={timeTitle(targetSlots)}
-        price={priceText(targetSlots)}
-        hasNote={target?.kind === "closed" && Boolean(target.closed?.note)}
-        visible={sheet === "closed"}
-        onClose={() => setSheet(null)}
-        onHidden={afterSheet}
-        onPick={pickAction}
-      />
-      {/* Keyed by what they change, so each opens with its own price or note. */}
-      <PriceSheet
-        key={`price:${slotIds.join(",")}`}
-        title={timeTitle(targetSlots)}
-        current={
-          targetSlots.every((slot) => slot.price === targetSlots[0]?.price)
-            ? (targetSlots[0]?.price ?? null)
-            : null
-        }
-        currency={currency}
-        visible={sheet === "price"}
-        busy={busy}
-        onClose={() => setSheet(null)}
-        onHidden={() => undefined}
-        onSave={(price) => void savePrice(price)}
-      />
-      <NoteSheet
-        key={`note:${slotIds.join(",")}`}
-        note={target?.kind === "closed" ? (target.closed?.note ?? null) : null}
-        visible={sheet === "note"}
-        busy={busy}
-        onClose={() => setSheet(null)}
-        onHidden={() => undefined}
-        onSave={(note) => void saveNote(note)}
       />
     </View>
   );
