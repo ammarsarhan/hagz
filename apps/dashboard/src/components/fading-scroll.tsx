@@ -30,6 +30,7 @@ export function FadingScroll({
   scrollEnabled = true,
   topLine = true,
   controller,
+  onRoom,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
@@ -38,6 +39,8 @@ export function FadingScroll({
   // Off where the screen draws its own line under the bar (Manage's docked section tabs).
   topLine?: boolean;
   controller?: RefObject<ScrollController | null>;
+  // How far it can scroll (content less its own height), whenever either changes.
+  onRoom?: (room: number) => void;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
@@ -80,12 +83,14 @@ export function FadingScroll({
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: ROOM }}
         onLayout={(event) => {
           size.current.height = event.nativeEvent.layout.height;
+          onRoom?.(Math.max(size.current.content - size.current.height, 0));
           frame.current?.measureInWindow((_, y) => {
             windowTop.current = y;
           });
         }}
         onContentSizeChange={(_, height) => {
           size.current.content = height;
+          onRoom?.(Math.max(height - size.current.height, 0));
         }}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
           useNativeDriver: true,
