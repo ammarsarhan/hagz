@@ -226,7 +226,8 @@ function Day({ home, isToday, now }: { home: Home; isToday: boolean; now: number
           {home.free.map((run) => (
             <TimeRow
               key={`${run.groundId}-${run.startsAt}`}
-              hour={clockOf(run.startsAt, timezone).time}
+              at={run.startsAt}
+              timezone={timezone}
               title={run.groundName ?? ""}
               line={hoursSpan(run.startsAt, run.endsAt, timezone, t)}
               amount={money(run.price, run.currency)}
@@ -473,9 +474,10 @@ function Heading({ title, link, onLink }: { title: string; link?: string; onLink
   );
 }
 
-// The hour in a grey disc, two lines beside it, the amount at the end and an action under it.
+// The hour in a grey disc (am or pm under it), two lines beside it, the amount at the end and an action under it.
 function TimeRow({
-  hour,
+  at,
+  timezone,
   title,
   line,
   amount,
@@ -483,7 +485,9 @@ function TimeRow({
   onAction,
   onPress,
 }: {
-  hour: string;
+  // When it starts: the hour in the disc, am or pm small under it.
+  at: string;
+  timezone: string;
   title: string;
   line: string;
   amount: string;
@@ -491,10 +495,15 @@ function TimeRow({
   onAction?: () => void;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
+  const start = clockOf(at, timezone);
   return (
     <Pressable onPress={onPress} className="mt-3 flex-row items-center py-1 active:opacity-60">
       <View className="size-[52px] items-center justify-center rounded-full bg-chip">
-        <Text className="text-[14px] font-semibold">{hour}</Text>
+        <Text className="text-[14px] leading-4 font-semibold">{start.time}</Text>
+        <Text className="text-[11px] leading-[13px] text-ink-2">
+          {t(start.pm ? "screens.calendar.pm" : "screens.calendar.am")}
+        </Text>
       </View>
       <View className="ms-3.5 flex-1">
         <Text className="text-subtitle font-medium" numberOfLines={1}>
@@ -556,7 +565,8 @@ function GameRow({
     Date.parse(game.endsAt) > now;
   return (
     <TimeRow
-      hour={clockOf(game.startsAt, timezone).time}
+      at={game.startsAt}
+      timezone={timezone}
       title={
         game.regular
           ? t("screens.home.regular", { name: game.customer.name.split(" ")[0] })
