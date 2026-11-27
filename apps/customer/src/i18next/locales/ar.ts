@@ -571,6 +571,7 @@ const ar: ArabicTranslations = {
         distance: "المسافة",
         within: "في حدود {{km}} كم",
         anywhere: "أي مكان",
+        inArea: "في {{name}}",
         price: "السعر",
         priceLine: "حصتك ورسوم الانضمام معًا.",
         anyPrice: "أي سعر",

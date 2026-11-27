@@ -258,7 +258,17 @@ export default function Home() {
           {games.items.length > 0 ? (
             <Rail
               title={t("screens.home.games")}
-              onSeeAll={() => router.navigate("/community")}
+              onSeeAll={() =>
+                router.navigate({
+                  pathname: "/community",
+                  params: {
+                    at: String(Date.now()),
+                    ...(governorate
+                      ? { area: governorate.id, areaName: governorate.name ?? "" }
+                      : {}),
+                  },
+                })
+              }
               items={games.items}
               keyOf={(game) => game.id}
               width={RAIL_WIDTH.game}

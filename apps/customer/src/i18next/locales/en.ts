@@ -532,6 +532,7 @@ const en = {
         distance: "Distance",
         within: "Within {{km}} km",
         anywhere: "Anywhere",
+        inArea: "In {{name}}",
         price: "Price",
         priceLine: "Your share and the joining fee, together.",
         anyPrice: "Any price",
