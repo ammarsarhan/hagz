@@ -26,6 +26,9 @@ export type TimeOfDay = "MORNING" | "AFTERNOON" | "EVENING" | "LATE";
 export interface GameFilters {
   // Kilometres around the player; null for anywhere.
   radius: number | null;
+  // An area instead of around the player (Home's Games See all: Home's governorate), as a chip.
+  // Picking a distance in the sheet takes over from it.
+  area?: { id: string; name: string };
   date: string | null;
   time?: TimeOfDay;
   sport?: Sport;
@@ -76,6 +79,7 @@ const priceName = (price: number) =>
 
 // The feed's query for the filters (where the player is, if they can be placed, aside).
 export const gameQuery = (filters: GameFilters) => ({
+  ...(filters.area ? { area: filters.area.id } : {}),
   ...(filters.date ? { date: filters.date } : {}),
   ...(filters.time ? HOURS[filters.time] : {}),
   ...(filters.sport ? { sport: filters.sport } : {}),
@@ -91,6 +95,15 @@ export const appliedGameFilters = (
   filters: GameFilters,
   located: boolean,
 ): { key: string; label: string; without: (filters: GameFilters) => GameFilters }[] => [
+  ...(filters.area
+    ? [
+        {
+          key: "area",
+          label: i18n.t("screens.community.inArea", { name: filters.area.name }),
+          without: (f: GameFilters) => ({ ...f, area: undefined }),
+        },
+      ]
+    : []),
   ...(filters.date
     ? [
         {
@@ -109,7 +122,7 @@ export const appliedGameFilters = (
         },
       ]
     : []),
-  ...(located && filters.radius !== RADIUS
+  ...(located && !filters.area && filters.radius !== RADIUS
     ? [
         {
           key: "radius",
@@ -236,13 +249,13 @@ export function GameFiltersSheet({
                   key={radius}
                   label={t("screens.community.within", { km: radius })}
                   on={draft.radius === radius}
-                  onPress={() => set({ radius })}
+                  onPress={() => set({ radius, area: undefined })}
                 />
               ))}
               <Pill
                 label={t("screens.community.anywhere")}
                 on={draft.radius === null}
-                onPress={() => set({ radius: null })}
+                onPress={() => set({ radius: null, area: undefined })}
               />
             </Pills>
           </Group>

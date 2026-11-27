@@ -138,7 +138,11 @@ export const StaffHome = z
           currency: z.string(),
         }),
       )
-      .meta({ description: "Up to three runs of open hours on the day, soonest first." }),
+      .meta({
+        description:
+          "Up to three runs of open hours on the day, soonest first, each cut to a game the ground " +
+          "allows (6–12 at 3 hours at most: 6–9 and 9–12).",
+      }),
   })
   .meta({ id: "StaffHome" });
 

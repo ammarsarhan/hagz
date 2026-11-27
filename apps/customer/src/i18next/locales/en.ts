@@ -101,6 +101,8 @@ const en = {
       tomorrow: "Tomorrow",
       // The search bar's when: "Today · any time", "Fri 21 · 9–11 pm".
       whenAnyTime: "{{day}} · any time",
+      // Home's Free tonight: "Today · from 7 pm".
+      whenFrom: "{{day}} · from {{time}}",
       whenRange: "{{day}} · {{range}}",
       sports: {
         FOOTBALL: "Football",
@@ -530,6 +532,7 @@ const en = {
         distance: "Distance",
         within: "Within {{km}} km",
         anywhere: "Anywhere",
+        inArea: "In {{name}}",
         price: "Price",
         priceLine: "Your share and the joining fee, together.",
         anyPrice: "Any price",
@@ -604,6 +607,8 @@ const en = {
         you: "you",
         whoHeading: "Who’s playing",
         bookerTitle: "{{name}}, the booker",
+        // Joined, more than 12 hours before kick-off.
+        phoneFrom: "{{name}}'s number shows from {{when}}, to protect bookers' privacy.",
         call: "Call {{name}}",
         whatsapp: "Message {{name}} on WhatsApp",
         leaveLine: "You can leave until kick-off.",
@@ -767,7 +772,12 @@ const en = {
           PLATFORM: "Paid online",
         },
         calendar: "Add to calendar",
-        calendarSoon: "Adding to your calendar comes soon",
+        calendarTitle: "{{ground}} at {{venue}}",
+        calendarNotes: "Hagz booking {{code}}",
+        calendarNotesLink: "Hagz booking {{code}}: {{link}}",
+        calendarAdded: "Added to your calendar",
+        calendarDenied: "Allow calendar access in Settings to add it",
+        calendarFailed: "Couldn't open your calendar",
         share: "Share",
         shareMessage: "{{ground}} at {{venue}}, {{when}}: {{link}}",
         view: "View booking",
@@ -835,6 +845,7 @@ const en = {
           cash: "Pay cash",
           online: "Pay online",
           loyalty: "Loyalty",
+          justFreed: "Just freed",
         },
         filtersSheet: {
           title: "Filters",
@@ -904,6 +915,7 @@ const en = {
         when: {
           title: "When do you want to play?",
           anyTime: "Any time",
+          from: "From {{time}}",
           barsHint: "Bars depict venues free each hour",
         },
         card: {

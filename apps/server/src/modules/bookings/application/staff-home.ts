@@ -180,7 +180,31 @@ const cashToTake = async (venueId: string, from: Date, to: Date, now: Date, curr
   return { amount: due.reduce((sum, amount) => sum + amount, 0), count: due.length, currency };
 };
 
-// Open hours from `start` to the day's end, joined into runs per ground, soonest first.
+// A run of `length` open hours cut into games the ground allows (user, 2026-11-27): as long as a
+// game there may run, from the start (6–12 at 3 at most: 6–9, 9–12; 6–11: 6–9, 9–11). A last piece
+// shorter than the shortest game takes hours from the pieces before it while they stay long enough
+// (7 hours at 2 to 3: 3, 2, 2); one that still can't be booked is left out. The lengths, in order.
+export const bookablePieces = (length: number, shortest: number, longest: number): number[] => {
+  const pieces: number[] = [];
+  let left = length;
+  while (left >= longest) {
+    pieces.push(longest);
+    left -= longest;
+  }
+  if (left === 0) return pieces;
+  let need = shortest - left;
+  for (let i = pieces.length - 1; i >= 0 && need > 0; i -= 1) {
+    const give = Math.min(need, (pieces[i] ?? 0) - shortest);
+    if (give <= 0) continue;
+    pieces[i] = (pieces[i] ?? 0) - give;
+    left += give;
+    need -= give;
+  }
+  return need > 0 ? pieces : [...pieces, left];
+};
+
+// Open hours from `start` to the day's end, joined into runs per ground and cut into games the
+// ground allows (bookablePieces), soonest first.
 const openHours = async (venueId: string, start: Date, to: Date, currency: string) => {
   const slots = await prisma.groundSlot.findMany({
     where: {
@@ -196,27 +220,52 @@ const openHours = async (venueId: string, start: Date, to: Date, currency: strin
       startsAt: true,
       endsAt: true,
       price: true,
-      ground: { select: { translations: { select: { language: true, name: true } } } },
+      ground: {
+        select: {
+          settings: { select: { minimumSlots: true, maximumSlots: true } },
+          translations: { select: { language: true, name: true } },
+        },
+      },
     },
   });
-  const runs: StaffHome["free"] = [];
-  let last: (typeof runs)[number] | undefined;
+  // Back-to-back open hours per ground, then each run cut into bookable pieces.
+  const whole: (typeof slots)[] = [];
   for (const slot of slots) {
-    if (last?.groundId === slot.groundId && last.endsAt === slot.startsAt.toISOString()) {
-      last.endsAt = slot.endsAt.toISOString();
-      last.slotIds.push(slot.id);
-      continue;
+    const current = whole.at(-1);
+    const previous = current?.at(-1);
+    if (
+      current &&
+      previous?.groundId === slot.groundId &&
+      previous.endsAt.getTime() === slot.startsAt.getTime()
+    ) {
+      current.push(slot);
+    } else whole.push([slot]);
+  }
+  const runs: StaffHome["free"] = [];
+  for (const run of whole) {
+    const first = run[0];
+    if (!first) continue;
+    let at = 0;
+    for (const length of bookablePieces(
+      run.length,
+      first.ground.settings?.minimumSlots ?? 1,
+      first.ground.settings?.maximumSlots ?? 3,
+    )) {
+      const piece = run.slice(at, at + length);
+      at += length;
+      const head = piece[0];
+      const tail = piece.at(-1);
+      if (!head || !tail) continue;
+      runs.push({
+        groundId: head.groundId,
+        groundName: groundName(head.ground.translations),
+        slotIds: piece.map((slot) => slot.id),
+        startsAt: head.startsAt.toISOString(),
+        endsAt: tail.endsAt.toISOString(),
+        price: head.price,
+        currency,
+      });
     }
-    last = {
-      groundId: slot.groundId,
-      groundName: groundName(slot.ground.translations),
-      slotIds: [slot.id],
-      startsAt: slot.startsAt.toISOString(),
-      endsAt: slot.endsAt.toISOString(),
-      price: slot.price,
-      currency,
-    };
-    runs.push(last);
   }
   return runs
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.groundId.localeCompare(b.groundId))

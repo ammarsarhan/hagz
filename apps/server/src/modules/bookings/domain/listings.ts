@@ -5,7 +5,10 @@ import { playersOn, type GroundSize, type GroundSport } from "@hagz/contracts";
 // Amounts are whole currency units: minor units per unit.
 const UNIT = 100;
 
-// The booker's phone stays visible to joined players this long after kick-off.
+// The booker's phone shows to joined players from this long before kick-off (user, 2026-11-27, so
+// joining just to collect numbers and leaving stops paying off)...
+export const PHONE_HOURS_BEFORE_START = 12;
+// ...and stays visible this long after it.
 export const PHONE_HOURS_AFTER_START = 24;
 
 // Each player's share of the booking: in contracts, so the app's review step shows the same.

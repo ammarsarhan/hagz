@@ -65,6 +65,9 @@ export interface Filters {
   flexible: boolean;
   loyalty: boolean;
   payment?: Payment;
+  // Only venues with a time that came free again: from Home's Just freed, a chip with no row in
+  // the sheet.
+  justFreed: boolean;
 }
 
 export const NO_FILTERS: Filters = {
@@ -74,6 +77,7 @@ export const NO_FILTERS: Filters = {
   instant: false,
   flexible: false,
   loyalty: false,
+  justFreed: false,
 };
 
 interface FilterQuery {
@@ -107,6 +111,7 @@ export const filterQuery = (filters: Filters): FilterQuery => ({
   ...(filters.flexible ? { flexible: "true" as const } : {}),
   ...(filters.loyalty ? { loyalty: "true" as const } : {}),
   ...(filters.payment ? { payment: filters.payment } : {}),
+  ...(filters.justFreed ? { justFreed: "true" as const } : {}),
 });
 
 // "5-a-side", "Artificial turf", "Indoor", in the app's language (formats.*).
@@ -184,14 +189,20 @@ export const appliedFilters = (
     );
   }
   if (filters.loyalty) add("loyalty", i18n.t("screens.search.chips.loyalty"), { loyalty: false });
+  if (filters.justFreed) {
+    add("justFreed", i18n.t("screens.search.chips.justFreed"), { justFreed: false });
+  }
   return chips;
 };
 
-// When: a day (null for today), a start (HH:mm, null for any time) and how long.
+// When: a day (null for today), a start (HH:mm, null for any time) and how long. `after` (HH:mm):
+// any time free from then on, with no exact start (Home's Free tonight); picking a start or
+// clearing the sheet drops it.
 export interface When {
   date: string | null;
   start: string | null;
   hours: number;
+  after?: string;
 }
 
 export const ANY_TIME: When = { date: null, start: null, hours: 1 };
@@ -232,6 +243,9 @@ export const dayText = (date: string | null, timezone: string) => {
 // The search bar's second line: "Today · any time", "Fri 21 · 9–11 pm".
 export const whenText = (when: When, timezone: string) => {
   const day = dayText(when.date, timezone);
+  if (!when.start && when.after) {
+    return i18n.t("formats.whenFrom", { day, time: hourLabel(Number(when.after.slice(0, 2))) });
+  }
   // A length only comes with a start (the start is a run of hours).
   if (!when.start) return i18n.t("formats.whenAnyTime", { day });
   const from = Number(when.start.slice(0, 2));

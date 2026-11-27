@@ -9,7 +9,6 @@ import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import { Bone } from "@/components/bone";
 import { PinnedTitle, useSectionTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
-import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
@@ -43,7 +42,6 @@ const FADE_MS = 600;
 
 export default function VenueTab() {
   const { t } = useTranslation();
-  const hud = useHud();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
   const can = (area: keyof NonNullable<typeof venue>["permissions"]) =>
@@ -74,7 +72,6 @@ export default function VenueTab() {
   const photosLoading = can("venue") && photos.isPending;
   const groundCount = grounds.data?.length;
   const settings = detail.data?.settings;
-  const comingNext = () => hud.show(t("common.comingNext"));
   const open = (path: string) => () => push(`/setup/${venueId}/${path}`);
   const chevron = (
     <IconChevronRight
@@ -121,10 +118,24 @@ export default function VenueTab() {
     is(RULES.venueForm) && {
       key: "profile",
       title: t(`${v}.profile`),
-      body: photos.data
-        ? t(`${v}.profileBody`, { count: ready.length })
-        : t(`${v}.profileBodyPlain`),
+      body: t(`${v}.profileBody`),
       onPress: open("details"),
+    },
+    is(RULES.venueForm) && {
+      key: "photos",
+      title: t(`${v}.photos`),
+      body: photos.data ? t(`${v}.photosBody`, { count: ready.length }) : t(`${v}.photosBodyPlain`),
+      onPress: open("photos"),
+    },
+    is(RULES.venueForm) && {
+      key: "amenities",
+      title: t(`${v}.amenities`),
+      body: !detail.data
+        ? t(`${v}.amenitiesBodyPlain`)
+        : detail.data.amenities.length === 0
+          ? t(`${v}.amenitiesBodyNone`)
+          : t(`${v}.amenitiesBody`, { count: detail.data.amenities.length }),
+      onPress: open("amenities"),
     },
     is(RULES.scheduleForm) && {
       key: "grounds",

@@ -15,6 +15,7 @@ import { CloseButton } from "@/components/nav";
 import { PageState } from "@/components/page-state";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
+import { addToCalendar } from "@/lib/calendar";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { justBooked, type Booking } from "@/lib/just-booked";
@@ -34,7 +35,7 @@ import {
 
 // After Book (Figma C8 round 2): "Sent to Nile Kickoff" (260:2) while the venue approves, until the
 // booking's expiresAt, or "You're booked" (261:2) once it's confirmed. Both show the match ticket.
-// Booked adds Add to calendar and Share. The booking is made, so there's no way back into the
+// Booked adds Add to calendar (the phone's own new-event form) and Share. The booking is made, so there's no way back into the
 // checkout: no swipe back, and X, Done and Android's back close it to the venue page.
 
 const ROW = 40;
@@ -167,6 +168,28 @@ function Content({
     });
   };
 
+  // The phone's own new-event form, filled in. Saved says so; Android can't tell, so it stays quiet.
+  const calendar = async () => {
+    try {
+      const result = await addToCalendar({
+        title: t("screens.booked.calendarTitle", { ground: groundName, venue: venueName }),
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        location: [venueName, booking.venue.address ?? booking.venue.area]
+          .filter(Boolean)
+          .join(", "),
+        notes: link
+          ? t("screens.booked.calendarNotesLink", { code: booking.code, link })
+          : t("screens.booked.calendarNotes", { code: booking.code }),
+        url: link,
+      });
+      if (result === "saved") hud.show(t("screens.booked.calendarAdded"));
+      if (result === "denied") hud.show(t("screens.booked.calendarDenied"));
+    } catch {
+      hud.show(t("screens.booked.calendarFailed"));
+    }
+  };
+
   return (
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <Stack.Screen options={{ gestureEnabled: false }} />
@@ -221,9 +244,7 @@ function Content({
             <Pill
               icon={IconCalendarPlus}
               label={t("screens.booked.calendar")}
-              // Adding to the phone's calendar needs a native module, so it waits for the next
-              // scheduled build (docs/plan.md, "Native builds").
-              onPress={() => hud.show(t("screens.booked.calendarSoon"))}
+              onPress={() => void calendar()}
             />
             {link ? (
               <Pill icon={IconShare} label={t("screens.booked.share")} onPress={share} />

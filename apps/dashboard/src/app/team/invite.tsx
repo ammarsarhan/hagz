@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessEditor } from "@/components/access-editor";
-import { BarButton, BottomBar } from "@/components/bottom-bar";
+import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
@@ -22,7 +22,7 @@ import { RULES } from "@/lib/access";
 
 // Inviting someone (Figma D20 726:245), from Team's +: their number, then their access, starting
 // from what the venue gives new staff (and, for a manager who isn't the owner, never more than
-// they have). Sent on WhatsApp; the link works for 48 hours. Send stays grey until the number is
+// they have). Sent on WhatsApp; the link works for 48 hours. Send invite, full width, stays grey until the number is
 // whole.
 function Invite() {
   const { t } = useTranslation();
@@ -71,18 +71,12 @@ function Invite() {
   return (
     <Screen
       footer={
-        <BottomBar
-          title={t("screens.team.invite.barTitle")}
-          detail={t("screens.team.invite.barBody")}
-        >
-          <BarButton
-            label={t("screens.team.invite.send")}
-            primary
-            busy={sending}
-            incomplete={!isCompletePhone(phone)}
-            onPress={() => void sendInvite()}
-          />
-        </BottomBar>
+        <Button
+          label={t("screens.team.invite.send")}
+          loading={sending}
+          disabled={!isCompletePhone(phone)}
+          onPress={() => void sendInvite()}
+        />
       }
     >
       <NavBar

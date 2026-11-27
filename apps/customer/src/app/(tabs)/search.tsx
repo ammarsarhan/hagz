@@ -258,6 +258,9 @@ export default function SearchTab() {
     sort?: SearchSort;
     instant?: string;
     priceMax?: string;
+    // Free tonight: from this time on; Just freed: only times that came free again.
+    after?: string;
+    justFreed?: string;
   }>();
   const presetApplied = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -279,12 +282,14 @@ export default function SearchTab() {
       ...NO_FILTERS,
       size: preset.size,
       instant: preset.instant === "true",
+      justFreed: preset.justFreed === "true",
       ...(preset.priceMax ? { priceMax: Number(preset.priceMax) } : {}),
     });
     setWhen({
       date: preset.date ?? null,
       start: preset.start ?? null,
       hours: Number(preset.hours ?? 1),
+      ...(preset.after && !preset.start ? { after: preset.after } : {}),
     });
   }, [preset]);
   const [sport, setSport] = useState<Sport | undefined>(undefined);
@@ -330,6 +335,7 @@ export default function SearchTab() {
     ...(searchedSport ? { sport: searchedSport } : {}),
     ...(when.date ? { date: when.date } : {}),
     ...(when.start ? { start: when.start } : {}),
+    ...(when.after ? { after: when.after } : {}),
     hours: when.hours,
   };
   const search = useVenueSearch(
@@ -337,6 +343,7 @@ export default function SearchTab() {
       ...whereParams,
       ...(when.date ? { date: when.date } : {}),
       ...(when.start ? { start: when.start } : {}),
+      ...(when.after ? { after: when.after } : {}),
       hours: when.hours,
     },
     phone !== undefined && where !== null,
