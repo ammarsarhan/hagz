@@ -35,7 +35,7 @@ import {
   type CellBlock,
   type Ring,
 } from "@/lib/hours";
-import { afterVenueWrite, queries } from "@/lib/queries";
+import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
 
 // A ground's week (Figma "E1 · Paint the week", 470:11): the whole week as a grid of hours. Tap an
 // hour or hold and drag across several, and the footer turns into what to mark them as ("E2 · Mark
@@ -187,6 +187,7 @@ function WeekScreen({
         ...ids.map((id) => queries.schedule(venueId, id).queryKey),
       ],
     });
+    void afterBookedChange(queryClient, venueId);
   };
 
   const save = async () => {
@@ -205,6 +206,7 @@ function WeekScreen({
     // The grounds' open hours ("Not set" in the list), the checklist and the draft card follow. Not
     // this week (it's the answer) or any other ground's (unchanged).
     void afterVenueWrite(queryClient, venueId, { also: [queries.grounds(venueId).queryKey] });
+    void afterBookedChange(queryClient, venueId);
     router.back();
   };
 

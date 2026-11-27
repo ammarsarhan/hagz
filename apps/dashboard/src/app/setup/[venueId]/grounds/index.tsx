@@ -20,9 +20,8 @@ import { colors } from "@/lib/colors";
 import { groundLine, type Ground } from "@/lib/grounds";
 import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
-import { afterVenueWrite, queries } from "@/lib/queries";
+import { afterBookedChange, afterVenueWrite, queries } from "@/lib/queries";
 import { push } from "@/lib/navigation";
-import { calendarKey } from "@/lib/week-queries";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -114,10 +113,9 @@ function GroundsList({
       exact: true,
     });
     void afterVenueWrite(queryClient, venueId);
-    // The calendar's weeks: the ground now shows faint there, or is gone. Its waiting requests were
-    // declined, so they leave the inbox and the calendar.
-    void queryClient.invalidateQueries({ queryKey: calendarKey(venueId, "slots") });
-    void queryClient.invalidateQueries({ queryKey: calendarKey(venueId, "bookings") });
+    // The calendar's weeks (the ground now shows faint there, or is gone), its declined requests and
+    // its regulars' let-go weeks and end dates.
+    void afterBookedChange(queryClient, venueId);
   };
 
   const sheetGone = () => {
