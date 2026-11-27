@@ -1834,12 +1834,12 @@ const en = {
         stillFree: "Still free",
         noMoreToday: "No more games today",
         noneOnDay: "No games yet",
-        // A game's line: "Pitch 1 · until 11 pm · cash".
-        until: "until {{time}}",
-        held: "held",
-        inApp: "paid in the app",
-        deposit: "deposit paid",
-        atVenue: "cash",
+        // A game's line: "Pitch 1 · Until 11 pm · Cash".
+        until: "Until {{time}}",
+        held: "Held",
+        inApp: "Paid in the app",
+        deposit: "Deposit paid",
+        atVenue: "Cash",
         regular: "{{name}}'s regular game",
         checkIn: "Check in",
       },
