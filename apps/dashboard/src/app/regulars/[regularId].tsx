@@ -3,9 +3,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
 import type { components } from "@hagz/api";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
+import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconBrandWhatsapp, IconDots, IconPhone } from "@/components/icons";
@@ -81,6 +83,14 @@ function RegularPage() {
   const { resume, sending: resuming } = useResume(venueId, regularId);
   const copyLink = useCopyConfirmLink(venueId);
   const regular = useQuery(regularQuery(venueId, regularId));
+  // Pull to refresh: the regular read again (its coming weeks, how it's gone).
+  const pullY = useSharedValue(0);
+  const pull = usePullToRefresh({
+    scrollY: pullY,
+    busy: regular.isFetching,
+    offset: 0,
+    onRefresh: () => void regular.refetch(),
+  });
   // As many dots as the venue keeps weeks ahead.
   const horizon = useQuery(bookingSettingsQuery(venueId)).data?.regularHorizon ?? FALLBACK_HORIZON;
   // Under the dots: "1 confirmed, 1 declined and 2 pending", leaving out what there's none of.
@@ -169,7 +179,14 @@ function RegularPage() {
           ) : undefined
         }
       />
-      <FadingScroll scrollY={compact.scrollY}>
+      <FadingScroll
+        scrollY={compact.scrollY}
+        refreshControl={pull.control}
+        overlay={pull.spinner}
+        onOffset={(y) => {
+          pullY.value = y;
+        }}
+      >
         <Text
           accessibilityRole="header"
           className="text-title font-semibold tracking-[-0.4px]"

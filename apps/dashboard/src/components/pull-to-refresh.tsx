@@ -23,14 +23,19 @@ export function usePullToRefresh({
   scrollY,
   busy,
   onRefresh,
+  offset,
 }: {
   // The list's scroll offset, to fade the spinner in as it's pulled past the top.
   scrollY: SharedValue<number>;
   // Whether what the pull started is still loading.
   busy: boolean;
   onRefresh: () => void;
+  // Where the list's top sits: under the status bar on a tab (the default), or 0 for a list inside
+  // a screen's own frame under its nav bar (FadingScroll's overlay).
+  offset?: number;
 }) {
   const insets = useSafeAreaInsets();
+  const top = offset ?? insets.top;
   const [pulled, setPulled] = useState(false);
   const pulledAt = useRef(0);
   const pulling = useSharedValue(0);
@@ -63,7 +68,7 @@ export function usePullToRefresh({
       tintColor="transparent"
       colors={["transparent"]}
       progressBackgroundColor="transparent"
-      progressViewOffset={insets.top}
+      progressViewOffset={top}
     />
   );
 
@@ -71,7 +76,7 @@ export function usePullToRefresh({
     <Animated.View
       pointerEvents="none"
       className="absolute right-0 left-0 items-center"
-      style={[{ top: insets.top + 14 }, spinnerStyle]}
+      style={[{ top: top + 14 }, spinnerStyle]}
     >
       <ActivityIndicator size="small" color={colors.ink} style={{ transform: [{ scale: 0.95 }] }} />
     </Animated.View>

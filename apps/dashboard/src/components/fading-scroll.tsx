@@ -1,5 +1,12 @@
-import { useEffect, useRef, type ComponentRef, type ReactNode, type RefObject } from "react";
-import { Animated, ScrollView, View } from "react-native";
+import {
+  useEffect,
+  useRef,
+  type ComponentRef,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { Animated, ScrollView, View, type RefreshControlProps } from "react-native";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
 // them. The gap under the nav bar is padding inside the scroll, so rows scroll right up to the close
@@ -10,6 +17,10 @@ import { Animated, ScrollView, View } from "react-native";
 //
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
+//
+// Pull to refresh: pass usePullToRefresh's `control` as `refreshControl` and its `spinner` as
+// `overlay` (made with `offset: 0`, so it sits just under the bar), and feed its scroll value from
+// `onOffset`.
 // The room left under the last row.
 const ROOM = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
@@ -31,6 +42,9 @@ export function FadingScroll({
   topLine = true,
   controller,
   onRoom,
+  refreshControl,
+  overlay,
+  onOffset,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
@@ -41,6 +55,11 @@ export function FadingScroll({
   controller?: RefObject<ScrollController | null>;
   // How far it can scroll (content less its own height), whenever either changes.
   onRoom?: (room: number) => void;
+  refreshControl?: ReactElement<RefreshControlProps>;
+  // Drawn over the scroll, under the bar (pull to refresh's spinner).
+  overlay?: ReactNode;
+  // The scroll offset as it changes, on the JS side.
+  onOffset?: (y: number) => void;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
@@ -76,6 +95,7 @@ export function FadingScroll({
         ref={scroll}
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
+        refreshControl={refreshControl}
         // A form inside it: a tap on another field or a button works first time, keyboard up or not.
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -96,11 +116,13 @@ export function FadingScroll({
           useNativeDriver: true,
           listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
             size.current.y = event.nativeEvent.contentOffset.y;
+            onOffset?.(event.nativeEvent.contentOffset.y);
           },
         })}
       >
         {children}
       </Animated.ScrollView>
+      {overlay}
       {topLine ? <TopHairline scrollY={offset} /> : null}
     </View>
   );
