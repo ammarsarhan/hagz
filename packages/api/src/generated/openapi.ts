@@ -8606,7 +8606,7 @@ export interface paths {
         put?: never;
         /**
          * Block slots
-         * @description Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.
+         * @description Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. Who closed them, when, and an optional note for the team stay with them. All or nothing.
          */
         post: {
             parameters: {
@@ -8619,7 +8619,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["SlotSelection"];
+                    "application/json": components["schemas"]["BlockSlots"];
                 };
             };
             responses: {
@@ -8787,6 +8787,105 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change closed slots' note
+         * @description Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. All or nothing.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlockNoteChange"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE (with the `slotIds` that aren't closed) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -19332,6 +19431,15 @@ export interface components {
             isManual: boolean;
             /** Format: uuid */
             bookingId: string | null;
+            /** @description A BLOCKED slot closed by staff: why, who and when. Null otherwise. */
+            closed: {
+                /** @description For the venue's team; never shown to players. */
+                note: string | null;
+                /** @description First name of the staff member who closed it. */
+                by: string | null;
+                /** Format: date-time */
+                at: string;
+            } | null;
         };
         /**
          * @description `HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff.
@@ -19341,9 +19449,21 @@ export interface components {
         ChangedSlots: {
             slots: components["schemas"]["Slot"][];
         };
+        /** @description Free slots of the venue that haven't started, to close. */
+        BlockSlots: {
+            slotIds: string[];
+            /** @description Why it's closed, for the team. */
+            note?: string;
+        };
         /** @description Slots of the venue that haven't started. */
         SlotSelection: {
             slotIds: string[];
+        };
+        /** @description Closed slots of the venue that haven't started, and their note (null removes it). */
+        BlockNoteChange: {
+            slotIds: string[];
+            /** @description Why it's closed, for the team. */
+            note: string | null;
         };
         /** @description The slots keep this price, and ignore weekly schedule changes, until reset to the schedule. A held or booked slot's booking keeps the price it was made at. */
         SetSlotPrice: {

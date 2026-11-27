@@ -5857,6 +5857,38 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "closed": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "For the venue's team; never shown to players."
+              },
+              "by": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "First name of the staff member who closed it."
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "note",
+              "by",
+              "at"
+            ],
+            "description": "A BLOCKED slot closed by staff: why, who and when. Null otherwise."
           }
         },
         "required": [
@@ -5868,7 +5900,8 @@
           "price",
           "status",
           "isManual",
-          "bookingId"
+          "bookingId",
+          "closed"
         ]
       },
       "SlotStatus": {
@@ -5895,6 +5928,29 @@
           "slots"
         ]
       },
+      "BlockSlots": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Why it's closed, for the team."
+          }
+        },
+        "required": [
+          "slotIds"
+        ],
+        "description": "Free slots of the venue that haven't started, to close."
+      },
       "SlotSelection": {
         "type": "object",
         "properties": {
@@ -5912,6 +5968,33 @@
           "slotIds"
         ],
         "description": "Slots of the venue that haven't started."
+      },
+      "BlockNoteChange": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "Why it's closed, for the team."
+          }
+        },
+        "required": [
+          "slotIds",
+          "note"
+        ],
+        "description": "Closed slots of the venue that haven't started, and their note (null removes it)."
       },
       "SetSlotPrice": {
         "type": "object",
@@ -21010,7 +21093,7 @@
           "Venue slots"
         ],
         "summary": "Block slots",
-        "description": "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.",
+        "description": "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. Who closed them, when, and an optional note for the team stay with them. All or nothing.",
         "security": [
           {
             "staffBearer": []
@@ -21032,7 +21115,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SlotSelection"
+                "$ref": "#/components/schemas/BlockSlots"
               }
             }
           }
@@ -21197,6 +21280,113 @@
           },
           "409": {
             "description": "SLOT_UNAVAILABLE (with the `slotIds` that aren't blocked)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/note": {
+      "put": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Change closed slots' note",
+        "description": "Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. All or nothing.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockNoteChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE (with the `slotIds` that aren't closed)",
             "content": {
               "application/problem+json": {
                 "schema": {

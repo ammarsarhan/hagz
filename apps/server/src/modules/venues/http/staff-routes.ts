@@ -46,6 +46,7 @@ import { createVenue, venueSetup } from "../application/venue-setup";
 import {
   addSlots,
   blockSlots,
+  changeBlockNote,
   resetSlots,
   setSlotPrice,
   staffDaySlots,
@@ -210,6 +211,9 @@ export const venuesStaffRoutes = createRouter()
   )
   .openapi(route.unblockSlots, async (c) =>
     c.json(await unblockSlots(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.changeBlockNote, async (c) =>
+    c.json(await changeBlockNote(c.var.venue, c.req.valid("json")), 200),
   )
   .openapi(route.setSlotPrice, async (c) =>
     c.json(await setSlotPrice(c.var.venue, c.req.valid("json")), 200),

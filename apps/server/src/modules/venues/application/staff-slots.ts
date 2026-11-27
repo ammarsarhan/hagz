@@ -1,6 +1,8 @@
 import {
   MANUAL_SLOT_MINUTES,
   type AddSlots,
+  type BlockNoteChange,
+  type BlockSlots,
   type ChangedSlots,
   type SetSlotPrice,
   type SlotSelection,
@@ -16,6 +18,7 @@ import {
   SLOT_PRICES_SET,
   SLOTS_ADDED,
   SLOTS_BLOCKED,
+  SLOTS_NOTE_CHANGED,
   SLOTS_RESET,
   SLOTS_UNBLOCKED,
 } from "../domain/events";
@@ -97,14 +100,16 @@ const reread = async (tx: Tx, ids: string[]): Promise<ChangedSlots> => ({
   ).map(presentSlot),
 });
 
-// Closes free hours: nobody can book them until they're unblocked.
+// Closes free hours: nobody can book them until they're unblocked. Who closed them, when, and an
+// optional note for the team stay with them (user, 2026-11-27).
 export const blockSlots = async (
   actor: VenueAccess,
-  { slotIds }: SlotSelection,
+  { slotIds, note }: BlockSlots,
   clock: Clock = systemClock,
 ): Promise<ChangedSlots> =>
   transaction(async (tx) => {
-    const slots = await lockSelected(tx, actor, slotIds, clock.now());
+    const now = clock.now();
+    const slots = await lockSelected(tx, actor, slotIds, now);
     const taken = slots.filter((slot) => slot.status !== "AVAILABLE").map((slot) => slot.id);
     if (taken.length > 0) {
       throw slotsUnavailable(
@@ -113,8 +118,16 @@ export const blockSlots = async (
       );
     }
     const ids = slots.map((slot) => slot.id);
-    await tx.groundSlot.updateMany({ where: { id: { in: ids } }, data: { status: "BLOCKED" } });
-    await record(tx, actor, SLOTS_BLOCKED, { slotIds: ids });
+    // An empty note is none.
+    const blockNote = note === undefined || note === "" ? null : note;
+    await tx.groundSlot.updateMany({
+      where: { id: { in: ids } },
+      data: { status: "BLOCKED", blockNote, blockedById: actor.staffId, blockedAt: now },
+    });
+    await record(tx, actor, SLOTS_BLOCKED, {
+      slotIds: ids,
+      ...(blockNote ? { note: blockNote } : {}),
+    });
     return reread(tx, ids);
   });
 
@@ -130,7 +143,10 @@ export const unblockSlots = async (
     const open = slots.filter((slot) => slot.status !== "BLOCKED").map((slot) => slot.id);
     if (open.length > 0) throw slotsUnavailable(open, "Only blocked slots can be unblocked.");
     const ids = slots.map((slot) => slot.id);
-    await tx.groundSlot.updateMany({ where: { id: { in: ids } }, data: { status: "AVAILABLE" } });
+    await tx.groundSlot.updateMany({
+      where: { id: { in: ids } },
+      data: { status: "AVAILABLE", blockNote: null, blockedById: null, blockedAt: null },
+    });
     await record(tx, actor, SLOTS_UNBLOCKED, { slotIds: ids });
     return {
       changed: await reread(tx, ids),
@@ -140,6 +156,24 @@ export const unblockSlots = async (
   await enqueueGeneration(groundIds);
   return changed;
 };
+
+// Changes closed hours' note for the team; null removes it. Who closed them and when stay.
+export const changeBlockNote = async (
+  actor: VenueAccess,
+  { slotIds, note }: BlockNoteChange,
+  clock: Clock = systemClock,
+): Promise<ChangedSlots> =>
+  transaction(async (tx) => {
+    const slots = await lockSelected(tx, actor, slotIds, clock.now());
+    const open = slots.filter((slot) => slot.status !== "BLOCKED").map((slot) => slot.id);
+    if (open.length > 0) throw slotsUnavailable(open, "Only closed slots have a note.");
+    const ids = slots.map((slot) => slot.id);
+    // An empty note is none.
+    const blockNote = note === null || note === "" ? null : note;
+    await tx.groundSlot.updateMany({ where: { id: { in: ids } }, data: { blockNote } });
+    await record(tx, actor, SLOTS_NOTE_CHANGED, { slotIds: ids, note: blockNote });
+    return reread(tx, ids);
+  });
 
 // Prices slots by hand: they keep the price whatever the weekly schedule or tier prices become,
 // until reset. A held or booked slot's booking already has its price; this one is for later ones.

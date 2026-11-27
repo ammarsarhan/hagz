@@ -90,11 +90,17 @@ model GroundSlot {
   // When it last came free again (a booking cancelled, a regular's reservation released): search
   // marks it "just freed" near kick-off (docs/regulars.md).
   freedAt         DateTime?  @db.Timestamptz
+  // Closed by staff (BLOCKED): a note for their team, who closed it and when (user, 2026-11-27).
+  // Cleared when it's opened again (CHECK: only on a BLOCKED slot).
+  blockNote       String?
+  blockedById     String?    @db.Uuid
+  blockedAt       DateTime?  @db.Timestamptz
   createdAt       DateTime   @default(now()) @db.Timestamptz
   updatedAt       DateTime   @updatedAt @db.Timestamptz
 
-  ground  Ground   @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
-  booking Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  ground    Ground   @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  booking   Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  blockedBy Staff?   @relation(fields: [blockedById], references: [id], onDelete: SetNull)
 
   @@unique([groundId, startsAt])
   @@index([venueId, startsAt])

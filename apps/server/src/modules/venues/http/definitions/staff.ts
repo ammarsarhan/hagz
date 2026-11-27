@@ -4,6 +4,8 @@ import {
   ChangedSlots,
   SetSlotPrice,
   SlotSelection,
+  BlockSlots,
+  BlockNoteChange,
   VenueSlots,
   VenueSlotsQuery,
   VenueLayout,
@@ -872,11 +874,11 @@ export const blockSlots = createRoute({
   summary: "Block slots",
   description:
     "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. " +
-    "All or nothing.",
+    "Who closed them, when, and an optional note for the team stay with them. All or nothing.",
   // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
   middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
   security,
-  request: { params: venueParams, body: { required: true, ...json(SlotSelection) } },
+  request: { params: venueParams, body: { required: true, ...json(BlockSlots) } },
   responses: {
     200: { description: "The slots after the change", ...json(ChangedSlots) },
     400: problemResponse("VALIDATION_FAILED"),
@@ -911,6 +913,28 @@ export const unblockSlots = createRoute({
   },
 });
 
+export const changeBlockNote = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/slots/note",
+  tags: slotsTags,
+  summary: "Change closed slots' note",
+  description:
+    "Needs `schedule: manage`. The note on closed slots, for the venue's team; null removes it. " +
+    "All or nothing.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(BlockNoteChange) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    409: problemResponse("SLOT_UNAVAILABLE (with the `slotIds` that aren't closed)"),
+    422: slotStarted,
+  },
+});
 export const setSlotPrice = createRoute({
   method: "put",
   path: "/staff/venues/{venueId}/slots/price",

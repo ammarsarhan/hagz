@@ -37,6 +37,20 @@ export const Slot = z
     status: SlotStatus,
     isManual: z.boolean().meta({ description: "Set by staff rather than the schedule." }),
     bookingId: z.uuid().nullable(),
+    closed: z
+      .object({
+        note: z
+          .string()
+          .nullable()
+          .meta({ description: "For the venue's team; never shown to players." }),
+        by: z
+          .string()
+          .nullable()
+          .meta({ description: "First name of the staff member who closed it." }),
+        at: z.iso.datetime(),
+      })
+      .nullable()
+      .meta({ description: "A BLOCKED slot closed by staff: why, who and when. Null otherwise." }),
   })
   .meta({ id: "Slot" });
 
@@ -90,6 +104,25 @@ export const SlotSelection = z
   .object({ slotIds: SlotIds })
   .meta({ id: "SlotSelection", description: "Slots of the venue that haven't started." });
 
+// A note on closed hours, for the venue's team (user, 2026-11-27).
+const BlockNote = z
+  .string()
+  .trim()
+  .max(200)
+  .meta({ description: "Why it's closed, for the team." });
+
+export const BlockSlots = z
+  .object({ slotIds: SlotIds, note: BlockNote.optional() })
+  .meta({
+    id: "BlockSlots",
+    description: "Free slots of the venue that haven't started, to close.",
+  });
+
+export const BlockNoteChange = z.object({ slotIds: SlotIds, note: BlockNote.nullable() }).meta({
+  id: "BlockNoteChange",
+  description: "Closed slots of the venue that haven't started, and their note (null removes it).",
+});
+
 export const SetSlotPrice = z.object({ slotIds: SlotIds, price: Price }).meta({
   id: "SetSlotPrice",
   description:
@@ -124,5 +157,7 @@ export const ChangedSlots = z.object({ slots: z.array(Slot) }).meta({ id: "Chang
 export type Slot = z.infer<typeof Slot>;
 export type SlotSelection = z.infer<typeof SlotSelection>;
 export type SetSlotPrice = z.infer<typeof SetSlotPrice>;
+export type BlockSlots = z.infer<typeof BlockSlots>;
+export type BlockNoteChange = z.infer<typeof BlockNoteChange>;
 export type AddSlots = z.infer<typeof AddSlots>;
 export type ChangedSlots = z.infer<typeof ChangedSlots>;
