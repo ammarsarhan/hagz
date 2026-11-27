@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Alert, View } from "react-native";
 import type { components } from "@hagz/api";
-import { datesJoin } from "@/lib/regulars";
+import { datesLabel } from "@/lib/regulars";
 import { Button } from "./button";
 import { Sheet } from "./sheet";
 import { StepRail, type Step } from "./step-rail";
@@ -11,7 +11,8 @@ type Removal = components["schemas"]["GroundRemoval"];
 
 // Deleting a ground, asked first (user, 2026-11-27): a sheet with what follows on the step rail, as
 // a regular's Pause and End: players stop seeing it, its waiting requests are declined, its bookings still to come go ahead and keep
-// it on the calendar marked Deleted, its regulars end with it, then it's gone. Cancel and Delete side
+// it on the calendar marked Deleted, each regular lets its waiting weeks go and ends after its last
+// confirmed one, then it's gone. Cancel and Delete side
 // by side under it (no bar; user, 2026-11-27); Delete asks once more, natively and briefly, before anything happens.
 export function DeleteGroundSheet({
   name,
@@ -60,16 +61,16 @@ export function DeleteGroundSheet({
           },
         ]
       : []),
-    ...(regulars.length > 0
-      ? [
-          {
-            label: t(`${d}.regulars`, { count: regulars.length, names: datesJoin(t, regulars) }),
-            detail: t(`${d}.regularsBody`),
-            when: "",
-            state: "now" as const,
-          },
-        ]
-      : []),
+    // Each regular on it, as when hours close (user, 2026-11-27): its waiting weeks go, and it
+    // ends after its last confirmed week, or now with none.
+    ...regulars.map((regular): Step => ({
+      label: regular.lastWeek
+        ? t(`${d}.regularEnds`, { name: regular.name, date: datesLabel(t, [regular.lastWeek]) })
+        : t(`${d}.regularEndsNow`, { name: regular.name }),
+      detail: regular.lastWeek ? t(`${d}.regularBody`) : t(`${d}.regularBodyNone`),
+      when: "",
+      state: "now",
+    })),
     {
       label: bookings > 0 ? t(`${d}.goneLater`) : t(`${d}.goneNow`),
       detail: t(`${d}.goneBody`),

@@ -19,6 +19,7 @@ import {
   type RegularAction,
 } from "@/components/regular-sheets";
 import { Screen } from "@/components/screen";
+import { GroundName } from "@/components/ground-name";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { colors } from "@/lib/colors";
@@ -126,15 +127,10 @@ export default function RegularPage() {
     }).format(new Date(one.pausedAt));
   })();
   const comingNext = () => hud.show(t("common.comingNext"));
-  const line = [
-    t(`${p}.time`, {
-      day: t(`screens.regulars.days.${String(one.dayOfWeek) as Weekday}`),
-      hours: `${hourLabel(t, one.startHour)} – ${hourLabel(t, one.startHour + one.slotCount)}`,
-    }),
-    one.ground.name,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const time = t(`${p}.time`, {
+    day: t(`screens.regulars.days.${String(one.dayOfWeek) as Weekday}`),
+    hours: `${hourLabel(t, one.startHour)} – ${hourLabel(t, one.startHour + one.slotCount)}`,
+  });
   const phone = one.customer.phone;
   const r = one.reliability;
   const figures = [
@@ -180,7 +176,11 @@ export default function RegularPage() {
         >
           {one.customer.name}
         </Text>
-        <Text className="mt-1.5 text-subtitle text-ink-2">{line}</Text>
+        <Text className="mt-1.5 text-subtitle text-ink-2">
+          {time}
+          {one.ground.name ? " · " : null}
+          <GroundName ground={one.ground} className="text-subtitle text-ink-2" />
+        </Text>
         {/* Since when, on a line of its own right under (user, 2026-11-26). */}
         <Text className="text-subtitle text-ink-2">
           {paused ? t(`${p}.pausedLine`, { date: pausedOn }) : t(`${p}.since`, { date: since })}

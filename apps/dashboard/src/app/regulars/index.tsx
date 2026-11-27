@@ -30,6 +30,7 @@ import { useHud } from "@/components/hud";
 import { IconChevronRight, IconGripVertical, IconPlus } from "@/components/icons";
 import { BackButton, NavBar, RoundButton } from "@/components/nav";
 import { Screen } from "@/components/screen";
+import { GroundName } from "@/components/ground-name";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
@@ -543,7 +544,10 @@ function Slot({
               {regular.customer.name}
             </Text>
             <Text className="text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
-              {regular.ground.name ?? ""}
+              <GroundName
+                ground={regular.ground}
+                className="text-[14px] leading-[19px] text-ink-2"
+              />
             </Text>
           </View>
           <IconGripVertical size={18} color={colors.ink3} strokeWidth={2} />
@@ -567,17 +571,13 @@ function Row({
   const { t } = useTranslation();
   const paused = regular.status === "PAUSED";
   const weeks = weeksDecided(regular);
-  const line = [
-    // Its place in a shared time shows by where it sits, not in words (user, 2026-11-26).
-    regular.ground.name,
+  // Its place in a shared time shows by where it sits, not in words (user, 2026-11-26).
+  const rest =
     paused && regular.pausedAt
       ? t("screens.regulars.paused", { date: dateLabel(regular.pausedAt) })
       : weeks > 0
         ? confirmedLine(t, regular.reliability.confirmed, weeks)
-        : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+        : null;
   return (
     <Pressable
       accessibilityRole="button"
@@ -594,7 +594,9 @@ function Row({
         </Text>
         {/* One line, so a shared time's rows are all one height to glide between. */}
         <Text className="mt-0.5 text-[14px] leading-[19px] text-ink-2" numberOfLines={1}>
-          {line}
+          <GroundName ground={regular.ground} className="text-[14px] leading-[19px] text-ink-2" />
+          {regular.ground.name && rest ? " · " : null}
+          {rest}
         </Text>
       </View>
       <IconChevronRight
