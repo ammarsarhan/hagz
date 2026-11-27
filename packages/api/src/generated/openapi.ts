@@ -20169,10 +20169,10 @@ export interface components {
         };
         ReminderWeek: {
             /**
-             * @description WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. CHANGED: the venue let it go, moved or cancelled it, or paused or ended the regular.
+             * @description WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. MOVED: the venue moved or swapped it; `movedTo` is where it is now. CHANGED: the venue let it go or cancelled it, or paused or ended the regular.
              * @enum {string}
              */
-            state: "WAITING" | "CONFIRMED" | "RELEASED" | "MISSED" | "CHANGED";
+            state: "WAITING" | "CONFIRMED" | "RELEASED" | "MISSED" | "MOVED" | "CHANGED";
             /**
              * @description The week's booking code, for the regular to quote to the venue.
              * @example K7Q2P9M4
@@ -20198,6 +20198,17 @@ export interface components {
             /** Format: date-time */
             deadline: string | null;
             timezone: string;
+            /** @description MOVED: the week where it is now, after every move. Null otherwise. */
+            movedTo: {
+                code: string;
+                ground: {
+                    name: string | null;
+                };
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+            } | null;
         };
         /** @description The token from the link's #token=. */
         ReminderTokenBody: {

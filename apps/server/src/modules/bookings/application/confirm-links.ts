@@ -9,6 +9,7 @@ import { AppError } from "@/platform/errors/app-error";
 import { webLinks } from "@/platform/http/links";
 import { consume } from "@/platform/rate-limit/rate-limit";
 import { BOOKING_EVENTS } from "../domain/events";
+import { LIVE_STATUSES } from "../domain/status";
 import { venueBookingNotFound } from "./booking-rows";
 import { confirmIn, releaseIn } from "./reservations";
 import { topUpVenue } from "./regulars";
@@ -145,10 +146,48 @@ const stateOf = (found: Found, now: Date): ReminderWeek["state"] => {
   return "WAITING";
 };
 
-const viewOf = (found: Found, language: Language, now: Date): ReminderWeek => {
+// A week the venue moved or swapped (perhaps more than once): where it is now, if it's still on.
+// Only moves and swaps: a refill is someone else's booking of a week let go.
+const movedOf = async (bookingId: string, language: Language) => {
+  let id = bookingId;
+  for (let hops = 0; hops < 20; hops += 1) {
+    const next = await prisma.rescheduling.findFirst({
+      where: { fromBookingId: id, type: { in: ["MOVE", "SWAP"] } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        to: {
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            startsAt: true,
+            endsAt: true,
+            ground: { select: names },
+          },
+        },
+      },
+    });
+    if (!next) return null;
+    const { to } = next;
+    if (to.status !== "RESCHEDULED")
+      return (LIVE_STATUSES as readonly string[]).includes(to.status)
+        ? {
+            code: to.code,
+            ground: { name: nameIn(to.ground.translations, language) },
+            startsAt: to.startsAt.toISOString(),
+            endsAt: to.endsAt.toISOString(),
+          }
+        : null;
+    id = to.id;
+  }
+  return null;
+};
+
+const viewOf = async (found: Found, language: Language, now: Date): Promise<ReminderWeek> => {
   const { booking } = found;
+  const movedTo = booking.status === "RESCHEDULED" ? await movedOf(booking.id, language) : null;
   return {
-    state: stateOf(found, now),
+    state: movedTo ? "MOVED" : stateOf(found, now),
     code: booking.code,
     name: booking.customer.name.trim().split(/\s+/)[0] ?? booking.customer.name,
     venue: {
@@ -165,6 +204,7 @@ const viewOf = (found: Found, language: Language, now: Date): ReminderWeek => {
     endsAt: booking.endsAt.toISOString(),
     deadline: booking.expiresAt?.toISOString() ?? null,
     timezone: booking.venue.marketplace.timezone,
+    movedTo,
   };
 };
 

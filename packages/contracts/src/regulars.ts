@@ -202,9 +202,9 @@ export const ReminderTokenBody = z
 
 export const ReminderWeek = z
   .object({
-    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "MISSED", "CHANGED"]).meta({
+    state: z.enum(["WAITING", "CONFIRMED", "RELEASED", "MISSED", "MOVED", "CHANGED"]).meta({
       description:
-        "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. CHANGED: the venue let it go, moved or cancelled it, or paused or ended the regular.",
+        "WAITING: can be confirmed or let go. CONFIRMED: playing (said by the regular or staff). RELEASED: the regular let it go. MISSED: nobody confirmed by the deadline, so it went back on sale. MOVED: the venue moved or swapped it; `movedTo` is where it is now. CHANGED: the venue let it go or cancelled it, or paused or ended the regular.",
     }),
     code: z.string().meta({
       description: "The week's booking code, for the regular to quote to the venue.",
@@ -221,6 +221,15 @@ export const ReminderWeek = z
     endsAt: Instant,
     deadline: Instant.nullable(),
     timezone: z.string(),
+    movedTo: z
+      .object({
+        code: z.string(),
+        ground: z.object({ name: z.string().nullable() }),
+        startsAt: Instant,
+        endsAt: Instant,
+      })
+      .nullable()
+      .meta({ description: "MOVED: the week where it is now, after every move. Null otherwise." }),
   })
   .meta({ id: "ReminderWeek" });
 

@@ -886,6 +886,42 @@ describe("confirm links", () => {
     expect((await week(await open("week", two.token))).state).toBe("CHANGED");
   });
 
+  it("says where the venue moved the week, after every move", async () => {
+    const { venue, owner, regular, ground } = await weeklyGround();
+    const made = await create(owner.id, venue.id, regular(karim, { slotCount: 1 }));
+    const first = made.reservations[0];
+    const link = await tokenOf(await copy(owner.id, venue.id, first?.id ?? ""));
+    const moveTo = async (bookingId: string, hours: number) => {
+      const startsAt = new Date(Date.parse(first?.startsAt ?? "") + hours * HOUR);
+      const res = await asStaff(
+        owner.id,
+        "POST",
+        `/venues/${venue.id}/bookings/${bookingId}/move`,
+        {
+          groundId: ground.id,
+          startsAt: startsAt.toISOString(),
+          endsAt: new Date(startsAt.getTime() + HOUR).toISOString(),
+        },
+      );
+      expect(res.status).toBe(200);
+      return (await res.json()) as { id: string; code: string; startsAt: string };
+    };
+    const moved = await moveTo(first?.id ?? "", 1);
+    const shown = await week(await open("week", link.token));
+    expect(shown.state).toBe("MOVED");
+    expect(shown.startsAt).toBe(first?.startsAt);
+    expect(shown.movedTo).toMatchObject({ code: moved.code, startsAt: moved.startsAt });
+
+    // Moved again, back to 8pm (the only other hour): the link follows it there.
+    const again = await moveTo(moved.id, 0);
+    expect((await week(await open("week", link.token))).movedTo?.startsAt).toBe(again.startsAt);
+
+    // Let go after the move, it's no longer anywhere: the venue changed it.
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${again.id}/release`);
+    const gone = await week(await open("week", link.token));
+    expect([gone.state, gone.movedTo]).toEqual(["CHANGED", null]);
+  });
+
   it("follows a longer Confirm by set after the link was copied", async () => {
     const { venue, owner, regular } = await weeklyGround();
     const made = await create(owner.id, venue.id, regular(karim));
