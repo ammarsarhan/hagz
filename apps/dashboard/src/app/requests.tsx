@@ -2,7 +2,9 @@ import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
+import { FadingScroll } from "@/components/fading-scroll";
 import { GroupHeading } from "@/components/group-heading";
 import { RequestSheet, type Answer } from "@/components/request-sheets";
 import { BackButton, NavBar } from "@/components/nav";
@@ -45,6 +47,9 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
   const { t } = useTranslation();
   // The minute, so a request past its deadline leaves and Today becomes tomorrow's Today.
   const now = useNow((at) => Math.floor(at / 60_000) * 60_000 + 60_000);
+  // The back button stays put; the title scrolls up into the bar beside it, as on a booking.
+  const compact = useCompactTitle();
+  const title = t("screens.requests.title");
 
   const days = useMemo(() => {
     const groups = new Map<string, StaffBooking[]>();
@@ -73,17 +78,22 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
 
   return (
     <Screen>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-      >
-        <NavBar
-          start={
-            <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
-          }
-        />
-        <Title subtitle={t("screens.requests.subtitle")}>{t("screens.requests.title")}</Title>
+      <NavBar
+        flush
+        start={
+          <CompactTitle
+            button={
+              <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+            }
+            title={title}
+            style={compact.style}
+          />
+        }
+      />
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title onTitleLayout={compact.onTitleLayout} subtitle={t("screens.requests.subtitle")}>
+          {title}
+        </Title>
         {days.length === 0 ? (
           <Text className="text-body text-ink-2">{t("screens.requests.none")}</Text>
         ) : (
@@ -103,7 +113,7 @@ function Requests({ requests }: { requests: StaffBooking[] }) {
             </View>
           ))
         )}
-      </ScrollView>
+      </FadingScroll>
       {answering ? (
         <RequestSheet
           key={answering.request.id}
