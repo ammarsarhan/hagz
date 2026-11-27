@@ -242,18 +242,21 @@ describe("regulars", () => {
     };
 
     expect(await preview(week(null))).toEqual({ bookings: 0, requests: 0, regulars: [] });
-    // Closing just the second hour of the game closes it too, and every week reserved has a slot
-    // in it.
-    const last = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(starts[3]);
+    // Karim confirms his third week; the others wait.
+    const third = made.reservations[2];
+    await asStaff(owner.id, "POST", `/venues/${venue.id}/reservations/${third?.id}/confirm`);
+    // Closing just the second hour of the game closes it too. Only the confirmed week goes ahead:
+    // the waiting ones are let go.
+    const last = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(starts[2]);
     expect(await preview(week(21))).toEqual({
-      bookings: 4,
+      bookings: 1,
       requests: 0,
       regulars: [{ id: made.id, name: "Karim", lastWeek: last }],
     });
     // Nothing was saved.
     expect(await prisma.groundSchedule.count({ where: { groundId: ground.id } })).toBe(0);
 
-    // Saved: the regular keeps its reserved weeks and ends after the last one.
+    // Saved: the regular lets its waiting weeks go, keeps the confirmed one and ends after it.
     const saved = await asStaff(
       owner.id,
       "PUT",
@@ -263,7 +266,18 @@ describe("regulars", () => {
     expect(saved.status).toBe(200);
     const after = await detail(owner.id, venue.id, made.id);
     expect(after).toMatchObject({ status: "ACTIVE", endsOn: last });
-    expect(after.reservations).toHaveLength(4);
+    expect(after.reservations.map((one) => one.id)).toEqual([third?.id]);
+    const letGo = await prisma.booking.findMany({
+      where: { regularId: made.id, status: "RELEASED" },
+      include: { events: { orderBy: { createdAt: "asc" } } },
+    });
+    expect(letGo).toHaveLength(3);
+    for (const one of letGo) {
+      expect(one.events.at(-1)).toMatchObject({
+        type: "REGULAR_CHANGED",
+        data: { reason: "SCHEDULE_CHANGED" },
+      });
+    }
     // A regular with no week reserved ends at once.
     const omarGame = await create(
       owner.id,

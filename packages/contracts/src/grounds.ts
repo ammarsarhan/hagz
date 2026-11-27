@@ -281,7 +281,7 @@ export const SchedulePreview = z
   .object({
     bookings: z.int().meta({
       description:
-        "Bookings and holds still ahead in hours it closes, requests aside: they go ahead as booked.",
+        "Bookings and holds still ahead in hours it closes, requests and regulars' waiting weeks aside: they go ahead as booked.",
     }),
     requests: z.int().meta({
       description: "Booking requests waiting in hours it closes: declined when it's saved.",
@@ -293,7 +293,7 @@ export const SchedulePreview = z
           name: z.string().meta({ description: "The customer's first name." }),
           lastWeek: z.iso.date().nullable().meta({
             description:
-              "The last week already reserved, which still happens; null with none. It ends after it.",
+              "The last week confirmed, which still happens; null with none. It ends after it, its waiting weeks let go.",
           }),
         }),
       )

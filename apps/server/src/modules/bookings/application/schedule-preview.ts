@@ -5,13 +5,14 @@ import { prisma } from "@/platform/db/prisma";
 import type { Tx } from "@/platform/db/transaction";
 import { localToday, upcomingWeeks } from "../domain/regulars";
 import { LIVE_STATUSES } from "../domain/status";
-import { lockVenueRegulars } from "./regulars";
+import { lockVenueRegulars, releaseWeeks } from "./regulars";
 import { declineIn } from "./staff-decisions";
 
 // New hours on a ground and what's booked in the ones they close (user, 2026-11-27). Bookings and
 // holds still ahead in them go ahead as booked; requests waiting in them are declined; regulars
-// whose weekly time they close, wholly or in part, keep the weeks already reserved and end after
-// the last one. schedulePreview says so before saving (nothing written); applyHoursChange does it,
+// whose weekly time they close, wholly or in part, let their waiting (UNCONFIRMED) weeks go, keep
+// the confirmed ones, and end after the last of them, as when their ground is deleted
+// (ground-removal.ts). schedulePreview says so before saving (nothing written); applyHoursChange does it,
 // in the save's transaction, through venues' hook (http/router.ts). The open hours are venues'
 // (startsUnder); the bookings and regulars are read here, the same way for both.
 
@@ -21,6 +22,10 @@ const REGULAR_WEEKS = 8;
 const HOUR_MS = 3_600_000;
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+
+// A regular's week still waiting for a confirm and not started: let go, not kept.
+const letGo = (booking: { status: string; startsAt: Date }, now: Date) =>
+  booking.status === "UNCONFIRMED" && booking.startsAt.getTime() > now.getTime();
 
 const affected = async (
   db: Tx | typeof prisma,
@@ -71,28 +76,39 @@ const affected = async (
       customer: { select: { name: true } },
     },
   });
-  const closed = regulars.filter((regular) =>
-    upcomingWeeks(regular, {
-      now,
-      timezone,
-      horizonWeeks: REGULAR_WEEKS,
-      confirmationHours: 0,
-      instantOf,
-    }).some((week) =>
-      Array.from(
-        { length: regular.slotCount },
-        (_, i) => new Date(week.startsAt.getTime() + i * HOUR_MS),
-      ).some(closes),
-    ),
+  // A waiting week in a closed hour closes its regular's time too.
+  const waitingHit = new Set(
+    hit.filter((booking) => letGo(booking, now)).map((booking) => booking.regularId),
+  );
+  const closed = regulars.filter(
+    (regular) =>
+      waitingHit.has(regular.id) ||
+      upcomingWeeks(regular, {
+        now,
+        timezone,
+        horizonWeeks: REGULAR_WEEKS,
+        confirmationHours: 0,
+        instantOf,
+      }).some((week) =>
+        Array.from(
+          { length: regular.slotCount },
+          (_, i) => new Date(week.startsAt.getTime() + i * HOUR_MS),
+        ).some(closes),
+      ),
   );
 
   return {
     timezone,
     hit,
     regulars: closed.map((regular) => {
-      // Requests are declined, so they're not weeks it keeps.
+      // Requests are declined and waiting weeks let go, so neither is a week it keeps.
       const reserved = live
-        .filter((booking) => booking.regularId === regular.id && booking.status !== "PENDING")
+        .filter(
+          (booking) =>
+            booking.regularId === regular.id &&
+            booking.status !== "PENDING" &&
+            !letGo(booking, now),
+        )
         .map((booking) => booking.startsAt.getTime());
       return {
         id: regular.id,
@@ -114,7 +130,7 @@ export const schedulePreview = async (
   const { timezone, hit, regulars } = await affected(prisma, actor.venueId, groundId, open, now);
   const dateOf = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
   return {
-    bookings: hit.filter((booking) => booking.status !== "PENDING").length,
+    bookings: hit.filter((booking) => booking.status !== "PENDING" && !letGo(booking, now)).length,
     requests: hit.filter((booking) => booking.status === "PENDING").length,
     regulars: regulars.map(({ id, name, lastReserved }) => ({
       id,
@@ -140,9 +156,10 @@ export const applyHoursChange = async (
     }
   }
   for (const regular of regulars) {
+    await releaseWeeks(tx, regular.id, "SCHEDULE_CHANGED", now);
     await tx.venueRegular.update({
       where: { id: regular.id },
-      // Its last reserved week is its last; with none, it ends now.
+      // Its last confirmed week is its last; with none, it ends now.
       data: regular.lastReserved
         ? { endsOn: localToday(regular.lastReserved, timezone) }
         : { endedAt: now },

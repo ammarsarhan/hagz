@@ -6916,7 +6916,7 @@ export interface paths {
         };
         /**
          * Set a ground's weekly hours
-         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes keep the weeks already reserved and end after the last (`POST …/schedule/preview` says so first).
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).
          */
         put: {
             parameters: {
@@ -7017,7 +7017,7 @@ export interface paths {
         put?: never;
         /**
          * Copy a ground's weekly hours to others
-         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes keep the weeks already reserved and end after the last (`POST …/schedule/preview` says so first).
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need In hours it closes: bookings and holds go ahead, waiting requests are declined, and regulars whose weekly time closes let their waiting weeks go and end after their last confirmed one (`POST …/schedule/preview` says so first).
          */
         post: {
             parameters: {
@@ -19717,7 +19717,7 @@ export interface components {
             nextCursor: string | null;
         };
         SchedulePreview: {
-            /** @description Bookings and holds still ahead in hours it closes, requests aside: they go ahead as booked. */
+            /** @description Bookings and holds still ahead in hours it closes, requests and regulars' waiting weeks aside: they go ahead as booked. */
             bookings: number;
             /** @description Booking requests waiting in hours it closes: declined when it's saved. */
             requests: number;
@@ -19729,7 +19729,7 @@ export interface components {
                 name: string;
                 /**
                  * Format: date
-                 * @description The last week already reserved, which still happens; null with none. It ends after it.
+                 * @description The last week confirmed, which still happens; null with none. It ends after it, its waiting weeks let go.
                  */
                 lastWeek: string | null;
             }[];

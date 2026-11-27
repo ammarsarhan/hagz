@@ -330,7 +330,14 @@ export const topUpAllVenues = async (clock: Clock = systemClock): Promise<number
 export const releaseWeeks = async (
   tx: Tx,
   regularId: string,
-  reason: "CHANGED" | "PAUSED" | "ENDED" | "REORDERED" | "HORIZON" | "GROUND_REMOVED",
+  reason:
+    | "CHANGED"
+    | "PAUSED"
+    | "ENDED"
+    | "REORDERED"
+    | "HORIZON"
+    | "GROUND_REMOVED"
+    | "SCHEDULE_CHANGED",
   now: Date,
   keep: (startsAt: Date) => boolean = () => false,
 ) => {
