@@ -411,7 +411,7 @@ function PausedBanner({
           }
         >
           <View
-            className="flex-row items-center py-3 ps-5 pe-3"
+            className="flex-row items-center pt-1.5 pb-3 ps-5 pe-3"
             onLayout={(event) => {
               if (height !== 0) return;
               setHeight(event.nativeEvent.layout.height);
