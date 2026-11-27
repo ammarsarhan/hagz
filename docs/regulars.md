@@ -17,10 +17,11 @@ Agreed on 2026-10-29:
 
 Agreed on 2026-11-22 (PR 4.5):
 
-- **A closed hour:** that week is skipped like a taken one, and the regular carries on by itself once the hour reopens.
+- **A closed hour:** an hour staff block for a day (or a week the hours are closed some other way) is skipped like a taken one, and the regular carries on by itself once the hour reopens.
+- **New weekly hours that close its time** (user, 2026-11-27), wholly or in part, anywhere in the next 8 weeks: the regular lets its waiting weeks go (not counted against it) and ends at once, leaving the regulars list; its confirmed weeks still happen as booked (user, 2026-11-27: only confirmed weeks left and no more to come means it's over). Staff see this, naming the regular, before they save (onboarding.md "Changing a ground's hours"). **Deleting its ground** (same day): its waiting weeks are let go, not counted against it, and it ends at once; confirmed weeks still happen (onboarding.md "Deleting a ground").
 - **Missed deadlines:** never paused automatically; they show in the reliability figures only.
 - **Pausing or ending** releases the regular's future `UNCONFIRMED` reservations at once (`REGULAR_CHANGED`, not counted against reliability). `CONFIRMED` weeks stay. Resuming reserves again from the next free week.
-- **Overlapping regulars are allowed**, with a **priority** that staff set by reordering the regulars that overlap. Lower goes first; a new regular joins at the end. Priority only decides who gets a week when it's first reserved. A week already reserved stays with that regular. If they release it, the next one in priority gets it straight away, as long as its deadline hasn't passed.
+- **Overlapping regulars are allowed**, with a **priority** that staff set by reordering the regulars that overlap. Lower goes first; a new regular joins at the end. Reordering moves **waiting** weeks: a regular moved down lets its `UNCONFIRMED` weeks go (`REGULAR_CHANGED` with reason `REORDERED`), and the top-up gives them to whoever is first now. A **confirmed** week stays with whoever confirmed it. **Resuming** works the same way: a regular back from a pause takes back the waiting weeks of anyone behind it in line at an overlapping time, and the top-up hands them out in priority order. A **move or swap** (by staff, or the customer moving back or rejecting a move) runs the top-up straight after, so a time a regular's week left goes to the next regular in line at once; the moved regular doesn't take it back, since it already plays that week. A waiting week that's **moved or swapped** gets the deadline of its new time (`confirmationWindow` before the new kick-off, or the kick-off itself if that has passed). If a regular releases a week, the next one in priority gets it straight away, as long as its deadline hasn't passed.
 - **Creating a regular whose first weeks are taken** still creates it. The answer lists the weeks it skipped.
 - **Prices:** each week copies the slot prices. There's no special weekly price; any deal is given at the counter.
 
@@ -42,10 +43,18 @@ Staff can pause, resume and end a regular.
 
 **3. Topping up.** A job runs daily, and whenever a regular is created or changed. It makes sure each active regular has a reservation for every week up to `regularHorizon` weeks ahead. If a week's slots aren't free (someone else booked them, or staff blocked them), that week is **skipped and staff are told**, never forced.
 
+A regular plays **once a week**. A calendar week (Sunday to Saturday, in the venue's time) that already has a live game of theirs at another time is left alone. That covers a week confirmed before the regular's time changed, and one moved to another day or hour. Changing a Sunday regular to Mondays keeps a confirmed Sunday and doesn't reserve the Monday after it.
+
+A booking of the **customer's own** at exactly a week's time (same ground and hours) **becomes that week** instead of the week being skipped as taken. A staff hold turns into an `UNCONFIRMED` week with the regular's deadline, and a confirmed booking joins as it is. Its history gets a `REGULAR_JOINED` event. Someone else's booking there still skips the week.
+
 **4. Before the deadline:**
 - **Confirm**: staff in the dashboard (after calling), or the regular from the reminder. `UNCONFIRMED` → `CONFIRMED`.
 - **Release**: staff or the regular, at any time before kick-off, even weeks ahead (Eid, exams, travel). `UNCONFIRMED` → `RELEASED`, and the slots are free at once.
 - **Nobody answers**: at the deadline, the sweeper moves it to `RELEASED` and frees the slots.
+
+**One customer, one regular at a time on a ground.** A customer can't have two regulars that share an hour on the same ground and weekday while both run, paused ones included (`REGULAR_OVERLAPS`, user 2026-11-26); once one ends, its hours are free for another. Other customers can overlap: they wait in line behind.
+
+A week goes to the next regular in line **only while its confirmation deadline is still ahead**; after that it goes straight back on sale (user, 2026-11-26). So a week nobody answered is never handed on: by its deadline, kick-off is only `confirmationWindow` away, the next regular would have no time to confirm (and isn't told until reminders exist in Phase 7), and the week was shown to them as taken all along, so a public sale is likelier to fill it (Search marks it "just freed"). This is deliberate, not a missing hand-off: `upcomingWeeks` never reserves a week whose deadline has passed. Revisit once reminders can offer a short last-minute window.
 
 A confirmed reservation is then an ordinary booking: it can be cancelled, completed or marked as a no-show. Hagz took no money, so a cancellation refunds nothing; it only frees the slots and counts against the regular's reliability.
 
@@ -119,7 +128,9 @@ Each goes out as:
 
 Both are delayed jobs on the queue, keyed by reservation, so each is sent at most once. A job finds the reservation already confirmed or released and sends nothing.
 
-**Staff can copy a link, not send one.** An unconfirmed reservation has a **Copy link** action that creates a fresh `ReminderToken` link. Staff send it from their own WhatsApp; Hagz sends nothing. Tokens are stored only as a hash, so an earlier link can't be shown again, and each copy creates a new one. Every link for a reservation stops working once it's confirmed or released, so several open links can't confirm it twice. Creating links is rate-limited per reservation.
+**Staff can copy a link, not send one.** A regular's **Copy a confirm link** action creates a fresh `ReminderToken` link for its very next week, whatever its state (user, 2026-11-27): a waiting week's link works until its deadline; a confirmed week's says it's on, until kick-off. Staff send it from their own WhatsApp; Hagz sends nothing. Tokens are stored only as a hash, so an earlier link can't be shown again, and each copy creates a new one. Every link for a reservation stops working once it's confirmed or released, so several open links can't confirm it twice. Creating links is rate-limited per reservation.
+
+**The page** is `/regular` (Arabic at `/ar/regular`, the link's language follows the customer's app language, else Arabic), Figma W5. The token rides in the fragment (`#token=…`), so it never reaches a server log or a link preview; the page reads it in the browser and calls the public `POST /v1/confirm-links/week`, `/confirm` and `/release` through the site's `/v1`. It shows the week's booking code on top, for the regular to quote when they call the venue, then I'm playing / Not this week while it waits. After that it says what became of the week and who decided it: playing; let go by the regular; missed (nobody confirmed by the deadline, read from the `RELEASED` event's `by: DEADLINE`); moved by the venue (a move or swap, followed through every later move to where the week is now, with its time, ground and new code; not a refill, which is someone else's booking); or changed by the venue (released or cancelled by staff, a moved week no longer on, or the regular paused or ended). A link follows the week's own deadline, so a longer Confirm by set after it was copied keeps it working. A link that isn't one of ours, or is cut short, shows "This link doesn't work".
 
 Staff see every reservation's state in the calendar, and who still hasn't answered, so they can call the rest.
 
@@ -135,6 +146,15 @@ Staff see every reservation's state in the calendar, and who still hasn't answer
 | `regularBookings` / `regularPeriod` | `VenueSettings` | Bookings within weeks that make a customer a regular | 3 in 8 |
 | `fillAlertHours` | `VenueSettings` | Hours before kick-off to alert about an empty slot | 6 |
 | `fillAlertOnRelease`, `fillAlertNearStart`, `fillAlertDigest` | `VenueSettings` | Each on or off | All on |
+
+Staff change them on Venue › Rules › Booking settings (`PATCH /v1/staff/venues/{venueId}/booking-settings`, `venue: manage`), and a change reaches what's already set (user, 2026-11-26):
+
+- **`staffHoldMinutes`:** a hold already running keeps its deadline; holds made or extended from then on use the new length.
+- **`confirmationWindow`:** every regular's waiting week gets the new deadline (`startsAt − window`), unless that has already passed, when it keeps the one it had: changing a setting never lets a week go. Weeks the shorter window brings back into reach are reserved at once.
+- **`regularHorizon`:** shorter lets go of the waiting weeks beyond it (`REGULAR_CHANGED` with reason `HORIZON`, not counted against the regular), and confirmed ones stay, since the customer said yes to them. Longer reserves the new weeks at once instead of at the nightly top-up.
+- **`regularBookings`, `regularPeriod`, `lapsedAfter`:** read by Fill a slot each time it's asked, so they apply straight away to nothing stored.
+
+The routes live in the bookings module (it carries a change on to the reservations); the venues module still owns and writes `VenueSettings`. Reminders, the freed-week discount and the fill alerts aren't on the page until they do something.
 
 ## Schema changes
 

@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
-import { fromStoredHours } from "../domain/grounds";
+import { fromStoredHours, GONE_GROUNDS } from "../domain/grounds";
 import { desiredSlots, generationWindow, type DesiredSlot } from "../domain/slots";
 
 // Slot generation (PR 2.6). Each run reconciles one whole ground: it works out the slots the ground
@@ -76,11 +76,13 @@ interface GroundForGeneration {
   desired: DesiredSlot[];
 }
 
-// What a ground should have now: its desired slots, or none when it shouldn't have any.
+// What a ground should have now: its desired slots, or none when it shouldn't have any. `window`
+// narrows it to a few hours (slots a booking gave back, in releaseSlots).
 export const groundForGeneration = async (
   db: Tx | typeof prisma,
   groundId: string,
   now: Date,
+  window: { from: Date; to: Date } = generationWindow(now),
 ): Promise<GroundForGeneration | null> => {
   const ground = await db.ground.findUnique({
     where: { id: groundId },
@@ -97,7 +99,7 @@ export const groundForGeneration = async (
   });
   if (!ground) return null;
   const eligible =
-    ground.status !== "DELETED" &&
+    !(GONE_GROUNDS as readonly string[]).includes(ground.status) &&
     (TAKING_BOOKINGS as readonly string[]).includes(ground.venue.status);
   const timezone = ground.venue.marketplace.timezone;
   const desired = eligible
@@ -105,7 +107,7 @@ export const groundForGeneration = async (
         schedule: ground.schedules.map((day) => fromStoredHours(day.dayOfWeek, day.hours)),
         prices: ground,
         timezone,
-        ...generationWindow(now),
+        ...window,
       })
     : [];
   return {

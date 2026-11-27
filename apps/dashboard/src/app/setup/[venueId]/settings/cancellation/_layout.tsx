@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import { SetupLoading } from "@/components/setup-loading";
 import { CancellationFlowProvider } from "@/lib/cancellation-flow";
 import { queries } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Choosing a cancellation policy: pick → your own rules (Custom only) → confirm, in a stack of its
 // own sharing one draft (lib/cancellation-flow.tsx). The settings list pushes this whole stack, so
 // saving pops all of it at once.
-export default function CancellationLayout() {
+function CancellationLayout() {
   const { t } = useTranslation();
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const navigation = useNavigation();
@@ -26,3 +28,5 @@ export default function CancellationLayout() {
     </CancellationFlowProvider>
   );
 }
+
+export default guarded(RULES.venueForm, CancellationLayout);

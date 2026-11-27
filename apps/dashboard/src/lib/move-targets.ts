@@ -24,6 +24,7 @@ export const moveTargets = ({
   timezone,
   now,
   groundId,
+  ownHolds = [],
 }: {
   booking: { id: string; startsAt: string; endsAt: string; ground: { id: string } };
   slots: readonly Slot[];
@@ -31,12 +32,17 @@ export const moveTargets = ({
   timezone: string;
   now: number;
   groundId: string | null;
+  // Holds this screen put on its picked times: free to it, so picking one doesn't redraw the day.
+  ownHolds?: readonly string[];
 }): MoveTarget[] => {
   const length = Date.parse(booking.endsAt) - Date.parse(booking.startsAt);
   const byGround = new Map<string, Slot[]>();
   for (const slot of slots)
     byGround.set(slot.groundId, [...(byGround.get(slot.groundId) ?? []), slot]);
-  const usable = (slot: Slot) => slot.status === "AVAILABLE" || slot.bookingId === booking.id;
+  const usable = (slot: Slot) =>
+    slot.status === "AVAILABLE" ||
+    slot.bookingId === booking.id ||
+    (slot.bookingId !== null && ownHolds.includes(slot.bookingId));
 
   const targets: MoveTarget[] = [];
   for (const [ground, list] of byGround) {

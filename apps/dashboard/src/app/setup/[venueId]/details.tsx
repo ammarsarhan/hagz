@@ -16,6 +16,8 @@ import { language } from "@/lib/language";
 import { queries } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 import { SetupLoading } from "@/components/setup-loading";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Details" (Figma "Setup · Details (app language)", 325:2): what players read on the
 // venue page — name, description, street address — and the number they can call. Written in the
@@ -30,7 +32,7 @@ const ADDRESS_MAX = 200;
 const CALLING_CODE = "+20";
 const APP_LANGUAGE = language === "ar" ? "AR" : "EN";
 
-export default function SetupDetails() {
+function SetupDetails() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
@@ -167,3 +169,5 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
     </Screen>
   );
 }
+
+export default guarded(RULES.venueForm, SetupDetails);

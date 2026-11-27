@@ -68,6 +68,7 @@ export const LIFECYCLE_EVENTS = [VENUE_SUBMITTED, VENUE_WITHDRAWN, VENUE_REJECTE
 // Staff changing slots (PR 2.6), each with the slots' ids and what they did to them.
 export const SLOTS_BLOCKED = "SLOTS_BLOCKED";
 export const SLOTS_UNBLOCKED = "SLOTS_UNBLOCKED";
+export const SLOTS_NOTE_CHANGED = "SLOTS_NOTE_CHANGED";
 export const SLOT_PRICES_SET = "SLOT_PRICES_SET";
 export const SLOTS_ADDED = "SLOTS_ADDED";
 export const SLOTS_RESET = "SLOTS_RESET";

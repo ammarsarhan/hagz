@@ -396,8 +396,12 @@ function PhotoSheet({
   ];
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden} closeButton={false}>
-      {/* A small title over the choices, so the sheet says what it's for (user, 2026-11-24). */}
-      <Text accessibilityRole="header" className="mb-1 text-center text-body font-semibold">
+      {/* A small title over the choices, so the sheet says what it's for (user, 2026-11-24); the
+          icons before each choice, as the staff app's sheets (user, 2026-11-26). */}
+      <Text
+        accessibilityRole="header"
+        className="mt-2 mb-4 text-center text-[17px] leading-[23px] font-semibold"
+      >
         {t("screens.account.photo.title")}
       </Text>
       <View>
@@ -405,7 +409,7 @@ function PhotoSheet({
           <SettingsRow
             key={key}
             title={label}
-            trailing={<Glyph size={20} color={colors.ink} strokeWidth={1.75} />}
+            leading={<Glyph size={20} color={colors.ink} strokeWidth={1.75} />}
             onPress={() => onChoose(key)}
             divider={index < choices.length - 1}
           />

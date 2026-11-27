@@ -393,6 +393,63 @@ describe("changing permissions", () => {
   });
 });
 
+describe("removing someone from the staff", () => {
+  const remove = (actorId: string, venueId: string, staffId: string) =>
+    call(actorId, "DELETE", `/venues/${venueId}/members/${staffId}`);
+  const isMember = async (venueId: string, staffId: string) =>
+    (await prisma.venueMembership.count({ where: { venueId, staffId } })) === 1;
+
+  it("takes them off and records who did it, keeping their account", async () => {
+    const { a, ownerA, cashier } = await world();
+    const res = await remove(ownerA.id, a.id, cashier.id);
+    expect(res.status).toBe(204);
+    expect(await isMember(a.id, cashier.id)).toBe(false);
+    expect(await prisma.staff.count({ where: { id: cashier.id } })).toBe(1);
+    const event = await prisma.venueEvent.findFirstOrThrow({
+      where: { venueId: a.id, type: "STAFF_REMOVED" },
+    });
+    expect(event.staffId).toBe(ownerA.id);
+    expect(event.data).toMatchObject({
+      staffId: cashier.id,
+      permissions: permissions({ payments: "manage" }),
+    });
+  });
+
+  it("lets a manager remove someone within their own access, not beyond it", async () => {
+    const { a, manager, cashier } = await world();
+    const beyond = await remove(manager.id, a.id, cashier.id);
+    expect(beyond.status).toBe(403);
+    expect(await problem(beyond)).toMatchObject({
+      code: "PERMISSION_ABOVE_YOUR_OWN",
+      areas: ["payments"],
+    });
+    expect(await isMember(a.id, cashier.id)).toBe(true);
+
+    const viewer = await staffMember();
+    await addMember(a.id, viewer.id, { permissions: permissions({ bookings: "view" }) });
+    expect((await remove(manager.id, a.id, viewer.id)).status).toBe(204);
+  });
+
+  it("refuses yourself, the owner, and anyone without staff: manage", async () => {
+    const { a, ownerA, manager, cashier } = await world();
+    expect((await problem(await remove(manager.id, a.id, manager.id))).code).toBe(
+      "CANNOT_REMOVE_YOURSELF",
+    );
+    expect((await problem(await remove(manager.id, a.id, ownerA.id))).code).toBe(
+      "CANNOT_CHANGE_OWNER",
+    );
+    expect((await remove(cashier.id, a.id, manager.id)).status).toBe(403);
+    expect(await prisma.venueMembership.count({ where: { venueId: a.id } })).toBe(3);
+  });
+
+  it("answers a member of another venue as not found", async () => {
+    const { a, ownerA, memberB } = await world();
+    const res = await remove(ownerA.id, a.id, memberB.id);
+    expect(res.status).toBe(404);
+    expect((await problem(res)).code).toBe("MEMBER_NOT_FOUND");
+  });
+});
+
 describe("changing permissions, racing a demotion", () => {
   it("re-checks the granter inside the transaction", async () => {
     const { a, ownerA, manager, cashier } = await world();

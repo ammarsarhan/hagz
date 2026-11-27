@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { BarButton, BottomBar } from "./bottom-bar";
 import { CompactTitle, useCompactTitle } from "./compact-title";
 import { DayPickHeader, HourColumn } from "./day-pick";
@@ -29,6 +30,7 @@ import { useNow } from "@/lib/use-now";
 import { bookingSettingsQuery } from "@/lib/booking-settings";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan, relativeDay } from "@/lib/when";
+import { push } from "@/lib/navigation";
 
 // Picking a time for a hold (Figma D9 600:142) or a new booking (D10 612:26): the day under the week
 // strip and the grounds, one ground at a time like Move and Swap, from the one the Calendar was on
@@ -46,6 +48,10 @@ import { hoursSpan, relativeDay } from "@/lib/when";
 // How long a free time is held before dragging starts (the opening hours grid's beat).
 const HOLD_MS = 250;
 const SOFT_FILL = "bg-[#f2f4ff]";
+// How long a picked time takes to fill in (as on Select day).
+const PICK_MS = 160;
+// The hours column, drawn again only when its hours change: not on every step of a drag.
+const StillHourColumn = memo(HourColumn);
 // Until the first answer says the venue's; venues are in Egypt for now.
 const FALLBACK_TIMEZONE = "Africa/Cairo";
 
@@ -77,6 +83,9 @@ export function TimePick({
     groundId?: string;
     forId?: string;
     forName?: string;
+    // From the calendar's free times (user, 2026-11-27): the first and last slot already picked.
+    from?: string;
+    to?: string;
   }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -98,12 +107,15 @@ export function TimePick({
   const [target, setTarget] = useState<HoldTarget | null>(null);
   const hud = useHud();
   // The pick, as its first and last free times (by id, so a refresh reordering nothing loses it).
-  const [pick, setPickIds] = useState<{ from: string; to: string } | null>(null);
+  const [pick, setPickIds] = useState<{ from: string; to: string } | null>(() =>
+    params.from && params.to ? { from: params.from, to: params.to } : null,
+  );
   const [dragging, setDragging] = useState(false);
 
   const timezone = slots.data?.timezone ?? FALLBACK_TIMEZONE;
   const currency = slots.data?.currency ?? "EGP";
-  const grounds = slots.data?.grounds ?? [];
+  // A ground being removed takes no new bookings.
+  const grounds = (slots.data?.grounds ?? []).filter((ground) => !ground.removing);
   const groundId =
     grounds.find((ground) => ground.id === picked)?.id ?? grounds[0]?.id ?? picked ?? "";
   const groundName = (id: string) => grounds.find((ground) => ground.id === id)?.name ?? "";
@@ -281,10 +293,37 @@ export function TimePick({
   const gesture = Gesture.Exclusive(pan.enabled(!preview), tap.enabled(!preview));
   const placeGroup = (hour: number) => (event: LayoutChangeEvent) =>
     groupTops.current.set(hour, event.nativeEvent.layout.y);
-  const placeRow = (id: string, hour: number) => (event: LayoutChangeEvent) => {
+  // The same functions every render, so a row that hasn't changed isn't drawn again while a drag
+  // moves the pick (user, 2026-11-26: it wasn't smooth).
+  const placeRow = useCallback((id: string, hour: number, event: LayoutChangeEvent) => {
     const { y, height } = event.nativeEvent.layout;
     rowPlaces.current.set(id, { group: hour, y, height });
+  }, []);
+  const latestTap = useRef<(id: string) => void>(() => undefined);
+  latestTap.current = (id: string) => {
+    const index = run.findIndex((slot) => slot.id === id);
+    const next = stretch(index, index);
+    if (index >= 0 && next.to - next.from + 1 >= shortest) setPick(next);
   };
+  const tapSlot = useCallback((id: string) => latestTap.current(id), []);
+  // Each free time's words, worked out once per answer rather than on every step of a drag.
+  const words = useMemo(() => {
+    const map = new Map<string, { label: string; spoken: string }>();
+    for (const slot of run) {
+      const name = grounds.find((one) => one.id === slot.groundId)?.name ?? "";
+      map.set(slot.id, {
+        label: t("screens.move.zone", {
+          ground: name,
+          price: `${formatAmount(slot.price, decimalsOf(currency))} ${currency}`,
+        }),
+        spoken: t("screens.hold.zoneLabel", {
+          hours: hoursSpan(slot.startsAt, slot.endsAt, timezone, t),
+          ground: name,
+        }),
+      });
+    }
+    return map;
+  }, [run, grounds, currency, timezone, t]);
   const choose = (next: () => void) => {
     setPick(null);
     next();
@@ -306,7 +345,7 @@ export function TimePick({
         ? t(`screens.setup.grounds.sports.${ground.sport}`)
         : t(`screens.setup.grounds.sizes.${ground.size}`)
       : "";
-    router.push({
+    push({
       pathname: "/book/details",
       params: {
         ...range,
@@ -392,7 +431,7 @@ export function TimePick({
               )}
               {hours.map((group) => (
                 <View key={group.hour} className="flex-row" onLayout={placeGroup(group.hour)}>
-                  <HourColumn
+                  <StillHourColumn
                     from={new Date(group.hour).toISOString()}
                     to={new Date(group.end).toISOString()}
                     timezone={timezone}
@@ -425,26 +464,18 @@ export function TimePick({
                       ) : (
                         <FreeRow
                           key={item.key}
+                          id={item.slot.id}
+                          hour={group.hour}
                           quiet={preview !== undefined}
                           on={(() => {
                             const index = run.indexOf(item.slot);
                             return chosen !== null && index >= chosen.from && index <= chosen.to;
                           })()}
-                          label={t("screens.move.zone", {
-                            ground: groundName(item.slot.groundId),
-                            price: money(item.slot.price),
-                          })}
+                          label={words.get(item.slot.id)?.label ?? ""}
                           free={t("screens.move.free")}
-                          accessibilityLabel={t("screens.hold.zoneLabel", {
-                            hours: span(item.slot.startsAt, item.slot.endsAt),
-                            ground: groundName(item.slot.groundId),
-                          })}
-                          onAccessibilityTap={() => {
-                            const index = run.indexOf(item.slot);
-                            const next = stretch(index, index);
-                            if (next.to - next.from + 1 >= shortest) setPick(next);
-                          }}
-                          onLayout={placeRow(item.slot.id, group.hour)}
+                          accessibilityLabel={words.get(item.slot.id)?.spoken ?? ""}
+                          onAccessibilityTap={tapSlot}
+                          onPlace={placeRow}
                         />
                       ),
                     )}
@@ -495,42 +526,66 @@ function NewRow({ name, detail, label }: { name: string; detail: string; label: 
   );
 }
 
-// A free time: dashed in soft blue, or solid blue while picked.
-function FreeRow({
+// A free time: dashed in soft blue; picked, a solid blue copy fades in over it (as on Select day).
+// Drawn again only when what it shows changes.
+const FreeRow = memo(function FreeRow({
+  id,
+  hour,
   quiet,
   on,
   label,
   free,
   accessibilityLabel,
   onAccessibilityTap,
-  onLayout,
+  onPlace,
 }: {
+  id: string;
+  hour: number;
   // In a preview: grey, nothing to tap; only the new booking is in colour (user).
   quiet: boolean;
   on: boolean;
   label: string;
   free: string;
   accessibilityLabel: string;
-  onAccessibilityTap: () => void;
-  onLayout: (event: LayoutChangeEvent) => void;
+  onAccessibilityTap: (id: string) => void;
+  onPlace: (id: string, hour: number, event: LayoutChangeEvent) => void;
 }) {
-  return quiet ? (
-    <View className="h-12 flex-row items-center rounded-xl border border-dashed border-border px-4">
-      <Text className="flex-1 text-body text-ink-3">{label}</Text>
-      <Text className="text-label text-ink-3">{free}</Text>
-    </View>
-  ) : (
+  const picked = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    picked.value = withTiming(on ? 1 : 0, { duration: PICK_MS });
+  }, [on, picked]);
+  const fill = useAnimatedStyle(() => ({
+    opacity: picked.value,
+    transform: [{ scale: 0.98 + picked.value * 0.02 }],
+  }));
+  if (quiet)
+    return (
+      <View className="h-12 flex-row items-center rounded-xl border border-dashed border-border px-4">
+        <Text className="flex-1 text-body text-ink-3">{label}</Text>
+        <Text className="text-label text-ink-3">{free}</Text>
+      </View>
+    );
+  return (
     <View
       accessible
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: on }}
-      onAccessibilityTap={onAccessibilityTap}
-      onLayout={onLayout}
-      className={`h-12 flex-row items-center rounded-xl border px-4 ${on ? "border-primary bg-primary" : `border-dashed border-primary ${SOFT_FILL}`}`}
+      onAccessibilityTap={() => onAccessibilityTap(id)}
+      onLayout={(event) => onPlace(id, hour, event)}
+      className={`h-12 flex-row items-center rounded-xl border border-dashed border-primary px-4 ${SOFT_FILL}`}
     >
-      <Text className={`flex-1 text-body ${on ? "text-on-primary" : ""}`}>{label}</Text>
-      <Text className={`text-label ${on ? "text-on-primary" : "text-primary"}`}>{free}</Text>
+      <Text className="flex-1 text-body">{label}</Text>
+      <Text className="text-label text-primary">{free}</Text>
+      {/* Over the dashed border too: an absolute child is placed inside it. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-px flex-row items-center rounded-xl bg-primary px-4"
+        style={fill}
+      >
+        <Text className="flex-1 text-body text-on-primary">{label}</Text>
+        <Text className="text-label text-on-primary">{free}</Text>
+      </Animated.View>
     </View>
   );
-}
+});

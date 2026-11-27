@@ -22,6 +22,9 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { afterVenueWrite, queries } from "@/lib/queries";
+import { push } from "@/lib/navigation";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A draft venue's setup checklist (Figma "Venue creation · 7 Setup checklist (draft flow)", 285:2):
 // everything left to do before it can be sent for review, in any order, each item saved as it's
@@ -36,7 +39,7 @@ type SetupItem = components["schemas"]["SetupItem"];
 const RING = 60;
 const RING_WIDTH = 4;
 
-export default function VenueSetupScreen() {
+function VenueSetupScreen() {
   const { t } = useTranslation();
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const hud = useHud();
@@ -192,8 +195,8 @@ export default function VenueSetupScreen() {
   );
 }
 
-// The items with a screen so far, and where it is. The rest arrive with their slice of Phase 2.
-const SCREENS: Partial<Record<SetupItem["key"], string>> = {
+// Where each item's screen is.
+const SCREENS: Record<SetupItem["key"], string> = {
   DETAILS: "details",
   LOCATION: "location",
   PHOTOS: "photos",
@@ -225,12 +228,7 @@ function Group({
           key={item.key}
           item={item}
           last={index === items.length - 1}
-          // An item without its screen yet says so rather than opening something half-built.
-          onPress={() => {
-            const screen = SCREENS[item.key];
-            if (!screen) return hud.show(t("common.comingNext"));
-            router.push(`/setup/${venueId}/${screen}`);
-          }}
+          onPress={() => push(`/setup/${venueId}/${SCREENS[item.key]}`)}
         />
       ))}
     </>
@@ -326,3 +324,5 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
     </View>
   );
 }
+
+export default guarded(RULES.venueForm, VenueSetupScreen);

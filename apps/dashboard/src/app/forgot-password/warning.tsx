@@ -9,6 +9,7 @@ import { Screen } from "@/components/screen";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
+import { push } from "@/lib/navigation";
 
 // Reset, step 2: what a reset does to a member, before the new password is set (that's when it
 // happens). Arriving from sign-up with the number already verified, Continue skips the code: the
@@ -25,7 +26,7 @@ export default function ResetWarning() {
 
   const next = async () => {
     if (!params.verificationToken) {
-      router.push({
+      push({
         pathname: "/forgot-password/code",
         params: { phone: params.phone, resendAfter: params.resendAfter ?? "60" },
       });

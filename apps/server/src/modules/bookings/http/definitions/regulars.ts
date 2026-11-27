@@ -1,5 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  ConfirmLink,
   SlotCandidates,
   SlotCandidatesQuery,
   CreateRegular,
@@ -77,7 +78,9 @@ export const createRegular = createRoute({
     404: problemResponse(
       "VENUE_NOT_FOUND, GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.",
     ),
-    409: problemResponse("GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live."),
+    409: problemResponse(
+      "GROUND_UNAVAILABLE; REGULAR_OVERLAPS: the customer already has a regular sharing an hour of this one on this ground; or VENUE_STATUS_CONFLICT: the venue isn't live.",
+    ),
     422: problemResponse(
       "INVALID_REGULAR_DATES, or INVALID_BOOKING_TIME (with `minimumSlots` and `maximumSlots`).",
     ),
@@ -98,7 +101,7 @@ export const updateRegular = createRoute({
     200: detail,
     ...common,
     404: problemResponse(`${notFound.description} GROUND_NOT_FOUND`),
-    409: problemResponse("REGULAR_ENDED or GROUND_UNAVAILABLE"),
+    409: problemResponse("REGULAR_ENDED, GROUND_UNAVAILABLE or REGULAR_OVERLAPS"),
     422: problemResponse("INVALID_REGULAR_DATES or INVALID_BOOKING_TIME"),
   },
 });
@@ -170,6 +173,28 @@ export const confirmReservation = createRoute({
   security,
   request: { params: bookingParams },
   responses: reservationResponses,
+});
+
+export const confirmLink = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/reservations/{bookingId}/link",
+  tags,
+  summary: "Copy a confirm link for a regular's week",
+  description:
+    "A fresh single-use link each time (only its hash is stored), for staff to send from their own WhatsApp. It confirms or lets the week go without signing in, until the week's deadline, and stops working once the week is answered. At most 10 an hour per week.",
+  middleware: [requireStaff, requireVenueAccess("bookings", "manage")] as const,
+  security,
+  request: { params: bookingParams },
+  responses: {
+    201: { description: "The link", ...json(ConfirmLink) },
+    ...common,
+    404: problemResponse("VENUE_NOT_FOUND or BOOKING_NOT_FOUND"),
+    409: problemResponse(
+      "RESERVATION_NOT_WAITING: not a regular's coming week, confirmed or still waiting.",
+    ),
+    429: problemResponse("RATE_LIMITED"),
+    503: problemResponse("LINKS_UNAVAILABLE: no web address set in this environment."),
+  },
 });
 
 export const releaseReservation = createRoute({

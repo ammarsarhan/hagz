@@ -17,6 +17,7 @@ import { HORIZON_DAYS } from "../domain/slots";
 import { venueNotFound } from "./access";
 import { venueLayout } from "./layout";
 import { pinOf, settingsSelect, storedSettings } from "./venue-edit";
+import { GONE_GROUNDS } from "../domain/grounds";
 
 // The venue page (PR 3.2): a venue as anyone sees it, signed in or not, and a day of its free times.
 // Only venues that have gone live are public: LIVE, or paused (MAINTENANCE), which shows with a
@@ -93,7 +94,7 @@ export const publicVenue = async (slug: string, language: Language): Promise<Pub
         select: { id: true, key: true },
       },
       grounds: {
-        where: { status: { not: "DELETED" } },
+        where: { status: { notIn: [...GONE_GROUNDS] } },
         orderBy: [{ position: "asc" }, { id: "asc" }],
         select: groundSelect,
       },

@@ -189,13 +189,13 @@ function Hud({
   return (
     <View
       pointerEvents="none"
-      className="absolute inset-x-0 items-center"
+      className="absolute inset-x-0 items-center px-4"
       style={{ bottom, direction: isRTL ? "rtl" : "ltr" }}
     >
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
-        className="h-14 flex-row items-center gap-2.5 rounded-hud border border-hairline bg-hud pe-[22px] ps-[18px]"
+        className="min-h-14 flex-row items-center gap-2.5 rounded-hud border border-hairline bg-hud py-2.5 pe-[22px] ps-[18px]"
         style={{
           opacity: progress,
           transform: [
@@ -208,7 +208,9 @@ function Hud({
         }}
       >
         {leading ?? <IconAlertCircleFilled size={22} color={colors.ink} />}
-        <Text className="text-subtitle font-medium">{message}</Text>
+        <Text className="shrink text-subtitle font-medium" numberOfLines={2}>
+          {message}
+        </Text>
       </Animated.View>
     </View>
   );

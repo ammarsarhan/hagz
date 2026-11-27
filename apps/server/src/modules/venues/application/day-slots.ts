@@ -1,4 +1,5 @@
-import type { PriceTier, Slot, SlotStatus, VenueSlots, VenueSlotsQuery } from "@hagz/contracts";
+import type { Slot, VenueSlots, VenueSlotsQuery } from "@hagz/contracts";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { venueNotFound } from "./access";
 import { listGrounds } from "./grounds";
@@ -19,22 +20,32 @@ export const slotSelect = {
   status: true,
   isManual: true,
   bookingId: true,
-} as const;
+  blockNote: true,
+  blockedAt: true,
+  blockedById: true,
+  blockedBy: { select: { name: true } },
+} as const satisfies Prisma.GroundSlotSelect;
 
-export const presentSlot = (slot: {
-  id: string;
-  groundId: string;
-  startsAt: Date;
-  endsAt: Date;
-  tier: PriceTier;
-  price: number;
-  status: SlotStatus;
-  isManual: boolean;
-  bookingId: string | null;
-}): Slot => ({
+export const presentSlot = ({
+  blockNote,
+  blockedAt,
+  blockedById,
+  blockedBy,
+  ...slot
+}: Prisma.GroundSlotGetPayload<{ select: typeof slotSelect }>): Slot => ({
   ...slot,
   startsAt: slot.startsAt.toISOString(),
   endsAt: slot.endsAt.toISOString(),
+  // Closed by staff: their note, their first name and when (user, 2026-11-27).
+  closed:
+    slot.status === "BLOCKED" && blockedAt
+      ? {
+          note: blockNote,
+          staffId: blockedById,
+          by: blockedBy ? (blockedBy.name.trim().split(/\s+/)[0] ?? blockedBy.name) : null,
+          at: blockedAt.toISOString(),
+        }
+      : null,
 });
 
 export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<VenueSlots> => {
@@ -68,7 +79,16 @@ export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<Venu
            ((${date}::date + ${query.span}::int)::timestamp AT TIME ZONE ${timezone}) AS "to"`;
   if (!bounds) throw new Error("Postgres returned no day bounds.");
 
-  const grounds = await listGrounds(id, "EN");
+  // Removed grounds with bookings still ahead stay on the calendar, marked, until the last one ends.
+  const grounds = await listGrounds(id, "EN", { removing: true });
+  const removing = new Set(
+    (
+      await prisma.ground.findMany({
+        where: { venueId: id, status: "REMOVING" },
+        select: { id: true },
+      })
+    ).map((ground) => ground.id),
+  );
   const slots = days
     ? await prisma.groundSlot.findMany({
         where: {
@@ -93,6 +113,7 @@ export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<Venu
       size,
       minimumSlots,
       maximumSlots,
+      removing: removing.has(groundId),
     })),
     slots: slots.map(presentSlot),
   };

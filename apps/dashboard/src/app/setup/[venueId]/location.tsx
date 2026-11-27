@@ -29,6 +29,8 @@ import { isRTL } from "@/lib/language";
 import type { Coordinates } from "@/lib/places";
 import { areas, queries } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Location" (Figma "Setup · Location", 433:3). The pin was placed when the venue was
 // added, so this opens on it: the map moves under a fixed pin, as it did then, with the area it's
@@ -42,7 +44,7 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 // requested area keeps it until an area is chosen.
 const CLOSE = { latitudeDelta: 0.004, longitudeDelta: 0.004 };
 
-export default function SetupLocation() {
+function SetupLocation() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const venue = useQuery(queries.venue(venueId));
   if (!venue.data) return <SetupLoading query={venue} />;
@@ -253,3 +255,5 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
     </View>
   );
 }
+
+export default guarded(RULES.venueForm, SetupLocation);

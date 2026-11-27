@@ -50,6 +50,10 @@ export const AdminBooking = z
       name: z.string().nullable(),
       sport: GroundSport,
       size: GroundSize,
+      deleted: z.boolean().meta({
+        description:
+          "Staff deleted it: gone, or still on their calendar until its last booking ends.",
+      }),
     }),
     customer: z.object({ name: z.string(), phone: z.string().nullable() }),
     source: BookingSource,

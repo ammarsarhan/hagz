@@ -35,6 +35,8 @@ import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { preparePhoto, putPhoto } from "@/lib/photos";
 import { afterVenueWrite, queries } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Setup item "Photos" (Figma "Photos · 1 Empty (grey)", 366:2, and "· 2 Added (grey, smaller
 // radius)", 367:2). At least three, up to twenty; the first is the cover, drawn full width above
@@ -103,7 +105,7 @@ const placeAt = (x: number, y: number, count: number, width: number) => {
   return best;
 };
 
-export default function SetupPhotos() {
+function SetupPhotos() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const photos = useQuery(queries.photos(venueId));
   if (!photos.data) return <SetupLoading query={photos} />;
@@ -310,7 +312,7 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
           />
         }
       />
-      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging} topFade={16}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging}>
         <Title
           subtitle={t(empty ? "screens.setup.photos.emptyBody" : "screens.setup.photos.body")}
           onTitleLayout={compact.onTitleLayout}
@@ -817,3 +819,5 @@ function AddTile({ slot, onPress }: { slot: Slot | undefined; onPress: () => voi
     </Animated.View>
   );
 }
+
+export default guarded(RULES.venueForm, SetupPhotos);

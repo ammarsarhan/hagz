@@ -1,22 +1,17 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentRef,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useEffect, useRef, type ComponentRef, type ReactNode, type RefObject } from "react";
 import { Animated, ScrollView, View } from "react-native";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
 // them. The gap under the nav bar is padding inside the scroll, so rows scroll right up to the close
-// button, and each edge fades the content out (only while there's more past it) rather than cutting
-// a row in half against white. Full width, so the fades span the gutters too.
+// button. A hairline under the bar fades in over the first 12 pt scrolled, the customer app's way
+// (user, 2026-11-27, in place of fades that washed buttons into gradients). None at the bottom: the
+// tab bar and the bars pinned under a screen draw their own (one here doubled them). Full width, so
+// the line spans the gutters too.
 //
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
-const FADE = 28;
+// The room left under the last row.
+const ROOM = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
 // flush NavBar pads under itself.
 const NAV_GAP = 14;
@@ -33,21 +28,23 @@ export function FadingScroll({
   children,
   scrollY,
   scrollEnabled = true,
-  topFade = FADE,
+  topLine = true,
   controller,
+  onRoom,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
   // Off while something inside is being dragged (photos into order), so the drag doesn't scroll.
   scrollEnabled?: boolean;
-  // A shorter top fade for content that's mostly pictures, where a full one washes out too much.
-  topFade?: number;
+  // Off where the screen draws its own line under the bar (Manage's docked section tabs).
+  topLine?: boolean;
   controller?: RefObject<ScrollController | null>;
+  // How far it can scroll (content less its own height), whenever either changes.
+  onRoom?: (room: number) => void;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
   const size = useRef({ height: 0, content: 0, y: 0 });
-  const [edges, setEdges] = useState({ top: false, bottom: false });
   const frame = useRef<ComponentRef<typeof View>>(null);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const windowTop = useRef(0);
@@ -73,13 +70,6 @@ export function FadingScroll({
     };
   }, [controller]);
 
-  const measure = () => {
-    const { height, content, y } = size.current;
-    const top = y > 1;
-    const bottom = y + height < content - 1;
-    setEdges((now) => (now.top === top && now.bottom === bottom ? now : { top, bottom }));
-  };
-
   return (
     <View ref={frame} className="-mx-5 flex-1">
       <Animated.ScrollView
@@ -90,65 +80,46 @@ export function FadingScroll({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: FADE }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: ROOM }}
         onLayout={(event) => {
           size.current.height = event.nativeEvent.layout.height;
-          measure();
+          onRoom?.(Math.max(size.current.content - size.current.height, 0));
           frame.current?.measureInWindow((_, y) => {
             windowTop.current = y;
           });
         }}
         onContentSizeChange={(_, height) => {
           size.current.content = height;
-          measure();
+          onRoom?.(Math.max(height - size.current.height, 0));
         }}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
           useNativeDriver: true,
           listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
             size.current.y = event.nativeEvent.contentOffset.y;
-            measure();
           },
         })}
       >
         {children}
       </Animated.ScrollView>
-      <Fade edge="top" shown={edges.top} height={topFade} />
-      <Fade edge="bottom" shown={edges.bottom} height={FADE} />
+      {topLine ? <TopHairline scrollY={offset} /> : null}
     </View>
   );
 }
 
-function Fade({ edge, shown, height }: { edge: "top" | "bottom"; shown: boolean; height: number }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: shown ? 1 : 0,
-      duration: 160,
-      useNativeDriver: true,
-    }).start();
-  }, [shown, opacity]);
-
-  const id = `fade-${edge}`;
+// The line under the bar once anything has scrolled beneath it, fading in over the first 12 pt.
+// Exported for screens that scroll a list of their own (Customers), inside a full-width View.
+export function TopHairline({ scrollY }: { scrollY: Animated.Value }) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={{ position: "absolute", left: 0, right: 0, height, [edge]: 0, opacity }}
-    >
-      <Svg width="100%" height="100%">
-        <Defs>
-          <LinearGradient
-            id={id}
-            x1="0"
-            y1={edge === "top" ? "0" : "1"}
-            x2="0"
-            y2={edge === "top" ? "1" : "0"}
-          >
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity="1" />
-            <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${id})`} />
-      </Svg>
-    </Animated.View>
+      className="absolute top-0 right-0 left-0 h-px bg-hairline"
+      style={{
+        opacity: scrollY.interpolate({
+          inputRange: [0, 12],
+          outputRange: [0, 1],
+          extrapolate: "clamp",
+        }),
+      }}
+    />
   );
 }

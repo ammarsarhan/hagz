@@ -36,6 +36,7 @@ const customerNotFound = () =>
 
 export const staffSelect = {
   ...summarySelect,
+  customerId: true,
   expiresAt: true,
   regularId: true,
   paymentMode: true,
@@ -58,6 +59,7 @@ interface PaymentTerms {
 
 export const presentStaff = (
   row: Parameters<typeof presentSummary>[0] & {
+    customerId: string;
     expiresAt: Date | null;
     regularId: string | null;
     paymentMode: PaymentMode;
@@ -67,6 +69,7 @@ export const presentStaff = (
   terms?: PaymentTerms,
 ) => ({
   ...presentSummary(row),
+  venueCustomerId: row.customerId,
   expiresAt: row.expiresAt?.toISOString() ?? null,
   hold: isHold(row),
   regular: row.regularId !== null,

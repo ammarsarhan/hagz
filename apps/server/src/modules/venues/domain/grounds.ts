@@ -78,3 +78,7 @@ export const fromStoredHours = (dayOfWeek: number, stored: unknown): ScheduleDay
     .map(([hour, tier]) => ({ hour: Number(hour), tier }))
     .sort((a, b) => a.hour - b.hour),
 });
+
+// Grounds no longer part of the venue: removed with bookings still ahead (only staff's calendar
+// shows them, until the last one ends), or deleted.
+export const GONE_GROUNDS = ["REMOVING", "DELETED"] as const;

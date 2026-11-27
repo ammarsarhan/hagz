@@ -12,6 +12,7 @@ import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { isCompletePhone, toE164 } from "@/lib/phone";
 import { queries } from "@/lib/queries";
 import { queryClient } from "@/lib/query";
+import { push } from "@/lib/navigation";
 
 // Whether to skip "Resetting makes you view-only": only when we know the reset restricts nothing,
 // i.e. signed in (Account → change password) and a member at no venue. Venues are only in the cache
@@ -53,7 +54,7 @@ export default function ResetPhone() {
       else hud.show(hudMessage(result.error));
       return;
     }
-    router.push({
+    push({
       pathname: skipWarning ? "/forgot-password/code" : "/forgot-password/warning",
       params: { phone, resendAfter: String(result.data.resendAfter) },
     });

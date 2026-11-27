@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SURFACES_BY_SPORT } from "@hagz/contracts";
 import { Button } from "@/components/button";
@@ -6,6 +6,7 @@ import { ChoicePill, ChoicePills, Segmented } from "@/components/choices";
 import { SectionHeading, StepScreen } from "@/components/step-screen";
 import { useGroundFlow } from "@/lib/ground-flow";
 import { ENVIRONMENTS } from "@/lib/grounds";
+import { push } from "@/lib/navigation";
 
 // Adding a ground, 2 of 4 (Figma "Grounds · Add 2 Surface and cover", 353:2): what players filter
 // by. Surfaces are a list, only the ones the chosen sport is played on, so they wrap as pills; outdoor → covered → indoor is a scale, so it's
@@ -25,7 +26,7 @@ export default function GroundSurface() {
       footer={
         <Button
           label={t("common.actions.continue")}
-          onPress={() => router.push(`/setup/${venueId}/grounds/${groundId}/prices`)}
+          onPress={() => push(`/setup/${venueId}/grounds/${groundId}/prices`)}
         />
       }
     >

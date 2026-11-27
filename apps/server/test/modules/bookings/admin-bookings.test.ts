@@ -181,6 +181,16 @@ describe("the admin's bookings", () => {
     expect(ground.counts.CONFIRMED).toBe(0);
   });
 
+  it("marks a booking's ground that staff deleted", async () => {
+    const { ground, hours } = await aGround();
+    const { token } = await signedIn();
+    await book(token, { groundId: ground.id, ...at(hours, 0, 1) });
+    const cookie = await adminCookie();
+    expect((await lookup(cookie)).data[0]?.ground.deleted).toBe(false);
+    await prisma.ground.update({ where: { id: ground.id }, data: { status: "REMOVING" } });
+    expect((await lookup(cookie)).data[0]?.ground.deleted).toBe(true);
+  });
+
   it("shows one booking in full, its payments and its history", async () => {
     const { ground, hours } = await aGround({
       settings: { paymentMode: "DEPOSIT", depositPercent: 50 },

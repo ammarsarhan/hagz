@@ -12,6 +12,8 @@ import { useCurrentVenue } from "@/lib/current-venue";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { uuid } from "@/lib/uuid";
 import { hoursSpan } from "@/lib/when";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // A new booking's last look (Figma D10 612:180): its day with the booking in its place, marked New,
 // and a bar with who, the price and that it's paid at the venue, and Add booking. Staff bookings
@@ -32,7 +34,7 @@ type Params = {
   customer: string;
 };
 
-export default function ConfirmBooking() {
+function ConfirmBooking() {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -108,3 +110,5 @@ export default function ConfirmBooking() {
     />
   );
 }
+
+export default guarded(RULES.book, ConfirmBooking);

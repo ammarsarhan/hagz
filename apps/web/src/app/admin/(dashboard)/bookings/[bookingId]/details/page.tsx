@@ -59,7 +59,11 @@ export default function BookingDetails() {
           </Link>
         </DetailsRow>
         <DetailsRow label="Ground">
-          <Text>{booking.ground.name ?? "Unnamed ground"}</Text>
+          <Text>
+            <span className={booking.ground.deleted ? "line-through" : undefined}>
+              {booking.ground.name ?? "Unnamed ground"}
+            </span>
+          </Text>
         </DetailsRow>
         <DetailsRow label="Made">
           <Text>

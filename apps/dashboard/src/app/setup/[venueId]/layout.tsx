@@ -70,6 +70,8 @@ import {
 } from "@/lib/layout";
 import { useLayoutEditor } from "@/lib/layout-editor";
 import { queries, reference } from "@/lib/queries";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 type Amenity = components["schemas"]["Amenity"];
 
@@ -86,7 +88,7 @@ const TRAY_CHANGE = { duration: 280, easing: Easing.out(Easing.cubic) };
 // Gliding to something picked from the list.
 const GLIDE = { duration: 320 };
 
-export default function SetupLayout() {
+function SetupLayout() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const layout = useQuery(queries.layout(venueId));
   const grounds = useQuery(queries.grounds(venueId));
@@ -1113,3 +1115,5 @@ function Chip({ icon, label }: { icon: React.ReactNode; label: string }) {
     </View>
   );
 }
+
+export default guarded(RULES.venueForm, SetupLayout);

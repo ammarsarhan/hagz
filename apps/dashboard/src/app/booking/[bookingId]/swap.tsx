@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
@@ -17,6 +17,7 @@ import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
 import { Sheet } from "@/components/sheet";
+import { StepRail } from "@/components/step-rail";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
@@ -29,6 +30,8 @@ import { useNow } from "@/lib/use-now";
 import { weekBookings, weekSlots } from "@/lib/week-queries";
 import { hoursSpan } from "@/lib/when";
 import { bookingQuery } from "./index";
+import { guarded } from "@/components/guarded";
+import { RULES } from "@/lib/access";
 
 // Swapping two bookings (Figma D9: pick 598:99, preview 598:199): the two trade times, each taking
 // the other's exact hours and ground, in one step (the API's swap). Picking: the day's bookings
@@ -45,7 +48,7 @@ const MOVABLE = ["PENDING", "HELD", "UNCONFIRMED", "CONFIRMED"];
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
-export default function SwapBooking() {
+function SwapBooking() {
   const { bookingId = "" } = useLocalSearchParams<{ bookingId: string }>();
   const { venue } = useCurrentVenue();
   const venueId = venue?.id ?? "";
@@ -76,6 +79,9 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
   const [note, setNote] = useState("");
   const [noting, setNoting] = useState(false);
   const [sending, setSending] = useState(false);
+  // Different lengths: a sheet says what each plays now before swapping (user, 2026-11-27).
+  const [warning, setWarning] = useState(false);
+  const confirmed = useRef(false);
   const [places, setPlaces] = useState<Record<string, { y: number; height: number }>>({});
 
   const grounds = slots.data?.grounds ?? [];
@@ -120,6 +126,8 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "bookings"] }),
       queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] }),
+      // A regular's week keeps its regular: its page shows where it went.
+      queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "regulars"] }),
     ]);
 
   const swap = async () => {
@@ -144,12 +152,26 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
     if (mine) router.replace(`/booking/${mine.id}`);
   };
 
+  const hoursOf = (from: string, to: string) => (Date.parse(to) - Date.parse(from)) / 3_600_000;
+  const ownHours = hoursOf(booking.startsAt, booking.endsAt);
+  const partnerHours = partner ? hoursOf(partner.startsAt, partner.endsAt) : ownHours;
+  const askOrSwap = () => {
+    if (ownHours === partnerHours) return void swap();
+    confirmed.current = false;
+    setWarning(true);
+  };
+
   const back = () => {
     if (partner) {
       setPartner(null);
       setNote("");
     } else router.back();
   };
+
+  const priceChange = (price: number, was: number) =>
+    price === was
+      ? money(price)
+      : t("screens.swap.priceWas", { price: money(price), was: money(was) });
 
   const title = t("screens.swap.title", { name });
   const other = partner ? firstName(partner.customer.name) : "";
@@ -181,12 +203,7 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
               </Pressable>
             }
           >
-            <BarButton
-              label={t("screens.swap.swap")}
-              primary
-              busy={sending}
-              onPress={() => void swap()}
-            />
+            <BarButton label={t("screens.swap.swap")} primary busy={sending} onPress={askOrSwap} />
           </BottomBar>
         ) : undefined
       }
@@ -325,6 +342,41 @@ function Swapper({ booking, venueId }: { booking: Booking; venueId: string }) {
         </View>
         <Button label={t("screens.swap.done")} onPress={() => setNoting(false)} />
       </Sheet>
+
+      {partner ? (
+        <LengthSheet
+          visible={warning}
+          onClose={() => setWarning(false)}
+          onHidden={() => {
+            if (confirmed.current) void swap();
+            confirmed.current = false;
+          }}
+          onSwap={() => {
+            confirmed.current = true;
+            setWarning(false);
+          }}
+          plays={[
+            {
+              name,
+              now: partnerHours,
+              was: ownHours,
+              detail: `${span(partner.startsAt, partner.endsAt)} · ${t("screens.swap.moved", {
+                ground: partner.ground.name ?? "",
+                price: priceChange(slotPrice(partner.id) || partner.total, ownPrice),
+              })}`,
+            },
+            {
+              name: other,
+              now: ownHours,
+              was: partnerHours,
+              detail: `${span(booking.startsAt, booking.endsAt)} · ${t("screens.swap.moved", {
+                ground: groundName(booking.ground.id) || (booking.ground.name ?? ""),
+                price: priceChange(ownPrice, slotPrice(partner.id) || partner.total),
+              })}`,
+            },
+          ]}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -507,3 +559,59 @@ function TradeArrow({
     </View>
   );
 }
+
+// Swapping bookings of different lengths, asked first (user, 2026-11-27): each player plays the
+// other's hours, so one plays longer and one shorter, at those hours' prices. The sheet says so for
+// each, as the delete and hours sheets do, with Cancel and Swap side by side; Swap swaps once it
+// has slid away.
+function LengthSheet({
+  visible,
+  onClose,
+  onHidden,
+  onSwap,
+  plays,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onHidden: () => void;
+  onSwap: () => void;
+  plays: { name: string; now: number; was: number; detail: string }[];
+}) {
+  const { t } = useTranslation();
+  const hours = (count: number) => t("screens.swap.hours", { count });
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onHidden={onHidden}
+      closeLabel={t("components.shared.nav.close")}
+    >
+      <Text accessibilityRole="header" className="mb-6 text-[22px] font-semibold leading-[1.27]">
+        {t("screens.swap.lengthTitle")}
+      </Text>
+      <StepRail
+        gap={22}
+        steps={plays.map((play) => ({
+          label: t("screens.swap.lengthPlays", {
+            name: play.name,
+            now: hours(play.now),
+            was: hours(play.was),
+          }),
+          detail: play.detail,
+          when: "",
+          state: "now" as const,
+        }))}
+      />
+      <View className="mt-8 flex-row gap-3">
+        <View className="flex-1">
+          <Button label={t("screens.swap.cancel")} variant="secondary" compact onPress={onClose} />
+        </View>
+        <View className="flex-1">
+          <Button label={t("screens.swap.swap")} compact onPress={onSwap} />
+        </View>
+      </View>
+    </Sheet>
+  );
+}
+
+export default guarded(RULES.bookingChange, SwapBooking);

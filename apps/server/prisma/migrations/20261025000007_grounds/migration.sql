@@ -11,7 +11,7 @@ CREATE TYPE "GroundSurface" AS ENUM ('NATURAL_GRASS', 'ARTIFICIAL_TURF', 'HARD_W
 CREATE TYPE "GroundEnvironment" AS ENUM ('INDOOR', 'OUTDOOR', 'COVERED');
 
 -- CreateEnum
-CREATE TYPE "GroundStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'DELETED');
+CREATE TYPE "GroundStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'REMOVING', 'DELETED');
 
 -- CreateEnum
 CREATE TYPE "PriceTier" AS ENUM ('BASE', 'PEAK', 'DISCOUNT');
@@ -87,6 +87,9 @@ CREATE TABLE "GroundSlot" (
     "scheduleVersion" INTEGER NOT NULL,
     "bookingId" UUID,
     "freedAt" TIMESTAMPTZ,
+    "blockNote" TEXT,
+    "blockedById" UUID,
+    "blockedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -147,6 +150,9 @@ ALTER TABLE "GroundSchedule" ADD CONSTRAINT "GroundSchedule_groundId_fkey" FOREI
 ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_groundId_venueId_fkey" FOREIGN KEY ("groundId", "venueId") REFERENCES "Ground"("id", "venueId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_blockedById_fkey" FOREIGN KEY ("blockedById") REFERENCES "Staff"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -178,6 +184,11 @@ ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_horizon_check"
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_booking_check"
   CHECK (("bookingId" IS NOT NULL) = (status IN ('HELD', 'BOOKED')));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints). A closed hour's note, who closed
+-- it and when belong to a BLOCKED slot only: opening it again clears them.
+ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_block_check"
+  CHECK (status = 'BLOCKED' OR ("blockNote" IS NULL AND "blockedById" IS NULL AND "blockedAt" IS NULL));
 
 -- AddExclusion (hand-added: Prisma cannot declare exclusion constraints). No two slots on a ground
 -- overlap in time: a staff-added 10:30–12:00 slot can't sit across the generated 11:00 one.

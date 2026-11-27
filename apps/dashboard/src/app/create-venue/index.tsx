@@ -7,6 +7,7 @@ import { Button } from "@/components/button";
 import { CloseButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Title } from "@/components/title";
+import { push } from "@/lib/navigation";
 
 // Adding a venue, step 1 of the flow (Figma "Start · B Hero scene", 307:2): the scene and one line on
 // what's ahead, so nobody starts thinking it's a form and finds a week of setup. Closing goes back
@@ -22,7 +23,7 @@ export default function CreateVenueStart() {
       footer={
         <Button
           label={t("screens.createVenue.start.action")}
-          onPress={() => router.push("/create-venue/name")}
+          onPress={() => push("/create-venue/name")}
         />
       }
     >
