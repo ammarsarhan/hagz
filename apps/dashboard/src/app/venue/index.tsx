@@ -3,9 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import type { TFunction } from "i18next";
 import type { ComponentType } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, Easing, Pressable, ScrollView, View } from "react-native";
+import Reanimated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bone } from "@/components/bone";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -37,6 +43,7 @@ import { decimalsOf, formatAmount } from "@/lib/money";
 import { push } from "@/lib/navigation";
 import { api } from "@/lib/api";
 import { fetched, queries } from "@/lib/queries";
+import { isRTL } from "@/lib/language";
 import { useNow } from "@/lib/use-now";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { calendarKey, WEEK_REFRESH } from "@/lib/week-queries";
@@ -60,6 +67,13 @@ const FALLBACK_TIMEZONE = "Africa/Cairo";
 // The cards: 236 pt wide, 12 pt apart (Figma D21c).
 const CARD_WIDTH = 236;
 const CARD_GAP = 12;
+// The title: its 34 pt line centred in the 40 pt row 13 pt under the status bar; docked, 17 pt and
+// centred in a 44 pt header, reached once the page has scrolled the row's height.
+const TITLE_START = 13 + (40 - 34) / 2;
+const DOCKED_SCALE = 17 / 28;
+const DOCKED_BAR = 44;
+const DOCKED_TOP = (DOCKED_BAR - 34 * DOCKED_SCALE) / 2;
+const DOCK_SCROLL = 40;
 // Check in shows on a game this close to kick-off, until it ends.
 const CHECK_IN_AHEAD = 30 * 60_000;
 
@@ -126,6 +140,49 @@ export default function VenueHome() {
   });
   const down = Animated.multiply(up, -1);
 
+  // As the Calendar's header (user, 2026-11-27): the title floats over its place in the page and, as
+  // the page scrolls, rides up and shrinks into a white header that fades in with its hairline; the
+  // round buttons beside it go up with the page, and scanning moves to a blue button floating in
+  // the bottom corner once the title has docked. Pulled down past the top, it follows the page.
+  const titleY = scrollY.interpolate({
+    inputRange: [-100, 0, DOCK_SCROLL],
+    outputRange: [TITLE_START + 100, TITLE_START, DOCKED_TOP],
+    extrapolateLeft: "extend",
+    extrapolateRight: "clamp",
+  });
+  const titleScale = scrollY.interpolate({
+    inputRange: [0, DOCK_SCROLL],
+    outputRange: [1, DOCKED_SCALE],
+    extrapolate: "clamp",
+  });
+  const headerIn = scrollY.interpolate({
+    inputRange: [DOCK_SCROLL - 16, DOCK_SCROLL],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+  const [docked, setDocked] = useState(false);
+  useEffect(() => {
+    // Native-driven, so the scroll keeps its pace; JS only hears it to show the floating button.
+    const id = scrollY.addListener(({ value }) => setDocked(value >= DOCK_SCROLL));
+    return () => scrollY.removeListener(id);
+  }, [scrollY]);
+
+  const buttons = (
+    <>
+      <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
+        <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
+      </HeaderButton>
+      <View className="ms-2">
+        <HeaderButton
+          label={t("screens.home.notifications")}
+          onPress={() => push("/notifications")}
+        >
+          <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
+        </HeaderButton>
+      </View>
+    </>
+  );
+
   return (
     <Screen tabbed>
       {banner ? (
@@ -141,35 +198,16 @@ export default function VenueHome() {
         />
       ) : null}
       <Animated.View style={{ flex: 1, marginBottom: -lift, transform: [{ translateY: up }] }}>
-        {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons,
-            and 12 pt under them before the scroll's hairline once scrolled. */}
-        <View className="mt-[13px] mb-3 h-10 flex-row items-center">
-          <Text
-            accessibilityRole="header"
-            className="flex-1 text-title font-semibold tracking-[-0.4px]"
-            numberOfLines={1}
-          >
-            {t("screens.home.title")}
-          </Text>
-          <HeaderButton label={t("screens.home.scan")} onPress={comingNext}>
-            <IconScan size={20} color={colors.ink} strokeWidth={1.75} />
-          </HeaderButton>
-          <View className="ms-2">
-            <HeaderButton
-              label={t("screens.home.notifications")}
-              onPress={() => push("/notifications")}
-            >
-              <IconBell size={20} color={colors.ink} strokeWidth={1.75} />
-            </HeaderButton>
-          </View>
-        </View>
-
         {canSee ? (
-          <FadingScroll scrollY={scrollY} onRoom={setRoom}>
+          <FadingScroll scrollY={scrollY} topLine={false} onRoom={setRoom}>
             <Animated.View style={{ transform: [{ translateY: down }] }}>
-              {/* Up by what the header's 12 pt adds over 8, so at rest the chips sit where they
-                  did; only scrolled does the header keep the extra room. */}
-              <View className="-mt-1 flex-row gap-2">
+              {/* The title's row, 13 pt under the status bar: the title floats over its place
+                  (below) so it can dock; the round buttons go up with the page. */}
+              <View className="-mt-px mb-2 h-10 flex-row items-center">
+                <View className="flex-1" />
+                {buttons}
+              </View>
+              <View className="flex-row gap-2">
                 <Chip
                   label={t("screens.home.today")}
                   on={!tomorrow}
@@ -190,10 +228,86 @@ export default function VenueHome() {
             {/* Room for the shift above, so the end can still be reached. */}
             <View style={{ height: lift }} />
           </FadingScroll>
-        ) : null}
+        ) : (
+          <View className="mt-[13px] h-10 flex-row items-center">
+            <View className="flex-1" />
+            {buttons}
+          </View>
+        )}
+
+        {/* The header the title docks in: white, with its hairline, fading in as it arrives. */}
+        <Animated.View
+          pointerEvents="none"
+          className="absolute top-0 border-b border-hairline bg-white"
+          style={{ left: -20, right: -20, height: DOCKED_BAR, opacity: headerIn }}
+        />
+        <Animated.View
+          pointerEvents="none"
+          className="absolute top-0"
+          style={{
+            start: 0,
+            transformOrigin: isRTL ? "right top" : "left top",
+            transform: [{ translateY: titleY }, { scale: titleScale }],
+          }}
+        >
+          <Text
+            accessibilityRole="header"
+            className="text-title font-semibold tracking-[-0.4px]"
+            numberOfLines={1}
+          >
+            {t("screens.home.title")}
+          </Text>
+        </Animated.View>
       </Animated.View>
+      {canSee ? (
+        <ScanButton shown={docked} label={t("screens.home.scan")} onPress={comingNext} />
+      ) : null}
       {invitation.sheet}
     </Screen>
+  );
+}
+
+// Scanning, once the title has docked and its row's button gone up: a round blue button over the
+// bottom corner, fading and growing in as the Calendar's + does.
+function ScanButton({
+  shown,
+  label,
+  onPress,
+}: {
+  shown: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  const fab = useSharedValue(0);
+  useEffect(() => {
+    fab.value = withTiming(shown ? 1 : 0, { duration: 180 });
+  }, [shown, fab]);
+  const style = useAnimatedStyle(() => ({
+    opacity: fab.value,
+    transform: [{ scale: interpolate(fab.value, [0, 1], [0.85, 1]) }],
+  }));
+  return (
+    <Reanimated.View
+      pointerEvents={shown ? "auto" : "none"}
+      className="absolute"
+      style={[{ end: 20, bottom: 16 }, style]}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onPress}
+        className="size-14 items-center justify-center rounded-full bg-primary active:opacity-80"
+        style={{
+          shadowColor: colors.ink,
+          shadowOpacity: 0.18,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+        }}
+      >
+        <IconScan size={24} color={colors.onPrimary} strokeWidth={2} />
+      </Pressable>
+    </Reanimated.View>
   );
 }
 
