@@ -1368,8 +1368,9 @@ const en = {
             bookingsBody: "Kept as booked",
             regularEnds: "{{name}}'s weekly game ends after {{date}}",
             regularEndsNow: "{{name}}'s weekly game ends",
-            regularBody: "Its time closes. Weeks already reserved still happen",
-            regularBodyNone: "Its time closes, and no week is reserved",
+            regularBody:
+              "Its time closes. Waiting weeks go back on sale, confirmed ones still happen",
+            regularBodyNone: "Its time closes. No week is confirmed",
             after: "New bookings follow the new hours",
             afterBody: "Free hours change straight away",
             cancel: "Cancel",
