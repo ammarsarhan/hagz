@@ -19,6 +19,7 @@ import {
   IconPlayerPause,
   IconRepeat,
   IconScan,
+  IconX,
 } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -44,7 +45,7 @@ type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number 
 // Today and Tomorrow, then what needs someone as large grey cards, most urgent first (requests and
 // holds run out; games to mark; cash still to take, for those who see payments; regulars' weeks to
 // confirm), or one quiet row when nothing does. Then the next games, a game about to start offering
-// Check in, and the hours still free. A paused venue says so above it all, with the way to reopen.
+// Check in, and the hours still free. A paused venue says so in a banner above it all.
 //
 // One read per day, asked again every minute and whenever the tab comes back into view, since what
 // players do in the app changes it from elsewhere.
@@ -95,6 +96,7 @@ export default function VenueHome() {
 
   return (
     <Screen tabbed>
+      {venue?.status === "MAINTENANCE" ? <PausedBanner key={venueId} venueId={venueId} /> : null}
       {/* The Calendar's header: its 13 pt under the status bar, the title beside its buttons. */}
       <View className="mt-[13px] h-10 flex-row items-center">
         <Text
@@ -128,7 +130,6 @@ export default function VenueHome() {
               onPress={() => setTomorrow(true)}
             />
           </View>
-          {venue?.status === "MAINTENANCE" ? <Paused /> : null}
           {home.data ? <Day home={home.data} isToday={!tomorrow} now={now} /> : <Loading />}
         </FadingScroll>
       ) : null}
@@ -295,20 +296,8 @@ function Card({ icon: CardIcon, big, small, onPress }: Omit<CardProps, "key">) {
   );
 }
 
-// One quiet row in a grey disc: caught up, or paused.
-function Notice({
-  icon: NoticeIcon,
-  title,
-  body,
-  link,
-  onLink,
-}: {
-  icon: Icon;
-  title: string;
-  body: string;
-  link?: string;
-  onLink?: () => void;
-}) {
+// One quiet row in a grey disc: caught up.
+function Notice({ icon: NoticeIcon, title, body }: { icon: Icon; title: string; body: string }) {
   return (
     <View className="mt-4 flex-row items-center">
       <View className="size-[52px] items-center justify-center rounded-full bg-chip">
@@ -316,30 +305,48 @@ function Notice({
       </View>
       <View className="ms-3.5 flex-1">
         <Text className="text-subtitle font-medium">{title}</Text>
-        <Text className="mt-0.5 text-label text-ink-2">
-          {body}
-          {link ? (
-            <Text className="text-label font-medium text-ink underline" onPress={onLink}>
-              {` ${link}`}
-            </Text>
-          ) : null}
-        </Text>
+        <Text className="mt-0.5 text-label text-ink-2">{body}</Text>
       </View>
     </View>
   );
 }
 
-// Paused: players can't book; Reopen goes to the Venue tab's Availability switch.
-function Paused() {
+// Paused (user, 2026-11-27): a grey banner the full width of the screen above the title, saying
+// players can't book, with Reopen (the Venue tab's Availability switch) and an × that hides it for
+// that venue until the app is next opened.
+const dismissedPauses = new Set<string>();
+
+function PausedBanner({ venueId }: { venueId: string }) {
   const { t } = useTranslation();
+  const [hidden, setHidden] = useState(() => dismissedPauses.has(venueId));
+  if (hidden) return null;
   return (
-    <Notice
-      icon={IconPlayerPause}
-      title={t("screens.home.paused")}
-      body={t("screens.home.pausedBody")}
-      link={t("screens.home.reopen")}
-      onLink={() => router.navigate("/venue/manage")}
-    />
+    <View className="-mx-5 flex-row items-center bg-chip py-3 ps-5 pe-3">
+      <IconPlayerPause size={20} color={colors.ink} strokeWidth={1.75} />
+      <Text className="ms-3 flex-1 text-label text-ink-2">
+        <Text className="text-label font-medium text-ink">{`${t("screens.home.paused")} · `}</Text>
+        {t("screens.home.pausedBody")}
+        <Text
+          accessibilityRole="link"
+          className="text-label font-medium text-ink underline"
+          onPress={() => router.navigate("/venue/manage")}
+        >
+          {` ${t("screens.home.reopen")}`}
+        </Text>
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("components.shared.nav.close")}
+        hitSlop={8}
+        onPress={() => {
+          dismissedPauses.add(venueId);
+          setHidden(true);
+        }}
+        className="ms-2 size-8 items-center justify-center active:opacity-60"
+      >
+        <IconX size={18} color={colors.ink} strokeWidth={1.75} />
+      </Pressable>
+    </View>
   );
 }
 
