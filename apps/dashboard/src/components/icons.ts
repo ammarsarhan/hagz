@@ -25,6 +25,10 @@ export { default as IconArrowUp } from "@tabler/icons-react-native/IconArrowUp";
 export { default as IconArrowsExchange } from "@tabler/icons-react-native/IconArrowsExchange";
 export { default as IconInbox } from "@tabler/icons-react-native/IconInbox";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
+// The calendar's free and closed times (components/time-sheets.tsx).
+export { default as IconBan } from "@tabler/icons-react-native/IconBan";
+export { default as IconRestore } from "@tabler/icons-react-native/IconRestore";
+export { default as IconTag } from "@tabler/icons-react-native/IconTag";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
 export { default as IconBuildingStadium } from "@tabler/icons-react-native/IconBuildingStadium";
 export { default as IconCalendar } from "@tabler/icons-react-native/IconCalendar";

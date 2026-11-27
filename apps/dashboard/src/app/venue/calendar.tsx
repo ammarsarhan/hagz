@@ -1,9 +1,11 @@
-import { useQueries, useQuery, type QueryFilters } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useQueries, useQuery, useQueryClient, type QueryFilters } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   FadeIn,
@@ -33,8 +35,18 @@ import { IconArrowUp, IconInbox, IconPlus } from "@/components/icons";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
+import {
+  ClosedTimeSheet,
+  FreeTimeSheet,
+  NoteSheet,
+  PriceSheet,
+  moneyOf,
+  type ClosedAction,
+  type FreeAction,
+} from "@/components/time-sheets";
 import { Chip, WeekStrip } from "@/components/week-strip";
-import { hudMessage } from "@/lib/api-errors";
+import { api } from "@/lib/api";
+import { hudMessage, send } from "@/lib/api-errors";
 import {
   addDays,
   bookingDays,
@@ -45,6 +57,7 @@ import {
   weekOf,
   weekStartOf,
   type CalendarRow,
+  type Slot,
   type StaffBooking,
 } from "@/lib/calendar";
 import { bookingRequests } from "@/lib/booking-requests";
@@ -57,7 +70,7 @@ import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { useNow } from "@/lib/use-now";
-import { dayLabel, hourLabel, sentenceTime } from "@/lib/when";
+import { dayLabel, hourLabel, hoursSpan, sentenceTime } from "@/lib/when";
 import { push } from "@/lib/navigation";
 
 // The Calendar tab (Figma D6 round 2, "B · The day as a list"), titled with the picked day, which shrinks into the header as the strip docks: a week
@@ -352,18 +365,260 @@ export default function VenueCalendar() {
     },
   });
 
-  const comingNext = () => hud.show(t("common.comingNext"));
+  // Free and closed times (Figma D16, user 2026-11-27). A tap or long press on one opens its sheet;
+  // on one ground, holding a free time and dragging picks the free times back to back with it, and
+  // the pill by the + becomes Modify, which opens the same sheet for all of them.
+  const queryClient = useQueryClient();
+  const me = useQuery(queries.me).data;
+  const canBook = venue?.permissions.bookings === "manage";
+  const canClose = venue?.permissions.schedule === "manage";
+  const currency = slots.data?.currency ?? "EGP";
+  type Target =
+    | { kind: "free"; runs: { groundId: string; slots: Slot[] }[] }
+    | { kind: "closed"; slots: Slot[]; closed: Slot["closed"] };
+  const [target, setTarget] = useState<Target | null>(null);
+  const [targetGround, setTargetGround] = useState("");
+  const [sheet, setSheet] = useState<"free" | "closed" | "price" | "note" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const next = useRef<FreeAction | ClosedAction | null>(null);
+  const targetSlots =
+    target === null
+      ? []
+      : target.kind === "closed"
+        ? target.slots
+        : ((target.runs.find((run) => run.groundId === targetGround) ?? target.runs[0])?.slots ??
+          []);
+  const priceText = (list: readonly Slot[]) => {
+    const prices = list.map((slot) => slot.price);
+    const from = Math.min(...prices);
+    const to = Math.max(...prices);
+    return from === to
+      ? moneyOf(from, currency)
+      : t("screens.calendar.priceRange", {
+          from: formatAmount(from, decimalsOf(currency)),
+          to: moneyOf(to, currency),
+        });
+  };
+  const timeTitle = (list: readonly Slot[]) => {
+    const [first] = list;
+    const last = list.at(-1);
+    if (!first || !last) return "";
+    return `${hoursSpan(first.startsAt, last.endsAt, timezone, t)} · ${groundName(first.groundId)}`;
+  };
+  const openTime = (row: CalendarRow) => {
+    if (Date.parse(row.endsAt) <= now) return;
+    if (row.kind === "free" && (canBook || canClose)) {
+      setTarget({
+        kind: "free",
+        runs: row.slots.map((slot) => ({ groundId: slot.groundId, slots: [slot] })),
+      });
+      setTargetGround(row.groundIds[0] ?? row.groundId);
+      setSheet("free");
+    } else if (row.kind === "closed" && canClose) {
+      setTarget({ kind: "closed", slots: row.slots, closed: row.closed });
+      setSheet("closed");
+    }
+  };
+  const afterSlots = () =>
+    queryClient.invalidateQueries({ queryKey: ["staff", "venues", venueId, "slots"] });
+  const write = async (call: ReturnType<typeof send>) => {
+    setBusy(true);
+    const result = await call;
+    setBusy(false);
+    if (!result.ok) {
+      hud.show(hudMessage(result.error));
+      return false;
+    }
+    await afterSlots();
+    return true;
+  };
+  const slotIds = targetSlots.map((slot) => slot.id);
+  const savePrice = async (price: number) => {
+    const done = await write(
+      send(
+        api.PUT("/v1/staff/venues/{venueId}/slots/price", {
+          params: { path: { venueId } },
+          body: { slotIds, price },
+        }),
+      ),
+    );
+    if (done) {
+      setDragPick(null);
+      setSheet(null);
+    }
+  };
+  const saveNote = async (note: string | null) => {
+    if (
+      await write(
+        send(
+          api.PUT("/v1/staff/venues/{venueId}/slots/note", {
+            params: { path: { venueId } },
+            body: { slotIds, note },
+          }),
+        ),
+      )
+    )
+      setSheet(null);
+  };
+  const reopen = () =>
+    void write(
+      send(
+        api.POST("/v1/staff/venues/{venueId}/slots/unblock", {
+          params: { path: { venueId } },
+          body: { slotIds },
+        }),
+      ),
+    );
+  // What a sheet's row leads to, once the sheet has slid away.
+  const afterSheet = () => {
+    const action = next.current;
+    next.current = null;
+    if (action === null) return;
+    const [first] = targetSlots;
+    const last = targetSlots.at(-1);
+    if (!first || !last) return;
+    if (action === "book" || action === "hold") {
+      setDragPick(null);
+      push({
+        pathname: action === "hold" ? "/hold" : "/book",
+        params: { date: day, groundId: first.groundId, from: first.id, to: last.id },
+      });
+    } else if (action === "close") {
+      setDragPick(null);
+      push({
+        pathname: "/close-time",
+        params: {
+          slotIds: slotIds.join(","),
+          startsAt: first.startsAt,
+          endsAt: last.endsAt,
+          ground: groundName(first.groundId),
+          price: String(targetSlots.reduce((sum, slot) => sum + slot.price, 0)),
+          currency,
+          timezone,
+        },
+      });
+    } else if (action === "reopen") reopen();
+    else setSheet(action);
+  };
+  const pickAction = (action: FreeAction | ClosedAction) => {
+    next.current = action;
+    setSheet(null);
+  };
+
+  // The free times picked by dragging (on one ground), by their rows' keys, in order.
+  const [dragPick, setDragPick] = useState<string[] | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const freeRun = useMemo(
+    () =>
+      groundId === null
+        ? []
+        : rows.filter(
+            (row): row is Extract<CalendarRow, { kind: "free" }> =>
+              row.kind === "free" && !row.ended,
+          ),
+    [rows, groundId],
+  );
+  const joined = (index: number) => freeRun[index + 1]?.startsAt === freeRun[index]?.endsAt;
+  const pickedRows = useMemo(() => {
+    if (!dragPick) return [];
+    const found = dragPick.map((key) => freeRun.find((row) => row.key === key));
+    return found.every(Boolean) ? (found as typeof freeRun) : [];
+  }, [dragPick, freeRun]);
+  const rowPlaces = useRef(new Map<string, { y: number; height: number }>());
+  const placeRow = useCallback((key: string, event: LayoutChangeEvent) => {
+    const { y, height } = event.nativeEvent.layout;
+    rowPlaces.current.set(key, { y, height });
+  }, []);
+  const freeAt = (y: number) => {
+    let nearest = -1;
+    let distance = Infinity;
+    freeRun.forEach((row, index) => {
+      const place = rowPlaces.current.get(row.key);
+      if (!place) return;
+      const away =
+        y < place.y ? place.y - y : y > place.y + place.height ? y - (place.y + place.height) : 0;
+      if (away < distance) {
+        distance = away;
+        nearest = index;
+      }
+    });
+    return { index: nearest, on: distance === 0 };
+  };
+  // From the row held towards the one under the finger, as far as they run back to back.
+  const stretch = (anchor: number, toward: number) => {
+    let from = anchor;
+    let to = anchor;
+    while (to < toward && joined(to)) to += 1;
+    while (from > toward && joined(from - 1)) from -= 1;
+    return freeRun.slice(from, to + 1).map((row) => row.key);
+  };
+  const drag = useRef<{ anchor: number; last: number; keys: string[] } | null>(null);
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .activateAfterLongPress(250)
+    .onStart((event) => {
+      const { index, on } = freeAt(event.y);
+      const row = freeRun[index];
+      if (!on || !row || !(canBook || canClose)) return;
+      drag.current = { anchor: index, last: index, keys: [row.key] };
+      setDragging(true);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setDragPick([row.key]);
+    })
+    .onUpdate((event) => {
+      const current = drag.current;
+      if (!current) return;
+      const { index } = freeAt(event.y);
+      if (index < 0 || index === current.last) return;
+      current.last = index;
+      void Haptics.selectionAsync();
+      current.keys = stretch(current.anchor, index);
+      setDragPick(current.keys);
+    })
+    .onFinalize(() => {
+      const keys = drag.current?.keys;
+      drag.current = null;
+      setDragging(false);
+      // Held without dragging: that one time's sheet, as a long press.
+      if (keys?.length === 1) {
+        setDragPick(null);
+        const row = freeRun.find((one) => one.key === keys[0]);
+        if (row) openTime(row);
+      }
+    });
+  const modify = () => {
+    if (pickedRows.length === 0) return;
+    setTarget({
+      kind: "free",
+      runs: [
+        {
+          groundId: pickedRows[0]?.groundId ?? "",
+          slots: pickedRows.flatMap((row) => row.slots),
+        },
+      ],
+    });
+    setTargetGround(pickedRows[0]?.groundId ?? "");
+    setSheet("free");
+  };
+
   // The + asks first: a new booking or a hold, opened once its sheet has slid away.
   const [adding, setAdding] = useState(false);
   const added = useRef<AddAction | null>(null);
   const holdMinutes = useQuery(bookingSettingsQuery(venueId)).data?.staffHoldMinutes ?? null;
   // A booking opens its page; free and closed times wait for their own screens.
   const openRow = (row: CalendarRow) => {
-    if (row.kind === "free" || row.kind === "closed") comingNext();
+    // A tap lets a dragged pick go.
+    if (pickedRows.length > 0) {
+      setDragPick(null);
+      return;
+    }
+    if (row.kind === "free" || row.kind === "closed") openTime(row);
     else push(`/booking/${row.booking.id}`);
   };
   // What's on show: a new day or ground remounts the rows, so they come in one after another again.
   const shown = `${day}:${groundId ?? "all"}`;
+  useEffect(() => setDragPick(null), [shown]);
+  const picking = pickedRows.length > 1;
   const showNow = day === today;
   useEffect(() => {
     if (!showNow || loading || dayFailure) nowY.value = -1;
@@ -396,6 +651,7 @@ export default function VenueCalendar() {
       <Animated.ScrollView
         ref={page}
         onScroll={onScroll}
+        scrollEnabled={!dragging}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical
@@ -546,7 +802,8 @@ export default function VenueCalendar() {
                       hour={group.hour}
                       timezone={timezone}
                       ground={groundsOf(row)}
-                      currency={slots.data?.currency ?? "EGP"}
+                      currency={currency}
+                      meId={me?.id}
                       onPress={() => openRow(row)}
                     />
                   ))}
@@ -554,24 +811,32 @@ export default function VenueCalendar() {
               </Animated.View>
             ))
           ) : (
-            rows.map((row, index) => (
-              <Animated.View
-                key={`${shown}:${row.key}`}
-                entering={staggered(index)}
-                onLayout={
-                  index === nowRow ? (event) => placedNow(event.nativeEvent.layout.y) : undefined
-                }
-              >
-                <Row
-                  row={row}
-                  timezone={timezone}
-                  ground={groundsOf(row)}
-                  currency={slots.data?.currency ?? "EGP"}
-                  current={index === nowRow}
-                  onPress={() => openRow(row)}
-                />
-              </Animated.View>
-            ))
+            // One ground: hold a free time and drag to pick those back to back with it.
+            <GestureDetector gesture={pan}>
+              <View className="gap-4">
+                {rows.map((row, index) => (
+                  <Animated.View
+                    key={`${shown}:${row.key}`}
+                    entering={staggered(index)}
+                    onLayout={(event) => {
+                      placeRow(row.key, event);
+                      if (index === nowRow) placedNow(event.nativeEvent.layout.y);
+                    }}
+                  >
+                    <Row
+                      row={row}
+                      timezone={timezone}
+                      ground={groundsOf(row)}
+                      currency={currency}
+                      current={index === nowRow}
+                      meId={me?.id}
+                      selected={pickedRows.some((one) => one.key === row.key)}
+                      onPress={() => openRow(row)}
+                    />
+                  </Animated.View>
+                ))}
+              </View>
+            </GestureDetector>
           )}
         </View>
       </Animated.ScrollView>
@@ -579,23 +844,44 @@ export default function VenueCalendar() {
       {pull.spinner}
 
       {/* Level with the +: centred on its 56 pt. */}
-      <Animated.View
-        pointerEvents={pastNow ? "box-none" : "none"}
-        className="absolute right-0 left-0 items-center"
-        style={[{ bottom: FAB_GAP + (FAB - 40) / 2 }, nowPillStyle]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("screens.calendar.backToNow")}
-          onPress={backToNow}
-          className="h-10 flex-row items-center gap-1.5 rounded-full bg-ink px-4 active:opacity-80"
+      {picking ? (
+        // A few free times picked by dragging: Modify takes the pill's place (Figma D16).
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(180)}
+          pointerEvents="box-none"
+          className="absolute right-0 left-0 items-center"
+          style={{ bottom: FAB_GAP + (FAB - 40) / 2 }}
         >
-          <IconArrowUp size={16} color={colors.white} strokeWidth={2} />
-          <Text className="text-label font-medium text-white">
-            {t("screens.calendar.backToNow")}
-          </Text>
-        </Pressable>
-      </Animated.View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={modify}
+            className="h-10 flex-row items-center rounded-full bg-ink px-4 active:opacity-80"
+          >
+            <Text className="text-label font-medium text-white">
+              {t("screens.calendar.modify")}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      ) : (
+        <Animated.View
+          pointerEvents={pastNow ? "box-none" : "none"}
+          className="absolute right-0 left-0 items-center"
+          style={[{ bottom: FAB_GAP + (FAB - 40) / 2 }, nowPillStyle]}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("screens.calendar.backToNow")}
+            onPress={backToNow}
+            className="h-10 flex-row items-center gap-1.5 rounded-full bg-ink px-4 active:opacity-80"
+          >
+            <IconArrowUp size={16} color={colors.white} strokeWidth={2} />
+            <Text className="text-label font-medium text-white">
+              {t("screens.calendar.backToNow")}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
       <LayoutAnimationConfig skipEntering>
         {pastDay ? null : (
@@ -671,6 +957,59 @@ export default function VenueCalendar() {
             });
         }}
       />
+      <FreeTimeSheet
+        title={timeTitle(targetSlots)}
+        count={targetSlots.length}
+        price={priceText(targetSlots)}
+        holdMinutes={holdMinutes}
+        canBook={canBook}
+        canClose={canClose}
+        grounds={
+          target?.kind === "free"
+            ? target.runs.map((run) => ({ id: run.groundId, name: groundName(run.groundId) }))
+            : []
+        }
+        groundId={targetGround}
+        onGround={setTargetGround}
+        visible={sheet === "free"}
+        onClose={() => setSheet(null)}
+        onHidden={afterSheet}
+        onPick={pickAction}
+      />
+      <ClosedTimeSheet
+        title={timeTitle(targetSlots)}
+        price={priceText(targetSlots)}
+        hasNote={target?.kind === "closed" && Boolean(target.closed?.note)}
+        visible={sheet === "closed"}
+        onClose={() => setSheet(null)}
+        onHidden={afterSheet}
+        onPick={pickAction}
+      />
+      {/* Keyed by what they change, so each opens with its own price or note. */}
+      <PriceSheet
+        key={`price:${slotIds.join(",")}`}
+        title={timeTitle(targetSlots)}
+        current={
+          targetSlots.every((slot) => slot.price === targetSlots[0]?.price)
+            ? (targetSlots[0]?.price ?? null)
+            : null
+        }
+        currency={currency}
+        visible={sheet === "price"}
+        busy={busy}
+        onClose={() => setSheet(null)}
+        onHidden={() => undefined}
+        onSave={(price) => void savePrice(price)}
+      />
+      <NoteSheet
+        key={`note:${slotIds.join(",")}`}
+        note={target?.kind === "closed" ? (target.closed?.note ?? null) : null}
+        visible={sheet === "note"}
+        busy={busy}
+        onClose={() => setSheet(null)}
+        onHidden={() => undefined}
+        onSave={(note) => void saveNote(note)}
+      />
     </View>
   );
 }
@@ -742,6 +1081,8 @@ function Row({
   ground,
   currency,
   current = false,
+  meId,
+  selected = false,
   onPress,
 }: {
   row: CalendarRow;
@@ -754,6 +1095,10 @@ function Row({
   currency: string;
   // The row under way now: its hours in blue.
   current?: boolean;
+  // Who's signed in, so hours they closed say "Closed by you".
+  meId?: string;
+  // Picked by dragging: blue, as one block with the others picked.
+  selected?: boolean;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
@@ -762,7 +1107,11 @@ function Row({
   const timing = hour === undefined ? null : timingIn(row, hour, timezone, t);
   const title =
     row.kind === "closed"
-      ? t("screens.calendar.closed")
+      ? row.closed?.staffId && row.closed.staffId === meId
+        ? t("screens.calendar.closedByYou")
+        : row.closed?.by
+          ? t("screens.calendar.closedBy", { name: row.closed.by })
+          : t("screens.calendar.closed")
       : row.kind === "free"
         ? t("screens.calendar.free")
         : row.booking.customer.name;
@@ -777,11 +1126,15 @@ function Row({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      // On All grounds, where there's no dragging, a long press opens the same sheet as a tap.
+      onLongPress={
+        hour !== undefined && (row.kind === "free" || row.kind === "closed") ? onPress : undefined
+      }
       // 64 at least, the bar its full height. The padding is inside, around the words: 4 pt, or 12
       // when the grounds run onto another line (three lines in all), so the row and its bar grow
       // with them (user: padding, not a gap between rows).
       // A time gone by with nothing booked steps further back (user): faded as a whole.
-      className={`min-h-16 flex-row items-center active:opacity-70 ${row.kind === "free" && row.ended ? "opacity-40" : ""}`}
+      className={`min-h-16 flex-row items-center active:opacity-70 ${row.kind === "free" && row.ended ? "opacity-40" : ""} ${selected ? "-mx-2 rounded-xl bg-[#f2f4ff] px-2" : ""}`}
     >
       {hour === undefined ? (
         // Pulled out by its padding, so the hours line up with the other rows' either way.
@@ -805,7 +1158,7 @@ function Row({
         </View>
       ) : null}
       <View
-        className={`w-1.5 self-stretch rounded-[3px] ${row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
+        className={`w-1.5 self-stretch rounded-[3px] ${selected ? "bg-primary" : row.kind === "free" && row.ended ? "border border-dashed border-ink-3 bg-white" : BAR[row.kind]}`}
       />
       <View className={`ms-3.5 flex-1 ${wrapped ? "py-3" : "py-1"}`}>
         <Text
@@ -867,7 +1220,8 @@ const priced = (minor: number, currency: string) =>
   `${formatAmount(minor, decimalsOf(currency))} ${currency}`;
 
 const standing = (row: CalendarRow, timezone: string, currency: string, t: T): string[] => {
-  if (row.kind === "closed") return [];
+  // Its note for the team, when it has one.
+  if (row.kind === "closed") return row.closed?.note ? [row.closed.note] : [];
   if (row.kind === "free")
     return row.ended
       ? []
