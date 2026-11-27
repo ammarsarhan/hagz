@@ -18,9 +18,10 @@ import { Animated, ScrollView, View, type RefreshControlProps } from "react-nati
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
 //
-// Pull to refresh: pass usePullToRefresh's `control` as `refreshControl` and its `spinner` as
-// `overlay` (made with `offset: 0`, so it sits just under the bar), and feed its scroll value from
-// `onOffset`.
+// Pull to refresh, the page's top and its header together: pass usePullToRefresh's `control` as
+// `refreshControl` and feed its scroll value from `onOffset`; wrap the NavBar in an Animated.View
+// styled with `followPull(scrollY)` so it comes down with the pull, and put the hook's `spinner`
+// (made with `offset: 0`) before it, in the gap it leaves at the top.
 // The room left under the last row.
 const ROOM = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
@@ -43,7 +44,6 @@ export function FadingScroll({
   controller,
   onRoom,
   refreshControl,
-  overlay,
   onOffset,
 }: {
   children: ReactNode;
@@ -56,8 +56,6 @@ export function FadingScroll({
   // How far it can scroll (content less its own height), whenever either changes.
   onRoom?: (room: number) => void;
   refreshControl?: ReactElement<RefreshControlProps>;
-  // Drawn over the scroll, under the bar (pull to refresh's spinner).
-  overlay?: ReactNode;
   // The scroll offset as it changes, on the JS side.
   onOffset?: (y: number) => void;
 }) {
@@ -122,11 +120,23 @@ export function FadingScroll({
       >
         {children}
       </Animated.ScrollView>
-      {overlay}
       {topLine ? <TopHairline scrollY={offset} /> : null}
     </View>
   );
 }
+
+// The nav bar following a pull past the top, so the header comes down with the page.
+export const followPull = (scrollY: Animated.Value) => ({
+  transform: [
+    {
+      translateY: scrollY.interpolate({
+        inputRange: [-1000, 0],
+        outputRange: [1000, 0],
+        extrapolate: "clamp" as const,
+      }),
+    },
+  ],
+});
 
 // The line under the bar once anything has scrolled beneath it, fading in over the first 12 pt.
 // Exported for screens that scroll a list of their own (Customers), inside a full-width View.

@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Linking, Pressable, View } from "react-native";
+import { ActivityIndicator, Animated, Linking, Pressable, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import type { components } from "@hagz/api";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
-import { FadingScroll } from "@/components/fading-scroll";
+import { FadingScroll, followPull } from "@/components/fading-scroll";
 import { usePullToRefresh } from "@/components/pull-to-refresh";
 import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
@@ -170,19 +170,21 @@ function RegularPage() {
         ) : undefined
       }
     >
-      <NavBar
-        flush
-        start={<CompactTitle button={back} title={one.customer.name} style={compact.style} />}
-        end={
-          canManage && one.status !== "ENDED" ? (
-            <RoundButton icon={IconDots} label={t(`${p}.more`)} onPress={() => setMenu(true)} />
-          ) : undefined
-        }
-      />
+      {pull.spinner}
+      <Animated.View style={followPull(compact.scrollY)}>
+        <NavBar
+          flush
+          start={<CompactTitle button={back} title={one.customer.name} style={compact.style} />}
+          end={
+            canManage && one.status !== "ENDED" ? (
+              <RoundButton icon={IconDots} label={t(`${p}.more`)} onPress={() => setMenu(true)} />
+            ) : undefined
+          }
+        />
+      </Animated.View>
       <FadingScroll
         scrollY={compact.scrollY}
         refreshControl={pull.control}
-        overlay={pull.spinner}
         onOffset={(y) => {
           pullY.value = y;
         }}
