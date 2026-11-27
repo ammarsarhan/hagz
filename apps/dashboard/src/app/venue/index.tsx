@@ -500,8 +500,8 @@ function TimeRow({
   return (
     <Pressable onPress={onPress} className="mt-3 flex-row items-center py-1 active:opacity-60">
       <View className="size-[52px] items-center justify-center rounded-full bg-chip">
-        <Text className="text-[14px] leading-4 font-semibold">{start.time}</Text>
-        <Text className="text-[11px] leading-[13px] text-ink-2">
+        <Text className="text-[14px] leading-[14px] font-semibold">{start.time}</Text>
+        <Text className="text-[11px] leading-[12px] text-ink-2">
           {t(start.pm ? "screens.calendar.pm" : "screens.calendar.am")}
         </Text>
       </View>
