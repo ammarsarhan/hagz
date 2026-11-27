@@ -6231,6 +6231,86 @@
             ],
             "description": "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`."
           },
+          "games": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "next": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Today: the next game's start, null when none is left. A later day: its first."
+              }
+            },
+            "required": [
+              "count",
+              "next"
+            ],
+            "description": "The day's games: confirmed, still to confirm, played or no-show."
+          },
+          "booked": {
+            "type": "object",
+            "properties": {
+              "booked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "open": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "booked",
+              "open"
+            ],
+            "description": "The day's hours on live grounds: how many are booked or held, of all not closed by staff."
+          },
+          "checkIns": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "checkedIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "started": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "checkedIn",
+              "started"
+            ],
+            "description": "Today only: of the app games that have kicked off, how many have checked in. Null on a later day."
+          },
+          "takings": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "amount": {
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "description": "What the day's games come to, however they're paid (minor units). Null without `payments: view`."
+          },
           "next": {
             "type": "array",
             "items": {
@@ -6496,6 +6576,10 @@
           "toMark",
           "weeks",
           "cash",
+          "games",
+          "booked",
+          "checkIns",
+          "takings",
           "next",
           "free"
         ]

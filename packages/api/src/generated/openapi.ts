@@ -19696,6 +19696,30 @@ export interface components {
                 count: number;
                 currency: string;
             } | null;
+            /** @description The day's games: confirmed, still to confirm, played or no-show. */
+            games: {
+                count: number;
+                /**
+                 * Format: date-time
+                 * @description Today: the next game's start, null when none is left. A later day: its first.
+                 */
+                next: string | null;
+            };
+            /** @description The day's hours on live grounds: how many are booked or held, of all not closed by staff. */
+            booked: {
+                booked: number;
+                open: number;
+            };
+            /** @description Today only: of the app games that have kicked off, how many have checked in. Null on a later day. */
+            checkIns: {
+                checkedIn: number;
+                started: number;
+            } | null;
+            /** @description What the day's games come to, however they're paid (minor units). Null without `payments: view`. */
+            takings: {
+                amount: number;
+                currency: string;
+            } | null;
             /** @description Up to three games yet to end, from the day's start (today: from now). */
             next: {
                 /** Format: uuid */

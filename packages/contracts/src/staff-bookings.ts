@@ -99,6 +99,30 @@ export const StaffHome = z
       description:
         "Money still to take at the venue for the day's games not yet checked in or over (minor units). Null without `payments: view`.",
     }),
+    games: z
+      .object({
+        count: z.int().min(0),
+        next: Instant.nullable().meta({
+          description:
+            "Today: the next game's start, null when none is left. A later day: its first.",
+        }),
+      })
+      .meta({ description: "The day's games: confirmed, still to confirm, played or no-show." }),
+    booked: z.object({ booked: z.int().min(0), open: z.int().min(0) }).meta({
+      description:
+        "The day's hours on live grounds: how many are booked or held, of all not closed by staff.",
+    }),
+    checkIns: z
+      .object({ checkedIn: z.int().min(0), started: z.int().min(0) })
+      .nullable()
+      .meta({
+        description:
+          "Today only: of the app games that have kicked off, how many have checked in. Null on a later day.",
+      }),
+    takings: z.object({ amount: z.int(), currency: z.string() }).nullable().meta({
+      description:
+        "What the day's games come to, however they're paid (minor units). Null without `payments: view`.",
+    }),
     next: z.array(StaffBooking.extend({ checkedIn: z.boolean() })).meta({
       description: "Up to three games yet to end, from the day's start (today: from now).",
     }),

@@ -65,6 +65,12 @@ describe("the Home tab", () => {
     expect(home.holds.count).toBe(0);
     expect(home.toMark.count).toBe(0);
     expect(home.cash).toEqual({ amount: game.total, count: 1, currency: "EGP" });
+    // The day at a glance: one game (the request isn't one), three of its four hours taken, what
+    // it comes to; no check-ins on a later day.
+    expect(home.games).toEqual({ count: 1, next: game.startsAt });
+    expect(home.booked).toEqual({ booked: 3, open: 4 });
+    expect(home.takings).toEqual({ amount: game.total, currency: "EGP" });
+    expect(home.checkIns).toBeNull();
     // The request isn't a game yet.
     expect(home.next.map((one) => [one.id, one.checkedIn])).toEqual([[game.id, false]]);
     expect(home.free).toEqual([
@@ -86,6 +92,7 @@ describe("the Home tab", () => {
     const res = await asStaff(desk.id, "GET", `/venues/${venue.id}/home?date=${day}`);
     const home = StaffHome.parse(await res.json());
     expect(home.cash).toBeNull();
+    expect(home.takings).toBeNull();
 
     const outsider = await staffAt(venue.id, {
       role: "MEMBER",
@@ -111,10 +118,19 @@ describe("the Home tab", () => {
     expect(home.next).toEqual([]);
     expect(home.cash).toMatchObject({ amount: 0, count: 0 });
 
+    // Today: kicked off and nobody in yet, then checked in.
+    const startedToday = (await localDay(marketplace.id, new Date(game.startsAt))) === date;
+    expect(home.checkIns).toEqual({ started: startedToday ? 1 : 0, checkedIn: 0 });
+
     await prisma.booking.update({
       where: { id: game.id },
       data: { checkedInAt: now, checkedInById: owner.id },
     });
-    expect((await staffHome(access, { date }, clock)).toMark.count).toBe(0);
+    const after = await staffHome(access, { date }, clock);
+    expect(after.toMark.count).toBe(0);
+    expect(after.checkIns).toEqual({
+      started: startedToday ? 1 : 0,
+      checkedIn: startedToday ? 1 : 0,
+    });
   });
 });

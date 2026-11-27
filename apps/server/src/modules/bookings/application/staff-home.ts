@@ -14,6 +14,8 @@ import { presentStaff, staffSelect } from "./staff-bookings";
 // cash needs `payments: view` too.
 
 const NEXT = 3;
+// A day's games: confirmed, a regular's week still to confirm, played or a no-show.
+const GAME_STATUSES = ["UNCONFIRMED", "CONFIRMED", "COMPLETED", "NO_SHOW"] as const;
 const FREE = 3;
 const HOUR = 3_600_000;
 
@@ -62,7 +64,9 @@ export const staffHome = async (
   // Today: from now on; a later day: all of it.
   const ahead = { startsAt: { lt: to }, endsAt: { gt: today ? now : from } };
 
-  const [requests, holds, toMark, weeks, cash, next, free] = await Promise.all([
+  const games = { venueId, status: { in: [...GAME_STATUSES] }, ...onDay };
+  const seesMoney = actor.permissions.payments !== "none";
+  const [requests, holds, toMark, weeks, cash, next, free, day] = await Promise.all([
     waiting({
       venueId,
       status: "PENDING",
@@ -102,7 +106,31 @@ export const staffHome = async (
       select: { ...staffSelect, checkedInAt: true },
     }),
     openHours(venueId, today ? now : from, to, currency),
+    Promise.all([
+      prisma.booking.count({ where: games }),
+      prisma.booking.findFirst({
+        where: { ...games, ...(today && { startsAt: { gte: now, lt: to } }) },
+        orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+        select: { startsAt: true },
+      }),
+      prisma.groundSlot.groupBy({
+        by: ["status"],
+        where: { venueId, ...onDay, ground: { status: "ACTIVE" }, status: { not: "BLOCKED" } },
+        _count: { _all: true },
+      }),
+      today
+        ? prisma.booking.groupBy({
+            by: ["checkedInAt"],
+            where: { ...games, creatorId: null, startsAt: { gte: from, lte: now } },
+            _count: { _all: true },
+          })
+        : null,
+      seesMoney ? prisma.booking.aggregate({ where: games, _sum: { total: true } }) : null,
+    ]),
   ]);
+  const [gameCount, nextGame, slots, started, money] = day;
+  const slotsIn = (status: string) =>
+    slots.find((group) => group.status === status)?._count._all ?? 0;
 
   const terms = { now, paymentWindow: venue.settings?.paymentWindow ?? null };
   return {
@@ -112,6 +140,20 @@ export const staffHome = async (
     toMark,
     weeks,
     cash,
+    games: { count: gameCount, next: nextGame?.startsAt.toISOString() ?? null },
+    booked: {
+      booked: slotsIn("BOOKED") + slotsIn("HELD"),
+      open: slots.reduce((sum, group) => sum + group._count._all, 0),
+    },
+    checkIns: started
+      ? {
+          started: started.reduce((sum, group) => sum + group._count._all, 0),
+          checkedIn: started
+            .filter((group) => group.checkedInAt !== null)
+            .reduce((sum, group) => sum + group._count._all, 0),
+        }
+      : null,
+    takings: money ? { amount: money._sum.total ?? 0, currency } : null,
     next: next.map((row) => ({ ...presentStaff(row, terms), checkedIn: row.checkedInAt !== null })),
     free,
   };
